@@ -238,7 +238,7 @@ export default function AppsStatusWidget() {
       <div className="flex items-center justify-between mb-4">
         <h2 className="font-display text-sm font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
           <Activity className="h-3.5 w-3.5" />
-          Trạng thái 2 app
+          Tổng quan toàn trung tâm
         </h2>
         <span className={cn(
           "text-[11px] flex items-center gap-1.5 transition-colors",
