@@ -104,6 +104,7 @@ async function fetchFeed(): Promise<FeedItem[]> {
     { data: speaking },
     { data: announcements },
     { data: answers },
+    { data: sessions },
   ] = await Promise.all([
     supabase
       .from("writing_feedback")
@@ -132,7 +133,42 @@ async function fetchFeed(): Promise<FeedItem[]> {
       .gte("response_at", sinceIso)
       .order("response_at", { ascending: false })
       .limit(10),
+    // Sessions: only "completed" entries — that's when a teacher actively updated the session.
+    supabase
+      .from("study_plan_entries")
+      .select("id, plan_id, session_number, session_title, entry_date, completed_at")
+      .not("completed_at", "is", null)
+      .gte("completed_at", sinceIso)
+      .order("completed_at", { ascending: false })
+      .limit(15),
   ]);
+
+  // Resolve session → teacher via plan.class_ids → class.teacher_id.
+  // Each plan may map to multiple classes — pick the first class with a teacher.
+  const planIds = [...new Set((sessions || []).map(s => s.plan_id).filter(Boolean))];
+  const planClassMap = new Map<string, string[]>();
+  if (planIds.length > 0) {
+    const { data: plans } = await supabase
+      .from("study_plans")
+      .select("id, class_ids")
+      .in("id", planIds);
+    (plans || []).forEach(p => {
+      const ids = Array.isArray(p.class_ids) ? (p.class_ids as string[]).filter(Boolean) : [];
+      if (ids.length > 0) planClassMap.set(p.id, ids);
+    });
+  }
+  const sessionClassIds = [...new Set([...planClassMap.values()].flat())];
+  const sessionClassMap = new Map<string, { teacherId: string | null; className: string }>();
+  if (sessionClassIds.length > 0) {
+    const { data: cls } = await supabase
+      .from("teachngo_classes")
+      .select("id, class_name, teacher_id")
+      .in("id", sessionClassIds);
+    (cls || []).forEach(c => sessionClassMap.set(c.id, {
+      teacherId: c.teacher_id ?? null,
+      className: c.class_name,
+    }));
+  }
 
   // Collect all referenced IDs
   const teacherIds = new Set<string>();
