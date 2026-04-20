@@ -118,12 +118,27 @@ export function AdminSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton
               size="sm"
-              onClick={() => navigate("/")}
-              tooltip="Trang học viên"
+              asChild
+              tooltip="IELTS Practice (Học viên)"
               className="rounded-md text-primary/70 hover:text-primary hover:bg-primary/5 cursor-pointer transition-colors duration-150"
             >
-              <ExternalLink className="h-3.5 w-3.5 shrink-0" />
-              <span>Trang học viên</span>
+              <a href="https://ielts.learningplus.vn" target="_blank" rel="noopener noreferrer">
+                <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+                <span>IELTS Practice</span>
+              </a>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              size="sm"
+              asChild
+              tooltip="Teacher's Hub (Giáo viên)"
+              className="rounded-md text-primary/70 hover:text-primary hover:bg-primary/5 cursor-pointer transition-colors duration-150"
+            >
+              <a href="https://teacher.learningplus.vn" target="_blank" rel="noopener noreferrer">
+                <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+                <span>Teacher's Hub</span>
+              </a>
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
