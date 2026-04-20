@@ -73,6 +73,7 @@ export default function AdminRoutes() {
           <Route path="placement" element={<PlacementTestPage />} />
           <Route path="placement/:id" element={<PlacementTestEditorPage />} />
           <Route path="schedule" element={<AdminSchedulePage />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Routes>
     </Suspense>

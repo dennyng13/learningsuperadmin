@@ -38,7 +38,7 @@ const App = () => (
             <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/admin/*" element={<AdminRoutes />} />
             <Route path="/" element={<Navigate to="/admin" replace />} />
-            <Route path="*" element={<Navigate to="/admin" replace />} />
+            <Route path="*" element={<Navigate to="/admin/404" replace />} />
           </Routes>
         </Suspense>
       </BrowserRouter>
