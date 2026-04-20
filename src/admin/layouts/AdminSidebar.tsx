@@ -71,7 +71,7 @@ export function AdminSidebar() {
             <Shield className="h-3.5 w-3.5 text-primary" />
           </div>
           <div className="min-w-0 group-data-[collapsible=icon]:hidden">
-            <p className="text-xs font-bold text-sidebar-foreground leading-tight truncate">Admin</p>
+            <p className="text-xs font-bold text-sidebar-foreground leading-tight truncate">Admin Portal</p>
             <p className="text-[10px] text-sidebar-foreground/50 leading-tight truncate">{user?.email}</p>
           </div>
         </div>
