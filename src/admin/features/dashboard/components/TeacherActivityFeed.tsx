@@ -16,7 +16,7 @@ import { formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
 import {
   PenLine, Mic2, Megaphone, MessageCircleReply, Activity, ChevronRight, Sparkles,
-  Filter, X,
+  Filter, X, CalendarClock,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@shared/lib/utils";
@@ -25,7 +25,7 @@ import {
 } from "@shared/components/ui/select";
 import { Button } from "@shared/components/ui/button";
 
-type ActivityKind = "writing" | "speaking" | "announcement" | "answer";
+type ActivityKind = "writing" | "speaking" | "announcement" | "answer" | "session";
 
 interface FeedItem {
   id: string;
@@ -79,6 +79,14 @@ const KIND_META: Record<ActivityKind, {
     fg: "text-emerald-600 dark:text-emerald-400",
     verb: "đã trả lời câu hỏi của",
   },
+  session: {
+    icon: CalendarClock,
+    label: "Buổi học",
+    bg: "bg-blue-500/10",
+    ring: "ring-blue-500/20",
+    fg: "text-blue-600 dark:text-blue-400",
+    verb: "đã cập nhật buổi học",
+  },
 };
 
 const FEED_LIMIT = 20;
@@ -96,6 +104,7 @@ async function fetchFeed(): Promise<FeedItem[]> {
     { data: speaking },
     { data: announcements },
     { data: answers },
+    { data: sessions },
   ] = await Promise.all([
     supabase
       .from("writing_feedback")
@@ -124,7 +133,42 @@ async function fetchFeed(): Promise<FeedItem[]> {
       .gte("response_at", sinceIso)
       .order("response_at", { ascending: false })
       .limit(10),
+    // Sessions: only "completed" entries — that's when a teacher actively updated the session.
+    supabase
+      .from("study_plan_entries")
+      .select("id, plan_id, session_number, session_title, entry_date, completed_at")
+      .not("completed_at", "is", null)
+      .gte("completed_at", sinceIso)
+      .order("completed_at", { ascending: false })
+      .limit(15),
   ]);
+
+  // Resolve session → teacher via plan.class_ids → class.teacher_id.
+  // Each plan may map to multiple classes — pick the first class with a teacher.
+  const planIds = [...new Set((sessions || []).map(s => s.plan_id).filter(Boolean))];
+  const planClassMap = new Map<string, string[]>();
+  if (planIds.length > 0) {
+    const { data: plans } = await supabase
+      .from("study_plans")
+      .select("id, class_ids")
+      .in("id", planIds);
+    (plans || []).forEach(p => {
+      const ids = Array.isArray(p.class_ids) ? (p.class_ids as string[]).filter(Boolean) : [];
+      if (ids.length > 0) planClassMap.set(p.id, ids);
+    });
+  }
+  const sessionClassIds = [...new Set([...planClassMap.values()].flat())];
+  const sessionClassMap = new Map<string, { teacherId: string | null; className: string }>();
+  if (sessionClassIds.length > 0) {
+    const { data: cls } = await supabase
+      .from("teachngo_classes")
+      .select("id, class_name, teacher_id")
+      .in("id", sessionClassIds);
+    (cls || []).forEach(c => sessionClassMap.set(c.id, {
+      teacherId: c.teacher_id ?? null,
+      className: c.class_name,
+    }));
+  }
 
   // Collect all referenced IDs
   const teacherIds = new Set<string>();
@@ -138,6 +182,14 @@ async function fetchFeed(): Promise<FeedItem[]> {
     if (r.teacher_id) teacherIds.add(r.teacher_id);
     studentIds.add(r.student_id);
     if (r.class_id) classIds.add(r.class_id);
+  });
+  // Sessions resolve teacher via the precomputed sessionClassMap (skip if no teacher).
+  (sessions || []).forEach(s => {
+    const cIds = planClassMap.get(s.plan_id) || [];
+    for (const cid of cIds) {
+      const info = sessionClassMap.get(cid);
+      if (info?.teacherId) { teacherIds.add(info.teacherId); break; }
+    }
   });
 
   // Batch lookup names
@@ -216,6 +268,35 @@ async function fetchFeed(): Promise<FeedItem[]> {
     });
   });
 
+  (sessions || []).forEach(s => {
+    if (!s.completed_at) return;
+    // Find first class with a teacher for this plan
+    const cIds = planClassMap.get(s.plan_id) || [];
+    let teacherId: string | null = null;
+    let className: string | null = null;
+    let classId: string | null = null;
+    for (const cid of cIds) {
+      const info = sessionClassMap.get(cid);
+      if (info) {
+        if (!className) { className = info.className; classId = cid; }
+        if (info.teacherId) { teacherId = info.teacherId; className = info.className; classId = cid; break; }
+      }
+    }
+    if (!teacherId) return; // skip orphan sessions (no class teacher)
+    const sessionLabel = s.session_title
+      || (s.session_number != null ? `Buổi #${s.session_number}` : "Buổi học");
+    items.push({
+      id: `e-${s.id}`,
+      kind: "session",
+      teacherId,
+      teacherName: tMap.get(teacherId) || "Giáo viên",
+      className,
+      detail: `${sessionLabel} · ${s.entry_date}`,
+      createdAt: s.completed_at,
+      navigateTo: classId ? `/classes?class_id=${classId}` : `/study-plans`,
+    });
+  });
+
   return items
     .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))
     .slice(0, FEED_LIMIT);
@@ -267,6 +348,12 @@ export default function TeacherActivityFeed() {
         const oldRow = payload?.old || {};
         const newRow = payload?.new || {};
         if (!oldRow.response_at && newRow.response_at) onChange();
+      })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "study_plan_entries" }, (payload: any) => {
+        // Only trigger when a session is marked completed (completed_at goes from null → set)
+        const oldRow = payload?.old || {};
+        const newRow = payload?.new || {};
+        if (!oldRow.completed_at && newRow.completed_at) onChange();
       })
       .subscribe((status) => setConnected(status === "SUBSCRIBED"));
 
@@ -350,8 +437,11 @@ function FeedRow({
 }: { item: FeedItem; isHead: boolean; pulse: boolean; onClick: () => void }) {
   const meta = KIND_META[item.kind];
   const Icon = meta.icon;
-  const target = item.kind === "announcement" ? item.className : item.studentName;
-  const targetSuffix = item.kind === "announcement" ? "" : ` · "${item.detail}"`;
+  // Target = the noun the teacher acted on:
+  //  - announcement / session  → class name
+  //  - writing / speaking / answer → student name
+  const usesClassTarget = item.kind === "announcement" || item.kind === "session";
+  const target = usesClassTarget ? item.className : item.studentName;
 
   return (
     <li>
@@ -379,12 +469,7 @@ function FeedRow({
             <span className="font-semibold text-foreground">{item.teacherName}</span>
             <span className="text-muted-foreground"> {meta.verb} </span>
             <span className="font-semibold text-foreground">{target || "—"}</span>
-            {item.kind !== "announcement" && (
-              <span className="text-muted-foreground">{targetSuffix}</span>
-            )}
-            {item.kind === "announcement" && (
-              <span className="text-muted-foreground"> · "{item.detail}"</span>
-            )}
+            <span className="text-muted-foreground"> · "{item.detail}"</span>
           </p>
           <div className="flex items-center gap-2 mt-1 text-[10px] text-muted-foreground">
             <span className={cn("px-1.5 py-0.5 rounded font-medium", meta.bg, meta.fg)}>
