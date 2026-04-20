@@ -4,6 +4,7 @@ import AddStudentDialog from "./AddStudentDialog";
 import ComposeEmailDialog from "@shared/components/teacher-shared/ComposeEmailDialog";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { invokeTeachngoLinkStudents } from "@shared/lib/teachngoLinkStudents";
 import { useAuth } from "@shared/hooks/useAuth";
 import { useIsMobile } from "@shared/hooks/use-mobile";
 import { Button } from "@shared/components/ui/button";
@@ -335,11 +336,8 @@ export default function TeachngoTab({ roleCategory = "students" }: { roleCategor
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { toast.error("Bạn cần đăng nhập"); setChangingRoleFor(null); return; }
-      const res = await supabase.functions.invoke("teachngo-link-students", {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-        body: { action: "change_role", user_id: userId, role: newRole },
-      });
-      if (res.error) toast.error(`Lỗi: ${res.error.message}`);
+      const res = await invokeTeachngoLinkStudents(session.access_token, { action: "change_role", user_id: userId, role: newRole });
+      if (res.error) toast.error(`Lỗi: ${res.error}`);
       else {
         toast.success(`Đã đổi vai trò thành ${newRole === "user" ? "Học viên" : newRole === "guest" ? "Khách" : "Giáo viên"}`);
         setUserRolesMap(prev => ({ ...prev, [userId]: newRole }));
@@ -614,13 +612,10 @@ export default function TeachngoTab({ roleCategory = "students" }: { roleCategor
       if (!session) { toast.error("Bạn cần đăng nhập"); setRestoringAccess(false); return; }
       const tngIds = Array.from(selectedIds).filter(id => !id.startsWith("sys_"));
       if (tngIds.length === 0) { toast.info("Chỉ hỗ trợ cho học viên TnG"); setRestoringAccess(false); return; }
-      const res = await supabase.functions.invoke("teachngo-link-students", {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-        body: { action: "restore_access", student_ids: tngIds },
-      });
-      if (res.error) toast.error(`Lỗi: ${res.error.message}`);
+      const res = await invokeTeachngoLinkStudents<{ restored: number; restored_names?: string[] }>(session.access_token, { action: "restore_access", student_ids: tngIds });
+      if (res.error) toast.error(`Lỗi: ${res.error}`);
       else {
-        const { restored, restored_names } = res.data;
+        const { restored, restored_names } = res.data || { restored: 0, restored_names: [] };
         if (restored > 0) {
           const names = restored_names?.join(", ") || `${restored} học viên`;
           toast.success(` Đã cấp lại quyền truy cập: ${names}`, { duration: 8000 });
@@ -737,11 +732,8 @@ export default function TeachngoTab({ roleCategory = "students" }: { roleCategor
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { toast.error("Bạn cần đăng nhập"); setLinkingLoading(false); return; }
-      const res = await supabase.functions.invoke("teachngo-link-students", {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-        body: { action: "manual_link", student_id: linkingStudent.id, user_id: selectedUserId || null },
-      });
-      if (res.error) toast.error(`Lỗi: ${res.error.message}`);
+      const res = await invokeTeachngoLinkStudents(session.access_token, { action: "manual_link", student_id: linkingStudent.id, user_id: selectedUserId || null });
+      if (res.error) toast.error(`Lỗi: ${res.error}`);
       else {
         toast.success(selectedUserId ? "Đã liên kết thành công" : "Đã hủy liên kết");
         setLinkDialogOpen(false);
@@ -759,11 +751,8 @@ export default function TeachngoTab({ roleCategory = "students" }: { roleCategor
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { toast.error("Bạn cần đăng nhập"); setResultsLoading(false); return; }
-      const res = await supabase.functions.invoke("teachngo-link-students", {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-        body: { action: "get_results", user_id: student.linked_user_id },
-      });
-      if (res.error) toast.error(`Lỗi: ${res.error.message}`);
+      const res = await invokeTeachngoLinkStudents<{ results?: TestResult[] }>(session.access_token, { action: "get_results", user_id: student.linked_user_id });
+      if (res.error) toast.error(`Lỗi: ${res.error}`);
       else setResults(res.data?.results || []);
     } catch (err: any) { toast.error(`Lỗi: ${err.message}`); }
     setResultsLoading(false);
