@@ -490,10 +490,13 @@ function Sparkline({
       <svg
         ref={svgRef}
         viewBox={`0 0 ${width} ${height}`}
-        className="w-full cursor-crosshair"
+        className={cn("w-full", onPick ? "cursor-pointer" : "cursor-crosshair")}
         style={{ height }}
         onMouseMove={handleMove}
         onMouseLeave={() => setHoverIdx(null)}
+        onClick={() => {
+          if (onPick && hoverIdx != null && days?.[hoverIdx]) onPick(days[hoverIdx]);
+        }}
       >
         <defs>
           <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
