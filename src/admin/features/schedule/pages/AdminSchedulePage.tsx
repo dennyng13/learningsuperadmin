@@ -617,7 +617,15 @@ function AvailabilityDraftsTab() {
       toast.error(`Không thể cập nhật draft: ${error.message}`);
       return;
     }
-    toast.success(status === "needs_changes" ? "Đã yêu cầu giáo viên chỉnh sửa" : status === "rejected" ? "Đã từ chối draft" : "Đã cập nhật trạng thái");
+    toast.success(
+      status === "needs_changes"
+        ? "Đã yêu cầu giáo viên chỉnh sửa"
+        : status === "rejected"
+          ? "Đã từ chối draft"
+          : status === "approved"
+            ? "Đã duyệt draft"
+            : "Đã cập nhật trạng thái",
+    );
     refresh();
   };
 
@@ -741,7 +749,11 @@ function AvailabilityDraftsTab() {
                         <Badge variant={draft.status === "applied" ? "default" : "secondary"}>{draft.status}</Badge>
                       </div>
                       <CardDescription>
-                        {validation.can_apply ? "Đủ điều kiện apply vào bảng gốc." : "Chưa đủ điều kiện apply, sẽ giữ ở draft/pending cho đến khi admin duyệt hoặc yêu cầu chỉnh sửa."}
+                        {draft.status === "approved"
+                          ? "Draft đã được duyệt, có thể apply vào bảng gốc khi sẵn sàng."
+                          : validation.can_apply
+                            ? "Đủ điều kiện apply vào bảng gốc."
+                            : "Chưa đủ điều kiện apply, sẽ giữ ở draft/pending cho đến khi admin duyệt hoặc yêu cầu chỉnh sửa."}
                       </CardDescription>
                     </div>
                     <div className="flex flex-wrap gap-2 text-xs">
@@ -780,6 +792,7 @@ function AvailabilityDraftsTab() {
 
                   <div className="flex flex-wrap gap-2 justify-end">
                     <Button variant="outline" disabled={isBusy} onClick={() => updateDraftStatus(draft.id, "needs_changes")}>Yêu cầu sửa</Button>
+                    <Button variant="outline" disabled={isBusy} onClick={() => updateDraftStatus(draft.id, "approved")}>Duyệt</Button>
                     <Button variant="outline" disabled={isBusy} onClick={() => updateDraftStatus(draft.id, "rejected")}>Từ chối</Button>
                     <Button disabled={isBusy || !validation.can_apply} onClick={() => approveAndApply(draft)}>
                       {isBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
