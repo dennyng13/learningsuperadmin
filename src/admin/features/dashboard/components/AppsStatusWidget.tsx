@@ -14,13 +14,25 @@ import DayDrillDownDialog, { type DrillDownKind } from "./DayDrillDownDialog";
 const IELTS_URL = "https://ielts.learningplus.vn";
 const TEACHER_URL = "https://teacher.learningplus.vn";
 
+type MetricTone = "blue" | "emerald" | "violet" | "amber" | "sky" | "rose";
+
 interface AppMetric {
   icon: typeof Users;
   label: string;
   value: number | string;
   hint?: string;
   live?: boolean;
+  tone?: MetricTone;
 }
+
+const TONE_CLASSES: Record<MetricTone, { bg: string; icon: string; value: string; ring: string }> = {
+  blue:    { bg: "bg-blue-500/10",    icon: "text-blue-600",    value: "text-blue-700 dark:text-blue-400",       ring: "ring-blue-500/20" },
+  emerald: { bg: "bg-emerald-500/10", icon: "text-emerald-600", value: "text-emerald-700 dark:text-emerald-400", ring: "ring-emerald-500/20" },
+  violet:  { bg: "bg-violet-500/10",  icon: "text-violet-600",  value: "text-violet-700 dark:text-violet-400",   ring: "ring-violet-500/20" },
+  amber:   { bg: "bg-amber-500/10",   icon: "text-amber-600",   value: "text-amber-700 dark:text-amber-400",     ring: "ring-amber-500/20" },
+  sky:     { bg: "bg-sky-500/10",     icon: "text-sky-600",     value: "text-sky-700 dark:text-sky-400",         ring: "ring-sky-500/20" },
+  rose:    { bg: "bg-rose-500/10",    icon: "text-rose-600",    value: "text-rose-700 dark:text-rose-400",       ring: "ring-rose-500/20" },
+};
 
 function useAppsStatus() {
   return useQuery({
