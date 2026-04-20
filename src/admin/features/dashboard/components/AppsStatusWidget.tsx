@@ -367,7 +367,7 @@ function AppCard({
             <div
               key={i}
               className={cn(
-                "rounded-md p-2.5 flex flex-col gap-0.5 min-h-[78px] transition-all ring-1",
+                "rounded-md p-2.5 h-[78px] flex flex-col gap-0.5 overflow-hidden transition-all ring-1",
                 tone ? cn(tone.bg, tone.ring) : "bg-muted/40 ring-transparent",
                 liveActive && "ring-2 ring-emerald-500/40 shadow-sm shadow-emerald-500/10",
               )}
