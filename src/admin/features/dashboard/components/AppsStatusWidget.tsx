@@ -5,7 +5,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
-import { GraduationCap, BookOpenCheck, ExternalLink, Users, School, Activity, CalendarClock, FileText, Radio } from "lucide-react";
+import { GraduationCap, BookOpenCheck, ExternalLink, Users, School, Activity, CalendarClock, FileText, Radio, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format, subDays } from "date-fns";
 import { cn } from "@shared/lib/utils";
@@ -29,8 +29,11 @@ function useAppsStatus() {
       const now = new Date();
       const since24h = subDays(now, 1).toISOString();
       const since7d = subDays(now, 7).toISOString();
+      const prev14d = subDays(now, 14).toISOString();
       const todayStr = format(now, "yyyy-MM-dd");
       const since7dDate = format(subDays(now, 6), "yyyy-MM-dd");
+      const prev14dDate = format(subDays(now, 13), "yyyy-MM-dd");
+      const prev7dEndDate = format(subDays(now, 7), "yyyy-MM-dd");
 
       const [
         { count: activeStudents },
@@ -39,10 +42,13 @@ function useAppsStatus() {
         { count: testsRun7d },
         { data: testRows7d },
         { data: practiceRows7d },
+        { count: testsPrev7d },
+        { count: practicesPrev7d },
         { count: activeTeachers },
         { count: activeClasses },
         { data: todayEntries },
         { data: entries7d },
+        { count: entriesPrev7d },
       ] = await Promise.all([
         supabase.from("teachngo_students")
           .select("*", { count: "exact", head: true })
@@ -62,6 +68,15 @@ function useAppsStatus() {
         supabase.from("practice_results")
           .select("created_at")
           .gte("created_at", since7d),
+        // Prior 7-day window: [now-14d, now-7d)
+        supabase.from("test_results")
+          .select("*", { count: "exact", head: true })
+          .gte("created_at", prev14d)
+          .lt("created_at", since7d),
+        supabase.from("practice_results")
+          .select("*", { count: "exact", head: true })
+          .gte("created_at", prev14d)
+          .lt("created_at", since7d),
         supabase.from("teachers")
           .select("*", { count: "exact", head: true }),
         supabase.from("teachngo_classes")
@@ -73,6 +88,10 @@ function useAppsStatus() {
         supabase.from("study_plan_entries")
           .select("entry_date")
           .gte("entry_date", since7dDate),
+        supabase.from("study_plan_entries")
+          .select("*", { count: "exact", head: true })
+          .gte("entry_date", prev14dDate)
+          .lt("entry_date", prev7dEndDate),
       ]);
 
       // Build 7-day buckets (oldest → newest)
@@ -98,6 +117,11 @@ function useAppsStatus() {
       const ieltsSeries = tSeries.map((v, i) => v + pSeries[i]);
       const teacherSeries = bucket(entries7d as any, "entry_date");
 
+      const ieltsTotal7d = ieltsSeries.reduce((a, b) => a + b, 0);
+      const ieltsPrev7dTotal = (testsPrev7d ?? 0) + (practicesPrev7d ?? 0);
+      const teacherTotal7d = teacherSeries.reduce((a, b) => a + b, 0);
+      const teacherPrev7dTotal = entriesPrev7d ?? 0;
+
       return {
         ielts: {
           activeStudents: activeStudents ?? 0,
@@ -105,12 +129,16 @@ function useAppsStatus() {
           practicesRun24h: practicesRun24h ?? 0,
           testsRun7d: testsRun7d ?? 0,
           series7d: ieltsSeries,
+          total7d: ieltsTotal7d,
+          prev7d: ieltsPrev7dTotal,
         },
         teacher: {
           activeTeachers: activeTeachers ?? 0,
           activeClasses: activeClasses ?? 0,
           todaySessions: (todayEntries || []).length,
           series7d: teacherSeries,
+          total7d: teacherTotal7d,
+          prev7d: teacherPrev7dTotal,
         },
         days,
       };
@@ -235,6 +263,8 @@ export default function AppsStatusWidget() {
           series={ielts?.series7d}
           seriesLabel="Bài làm / ngày"
           days={data?.days}
+          total7d={ielts?.total7d}
+          prev7d={ielts?.prev7d}
           loading={isLoading}
         />
         <AppCard
@@ -251,6 +281,8 @@ export default function AppsStatusWidget() {
           series={teacher?.series7d}
           seriesLabel="Buổi học / ngày"
           days={data?.days}
+          total7d={teacher?.total7d}
+          prev7d={teacher?.prev7d}
           loading={isLoading}
         />
       </div>
@@ -259,7 +291,7 @@ export default function AppsStatusWidget() {
 }
 
 function AppCard({
-  title, subtitle, icon: Icon, accent, bg, stroke, href, onManage, manageLabel, metrics, series, seriesLabel, days, loading,
+  title, subtitle, icon: Icon, accent, bg, stroke, href, onManage, manageLabel, metrics, series, seriesLabel, days, total7d, prev7d, loading,
 }: {
   title: string;
   subtitle: string;
@@ -274,6 +306,8 @@ function AppCard({
   series?: number[];
   seriesLabel?: string;
   days?: string[];
+  total7d?: number;
+  prev7d?: number;
   loading: boolean;
 }) {
   return (
@@ -321,9 +355,12 @@ function AppCard({
       {/* Sparkline 7 ngày */}
       {series && series.length > 0 && (
         <div className="mt-1">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-[10px] text-muted-foreground">{seriesLabel ?? "7 ngày"}</span>
-            <span className="text-[10px] text-muted-foreground font-mono">
+          <div className="flex items-center justify-between mb-1 gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-[10px] text-muted-foreground truncate">{seriesLabel ?? "7 ngày"}</span>
+              <DeltaBadge current={total7d} previous={prev7d} />
+            </div>
+            <span className="text-[10px] text-muted-foreground font-mono shrink-0">
               {days ? `${format(new Date(days[0]), "dd/MM")} – ${format(new Date(days[days.length - 1]), "dd/MM")}` : ""}
             </span>
           </div>
@@ -338,6 +375,46 @@ function AppCard({
         → {manageLabel}
       </button>
     </div>
+  );
+}
+
+/* ── Delta % vs prior 7-day window ── */
+function DeltaBadge({ current, previous }: { current?: number; previous?: number }) {
+  if (current == null || previous == null) return null;
+  // Edge cases
+  if (previous === 0 && current === 0) {
+    return (
+      <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground" title="Không có dữ liệu kỳ trước">
+        <Minus className="h-3 w-3" /> 0%
+      </span>
+    );
+  }
+  if (previous === 0) {
+    return (
+      <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-emerald-600" title={`Kỳ trước: 0 → kỳ này: ${current}`}>
+        <TrendingUp className="h-3 w-3" /> mới
+      </span>
+    );
+  }
+  const pct = ((current - previous) / previous) * 100;
+  const rounded = Math.round(pct);
+  const isUp = pct > 0;
+  const isFlat = Math.abs(pct) < 0.5;
+  const Icon = isFlat ? Minus : isUp ? TrendingUp : TrendingDown;
+  const cls = isFlat
+    ? "text-muted-foreground"
+    : isUp
+      ? "text-emerald-600"
+      : "text-rose-600";
+  const sign = isFlat ? "" : isUp ? "+" : "";
+  return (
+    <span
+      className={cn("inline-flex items-center gap-0.5 text-[10px] font-semibold", cls)}
+      title={`Kỳ này: ${current} · Kỳ trước (7 ngày trước đó): ${previous}`}
+    >
+      <Icon className="h-3 w-3" />
+      {sign}{rounded}%
+    </span>
   );
 }
 
