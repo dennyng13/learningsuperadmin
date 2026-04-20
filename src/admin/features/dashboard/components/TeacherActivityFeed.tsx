@@ -437,8 +437,11 @@ function FeedRow({
 }: { item: FeedItem; isHead: boolean; pulse: boolean; onClick: () => void }) {
   const meta = KIND_META[item.kind];
   const Icon = meta.icon;
-  const target = item.kind === "announcement" ? item.className : item.studentName;
-  const targetSuffix = item.kind === "announcement" ? "" : ` · "${item.detail}"`;
+  // Target = the noun the teacher acted on:
+  //  - announcement / session  → class name
+  //  - writing / speaking / answer → student name
+  const usesClassTarget = item.kind === "announcement" || item.kind === "session";
+  const target = usesClassTarget ? item.className : item.studentName;
 
   return (
     <li>
@@ -466,12 +469,7 @@ function FeedRow({
             <span className="font-semibold text-foreground">{item.teacherName}</span>
             <span className="text-muted-foreground"> {meta.verb} </span>
             <span className="font-semibold text-foreground">{target || "—"}</span>
-            {item.kind !== "announcement" && (
-              <span className="text-muted-foreground">{targetSuffix}</span>
-            )}
-            {item.kind === "announcement" && (
-              <span className="text-muted-foreground"> · "{item.detail}"</span>
-            )}
+            <span className="text-muted-foreground"> · "{item.detail}"</span>
           </p>
           <div className="flex items-center gap-2 mt-1 text-[10px] text-muted-foreground">
             <span className={cn("px-1.5 py-0.5 rounded font-medium", meta.bg, meta.fg)}>
