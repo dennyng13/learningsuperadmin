@@ -68,7 +68,7 @@ export function AdminSidebar() {
       <SidebarHeader className="px-3 py-3">
         <div className="flex items-center gap-2 overflow-hidden">
           <div className="rounded-md bg-primary/10 flex items-center justify-center shrink-0 h-7 w-7">
-            <Shield className="h-3.5 w-3.5 text-primary" />
+            <img src="/src/assets/learning-plus-logo.png" alt="Learning Plus" className="h-5 w-5 object-contain" />
           </div>
           <div className="min-w-0 group-data-[collapsible=icon]:hidden">
             <p className="text-xs font-bold text-sidebar-foreground leading-tight truncate">Admin Portal</p>
