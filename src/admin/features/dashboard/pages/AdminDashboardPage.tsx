@@ -234,9 +234,6 @@ export default function AdminDashboardPage() {
         <p className="text-xs md:text-sm text-muted-foreground mt-1">Tổng quan hệ thống</p>
       </div>
 
-      {/* ── School Overview (Single Source of Truth) ── */}
-      <SchoolOverview />
-
       {/* ── Trạng thái 2 app (IELTS Practice + Teacher's Hub) ── */}
       <AppsStatusWidget />
 
