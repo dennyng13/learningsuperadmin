@@ -11,7 +11,7 @@
  */
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
 import {
@@ -302,11 +302,42 @@ async function fetchFeed(): Promise<FeedItem[]> {
     .slice(0, FEED_LIMIT);
 }
 
+const KIND_FILTERS: { value: ActivityKind; label: string }[] = [
+  { value: "writing", label: "Writing" },
+  { value: "speaking", label: "Speaking" },
+  { value: "announcement", label: "Thông báo" },
+  { value: "answer", label: "Trả lời" },
+  { value: "session", label: "Buổi học" },
+];
+
 export default function TeacherActivityFeed() {
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [pulseIds, setPulseIds] = useState<Set<string>>(new Set());
   const [connected, setConnected] = useState(false);
+
+  // Filters synced with URL query params (?teacher=xxx&kind=writing)
+  const teacherFilter = searchParams.get("teacher") || "all";
+  const kindParam = searchParams.get("kind");
+  const kindFilter: ActivityKind | "all" =
+    kindParam && KIND_FILTERS.some(k => k.value === kindParam)
+      ? (kindParam as ActivityKind)
+      : "all";
+
+  const updateParam = (key: "teacher" | "kind", value: string) => {
+    const next = new URLSearchParams(searchParams);
+    if (!value || value === "all") next.delete(key);
+    else next.set(key, value);
+    setSearchParams(next, { replace: true });
+  };
+
+  const clearFilters = () => {
+    const next = new URLSearchParams(searchParams);
+    next.delete("teacher");
+    next.delete("kind");
+    setSearchParams(next, { replace: true });
+  };
 
   const { data: items, isLoading } = useQuery({
     queryKey: ["teacher-activity-feed"],
@@ -314,7 +345,7 @@ export default function TeacherActivityFeed() {
     staleTime: 60_000,
   });
 
-  // Realtime: any new row across the 4 sources triggers a refetch + pulse
+  // Realtime: any new row across the 5 sources triggers a refetch + pulse
   useEffect(() => {
     let timer: number | null = null;
     const scheduleRefetch = () => {
@@ -325,8 +356,6 @@ export default function TeacherActivityFeed() {
     };
 
     const flashFirst = () => {
-      // Pulse-mark whatever ends up at the top after refetch.
-      // We just bump a generation marker — the next render compares list head.
       window.setTimeout(() => {
         const head = document.querySelector<HTMLElement>("[data-feed-head]");
         if (head) {
@@ -344,13 +373,11 @@ export default function TeacherActivityFeed() {
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "speaking_feedback" }, onChange)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "class_announcements" }, onChange)
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "student_questions" }, (payload: any) => {
-        // Only trigger when an answer is added (response_at goes from null → set)
         const oldRow = payload?.old || {};
         const newRow = payload?.new || {};
         if (!oldRow.response_at && newRow.response_at) onChange();
       })
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "study_plan_entries" }, (payload: any) => {
-        // Only trigger when a session is marked completed (completed_at goes from null → set)
         const oldRow = payload?.old || {};
         const newRow = payload?.new || {};
         if (!oldRow.completed_at && newRow.completed_at) onChange();
@@ -363,7 +390,6 @@ export default function TeacherActivityFeed() {
     };
   }, [qc]);
 
-  // Track newly-arrived item IDs vs previous render to apply pulse
   const itemKey = items?.map(i => i.id).join("|") ?? "";
   useEffect(() => {
     if (!items || items.length === 0) return;
@@ -373,11 +399,40 @@ export default function TeacherActivityFeed() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [itemKey]);
 
+  // Unique teacher list for the dropdown
+  const teacherOptions = useMemo(() => {
+    if (!items) return [];
+    const map = new Map<string, string>();
+    items.forEach(i => { if (!map.has(i.teacherId)) map.set(i.teacherId, i.teacherName); });
+    return [...map.entries()]
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name, "vi"));
+  }, [items]);
+
+  // Counts per kind (after teacher filter, before kind filter)
+  const kindCounts = useMemo(() => {
+    const counts: Record<ActivityKind | "all", number> = {
+      all: 0, writing: 0, speaking: 0, announcement: 0, answer: 0, session: 0,
+    };
+    (items || [])
+      .filter(i => teacherFilter === "all" || i.teacherId === teacherFilter)
+      .forEach(i => { counts.all++; counts[i.kind]++; });
+    return counts;
+  }, [items, teacherFilter]);
+
+  const filtered = useMemo(() => {
+    return (items || []).filter(i =>
+      (teacherFilter === "all" || i.teacherId === teacherFilter) &&
+      (kindFilter === "all" || i.kind === kindFilter)
+    );
+  }, [items, teacherFilter, kindFilter]);
+
+  const hasActiveFilter = teacherFilter !== "all" || kindFilter !== "all";
   const showSkeleton = isLoading && !items;
 
   return (
     <div className="rounded-xl border bg-card p-4">
-      <div className="flex items-center justify-between mb-4 gap-2">
+      <div className="flex items-center justify-between mb-3 gap-2">
         <h2 className="font-display text-sm font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2 min-w-0">
           <Activity className="h-3.5 w-3.5 shrink-0" />
           <span className="truncate">Hoạt động giáo viên</span>
@@ -399,6 +454,52 @@ export default function TeacherActivityFeed() {
         </span>
       </div>
 
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-2 mb-3">
+        <Select value={teacherFilter} onValueChange={(v) => updateParam("teacher", v)}>
+          <SelectTrigger className="h-8 w-[180px] text-xs">
+            <SelectValue placeholder="Tất cả giáo viên" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tất cả giáo viên</SelectItem>
+            {teacherOptions.map(t => (
+              <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <div className="flex flex-wrap items-center gap-1">
+          <KindChip
+            label="Tất cả"
+            active={kindFilter === "all"}
+            count={kindCounts.all}
+            onClick={() => updateParam("kind", "all")}
+          />
+          {KIND_FILTERS.map(k => (
+            <KindChip
+              key={k.value}
+              label={k.label}
+              active={kindFilter === k.value}
+              count={kindCounts[k.value]}
+              meta={KIND_META[k.value]}
+              onClick={() => updateParam("kind", k.value)}
+            />
+          ))}
+        </div>
+
+        {hasActiveFilter && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={clearFilters}
+            className="h-7 px-2 text-[11px] text-muted-foreground hover:text-foreground"
+          >
+            <X className="h-3 w-3 mr-1" />
+            Xóa lọc
+          </Button>
+        )}
+      </div>
+
       {showSkeleton ? (
         <div className="space-y-2">
           {Array.from({ length: 4 }).map((_, i) => (
@@ -415,9 +516,19 @@ export default function TeacherActivityFeed() {
             Khi giáo viên chấm bài, đăng thông báo hoặc trả lời học viên — sẽ hiện tại đây.
           </p>
         </div>
+      ) : filtered.length === 0 ? (
+        <div className="rounded-md border border-dashed bg-background/40 py-8 px-4 text-center">
+          <Filter className="h-5 w-5 text-muted-foreground/60 mx-auto mb-2" />
+          <p className="text-xs text-muted-foreground">
+            Không có hoạt động nào khớp bộ lọc.
+          </p>
+          <Button variant="link" size="sm" onClick={clearFilters} className="text-[11px] h-auto p-0 mt-1">
+            Xóa lọc
+          </Button>
+        </div>
       ) : (
         <ul className="space-y-1.5">
-          {items.map((it, idx) => (
+          {filtered.map((it, idx) => (
             <FeedRow
               key={it.id}
               item={it}
@@ -429,6 +540,39 @@ export default function TeacherActivityFeed() {
         </ul>
       )}
     </div>
+  );
+}
+
+function KindChip({
+  label, active, count, meta, onClick,
+}: {
+  label: string;
+  active: boolean;
+  count: number;
+  meta?: typeof KIND_META[ActivityKind];
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "h-7 px-2.5 rounded-full text-[11px] font-medium transition-all border flex items-center gap-1.5",
+        active
+          ? meta
+            ? cn(meta.bg, meta.fg, "border-transparent")
+            : "bg-primary text-primary-foreground border-transparent"
+          : "bg-background text-muted-foreground border-border hover:bg-muted",
+      )}
+    >
+      {label}
+      <span className={cn(
+        "tabular-nums text-[10px] px-1 rounded",
+        active ? "bg-background/30" : "bg-muted",
+      )}>
+        {count}
+      </span>
+    </button>
   );
 }
 
