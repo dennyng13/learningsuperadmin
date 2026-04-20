@@ -52,6 +52,16 @@ const emptyForm = {
   status: "active",
 };
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function isMissingLegacyLinkRpc(error: { message?: string; details?: string; hint?: string } | null | undefined) {
+  const combined = `${error?.message || ""} ${error?.details || ""} ${error?.hint || ""}`.toLowerCase();
+  return combined.includes("self-link-as-teacher")
+    || combined.includes("2026-04-20-self-link-as-teacher-rpc")
+    || combined.includes("chưa apply migration rpc")
+    || combined.includes("function") && combined.includes("auto_link_teachers");
+}
+
 export default function TeachersTab() {
   const navigate = useNavigate();
   const [allClasses, setAllClasses] = useState<{ id: string; class_name: string; teacher_id: string | null; status: string | null }[]>([]);
@@ -87,6 +97,7 @@ export default function TeachersTab() {
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [linkTeacherId, setLinkTeacherId] = useState<string | null>(null);
   const [linkEmail, setLinkEmail] = useState("");
+  const [linkAccountId, setLinkAccountId] = useState("");
   const [linking, setLinking] = useState(false);
 
   const syncStaff = async () => {
@@ -149,7 +160,11 @@ export default function TeachersTab() {
         toast.info("Không tìm thấy giáo viên nào để liên kết tự động");
       }
     } catch (err: any) {
-      toast.error(`Lỗi liên kết: ${err.message}`);
+      if (isMissingLegacyLinkRpc(err)) {
+        toast.info("RPC auto-link cũ chưa có; vẫn có thể liên kết thủ công bằng Account ID.");
+      } else {
+        toast.error(`Lỗi liên kết: ${err.message}`);
+      }
     }
     setAutoLinking(false);
   };
@@ -309,9 +324,13 @@ export default function TeachersTab() {
     await fetchTeachers();
     // Auto-link after email update
     if (email) {
-      const { data } = await supabase.rpc("auto_link_teachers");
-      const matched = (data as any)?.matched ?? 0;
-      if (matched > 0) toast.success(`Đã tự động liên kết ${matched} giáo viên`);
+      const { data, error } = await supabase.rpc("auto_link_teachers");
+      if (!error) {
+        const matched = (data as any)?.matched ?? 0;
+        if (matched > 0) toast.success(`Đã tự động liên kết ${matched} giáo viên`);
+      } else if (isMissingLegacyLinkRpc(error)) {
+        toast.info("Đã lưu email; nếu là tài khoản super admin, hãy dán Account ID để liên kết trực tiếp.");
+      }
     }
   };
 
@@ -325,39 +344,57 @@ export default function TeachersTab() {
   const openLink = (t: Teacher) => {
     setLinkTeacherId(t.id);
     setLinkEmail(t.email || "");
+    setLinkAccountId("");
     setLinkDialogOpen(true);
   };
 
   const handleLink = async () => {
-    if (!linkEmail.trim() || !linkTeacherId) return;
+    if ((!linkEmail.trim() && !linkAccountId.trim()) || !linkTeacherId) return;
     setLinking(true);
-    // Look up user by email via profiles
-    const { data: profiles } = await supabase
-      .from("profiles")
-      .select("id")
-      .limit(1000);
+    const email = linkEmail.trim();
+    const accountId = linkAccountId.trim();
 
-    // We need to find user by email - use admin endpoint or search
-    // Since we can't query auth.users, we'll search by matching email in a different way
-    // Let's use the edge function or just store the email match
-    // For now, try to find via supabase auth admin (not available client-side)
-    // Alternative: look up teachngo_students or profiles
-    // Simplest: just store the email and let admin confirm
+    if (accountId && !UUID_RE.test(accountId)) {
+      toast.error("Account ID không đúng định dạng UUID");
+      setLinking(false);
+      return;
+    }
+
+    const updatePayload = {
+      linked_user_id: accountId || null,
+      email: email || null,
+      updated_at: new Date().toISOString(),
+    };
+
     const { error } = await supabase
       .from("teachers")
-      .update({ linked_user_id: null, email: linkEmail.trim(), updated_at: new Date().toISOString() })
+      .update(updatePayload)
       .eq("id", linkTeacherId);
 
-    // Try auto-link by email
-    const { data: matchedProfiles } = await supabase
-      .from("profiles")
-      .select("id");
+    if (error) {
+      toast.error("Lỗi cập nhật liên kết");
+      setLinking(false);
+      return;
+    }
 
-    // We can't easily match by email from profiles (no email field)
-    // Let's use a simple approach: store email, admin links manually by user_id
-    // Or we create an edge function. For now, let's allow manual UUID input.
+    if (accountId) {
+      toast.success("Đã liên kết trực tiếp bằng Account ID");
+      setLinking(false);
+      setLinkDialogOpen(false);
+      fetchTeachers();
+      return;
+    }
 
-    toast.info("Đã cập nhật email. Liên kết thủ công qua UUID nếu cần.");
+    const { data, error: autoLinkError } = await supabase.rpc("auto_link_teachers");
+    if (!autoLinkError) {
+      const matched = (data as any)?.matched ?? 0;
+      toast.success(matched > 0 ? `Đã tự động liên kết ${matched} giáo viên` : "Đã lưu email để chờ auto-link");
+    } else if (isMissingLegacyLinkRpc(autoLinkError)) {
+      toast.info("Đã lưu email; với tài khoản super admin hãy nhập Account ID để liên kết trực tiếp.");
+    } else {
+      toast.error(`Lỗi liên kết: ${autoLinkError.message}`);
+    }
+
     setLinking(false);
     setLinkDialogOpen(false);
     fetchTeachers();
@@ -728,11 +765,16 @@ export default function TeachersTab() {
             <DialogTitle>Liên kết tài khoản</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">Nhập email tài khoản hệ thống để liên kết với giáo viên này.</p>
+            <p className="text-sm text-muted-foreground">Nhập email để auto-link, hoặc dán Account ID để liên kết trực tiếp với tài khoản super admin/admin.</p>
             <Input
               placeholder="email@example.com"
               value={linkEmail}
               onChange={e => setLinkEmail(e.target.value)}
+            />
+            <Input
+              placeholder="Account ID (UUID)"
+              value={linkAccountId}
+              onChange={e => setLinkAccountId(e.target.value)}
             />
           </div>
           <DialogFooter>
