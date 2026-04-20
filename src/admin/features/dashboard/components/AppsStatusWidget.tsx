@@ -87,17 +87,25 @@ export default function AppsStatusWidget() {
   const qc = useQueryClient();
   const { data, isLoading } = useAppsStatus();
 
-  // Live delta — tăng ngay khi có INSERT từ Realtime, reset về 0 khi React Query refetch
-  const [liveDelta, setLiveDelta] = useState(0);
-  const [pulse, setPulse] = useState(false);
+  // Live deltas — tăng ngay khi có INSERT từ Realtime, reset về 0 khi React Query refetch
+  const [runningDelta, setRunningDelta] = useState(0);
+  const [classesDelta, setClassesDelta] = useState(0);
+  const [sessionsDelta, setSessionsDelta] = useState(0);
+  const [pulseRunning, setPulseRunning] = useState(false);
+  const [pulseClasses, setPulseClasses] = useState(false);
+  const [pulseSessions, setPulseSessions] = useState(false);
   const [connected, setConnected] = useState(false);
   const refetchTimer = useRef<number | null>(null);
 
   useEffect(() => {
-    setLiveDelta(0);
+    setRunningDelta(0);
+    setClassesDelta(0);
+    setSessionsDelta(0);
   }, [data]);
 
   useEffect(() => {
+    const todayStr = format(new Date(), "yyyy-MM-dd");
+
     const scheduleRefetch = () => {
       if (refetchTimer.current) window.clearTimeout(refetchTimer.current);
       // debounce: gom nhiều INSERT liên tiếp trong 5s → 1 lần refetch count chính xác
@@ -106,17 +114,28 @@ export default function AppsStatusWidget() {
       }, 5000);
     };
 
-    const bump = () => {
-      setLiveDelta((n) => n + 1);
+    const makeBump = (
+      setDelta: React.Dispatch<React.SetStateAction<number>>,
+      setPulse: React.Dispatch<React.SetStateAction<boolean>>,
+      guard?: (row: any) => boolean,
+    ) => (payload: any) => {
+      if (guard && !guard(payload?.new)) return;
+      setDelta((n) => n + 1);
       setPulse(true);
       window.setTimeout(() => setPulse(false), 800);
       scheduleRefetch();
     };
 
+    const bumpRunning = makeBump(setRunningDelta, setPulseRunning);
+    const bumpClasses = makeBump(setClassesDelta, setPulseClasses, (row) => row?.status === "active");
+    const bumpSessions = makeBump(setSessionsDelta, setPulseSessions, (row) => row?.entry_date === todayStr);
+
     const channel = supabase
       .channel("dashboard-apps-status-live")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "test_results" }, bump)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "practice_results" }, bump)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "test_results" }, bumpRunning)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "practice_results" }, bumpRunning)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "teachngo_classes" }, bumpClasses)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "study_plan_entries" }, bumpSessions)
       .subscribe((status) => {
         setConnected(status === "SUBSCRIBED");
       });
@@ -130,18 +149,20 @@ export default function AppsStatusWidget() {
   const ielts = data?.ielts;
   const teacher = data?.teacher;
 
-  const liveRunning = (ielts?.testsRun24h ?? 0) + (ielts?.practicesRun24h ?? 0) + liveDelta;
+  const liveRunning = (ielts?.testsRun24h ?? 0) + (ielts?.practicesRun24h ?? 0) + runningDelta;
+  const liveClasses = (teacher?.activeClasses ?? 0) + classesDelta;
+  const liveSessions = (teacher?.todaySessions ?? 0) + sessionsDelta;
 
   const ieltsMetrics: AppMetric[] = [
     { icon: Users, label: "Học viên kết nối", value: ielts?.activeStudents ?? 0 },
-    { icon: Activity, label: "Đang làm bài (24h)", value: liveRunning, hint: "test + practice", live: pulse },
+    { icon: Activity, label: "Đang làm bài (24h)", value: liveRunning, hint: "test + practice", live: pulseRunning },
     { icon: FileText, label: "Bài thi 7 ngày", value: ielts?.testsRun7d ?? 0 },
   ];
 
   const teacherMetrics: AppMetric[] = [
     { icon: GraduationCap, label: "Giáo viên", value: teacher?.activeTeachers ?? 0 },
-    { icon: School, label: "Lớp đang hoạt động", value: teacher?.activeClasses ?? 0 },
-    { icon: CalendarClock, label: "Buổi học hôm nay", value: teacher?.todaySessions ?? 0 },
+    { icon: School, label: "Lớp đang hoạt động", value: liveClasses, live: pulseClasses },
+    { icon: CalendarClock, label: "Buổi học hôm nay", value: liveSessions, live: pulseSessions },
   ];
 
   return (
