@@ -322,18 +322,12 @@ export default function TeachngoTab({ roleCategory = "students" }: { roleCategor
 
   const fetchLastActivity = async (studentList: UnifiedUser[]) => {
     const linkedIds = studentList.filter(s => s.linked_user_id).map(s => s.linked_user_id!);
-    if (linkedIds.length === 0) return;
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-      const res = await supabase.functions.invoke("teachngo-link-students", {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-        body: { action: "get_last_activity", user_ids: linkedIds },
-      });
-      if (res.data?.last_activity) {
-        setLastActivityMap(res.data.last_activity);
-      }
-    } catch {}
+    if (linkedIds.length === 0) {
+      setLastActivityMap({});
+      return;
+    }
+
+    setLastActivityMap({});
   };
 
   const changeRole = async (userId: string, newRole: string) => {
