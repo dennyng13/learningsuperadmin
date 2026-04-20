@@ -360,22 +360,33 @@ function AppCard({
       </div>
 
       <div className="grid grid-cols-3 gap-2">
-        {metrics.map((m, i) => (
-          <div
-            key={i}
-            className={cn(
-              "rounded-md bg-muted/40 p-2.5 flex flex-col gap-0.5 transition-colors",
-              m.live && "bg-emerald-500/15 ring-1 ring-emerald-500/30",
-            )}
-          >
-            <m.icon className={cn("h-3.5 w-3.5 mb-0.5", m.live ? "text-emerald-600" : "text-muted-foreground")} />
-            <span className={cn("text-lg font-bold font-display leading-none transition-colors", m.live && "text-emerald-600")}>
-              {loading ? <span className="inline-block h-5 w-8 bg-muted rounded animate-pulse" /> : m.value}
-            </span>
-            <span className="text-[10px] text-muted-foreground leading-tight">{m.label}</span>
-            {m.hint && <span className="text-[9px] text-muted-foreground/70">{m.hint}</span>}
-          </div>
-        ))}
+        {metrics.map((m, i) => {
+          const tone = m.tone ? TONE_CLASSES[m.tone] : null;
+          const liveActive = m.live;
+          return (
+            <div
+              key={i}
+              className={cn(
+                "rounded-md p-2.5 flex flex-col gap-0.5 min-h-[78px] transition-all ring-1",
+                tone ? cn(tone.bg, tone.ring) : "bg-muted/40 ring-transparent",
+                liveActive && "ring-2 ring-emerald-500/40 shadow-sm shadow-emerald-500/10",
+              )}
+            >
+              <m.icon className={cn(
+                "h-3.5 w-3.5 mb-0.5",
+                liveActive ? "text-emerald-600" : tone ? tone.icon : "text-muted-foreground",
+              )} />
+              <span className={cn(
+                "text-lg font-bold font-display leading-none transition-colors",
+                liveActive ? "text-emerald-600" : tone ? tone.value : "text-foreground",
+              )}>
+                {loading ? <span className="inline-block h-5 w-8 bg-muted rounded animate-pulse" /> : m.value}
+              </span>
+              <span className="text-[10px] text-muted-foreground leading-tight">{m.label}</span>
+              {m.hint && <span className="text-[9px] text-muted-foreground/70">{m.hint}</span>}
+            </div>
+          );
+        })}
       </div>
 
       {/* Sparkline 7 ngày */}
