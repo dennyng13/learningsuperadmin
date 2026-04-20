@@ -83,14 +83,57 @@ function useAppsStatus() {
 
 export default function AppsStatusWidget() {
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const { data, isLoading } = useAppsStatus();
+
+  // Live delta — tăng ngay khi có INSERT từ Realtime, reset về 0 khi React Query refetch
+  const [liveDelta, setLiveDelta] = useState(0);
+  const [pulse, setPulse] = useState(false);
+  const [connected, setConnected] = useState(false);
+  const refetchTimer = useRef<number | null>(null);
+
+  useEffect(() => {
+    setLiveDelta(0);
+  }, [data]);
+
+  useEffect(() => {
+    const scheduleRefetch = () => {
+      if (refetchTimer.current) window.clearTimeout(refetchTimer.current);
+      // debounce: gom nhiều INSERT liên tiếp trong 5s → 1 lần refetch count chính xác
+      refetchTimer.current = window.setTimeout(() => {
+        qc.invalidateQueries({ queryKey: ["dashboard-apps-status"] });
+      }, 5000);
+    };
+
+    const bump = () => {
+      setLiveDelta((n) => n + 1);
+      setPulse(true);
+      window.setTimeout(() => setPulse(false), 800);
+      scheduleRefetch();
+    };
+
+    const channel = supabase
+      .channel("dashboard-apps-status-live")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "test_results" }, bump)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "practice_results" }, bump)
+      .subscribe((status) => {
+        setConnected(status === "SUBSCRIBED");
+      });
+
+    return () => {
+      if (refetchTimer.current) window.clearTimeout(refetchTimer.current);
+      supabase.removeChannel(channel);
+    };
+  }, [qc]);
 
   const ielts = data?.ielts;
   const teacher = data?.teacher;
 
+  const liveRunning = (ielts?.testsRun24h ?? 0) + (ielts?.practicesRun24h ?? 0) + liveDelta;
+
   const ieltsMetrics: AppMetric[] = [
     { icon: Users, label: "Học viên kết nối", value: ielts?.activeStudents ?? 0 },
-    { icon: Activity, label: "Đang làm bài (24h)", value: (ielts?.testsRun24h ?? 0) + (ielts?.practicesRun24h ?? 0), hint: "test + practice" },
+    { icon: Activity, label: "Đang làm bài (24h)", value: liveRunning, hint: "test + practice", live: pulse },
     { icon: FileText, label: "Bài thi 7 ngày", value: ielts?.testsRun7d ?? 0 },
   ];
 
@@ -107,7 +150,16 @@ export default function AppsStatusWidget() {
           <Activity className="h-3.5 w-3.5" />
           Trạng thái 2 app
         </h2>
-        <span className="text-[11px] text-muted-foreground">Chung database · realtime ~1 phút</span>
+        <span className={cn(
+          "text-[11px] flex items-center gap-1.5 transition-colors",
+          connected ? "text-emerald-600" : "text-muted-foreground",
+        )}>
+          <span className="relative flex h-2 w-2">
+            {connected && <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-60 animate-ping" />}
+            <span className={cn("relative inline-flex rounded-full h-2 w-2", connected ? "bg-emerald-500" : "bg-muted-foreground/40")} />
+          </span>
+          {connected ? "Realtime · live" : "Đang kết nối…"}
+        </span>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
