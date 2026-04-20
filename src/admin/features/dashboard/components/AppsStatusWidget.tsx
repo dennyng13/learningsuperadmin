@@ -304,7 +304,7 @@ export default function AppsStatusWidget() {
 }
 
 function AppCard({
-  title, subtitle, icon: Icon, accent, bg, stroke, href, onManage, manageLabel, metrics, series, seriesLabel, days, total7d, prev7d, loading,
+  title, subtitle, icon: Icon, accent, bg, stroke, href, onManage, manageLabel, metrics, series, seriesLabel, days, total7d, prev7d, loading, onPickDay,
 }: {
   title: string;
   subtitle: string;
@@ -322,6 +322,7 @@ function AppCard({
   total7d?: number;
   prev7d?: number;
   loading: boolean;
+  onPickDay?: (day: string) => void;
 }) {
   return (
     <div className="rounded-lg border bg-background/50 p-4 flex flex-col gap-3">
