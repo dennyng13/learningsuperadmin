@@ -32,6 +32,7 @@ const StudyPlanTemplatesPage = lazy(() => import("@admin/features/study-plans/pa
 const PlacementTestPage = lazy(() => import("@admin/features/placement/pages/PlacementTestPage"));
 const PlacementTestEditorPage = lazy(() => import("@admin/features/placement/pages/PlacementTestEditorPage"));
 const AdminSchedulePage = lazy(() => import("@admin/features/schedule/pages/AdminSchedulePage"));
+const NotFoundPage = lazy(() => import("@admin/features/misc/pages/NotFoundPage"));
 
 function PageLoader() {
   return (
@@ -72,6 +73,7 @@ export default function AdminRoutes() {
           <Route path="placement" element={<PlacementTestPage />} />
           <Route path="placement/:id" element={<PlacementTestEditorPage />} />
           <Route path="schedule" element={<AdminSchedulePage />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Routes>
     </Suspense>
