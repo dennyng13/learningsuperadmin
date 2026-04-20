@@ -14,13 +14,25 @@ import DayDrillDownDialog, { type DrillDownKind } from "./DayDrillDownDialog";
 const IELTS_URL = "https://ielts.learningplus.vn";
 const TEACHER_URL = "https://teacher.learningplus.vn";
 
+type MetricTone = "blue" | "emerald" | "violet" | "amber" | "sky" | "rose";
+
 interface AppMetric {
   icon: typeof Users;
   label: string;
   value: number | string;
   hint?: string;
   live?: boolean;
+  tone?: MetricTone;
 }
+
+const TONE_CLASSES: Record<MetricTone, { bg: string; icon: string; value: string; ring: string }> = {
+  blue:    { bg: "bg-blue-500/10",    icon: "text-blue-600",    value: "text-blue-700 dark:text-blue-400",       ring: "ring-blue-500/20" },
+  emerald: { bg: "bg-emerald-500/10", icon: "text-emerald-600", value: "text-emerald-700 dark:text-emerald-400", ring: "ring-emerald-500/20" },
+  violet:  { bg: "bg-violet-500/10",  icon: "text-violet-600",  value: "text-violet-700 dark:text-violet-400",   ring: "ring-violet-500/20" },
+  amber:   { bg: "bg-amber-500/10",   icon: "text-amber-600",   value: "text-amber-700 dark:text-amber-400",     ring: "ring-amber-500/20" },
+  sky:     { bg: "bg-sky-500/10",     icon: "text-sky-600",     value: "text-sky-700 dark:text-sky-400",         ring: "ring-sky-500/20" },
+  rose:    { bg: "bg-rose-500/10",    icon: "text-rose-600",    value: "text-rose-700 dark:text-rose-400",       ring: "ring-rose-500/20" },
+};
 
 function useAppsStatus() {
   return useQuery({
@@ -222,15 +234,15 @@ export default function AppsStatusWidget() {
   const liveSessions = (teacher?.todaySessions ?? 0) + sessionsDelta;
 
   const ieltsMetrics: AppMetric[] = [
-    { icon: Users, label: "Học viên kết nối", value: ielts?.activeStudents ?? 0 },
-    { icon: Activity, label: "Đang làm bài (24h)", value: liveRunning, hint: "test + practice", live: pulseRunning },
-    { icon: FileText, label: "Bài thi 7 ngày", value: ielts?.testsRun7d ?? 0 },
+    { icon: Users, label: "Học viên kết nối", value: ielts?.activeStudents ?? 0, tone: "blue" },
+    { icon: Activity, label: "Đang làm bài (24h)", value: liveRunning, hint: "test + practice", live: pulseRunning, tone: "emerald" },
+    { icon: FileText, label: "Bài thi 7 ngày", value: ielts?.testsRun7d ?? 0, tone: "violet" },
   ];
 
   const teacherMetrics: AppMetric[] = [
-    { icon: GraduationCap, label: "Giáo viên", value: teacher?.activeTeachers ?? 0 },
-    { icon: School, label: "Lớp đang hoạt động", value: liveClasses, live: pulseClasses },
-    { icon: CalendarClock, label: "Buổi học hôm nay", value: liveSessions, live: pulseSessions },
+    { icon: GraduationCap, label: "Giáo viên", value: teacher?.activeTeachers ?? 0, tone: "emerald" },
+    { icon: School, label: "Lớp đang hoạt động", value: liveClasses, live: pulseClasses, tone: "amber" },
+    { icon: CalendarClock, label: "Buổi học hôm nay", value: liveSessions, live: pulseSessions, tone: "sky" },
   ];
 
   return (
@@ -348,22 +360,33 @@ function AppCard({
       </div>
 
       <div className="grid grid-cols-3 gap-2">
-        {metrics.map((m, i) => (
-          <div
-            key={i}
-            className={cn(
-              "rounded-md bg-muted/40 p-2.5 flex flex-col gap-0.5 transition-colors",
-              m.live && "bg-emerald-500/15 ring-1 ring-emerald-500/30",
-            )}
-          >
-            <m.icon className={cn("h-3.5 w-3.5 mb-0.5", m.live ? "text-emerald-600" : "text-muted-foreground")} />
-            <span className={cn("text-lg font-bold font-display leading-none transition-colors", m.live && "text-emerald-600")}>
-              {loading ? <span className="inline-block h-5 w-8 bg-muted rounded animate-pulse" /> : m.value}
-            </span>
-            <span className="text-[10px] text-muted-foreground leading-tight">{m.label}</span>
-            {m.hint && <span className="text-[9px] text-muted-foreground/70">{m.hint}</span>}
-          </div>
-        ))}
+        {metrics.map((m, i) => {
+          const tone = m.tone ? TONE_CLASSES[m.tone] : null;
+          const liveActive = m.live;
+          return (
+            <div
+              key={i}
+              className={cn(
+                "rounded-md p-2.5 flex flex-col gap-0.5 min-h-[78px] transition-all ring-1",
+                tone ? cn(tone.bg, tone.ring) : "bg-muted/40 ring-transparent",
+                liveActive && "ring-2 ring-emerald-500/40 shadow-sm shadow-emerald-500/10",
+              )}
+            >
+              <m.icon className={cn(
+                "h-3.5 w-3.5 mb-0.5",
+                liveActive ? "text-emerald-600" : tone ? tone.icon : "text-muted-foreground",
+              )} />
+              <span className={cn(
+                "text-lg font-bold font-display leading-none transition-colors",
+                liveActive ? "text-emerald-600" : tone ? tone.value : "text-foreground",
+              )}>
+                {loading ? <span className="inline-block h-5 w-8 bg-muted rounded animate-pulse" /> : m.value}
+              </span>
+              <span className="text-[10px] text-muted-foreground leading-tight">{m.label}</span>
+              {m.hint && <span className="text-[9px] text-muted-foreground/70">{m.hint}</span>}
+            </div>
+          );
+        })}
       </div>
 
       {/* Sparkline 7 ngày */}
