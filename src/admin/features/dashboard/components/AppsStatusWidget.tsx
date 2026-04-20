@@ -117,6 +117,11 @@ function useAppsStatus() {
       const ieltsSeries = tSeries.map((v, i) => v + pSeries[i]);
       const teacherSeries = bucket(entries7d as any, "entry_date");
 
+      const ieltsTotal7d = ieltsSeries.reduce((a, b) => a + b, 0);
+      const ieltsPrev7dTotal = (testsPrev7d ?? 0) + (practicesPrev7d ?? 0);
+      const teacherTotal7d = teacherSeries.reduce((a, b) => a + b, 0);
+      const teacherPrev7dTotal = entriesPrev7d ?? 0;
+
       return {
         ielts: {
           activeStudents: activeStudents ?? 0,
@@ -124,12 +129,16 @@ function useAppsStatus() {
           practicesRun24h: practicesRun24h ?? 0,
           testsRun7d: testsRun7d ?? 0,
           series7d: ieltsSeries,
+          total7d: ieltsTotal7d,
+          prev7d: ieltsPrev7dTotal,
         },
         teacher: {
           activeTeachers: activeTeachers ?? 0,
           activeClasses: activeClasses ?? 0,
           todaySessions: (todayEntries || []).length,
           series7d: teacherSeries,
+          total7d: teacherTotal7d,
+          prev7d: teacherPrev7dTotal,
         },
         days,
       };
