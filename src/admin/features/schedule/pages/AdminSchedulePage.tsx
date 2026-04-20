@@ -1,19 +1,28 @@
-import { useState, useMemo, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
+import { format, addDays, subDays, isToday, startOfWeek, endOfWeek, isSameDay, startOfMonth, endOfMonth, addMonths, subMonths, eachDayOfInterval } from "date-fns";
+import { vi } from "date-fns/locale";
+import {
+  AlertTriangle,
+  CalendarDays,
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Clock3,
+  FilePlus2,
+  Layers,
+  Loader2,
+  Search,
+  Sparkles,
+  User,
+  Users,
+  XCircle,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@shared/hooks/useAuth";
-import {
-  format, addDays, subDays, isToday, startOfWeek, endOfWeek,
-  isSameDay, startOfMonth, endOfMonth, addMonths, subMonths,
-  eachDayOfInterval,
-} from "date-fns";
-import { vi } from "date-fns/locale";
+import { usePrograms } from "@shared/hooks/usePrograms";
 import { cn } from "@shared/lib/utils";
-import {
-  ChevronLeft, ChevronRight, CalendarDays, Loader2,
-  Layers, FileText, Library, Users, User, AlertTriangle,
-} from "lucide-react";
 import { Button } from "@shared/components/ui/button";
 import { Badge } from "@shared/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@shared/components/ui/popover";
@@ -23,8 +32,26 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useIsMobile } from "@shared/hooks/use-mobile";
 import { toast } from "sonner";
 import SessionPopover from "@shared/components/schedule/SessionPopover";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@shared/components/ui/tabs";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@shared/components/ui/card";
+import { Input } from "@shared/components/ui/input";
+import { Textarea } from "@shared/components/ui/textarea";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@shared/components/ui/table";
+import ScheduleSetupNotice from "@admin/features/schedule/components/ScheduleSetupNotice";
+import { useTeacherAvailability } from "@shared/hooks/useTeacherAvailability";
+import type { CandidateMatchResult, TeacherAvailabilityDraft, TeacherAvailabilityException, TeacherAvailabilityRule } from "@shared/types/availability";
+import {
+  describeException,
+  describeRule,
+  getTeacherWorkload,
+  matchTeachersForClassOpening,
+  normalizeExceptions,
+  normalizeRules,
+  relationMissing,
+  timeToMinutes,
+  validateAvailabilityDraft,
+} from "@shared/utils/availability";
 
-/* ═══ Types ═══ */
 interface SessionWithClass {
   entry: any;
   cls: any;
@@ -36,6 +63,10 @@ interface SessionWithClass {
 
 const DAY_LABELS: Record<number, string> = { 0: "CN", 1: "T2", 2: "T3", 3: "T4", 4: "T5", 5: "T6", 6: "T7" };
 const WEEK_DAYS_ORDER = [1, 2, 3, 4, 5, 6, 0];
+const GRID_START_HOUR = 7;
+const GRID_END_HOUR = 21;
+const HOUR_HEIGHT = 60;
+const GRID_HOURS = Array.from({ length: GRID_END_HOUR - GRID_START_HOUR }, (_, i) => GRID_START_HOUR + i);
 
 function fmtTime(t: string | null) {
   if (!t) return "—:—";
@@ -44,40 +75,26 @@ function fmtTime(t: string | null) {
 
 function fmtDuration(start: string | null, end: string | null) {
   if (!start || !end) return "";
-  const [sh, sm] = start.split(":").map(Number);
-  const [eh, em] = end.split(":").map(Number);
-  const mins = (eh * 60 + em) - (sh * 60 + sm);
+  const mins = timeToMinutes(end) - timeToMinutes(start);
   if (mins <= 0) return "";
   if (mins >= 60 && mins % 60 === 0) return `${mins / 60} giờ`;
   if (mins >= 60) return `${Math.floor(mins / 60)}h${mins % 60}`;
   return `${mins} phút`;
 }
 
-function parseTimeToMinutes(t: string | null): number {
-  if (!t) return 0;
-  const [h, m] = t.split(":").map(Number);
-  return h * 60 + (m || 0);
-}
-
-/* ═══ Data fetcher ═══ */
 async function fetchAllScheduleData(startDate: string, endDate: string) {
   const { data: classes } = await supabase
     .from("teachngo_classes")
     .select("id, class_name, class_type, level, program, room, default_start_time, default_end_time, study_plan_id, teacher_id")
     .eq("status", "active");
+
   if (!classes || classes.length === 0) return { sessions: [], classes: [] };
 
-  // Get teacher names
-  const teacherIds = [...new Set(classes.map(c => c.teacher_id).filter(Boolean))];
+  const teacherIds = [...new Set(classes.map((c) => c.teacher_id).filter(Boolean))];
   const teacherMap = new Map<string, string>();
   if (teacherIds.length > 0) {
-    const { data: teachers } = await supabase
-      .from("teachers")
-      .select("id, full_name")
-      .in("id", teacherIds);
-    for (const t of teachers || []) {
-      teacherMap.set(t.id, t.full_name || "—");
-    }
+    const { data: teachers } = await supabase.from("teachers").select("id, full_name").in("id", teacherIds);
+    for (const t of teachers || []) teacherMap.set(t.id, t.full_name || "—");
   }
 
   const planToClass = new Map<string, any>();
@@ -115,7 +132,8 @@ async function fetchAllScheduleData(startDate: string, endDate: string) {
     if (!entry.end_time && cls?.default_end_time) entry.end_time = cls.default_end_time;
     if (!entry.room && cls?.room) entry.room = cls.room;
     return {
-      entry, cls,
+      entry,
+      cls,
       sessionNumber: entry.session_number || 0,
       totalSessions: stats.total,
       doneSessions: stats.done,
@@ -127,20 +145,18 @@ async function fetchAllScheduleData(startDate: string, endDate: string) {
   return { sessions, classes };
 }
 
-/* ═══ Conflict detection ═══ */
 function detectConflicts(sessions: SessionWithClass[]): Set<string> {
   const conflictIds = new Set<string>();
   for (let i = 0; i < sessions.length; i++) {
     for (let j = i + 1; j < sessions.length; j++) {
-      const a = sessions[i], b = sessions[j];
-      if (!a.entry.room || !b.entry.room) continue;
-      if (a.entry.room !== b.entry.room) continue;
-      if (a.entry.entry_date !== b.entry.entry_date) continue;
-      if (!a.entry.start_time || !b.entry.start_time) continue;
-      const aStart = parseTimeToMinutes(a.entry.start_time);
-      const aEnd = parseTimeToMinutes(a.entry.end_time) || aStart + 60;
-      const bStart = parseTimeToMinutes(b.entry.start_time);
-      const bEnd = parseTimeToMinutes(b.entry.end_time) || bStart + 60;
+      const a = sessions[i];
+      const b = sessions[j];
+      if (!a.entry.room || !b.entry.room || a.entry.room !== b.entry.room) continue;
+      if (a.entry.entry_date !== b.entry.entry_date || !a.entry.start_time || !b.entry.start_time) continue;
+      const aStart = timeToMinutes(a.entry.start_time);
+      const aEnd = timeToMinutes(a.entry.end_time) || aStart + 60;
+      const bStart = timeToMinutes(b.entry.start_time);
+      const bEnd = timeToMinutes(b.entry.end_time) || bStart + 60;
       if (aStart < bEnd && bStart < aEnd) {
         conflictIds.add(a.entry.id);
         conflictIds.add(b.entry.id);
@@ -150,12 +166,7 @@ function detectConflicts(sessions: SessionWithClass[]): Set<string> {
   return conflictIds;
 }
 
-/* ═══ Session Card ═══ */
-function AdminSessionCard({ s, conflicted, navigate }: {
-  s: SessionWithClass;
-  conflicted: boolean;
-  navigate: ReturnType<typeof useNavigate>;
-}) {
+function AdminSessionCard({ s, conflicted }: { s: SessionWithClass; conflicted: boolean }) {
   const isPrivate = s.cls?.class_type === "private";
   const progressPct = s.totalSessions > 0 ? Math.round((s.doneSessions / s.totalSessions) * 100) : 0;
   const isDone = s.entry.plan_status === "done";
@@ -215,24 +226,13 @@ function AdminSessionCard({ s, conflicted, navigate }: {
   );
 }
 
-/* ═══ Weekly Grid ═══ */
-const GRID_START_HOUR = 7;
-const GRID_END_HOUR = 21;
-const HOUR_HEIGHT = 60;
-const GRID_HOURS = Array.from({ length: GRID_END_HOUR - GRID_START_HOUR }, (_, i) => GRID_START_HOUR + i);
-
-function AdminWeeklyGrid({ sessions, weekDates, conflictIds, navigate }: {
-  sessions: SessionWithClass[];
-  weekDates: Date[];
-  conflictIds: Set<string>;
-  navigate: ReturnType<typeof useNavigate>;
-}) {
+function AdminWeeklyGrid({ sessions, weekDates, conflictIds }: { sessions: SessionWithClass[]; weekDates: Date[]; conflictIds: Set<string> }) {
   const byDay = useMemo(() => {
     const map = new Map<number, SessionWithClass[]>();
     for (let i = 0; i < 7; i++) map.set(i, []);
     for (const s of sessions) {
       const d = new Date(s.entry.entry_date + "T00:00:00");
-      const idx = weekDates.findIndex(wd => isSameDay(wd, d));
+      const idx = weekDates.findIndex((wd) => isSameDay(wd, d));
       if (idx >= 0) map.get(idx)!.push(s);
     }
     return map;
@@ -245,17 +245,14 @@ function AdminWeeklyGrid({ sessions, weekDates, conflictIds, navigate }: {
       <div className="grid min-w-[700px]" style={{ gridTemplateColumns: "48px repeat(7, 1fr)" }}>
         <div className="border-b border-border" />
         {weekDates.map((d, i) => (
-          <div key={i} className={cn(
-            "text-center py-2 border-b border-l border-border text-xs font-medium",
-            isToday(d) && "bg-primary/5",
-          )}>
+          <div key={i} className={cn("text-center py-2 border-b border-l border-border text-xs font-medium", isToday(d) && "bg-primary/5")}>
             <span className="text-muted-foreground">{DAY_LABELS[d.getDay()]}</span>
             <br />
             <span className={cn("text-sm font-bold", isToday(d) && "text-primary")}>{format(d, "dd")}</span>
           </div>
         ))}
         <div className="relative" style={{ height: totalHeight }}>
-          {GRID_HOURS.map(h => (
+          {GRID_HOURS.map((h) => (
             <div key={h} className="absolute w-full text-right pr-2 text-[10px] text-muted-foreground" style={{ top: (h - GRID_START_HOUR) * HOUR_HEIGHT, height: HOUR_HEIGHT }}>
               {`${h}:00`}
             </div>
@@ -265,15 +262,15 @@ function AdminWeeklyGrid({ sessions, weekDates, conflictIds, navigate }: {
           const daySessions = byDay.get(dayIdx) || [];
           return (
             <div key={dayIdx} className={cn("relative border-l border-border", isToday(d) && "bg-primary/[0.02]")} style={{ height: totalHeight }}>
-              {GRID_HOURS.map(h => (
+              {GRID_HOURS.map((h) => (
                 <div key={h} className="absolute w-full border-t border-border/40" style={{ top: (h - GRID_START_HOUR) * HOUR_HEIGHT }} />
               ))}
-              {daySessions.map(s => {
-                const startMin = parseTimeToMinutes(s.entry.start_time);
-                const endMin = parseTimeToMinutes(s.entry.end_time);
+              {daySessions.map((s) => {
+                const startMin = timeToMinutes(s.entry.start_time);
+                const endMin = timeToMinutes(s.entry.end_time);
                 if (!s.entry.start_time) return null;
                 const top = ((startMin / 60) - GRID_START_HOUR) * HOUR_HEIGHT;
-                const height = Math.max(((endMin || startMin + 60) - startMin) / 60 * HOUR_HEIGHT, 30);
+                const height = Math.max((((endMin || startMin + 60) - startMin) / 60) * HOUR_HEIGHT, 30);
                 const isPrivate = s.cls?.class_type === "private";
                 const isConflict = conflictIds.has(s.entry.id);
                 const initials = s.teacherName ? s.teacherName.split(" ").map((w: string) => w[0]).join("").slice(0, 2) : "";
@@ -297,18 +294,14 @@ function AdminWeeklyGrid({ sessions, weekDates, conflictIds, navigate }: {
                     <button
                       className={cn(
                         "absolute left-1 right-1 rounded-md px-1.5 py-1 overflow-hidden text-left transition-opacity hover:opacity-80 border-l-[3px]",
-                        isPrivate
-                          ? "bg-destructive/10 border-destructive text-destructive dark:text-red-400"
-                          : "bg-emerald-500/10 border-emerald-500 text-emerald-800 dark:text-emerald-400",
+                        isPrivate ? "bg-destructive/10 border-destructive text-destructive dark:text-red-400" : "bg-emerald-500/10 border-emerald-500 text-emerald-800 dark:text-emerald-400",
                         s.entry.plan_status === "done" && "opacity-50",
                         isConflict && "ring-2 ring-destructive",
                       )}
                       style={{ top: Math.max(top, 0), height }}
                     >
                       <p className="text-[10px] font-medium truncate leading-tight">{s.cls?.class_name || "—"}</p>
-                      <p className="text-[9px] opacity-70 truncate">
-                        {initials && `(${initials}) `}{fmtTime(s.entry.start_time)}–{fmtTime(s.entry.end_time)}
-                      </p>
+                      <p className="text-[9px] opacity-70 truncate">{initials && `(${initials}) `}{fmtTime(s.entry.start_time)}–{fmtTime(s.entry.end_time)}</p>
                       {s.entry.room && <p className="text-[8px] opacity-60 truncate">{s.entry.room}</p>}
                     </button>
                   </SessionPopover>
@@ -322,8 +315,7 @@ function AdminWeeklyGrid({ sessions, weekDates, conflictIds, navigate }: {
   );
 }
 
-/* ═══ Main Page ═══ */
-export default function AdminSchedulePage() {
+function ScheduleCalendarTab() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
@@ -331,15 +323,12 @@ export default function AdminSchedulePage() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [mobileWeekDay, setMobileWeekDay] = useState(() => new Date().getDay());
-
-  // Filters
   const [filterTeacher, setFilterTeacher] = useState("all");
   const [filterLevel, setFilterLevel] = useState("all");
   const [filterProgram, setFilterProgram] = useState("all");
   const [filterType, setFilterType] = useState("all");
   const [filterRoom, setFilterRoom] = useState("all");
 
-  // Date ranges
   const weekStart = useMemo(() => startOfWeek(selectedDate, { weekStartsOn: 1 }), [selectedDate]);
   const weekDates = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)), [weekStart]);
   const weekEnd = weekDates[6];
@@ -351,11 +340,9 @@ export default function AdminSchedulePage() {
       const d = format(selectedDate, "yyyy-MM-dd");
       return { start: d, end: d };
     }
-    if (viewMode === "month") {
-      return { start: format(monthStart, "yyyy-MM-dd"), end: format(monthEnd, "yyyy-MM-dd") };
-    }
+    if (viewMode === "month") return { start: format(monthStart, "yyyy-MM-dd"), end: format(monthEnd, "yyyy-MM-dd") };
     return { start: format(weekStart, "yyyy-MM-dd"), end: format(weekEnd, "yyyy-MM-dd") };
-  }, [viewMode, selectedDate, weekStart, weekEnd, monthStart, monthEnd]);
+  }, [viewMode, selectedDate, monthStart, monthEnd, weekStart, weekEnd]);
 
   const { data, isLoading } = useQuery({
     queryKey: ["admin-schedule", queryRange.start, queryRange.end],
@@ -365,9 +352,6 @@ export default function AdminSchedulePage() {
   });
 
   const allSessions = data?.sessions || [];
-  const allClasses = data?.classes || [];
-
-  // Derive filter options from data
   const filterOptions = useMemo(() => {
     const teachers = new Set<string>();
     const levels = new Set<string>();
@@ -387,60 +371,47 @@ export default function AdminSchedulePage() {
     };
   }, [allSessions]);
 
-  // Apply filters
-  const filteredSessions = useMemo(() => {
-    return allSessions.filter(s => {
-      if (filterTeacher !== "all" && s.teacherName !== filterTeacher) return false;
-      if (filterLevel !== "all" && s.cls?.level !== filterLevel) return false;
-      if (filterProgram !== "all" && s.cls?.program !== filterProgram) return false;
-      if (filterType !== "all") {
-        if (filterType === "group" && s.cls?.class_type === "private") return false;
-        if (filterType === "private" && s.cls?.class_type !== "private") return false;
-      }
-      if (filterRoom !== "all" && s.entry.room !== filterRoom) return false;
-      return true;
-    });
-  }, [allSessions, filterTeacher, filterLevel, filterProgram, filterType, filterRoom]);
+  const filteredSessions = useMemo(() => allSessions.filter((s) => {
+    if (filterTeacher !== "all" && s.teacherName !== filterTeacher) return false;
+    if (filterLevel !== "all" && s.cls?.level !== filterLevel) return false;
+    if (filterProgram !== "all" && s.cls?.program !== filterProgram) return false;
+    if (filterType === "group" && s.cls?.class_type === "private") return false;
+    if (filterType === "private" && s.cls?.class_type !== "private") return false;
+    if (filterRoom !== "all" && s.entry.room !== filterRoom) return false;
+    return true;
+  }), [allSessions, filterTeacher, filterLevel, filterProgram, filterType, filterRoom]);
 
-  // Conflicts (on all sessions, not filtered)
   const conflictIds = useMemo(() => detectConflicts(allSessions), [allSessions]);
 
-  // Toast for conflicts
   useEffect(() => {
-    if (conflictIds.size > 0) {
-      const conflictSessions = allSessions.filter(s => conflictIds.has(s.entry.id));
-      const seen = new Set<string>();
-      for (const s of conflictSessions) {
-        const key = `${s.entry.room}-${s.entry.entry_date}-${s.entry.start_time}`;
-        if (!seen.has(key)) {
-          seen.add(key);
-          toast.warning(`Xung đột phòng: ${s.entry.room} lúc ${fmtTime(s.entry.start_time)}`, {
-            id: key,
-          });
-        }
-      }
+    if (conflictIds.size === 0) return;
+    const conflictSessions = allSessions.filter((s) => conflictIds.has(s.entry.id));
+    const seen = new Set<string>();
+    for (const s of conflictSessions) {
+      const key = `${s.entry.room}-${s.entry.entry_date}-${s.entry.start_time}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      toast.warning(`Xung đột phòng: ${s.entry.room} lúc ${fmtTime(s.entry.start_time)}`, { id: key });
     }
   }, [conflictIds, allSessions]);
 
-  // Day view sessions
   const dayViewSessions = useMemo(() => {
     if (viewMode === "day") return filteredSessions;
     if (isMobile && viewMode === "week") {
-      const targetDate = weekDates.find(d => d.getDay() === mobileWeekDay);
+      const targetDate = weekDates.find((d) => d.getDay() === mobileWeekDay);
       if (!targetDate) return [];
       const ds = format(targetDate, "yyyy-MM-dd");
-      return filteredSessions.filter(s => s.entry.entry_date === ds);
+      return filteredSessions.filter((s) => s.entry.entry_date === ds);
     }
     return filteredSessions;
-  }, [filteredSessions, viewMode, isMobile, mobileWeekDay, weekDates]);
+  }, [filteredSessions, isMobile, mobileWeekDay, viewMode, weekDates]);
 
-  // Month view: group by date
   const monthDays = useMemo(() => {
     if (viewMode !== "month") return [];
     const mStart = startOfWeek(monthStart, { weekStartsOn: 1 });
     const mEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
     return eachDayOfInterval({ start: mStart, end: mEnd });
-  }, [viewMode, monthStart, monthEnd]);
+  }, [monthEnd, monthStart, viewMode]);
 
   const monthSessionsByDate = useMemo(() => {
     const map = new Map<string, SessionWithClass[]>();
@@ -452,51 +423,46 @@ export default function AdminSchedulePage() {
     return map;
   }, [filteredSessions]);
 
-  // Nav
   const goPrev = () => {
-    if (viewMode === "day") setSelectedDate(prev => subDays(prev, 1));
-    else if (viewMode === "week") setSelectedDate(prev => addDays(prev, -7));
-    else setSelectedDate(prev => subMonths(prev, 1));
-  };
-  const goNext = () => {
-    if (viewMode === "day") setSelectedDate(prev => addDays(prev, 1));
-    else if (viewMode === "week") setSelectedDate(prev => addDays(prev, 7));
-    else setSelectedDate(prev => addMonths(prev, 1));
+    if (viewMode === "day") setSelectedDate((prev) => subDays(prev, 1));
+    else if (viewMode === "week") setSelectedDate((prev) => addDays(prev, -7));
+    else setSelectedDate((prev) => subMonths(prev, 1));
   };
 
-  const activeFilterCount = [filterTeacher, filterLevel, filterProgram, filterType, filterRoom].filter(f => f !== "all").length;
+  const goNext = () => {
+    if (viewMode === "day") setSelectedDate((prev) => addDays(prev, 1));
+    else if (viewMode === "week") setSelectedDate((prev) => addDays(prev, 7));
+    else setSelectedDate((prev) => addMonths(prev, 1));
+  };
+
+  const activeFilterCount = [filterTeacher, filterLevel, filterProgram, filterType, filterRoom].filter((f) => f !== "all").length;
 
   return (
-    <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-4">
-      {/* Header */}
+    <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="font-display text-xl font-bold tracking-tight flex items-center gap-2">
-          <CalendarDays className="h-5 w-5 text-primary" />
-          Lịch học
-        </h1>
+        <div>
+          <h2 className="font-display text-lg font-bold tracking-tight flex items-center gap-2">
+            <CalendarDays className="h-5 w-5 text-primary" />
+            Lịch học hiện tại
+          </h2>
+          <p className="text-xs text-muted-foreground mt-1">Giữ nguyên schedule view cũ, thêm filter và cảnh báo conflict phòng.</p>
+        </div>
 
         <div className="flex items-center gap-2 flex-wrap">
-          {/* View toggle */}
           <div className="flex rounded-lg border bg-muted p-0.5 gap-0.5">
-            {(["day", "week", "month"] as const).map(v => (
+            {(["day", "week", "month"] as const).map((v) => (
               <button
                 key={v}
                 onClick={() => setViewMode(v)}
-                className={cn(
-                  "px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors",
-                  viewMode === v ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
-                )}
+                className={cn("px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors", viewMode === v ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}
               >
                 {v === "day" ? "Ngày" : v === "week" ? "Tuần" : "Tháng"}
               </button>
             ))}
           </div>
 
-          {/* Date navigation */}
           <div className="flex items-center gap-0.5">
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={goPrev}>
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={goPrev}><ChevronLeft className="h-4 w-4" /></Button>
             <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
               <PopoverTrigger asChild>
                 <Button variant="outline" size="sm" className="h-7 px-2 text-xs gap-1.5">
@@ -505,231 +471,105 @@ export default function AdminSchedulePage() {
                     ? `${format(weekStart, "dd/MM")} – ${format(weekEnd, "dd/MM")}`
                     : viewMode === "month"
                     ? format(selectedDate, "MMMM yyyy", { locale: vi })
-                    : isToday(selectedDate) ? "Hôm nay" : format(selectedDate, "dd/MM", { locale: vi })}
+                    : isToday(selectedDate)
+                    ? "Hôm nay"
+                    : format(selectedDate, "dd/MM", { locale: vi })}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="center">
-                <Calendar
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={(d) => { if (d) { setSelectedDate(d); setCalendarOpen(false); } }}
-                  initialFocus
-                />
+                <Calendar mode="single" selected={selectedDate} onSelect={(d) => { if (d) { setSelectedDate(d); setCalendarOpen(false); } }} initialFocus className="p-3 pointer-events-auto" />
               </PopoverContent>
             </Popover>
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={goNext}>
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={goNext}><ChevronRight className="h-4 w-4" /></Button>
           </div>
         </div>
       </div>
 
-      {/* Filters */}
       <div className="flex flex-wrap gap-2">
         <Select value={filterTeacher} onValueChange={setFilterTeacher}>
-          <SelectTrigger className="h-8 w-auto min-w-[120px] text-xs">
-            <SelectValue placeholder="Giáo viên" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tất cả GV</SelectItem>
-            {filterOptions.teachers.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-          </SelectContent>
+          <SelectTrigger className="h-8 w-auto min-w-[140px] text-xs"><SelectValue placeholder="Giáo viên" /></SelectTrigger>
+          <SelectContent><SelectItem value="all">Tất cả GV</SelectItem>{filterOptions.teachers.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
         </Select>
-
         <Select value={filterLevel} onValueChange={setFilterLevel}>
-          <SelectTrigger className="h-8 w-auto min-w-[100px] text-xs">
-            <SelectValue placeholder="Level" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tất cả Level</SelectItem>
-            {filterOptions.levels.map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}
-          </SelectContent>
+          <SelectTrigger className="h-8 w-auto min-w-[100px] text-xs"><SelectValue placeholder="Level" /></SelectTrigger>
+          <SelectContent><SelectItem value="all">Tất cả Level</SelectItem>{filterOptions.levels.map((l) => <SelectItem key={l} value={l}>{l}</SelectItem>)}</SelectContent>
         </Select>
-
         <Select value={filterProgram} onValueChange={setFilterProgram}>
-          <SelectTrigger className="h-8 w-auto min-w-[100px] text-xs">
-            <SelectValue placeholder="Chương trình" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tất cả CT</SelectItem>
-            {filterOptions.programs.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
-          </SelectContent>
+          <SelectTrigger className="h-8 w-auto min-w-[120px] text-xs"><SelectValue placeholder="Chương trình" /></SelectTrigger>
+          <SelectContent><SelectItem value="all">Tất cả CT</SelectItem>{filterOptions.programs.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
         </Select>
-
         <Select value={filterType} onValueChange={setFilterType}>
-          <SelectTrigger className="h-8 w-auto min-w-[80px] text-xs">
-            <SelectValue placeholder="Loại" />
-          </SelectTrigger>
+          <SelectTrigger className="h-8 w-auto min-w-[90px] text-xs"><SelectValue placeholder="Loại" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Tất cả</SelectItem>
             <SelectItem value="group">Nhóm</SelectItem>
             <SelectItem value="private">1-1</SelectItem>
           </SelectContent>
         </Select>
-
         <Select value={filterRoom} onValueChange={setFilterRoom}>
-          <SelectTrigger className="h-8 w-auto min-w-[100px] text-xs">
-            <SelectValue placeholder="Phòng" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tất cả phòng</SelectItem>
-            {filterOptions.rooms.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
-          </SelectContent>
+          <SelectTrigger className="h-8 w-auto min-w-[100px] text-xs"><SelectValue placeholder="Phòng" /></SelectTrigger>
+          <SelectContent><SelectItem value="all">Tất cả phòng</SelectItem>{filterOptions.rooms.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
         </Select>
-
         {activeFilterCount > 0 && (
-          <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => {
-            setFilterTeacher("all");
-            setFilterLevel("all");
-            setFilterProgram("all");
-            setFilterType("all");
-            setFilterRoom("all");
-          }}>
+          <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setFilterTeacher("all"); setFilterLevel("all"); setFilterProgram("all"); setFilterType("all"); setFilterRoom("all"); }}>
             Xóa bộ lọc ({activeFilterCount})
           </Button>
         )}
       </div>
 
-      {/* Stats */}
       {!isLoading && (
         <div className="flex items-center gap-4 text-xs text-muted-foreground">
           <span>{filteredSessions.length} buổi học</span>
-          {conflictIds.size > 0 && (
-            <span className="flex items-center gap-1 text-destructive font-medium">
-              <AlertTriangle className="h-3 w-3" />
-              {Math.floor(conflictIds.size / 2)} xung đột
-            </span>
-          )}
+          {conflictIds.size > 0 && <span className="flex items-center gap-1 text-destructive font-medium"><AlertTriangle className="h-3 w-3" />{Math.floor(conflictIds.size / 2)} xung đột</span>}
         </div>
       )}
 
-      {/* Loading */}
-      {isLoading && (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-        </div>
+      {isLoading && <div className="flex items-center justify-center py-12"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>}
+
+      {!isLoading && viewMode === "day" && (
+        filteredSessions.length === 0 ? <div className="text-center py-8 text-sm text-muted-foreground">Không có buổi học</div> : <div className="space-y-2">{filteredSessions.map((s) => <AdminSessionCard key={s.entry.id} s={s} conflicted={conflictIds.has(s.entry.id)} />)}</div>
       )}
 
-      {/* Day label */}
-      {!isLoading && viewMode === "day" && (
-        <p className="text-xs text-muted-foreground">
-          {DAY_LABELS[selectedDate.getDay()]}, {format(selectedDate, "dd/MM/yyyy")}
-          {isToday(selectedDate) && <span className="ml-1.5 text-primary font-medium">· Hôm nay</span>}
-        </p>
-      )}
-
-      {/* ─── DAY VIEW ─── */}
-      {!isLoading && viewMode === "day" && (
-        filteredSessions.length === 0 ? (
-          <div className="text-center py-8 space-y-2">
-            <span className="text-3xl"></span>
-            <p className="text-sm text-muted-foreground">Không có buổi học</p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {filteredSessions.map(s => (
-              <AdminSessionCard key={s.entry.id} s={s} conflicted={conflictIds.has(s.entry.id)} navigate={navigate} />
-            ))}
+      {!isLoading && viewMode === "week" && (
+        !isMobile ? <AdminWeeklyGrid sessions={filteredSessions} weekDates={weekDates} conflictIds={conflictIds} /> : (
+          <div className="space-y-3">
+            <div className="flex gap-1 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-none">
+              {weekDates.map((d, i) => {
+                const dayNum = d.getDay();
+                const count = filteredSessions.filter((s) => s.entry.entry_date === format(d, "yyyy-MM-dd")).length;
+                const isSelected = mobileWeekDay === dayNum;
+                return (
+                  <button key={i} onClick={() => setMobileWeekDay(dayNum)} className={cn("flex flex-col items-center px-3 py-1.5 rounded-lg text-xs font-medium shrink-0 transition-colors min-w-[44px]", isSelected ? "bg-primary text-primary-foreground" : "bg-muted/50 text-muted-foreground hover:bg-muted", isToday(d) && !isSelected && "ring-1 ring-primary/40")}>
+                    <span className="text-[10px]">{DAY_LABELS[dayNum]}</span>
+                    <span className="font-bold">{format(d, "dd")}</span>
+                    {count > 0 && <span className={cn("w-1.5 h-1.5 rounded-full mt-0.5", isSelected ? "bg-primary-foreground" : "bg-primary")} />}
+                  </button>
+                );
+              })}
+            </div>
+            {dayViewSessions.length === 0 ? <div className="text-center py-6 text-xs text-muted-foreground">Không có buổi học</div> : <div className="space-y-2">{dayViewSessions.map((s) => <AdminSessionCard key={s.entry.id} s={s} conflicted={conflictIds.has(s.entry.id)} />)}</div>}
           </div>
         )
       )}
 
-      {/* ─── WEEK VIEW ─── */}
-      {!isLoading && viewMode === "week" && (
-        <>
-          {!isMobile && (
-            <AdminWeeklyGrid sessions={filteredSessions} weekDates={weekDates} conflictIds={conflictIds} navigate={navigate} />
-          )}
-          {isMobile && (
-            <div className="space-y-3">
-              <div className="flex gap-1 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-none">
-                {weekDates.map((d, i) => {
-                  const dayNum = d.getDay();
-                  const count = filteredSessions.filter(s => s.entry.entry_date === format(d, "yyyy-MM-dd")).length;
-                  const isSelected = mobileWeekDay === dayNum;
-                  return (
-                    <button
-                      key={i}
-                      onClick={() => setMobileWeekDay(dayNum)}
-                      className={cn(
-                        "flex flex-col items-center px-3 py-1.5 rounded-lg text-xs font-medium shrink-0 transition-colors min-w-[44px]",
-                        isSelected ? "bg-primary text-primary-foreground" : "bg-muted/50 text-muted-foreground hover:bg-muted",
-                        isToday(d) && !isSelected && "ring-1 ring-primary/40",
-                      )}
-                    >
-                      <span className="text-[10px]">{DAY_LABELS[dayNum]}</span>
-                      <span className="font-bold">{format(d, "dd")}</span>
-                      {count > 0 && <span className={cn("w-1.5 h-1.5 rounded-full mt-0.5", isSelected ? "bg-primary-foreground" : "bg-primary")} />}
-                    </button>
-                  );
-                })}
-              </div>
-              {dayViewSessions.length === 0 ? (
-                <div className="text-center py-6 space-y-1">
-                  <span className="text-2xl"></span>
-                  <p className="text-xs text-muted-foreground">Không có buổi học</p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {dayViewSessions.map(s => (
-                    <AdminSessionCard key={s.entry.id} s={s} conflicted={conflictIds.has(s.entry.id)} navigate={navigate} />
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-        </>
-      )}
-
-      {/* ─── MONTH VIEW ─── */}
       {!isLoading && viewMode === "month" && (
         <div className="overflow-x-auto">
           <div className="grid grid-cols-7 min-w-[600px]">
-            {/* Header */}
-            {WEEK_DAYS_ORDER.map(d => (
-              <div key={d} className="text-center text-[10px] font-medium text-muted-foreground py-1 border-b">
-                {DAY_LABELS[d]}
-              </div>
-            ))}
-            {/* Days */}
+            {WEEK_DAYS_ORDER.map((d) => <div key={d} className="text-center text-[10px] font-medium text-muted-foreground py-1 border-b">{DAY_LABELS[d]}</div>)}
             {monthDays.map((d, i) => {
               const ds = format(d, "yyyy-MM-dd");
               const daySessions = monthSessionsByDate.get(ds) || [];
               const isCurrentMonth = d.getMonth() === selectedDate.getMonth();
-              const hasConflict = daySessions.some(s => conflictIds.has(s.entry.id));
+              const hasConflict = daySessions.some((s) => conflictIds.has(s.entry.id));
               return (
-                <button
-                  key={i}
-                  onClick={() => { setSelectedDate(d); setViewMode("day"); }}
-                  className={cn(
-                    "border-b border-r p-1 min-h-[72px] text-left hover:bg-muted/50 transition-colors",
-                    !isCurrentMonth && "opacity-30",
-                    isToday(d) && "bg-primary/5",
-                    hasConflict && "ring-1 ring-inset ring-destructive/40",
-                  )}
-                >
-                  <span className={cn(
-                    "text-[11px] font-medium",
-                    isToday(d) && "text-primary font-bold",
-                  )}>{format(d, "d")}</span>
+                <button key={i} onClick={() => { setSelectedDate(d); setViewMode("day"); }} className={cn("border-b border-r p-1 min-h-[72px] text-left hover:bg-muted/50 transition-colors", !isCurrentMonth && "opacity-30", isToday(d) && "bg-primary/5", hasConflict && "ring-1 ring-inset ring-destructive/40")}>
+                  <span className={cn("text-[11px] font-medium", isToday(d) && "text-primary font-bold")}>{format(d, "d")}</span>
                   <div className="space-y-0.5 mt-0.5">
-                    {daySessions.slice(0, 3).map(s => {
+                    {daySessions.slice(0, 3).map((s) => {
                       const isPrivate = s.cls?.class_type === "private";
-                      return (
-                        <div
-                          key={s.entry.id}
-                          className={cn(
-                            "text-[8px] leading-tight truncate rounded px-1 py-0.5",
-                            isPrivate ? "bg-destructive/10 text-destructive" : "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
-                          )}
-                        >
-                          {fmtTime(s.entry.start_time)} {s.cls?.class_name?.slice(0, 10) || "—"}
-                        </div>
-                      );
+                      return <div key={s.entry.id} className={cn("text-[8px] leading-tight truncate rounded px-1 py-0.5", isPrivate ? "bg-destructive/10 text-destructive" : "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400")}>{fmtTime(s.entry.start_time)} {s.cls?.class_name?.slice(0, 10) || "—"}</div>;
                     })}
-                    {daySessions.length > 3 && (
-                      <span className="text-[8px] text-muted-foreground">+{daySessions.length - 3} thêm</span>
-                    )}
+                    {daySessions.length > 3 && <span className="text-[8px] text-muted-foreground">+{daySessions.length - 3} thêm</span>}
                   </div>
                 </button>
               );
@@ -737,6 +577,498 @@ export default function AdminSchedulePage() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function AvailabilityDraftsTab() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const { data, isLoading } = useTeacherAvailability();
+  const [teacherFilter, setTeacherFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("pending");
+  const [reviewNote, setReviewNote] = useState<Record<string, string>>({});
+  const [actingId, setActingId] = useState<string | null>(null);
+
+  const drafts = data?.drafts || [];
+  const teachers = data?.teachers || [];
+  const classes = data?.classes || [];
+  const classSessions = data?.classSessions || [];
+  const teacherMap = useMemo(() => new Map(teachers.map((t) => [t.id, t])), [teachers]);
+
+  const filteredDrafts = useMemo(() => drafts.filter((draft) => {
+    if (teacherFilter !== "all" && draft.teacher_id !== teacherFilter) return false;
+    if (statusFilter !== "all" && draft.status !== statusFilter) return false;
+    return true;
+  }), [drafts, statusFilter, teacherFilter]);
+
+  const refresh = async () => {
+    await queryClient.invalidateQueries({ queryKey: ["teacher-availability-admin"] });
+  };
+
+  const updateDraftStatus = async (draftId: string, status: string) => {
+    setActingId(draftId);
+    const note = reviewNote[draftId]?.trim() || null;
+    const { error } = await (supabase.from as any)("teacher_availability_drafts")
+      .update({ status, review_note: note, reviewed_at: new Date().toISOString(), reviewed_by: user?.id || null, updated_at: new Date().toISOString() })
+      .eq("id", draftId);
+    setActingId(null);
+    if (error) {
+      toast.error(`Không thể cập nhật draft: ${error.message}`);
+      return;
+    }
+    toast.success(status === "needs_changes" ? "Đã yêu cầu giáo viên chỉnh sửa" : status === "rejected" ? "Đã từ chối draft" : "Đã cập nhật trạng thái");
+    refresh();
+  };
+
+  const approveAndApply = async (draft: TeacherAvailabilityDraft) => {
+    setActingId(draft.id);
+    const rules = normalizeRules(draft.availability_rules, draft.teacher_id);
+    const exceptions = normalizeExceptions(draft.availability_exceptions, draft.teacher_id);
+    const validation = validateAvailabilityDraft(draft, classes, classSessions);
+    if (!validation.can_apply) {
+      toast.error("Draft chưa đủ điều kiện apply: cần cách hiện tại ít nhất 2 tuần và không conflict lịch lớp.");
+      setActingId(null);
+      return;
+    }
+
+    const rulesTable = (supabase.from as any)("teacher_availability_rules");
+    const exceptionsTable = (supabase.from as any)("teacher_availability_exceptions");
+    const draftsTable = (supabase.from as any)("teacher_availability_drafts");
+
+    const { error: deleteRulesError } = await rulesTable.delete().eq("teacher_id", draft.teacher_id).eq("effective_from", draft.effective_from);
+    if (deleteRulesError && !relationMissing(deleteRulesError)) {
+      toast.error(deleteRulesError.message);
+      setActingId(null);
+      return;
+    }
+
+    const exceptionDates = exceptions.map((item) => item.exception_date);
+    if (exceptionDates.length > 0) {
+      const { error: deleteExceptionsError } = await exceptionsTable.delete().eq("teacher_id", draft.teacher_id).in("exception_date", exceptionDates);
+      if (deleteExceptionsError && !relationMissing(deleteExceptionsError)) {
+        toast.error(deleteExceptionsError.message);
+        setActingId(null);
+        return;
+      }
+    }
+
+    if (rules.length > 0) {
+      const { error: insertRulesError } = await rulesTable.insert(rules.map((rule) => ({ ...rule, updated_at: new Date().toISOString() })));
+      if (insertRulesError) {
+        toast.error(insertRulesError.message);
+        setActingId(null);
+        return;
+      }
+    }
+    if (exceptions.length > 0) {
+      const { error: insertExceptionsError } = await exceptionsTable.insert(exceptions.map((item) => ({ ...item, updated_at: new Date().toISOString() })));
+      if (insertExceptionsError) {
+        toast.error(insertExceptionsError.message);
+        setActingId(null);
+        return;
+      }
+    }
+
+    const { error: updateDraftError } = await draftsTable
+      .update({
+        status: "applied",
+        review_note: reviewNote[draft.id]?.trim() || null,
+        validation_summary: validation,
+        reviewed_at: new Date().toISOString(),
+        reviewed_by: user?.id || null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", draft.id);
+
+    setActingId(null);
+    if (updateDraftError) {
+      toast.error(updateDraftError.message);
+      return;
+    }
+    toast.success("Đã duyệt và apply lịch rảnh vào DB gốc");
+    refresh();
+  };
+
+  if (data?.setupMissing) {
+    return <ScheduleSetupNotice title="Module lịch rảnh đang chờ DB schema" message={data.setupMessage} />;
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div>
+          <h2 className="font-display text-lg font-bold flex items-center gap-2"><Clock3 className="h-5 w-5 text-primary" />Duyệt đăng ký lịch rảnh</h2>
+          <p className="text-xs text-muted-foreground mt-1">Draft chỉ được apply vào bảng gốc nếu không conflict lịch lớp và effective_from cách hôm nay ít nhất 14 ngày.</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Select value={teacherFilter} onValueChange={setTeacherFilter}>
+            <SelectTrigger className="h-9 min-w-[160px] text-xs"><SelectValue placeholder="Giáo viên" /></SelectTrigger>
+            <SelectContent><SelectItem value="all">Tất cả giáo viên</SelectItem>{teachers.map((t) => <SelectItem key={t.id} value={t.id}>{t.full_name}</SelectItem>)}</SelectContent>
+          </Select>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="h-9 min-w-[150px] text-xs"><SelectValue placeholder="Trạng thái" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tất cả trạng thái</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="needs_changes">Needs changes</SelectItem>
+              <SelectItem value="rejected">Rejected</SelectItem>
+              <SelectItem value="applied">Applied</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {isLoading ? <div className="flex items-center justify-center py-12"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div> : filteredDrafts.length === 0 ? (
+        <Card><CardContent className="py-10 text-center text-sm text-muted-foreground">Chưa có draft lịch rảnh nào theo bộ lọc hiện tại.</CardContent></Card>
+      ) : (
+        <div className="space-y-4">
+          {filteredDrafts.map((draft) => {
+            const teacher = teacherMap.get(draft.teacher_id);
+            const validation = validateAvailabilityDraft(draft, classes, classSessions);
+            const rules = normalizeRules(draft.availability_rules, draft.teacher_id);
+            const exceptions = normalizeExceptions(draft.availability_exceptions, draft.teacher_id);
+            const isBusy = actingId === draft.id;
+
+            return (
+              <Card key={draft.id} className="overflow-hidden">
+                <CardHeader className="pb-4">
+                  <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <CardTitle className="text-base">{teacher?.full_name || draft.teacher_id}</CardTitle>
+                        <Badge variant="outline">Hiệu lực từ {draft.effective_from}</Badge>
+                        <Badge variant={draft.status === "applied" ? "default" : "secondary"}>{draft.status}</Badge>
+                      </div>
+                      <CardDescription>
+                        {validation.can_apply ? "Đủ điều kiện apply vào bảng gốc." : "Chưa đủ điều kiện apply, sẽ giữ ở draft/pending cho đến khi admin duyệt hoặc yêu cầu chỉnh sửa."}
+                      </CardDescription>
+                    </div>
+                    <div className="flex flex-wrap gap-2 text-xs">
+                      <Badge variant={validation.lead_time_ok ? "default" : "destructive"}>Lead time: {validation.lead_time_days} ngày</Badge>
+                      <Badge variant={validation.conflict_count === 0 ? "default" : "destructive"}>Conflict: {validation.conflict_count}</Badge>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Recurring slots</p>
+                        <div className="flex flex-wrap gap-2">{rules.length === 0 ? <span className="text-sm text-muted-foreground">Không có slot recurring</span> : rules.map((rule, idx) => <Badge key={`${draft.id}-rule-${idx}`} variant="outline">{describeRule(rule)}</Badge>)}</div>
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Exceptions</p>
+                        <div className="flex flex-wrap gap-2">{exceptions.length === 0 ? <span className="text-sm text-muted-foreground">Không có exception</span> : exceptions.map((item, idx) => <Badge key={`${draft.id}-exception-${idx}`} variant="outline">{describeException(item)}</Badge>)}</div>
+                      </div>
+                    </div>
+                    <div className="rounded-xl border bg-muted/30 p-3 space-y-2">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Validation summary</p>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex items-center gap-2">{validation.lead_time_ok ? <CheckCircle2 className="h-4 w-4 text-primary" /> : <XCircle className="h-4 w-4 text-destructive" />}<span>Cách ngày hiện tại ít nhất 2 tuần</span></div>
+                        <div className="flex items-center gap-2">{validation.conflict_count === 0 ? <CheckCircle2 className="h-4 w-4 text-primary" /> : <XCircle className="h-4 w-4 text-destructive" />}<span>Không conflict với lớp đang dạy</span></div>
+                      </div>
+                      {validation.conflicts.length > 0 && (
+                        <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-xs text-muted-foreground space-y-1 max-h-36 overflow-auto">
+                          {validation.conflicts.map((conflict, idx) => <p key={`${draft.id}-conflict-${idx}`}>• {conflict.class_name} · {conflict.date || DAY_LABELS[conflict.weekday ?? 0]} · {fmtTime(conflict.start_time)}–{fmtTime(conflict.end_time)}</p>)}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <Textarea placeholder="Ghi chú review cho giáo viên..." value={reviewNote[draft.id] || draft.review_note || ""} onChange={(e) => setReviewNote((prev) => ({ ...prev, [draft.id]: e.target.value }))} className="min-h-[88px]" />
+
+                  <div className="flex flex-wrap gap-2 justify-end">
+                    <Button variant="outline" disabled={isBusy} onClick={() => updateDraftStatus(draft.id, "needs_changes")}>Yêu cầu sửa</Button>
+                    <Button variant="outline" disabled={isBusy} onClick={() => updateDraftStatus(draft.id, "rejected")}>Từ chối</Button>
+                    <Button disabled={isBusy || !validation.can_apply} onClick={() => approveAndApply(draft)}>
+                      {isBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                      Duyệt & Apply
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ClassOpeningTab() {
+  const { user } = useAuth();
+  const { programs } = usePrograms();
+  const queryClient = useQueryClient();
+  const { data, isLoading } = useTeacherAvailability();
+  const [className, setClassName] = useState("");
+  const [targetDate, setTargetDate] = useState(() => format(addDays(new Date(), 14), "yyyy-MM-dd"));
+  const [startTime, setStartTime] = useState("19:00");
+  const [endTime, setEndTime] = useState("20:30");
+  const [level, setLevel] = useState("all");
+  const [program, setProgram] = useState("all");
+  const [mode, setMode] = useState<"online" | "offline" | "hybrid">("hybrid");
+  const [room, setRoom] = useState("");
+  const [selectedTeacherId, setSelectedTeacherId] = useState("");
+  const [note, setNote] = useState("");
+  const [creating, setCreating] = useState(false);
+
+  const teachers = data?.teachers || [];
+  const classes = data?.classes || [];
+  const rules = data?.rules || [];
+  const exceptions = data?.exceptions || [];
+  const capabilities = data?.capabilities || [];
+  const classSessions = data?.classSessions || [];
+
+  const levelOptions = useMemo(() => [...new Set(classes.map((cls) => cls.level).filter(Boolean))].sort(), [classes]);
+  const programOptions = useMemo(() => {
+    const dbPrograms = programs.map((item) => item.name).filter(Boolean);
+    const classPrograms = classes.map((cls) => cls.program).filter(Boolean) as string[];
+    return [...new Set([...dbPrograms, ...classPrograms])].sort();
+  }, [classes, programs]);
+
+  const candidates = useMemo<CandidateMatchResult[]>(() => {
+    if (!targetDate || !startTime || !endTime) return [];
+    return matchTeachersForClassOpening({
+      teachers,
+      capabilities,
+      rules,
+      exceptions,
+      classes,
+      classSessions,
+      date: targetDate,
+      start_time: startTime,
+      end_time: endTime,
+      level: level === "all" ? null : level,
+      program: program === "all" ? null : program,
+      mode,
+    });
+  }, [capabilities, classes, classSessions, endTime, exceptions, level, mode, program, rules, startTime, targetDate, teachers]);
+
+  const selectedCandidate = useMemo(() => candidates.find((item) => item.teacher.id === selectedTeacherId), [candidates, selectedTeacherId]);
+
+  useEffect(() => {
+    if (!selectedTeacherId) return;
+    if (!candidates.some((item) => item.teacher.id === selectedTeacherId)) setSelectedTeacherId("");
+  }, [candidates, selectedTeacherId]);
+
+  const createClass = async () => {
+    if (!className.trim()) { toast.error("Nhập tên lớp trước"); return; }
+    if (!selectedCandidate) { toast.error("Chọn giáo viên phù hợp trước"); return; }
+    setCreating(true);
+    const weekday = DAY_LABELS[new Date(`${targetDate}T00:00:00`).getDay()];
+    const schedule = `${weekday} (${startTime}-${endTime})`;
+    const selectedProgram = program === "all" ? null : program;
+    const selectedLevel = level === "all" ? null : level;
+
+    const { error } = await supabase.from("teachngo_classes").insert({
+      teachngo_class_id: `AUTO-${Date.now()}`,
+      class_name: className.trim(),
+      teacher_id: selectedCandidate.teacher.id,
+      teacher_name: selectedCandidate.teacher.full_name,
+      class_type: "group",
+      data_source: "manual",
+      level: selectedLevel,
+      program: selectedProgram,
+      schedule,
+      start_date: targetDate,
+      room: room.trim() || null,
+      course_title: selectedProgram,
+      status: "active",
+      default_start_time: startTime,
+      default_end_time: endTime,
+      notes: note.trim() || null,
+    } as any);
+
+    setCreating(false);
+    if (error) {
+      toast.error(`Không thể mở lớp: ${error.message}`);
+      return;
+    }
+    toast.success(`Đã mở lớp và gán cho ${selectedCandidate.teacher.full_name}`);
+    setClassName("");
+    setRoom("");
+    setNote("");
+    setSelectedTeacherId("");
+    await queryClient.invalidateQueries({ queryKey: ["admin-schedule"] });
+    await queryClient.invalidateQueries({ queryKey: ["teacher-availability-admin"] });
+  };
+
+  if (data?.setupMissing) {
+    return <ScheduleSetupNotice title="Matching giáo viên cần schema availability" message={data.setupMessage} />;
+  }
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h2 className="font-display text-lg font-bold flex items-center gap-2"><FilePlus2 className="h-5 w-5 text-primary" />Mở lớp theo slot mong muốn</h2>
+        <p className="text-xs text-muted-foreground mt-1">Nhập ngày/giờ, level, chương trình và mode dạy; hệ thống chỉ hiện các giáo viên thật sự cover được slot đó.</p>
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Thông tin lớp cần mở</CardTitle>
+            <CardDescription>Filter theo lịch rảnh + level/khoá dạy được + online/offline + workload hiện tại.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="space-y-1.5">
+                <p className="text-xs font-medium text-muted-foreground">Tên lớp</p>
+                <Input value={className} onChange={(e) => setClassName(e.target.value)} placeholder="VD: IELTS Foundation T4-T6" />
+              </div>
+              <div className="space-y-1.5">
+                <p className="text-xs font-medium text-muted-foreground">Ngày mở lớp</p>
+                <Input type="date" value={targetDate} onChange={(e) => setTargetDate(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <p className="text-xs font-medium text-muted-foreground">Giờ bắt đầu</p>
+                <Input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <p className="text-xs font-medium text-muted-foreground">Giờ kết thúc</p>
+                <Input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <p className="text-xs font-medium text-muted-foreground">Level lớp</p>
+                <Select value={level} onValueChange={setLevel}>
+                  <SelectTrigger><SelectValue placeholder="Chọn level" /></SelectTrigger>
+                  <SelectContent><SelectItem value="all">Bất kỳ level</SelectItem>{levelOptions.map((item) => <SelectItem key={item} value={item!}>{item}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <p className="text-xs font-medium text-muted-foreground">Chương trình</p>
+                <Select value={program} onValueChange={setProgram}>
+                  <SelectTrigger><SelectValue placeholder="Chọn chương trình" /></SelectTrigger>
+                  <SelectContent><SelectItem value="all">Bất kỳ chương trình</SelectItem>{programOptions.map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <p className="text-xs font-medium text-muted-foreground">Hình thức dạy</p>
+                <Select value={mode} onValueChange={(value: any) => setMode(value)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="hybrid">Hybrid / linh hoạt</SelectItem>
+                    <SelectItem value="online">Online</SelectItem>
+                    <SelectItem value="offline">Offline</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <p className="text-xs font-medium text-muted-foreground">Phòng học</p>
+                <Input value={room} onChange={(e) => setRoom(e.target.value)} placeholder="VD: Room 301" />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <p className="text-xs font-medium text-muted-foreground">Ghi chú mở lớp</p>
+              <Textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Ví dụ: cần teacher có kinh nghiệm foundation + ưu tiên đã từng dạy evening slot" className="min-h-[90px]" />
+            </div>
+
+            <div className="rounded-xl border bg-muted/30 p-3 text-xs text-muted-foreground space-y-1">
+              <p>• Slot yêu cầu: <span className="text-foreground font-medium">{targetDate} · {startTime}–{endTime}</span></p>
+              <p>• Hệ thống sort giáo viên theo <span className="text-foreground font-medium">ít lớp hơn</span> rồi đến <span className="text-foreground font-medium">ít phút dạy trong tuần hơn</span>.</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div>
+                <CardTitle className="text-base">Giáo viên có thể dạy</CardTitle>
+                <CardDescription>{candidates.length} giáo viên khớp slot hiện tại.</CardDescription>
+              </div>
+              <Badge variant="outline" className="gap-1"><Search className="h-3 w-3" />Auto match</Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {isLoading ? <div className="flex items-center justify-center py-16"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div> : candidates.length === 0 ? (
+              <div className="rounded-xl border border-dashed p-10 text-center space-y-2">
+                <Sparkles className="h-6 w-6 text-muted-foreground mx-auto" />
+                <p className="text-sm font-medium">Không tìm thấy giáo viên phù hợp</p>
+                <p className="text-xs text-muted-foreground">Thử nới điều kiện level/chương trình hoặc đổi slot dạy.</p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Chọn</TableHead>
+                    <TableHead>Giáo viên</TableHead>
+                    <TableHead>Lý do match</TableHead>
+                    <TableHead className="text-right">Workload</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {candidates.map((candidate) => {
+                    const selected = selectedTeacherId === candidate.teacher.id;
+                    return (
+                      <TableRow key={candidate.teacher.id} className={cn(selected && "bg-primary/5")}> 
+                        <TableCell className="w-16">
+                          <Button variant={selected ? "default" : "outline"} size="sm" className="h-8" onClick={() => setSelectedTeacherId(candidate.teacher.id)}>
+                            {selected ? "Đã chọn" : "Chọn"}
+                          </Button>
+                        </TableCell>
+                        <TableCell>
+                          <div className="space-y-1">
+                            <p className="font-medium">{candidate.teacher.full_name}</p>
+                            <p className="text-xs text-muted-foreground">{candidate.teacher.email || candidate.teacher.phone || "Chưa có email/SĐT"}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1.5">{candidate.matchingReasons.map((reason) => <Badge key={`${candidate.teacher.id}-${reason}`} variant="outline">{reason}</Badge>)}</div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="space-y-1 text-xs text-muted-foreground">
+                            <p>{candidate.activeClassCount} lớp active</p>
+                            <p>{Math.round(candidate.weeklyMinutes / 60)}h/tuần</p>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            )}
+
+            {selectedCandidate && (
+              <div className="rounded-xl border bg-primary/5 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold">Sẽ mở lớp cho: {selectedCandidate.teacher.full_name}</p>
+                  <p className="text-xs text-muted-foreground mt-1">Workload hiện tại: {selectedCandidate.activeClassCount} lớp · {Math.round(selectedCandidate.weeklyMinutes / 60)}h/tuần</p>
+                </div>
+                <Button onClick={createClass} disabled={creating || !className.trim()}>
+                  {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <FilePlus2 className="h-4 w-4" />}
+                  Mở lớp ngay
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+export default function AdminSchedulePage() {
+  return (
+    <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-4">
+      <div>
+        <h1 className="font-display text-xl md:text-2xl font-bold tracking-tight">Lịch học & phân bổ giáo viên</h1>
+        <p className="text-sm text-muted-foreground mt-1">Quản lý lịch dạy hiện tại, duyệt draft lịch rảnh từ Teacher’s Hub và mở lớp mới theo slot mong muốn.</p>
+      </div>
+
+      <Tabs defaultValue="calendar" className="space-y-4">
+        <TabsList className="h-auto w-full justify-start rounded-xl bg-muted/60 p-1 flex-wrap">
+          <TabsTrigger value="calendar" className="gap-1.5"><CalendarDays className="h-3.5 w-3.5" />Lịch học</TabsTrigger>
+          <TabsTrigger value="availability" className="gap-1.5"><Clock3 className="h-3.5 w-3.5" />Duyệt lịch rảnh</TabsTrigger>
+          <TabsTrigger value="opening" className="gap-1.5"><FilePlus2 className="h-3.5 w-3.5" />Mở lớp</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="calendar"><ScheduleCalendarTab /></TabsContent>
+        <TabsContent value="availability"><AvailabilityDraftsTab /></TabsContent>
+        <TabsContent value="opening"><ClassOpeningTab /></TabsContent>
+      </Tabs>
     </div>
   );
 }
