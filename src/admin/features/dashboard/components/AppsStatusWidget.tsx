@@ -538,6 +538,7 @@ function Sparkline({
           <div className="font-bold tabular-nums" style={{ color }}>
             {hover.v} <span className="text-muted-foreground font-normal">{valueLabel?.replace(/\s*\/\s*ngày$/i, "") ?? ""}</span>
           </div>
+          {onPick && <div className="text-muted-foreground/70 text-[9px] mt-0.5">Click để xem chi tiết</div>}
         </div>
       )}
     </div>
