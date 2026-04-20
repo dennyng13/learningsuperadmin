@@ -18,7 +18,7 @@ import {
   Tooltip, TooltipContent, TooltipTrigger,
 } from "@shared/components/ui/tooltip";
 import {
-  Search, Plus, Pencil, Trash2, Link2, Unlink, ChevronLeft, ChevronRight, ArrowUpDown, RefreshCw, Loader2, Check, X, Copy, ExternalLink, Users, Clock,
+  Search, Plus, Pencil, Trash2, Link2, Unlink, ChevronLeft, ChevronRight, ArrowUpDown, RefreshCw, Loader2, Check, X, Copy, ExternalLink, Users, Clock, Shield, ShieldCheck, UserCog,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -39,6 +39,7 @@ type Teacher = {
 
 type SortCol = "full_name" | "status" | "email";
 type SortDir = "asc" | "desc";
+type LinkedAccountRole = "super_admin" | "admin" | "teacher" | "user" | "guest";
 
 const PAGE_SIZE = 20;
 
@@ -68,6 +69,7 @@ export default function TeachersTab() {
   const [selectedClassIds, setSelectedClassIds] = useState<Set<string>>(new Set());
   const [classSearch, setClassSearch] = useState("");
   const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [linkedRoleMap, setLinkedRoleMap] = useState<Record<string, LinkedAccountRole | null>>({});
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [syncPreview, setSyncPreview] = useState<SyncPreviewData | null>(null);
@@ -178,9 +180,47 @@ export default function TeachersTab() {
     if (error) {
       toast.error("Lỗi tải danh sách giáo viên");
     } else {
-      setTeachers(data || []);
+      const nextTeachers = data || [];
+      setTeachers(nextTeachers);
+
+      const linkedUserIds = nextTeachers
+        .map((teacher) => teacher.linked_user_id)
+        .filter((id): id is string => Boolean(id));
+
+      if (linkedUserIds.length === 0) {
+        setLinkedRoleMap({});
+      } else {
+        const { data: roleRows } = await supabase
+          .from("user_roles")
+          .select("user_id, role")
+          .in("user_id", linkedUserIds);
+
+        const rolePriority: LinkedAccountRole[] = ["super_admin", "admin", "teacher", "user", "guest"];
+        const nextRoleMap = linkedUserIds.reduce<Record<string, LinkedAccountRole | null>>((acc, userId) => {
+          const roles = ((roleRows || []) as { user_id: string; role: LinkedAccountRole }[])
+            .filter((row) => row.user_id === userId)
+            .map((row) => row.role);
+          acc[userId] = rolePriority.find((role) => roles.includes(role)) ?? null;
+          return acc;
+        }, {});
+
+        setLinkedRoleMap(nextRoleMap);
+      }
     }
     setLoading(false);
+  };
+
+  const getLinkedRoleBadge = (role: LinkedAccountRole | null) => {
+    switch (role) {
+      case "super_admin":
+        return <Badge variant="secondary" className="text-[10px] gap-1"><ShieldCheck className="h-3 w-3" />Super Admin</Badge>;
+      case "admin":
+        return <Badge variant="secondary" className="text-[10px] gap-1"><Shield className="h-3 w-3" />Admin</Badge>;
+      case "teacher":
+        return <Badge variant="outline" className="text-[10px] gap-1"><UserCog className="h-3 w-3" />Giáo viên</Badge>;
+      default:
+        return null;
+    }
   };
 
   const fetchClasses = async () => {
@@ -604,9 +644,12 @@ export default function TeachersTab() {
                   </td>
                   <td className="px-4 py-2.5 text-center">
                     {t.linked_user_id ? (
-                      <Badge variant="outline" className="text-[10px] gap-1 text-primary border-primary/30">
-                        <Link2 className="h-3 w-3" /> Đã liên kết
-                      </Badge>
+                      <div className="flex flex-col items-center gap-1">
+                        <Badge variant="outline" className="text-[10px] gap-1 text-primary border-primary/30">
+                          <Link2 className="h-3 w-3" /> Đã liên kết
+                        </Badge>
+                        {getLinkedRoleBadge(linkedRoleMap[t.linked_user_id] ?? null)}
+                      </div>
                     ) : (
                       <span className="text-[11px] text-muted-foreground">Chưa</span>
                     )}
