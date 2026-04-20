@@ -6,7 +6,12 @@ export default {
   prefix: "",
   safelist: [
     // Program palette — dynamic classes from src/shared/utils/programColors.ts
-    ...["emerald", "blue", "violet", "orange", "rose", "cyan", "amber", "pink", "teal", "indigo"].flatMap((c) => [
+    // Must match ALLOWED_COLORS in that file.
+    ...[
+      "emerald", "blue", "violet", "orange", "rose", "cyan", "amber", "pink",
+      "teal", "indigo", "slate", "purple", "red", "yellow", "green", "sky",
+      "fuchsia", "lime",
+    ].flatMap((c) => [
       // hero gradient
       `from-${c}-500`, `to-${c}-700`,
       // banner soft gradient
@@ -19,6 +24,12 @@ export default {
       `dark:border-${c}-700`, `dark:bg-${c}-950/40`,
       // badge active
       `bg-${c}-200`, `text-${c}-800`,
+      // progress + accent borders
+      `bg-${c}-500`, `border-t-${c}-500`, `border-l-${c}-500`,
+      // soft accent surfaces
+      `bg-${c}-500/10`, `hover:bg-${c}-500/15`,
+      // subtle border + ring
+      `border-${c}-500/20`, `ring-${c}-500/40`,
     ]),
   ],
   theme: {

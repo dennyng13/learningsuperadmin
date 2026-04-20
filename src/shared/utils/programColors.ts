@@ -1,117 +1,131 @@
 /**
- * Program color system — deterministic, shared across student/teacher views.
- * Same program name → same palette everywhere.
+ * Program color/icon/label system — driven by the shared `programs` DB table.
+ *
+ * Lookup priority (in `getProgramPalette` / `getProgramIcon` / `getProgramLabel`):
+ *   1. Exact match against cached `programs.key` (lower-cased).
+ *   2. Exact match against cached `programs.name` (lower-cased).
+ *   3. Substring match against cached programs (e.g. "IELTS Junior" → key 'ielts').
+ *   4. Static fallback map for the canonical 3 programs (ielts/wre/private).
+ *   5. Hash-based palette for unknown programs (deterministic, color always
+ *      stable for a given input string).
+ *
+ * Tailwind classes are built from a color name + the safelist in
+ * `tailwind.config.ts` ensures every combination is generated.
  */
+import {
+  GraduationCap,
+  BookOpen,
+  Sparkles,
+  CalendarDays,
+  Briefcase,
+  User,
+  Users,
+  Award,
+  Globe,
+  Languages,
+  Trophy,
+  Target,
+  Rocket,
+  Star,
+  Heart,
+  type LucideIcon,
+} from "lucide-react";
+import { getCachedPrograms, type Program } from "@shared/hooks/usePrograms";
 
 export interface ProgramPalette {
-  /** Tailwind class for outlined badge bg/text/border */
+  /** Outlined badge (light/dark variants) */
   badge: string;
-  /** Solid fill class (active state) */
+  /** Active/solid badge state */
   badgeActive: string;
   /** Soft tint background for icon container */
   iconBg: string;
   /** Icon foreground color */
   iconText: string;
-  /** Banner gradient (soft tint → card fade) — for tinted info cards */
+  /** Soft banner gradient (tinted info cards) */
   bannerGradient: string;
   /** Border color used by banner */
   bannerBorder: string;
-  /** Solid hero gradient (vivid → darker) — for hero sections with white text */
+  /** Solid hero gradient (for hero sections with white text) */
   heroGradient: string;
+  /** Linear progress bar fill */
+  progressFill: string;
+  /** Top-border accent (e.g. card highlight) */
+  borderTop: string;
+  /** Left-border accent (e.g. list highlight) */
+  borderLeft: string;
+  /** Soft tinted background for buttons / ghost surfaces */
+  accentSoftBg: string;
+  /** Hover variant for `accentSoftBg` */
+  accentSoftHover: string;
+  /** Accent foreground text color */
+  accentText: string;
+  /** Subtle accent border */
+  accentBorder: string;
+  /** Focus ring color */
+  ring: string;
 }
 
-const PALETTES: ProgramPalette[] = [
-  {
-    badge: "border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400",
-    badgeActive: "bg-emerald-200 text-emerald-800 border-emerald-300",
-    iconBg: "bg-emerald-500/15",
-    iconText: "text-emerald-600 dark:text-emerald-400",
-    bannerGradient: "from-emerald-500/15 via-emerald-500/5 to-card",
-    bannerBorder: "border-emerald-500/30",
-    heroGradient: "from-emerald-500 to-emerald-700",
-  },
-  {
-    badge: "border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-700 dark:bg-blue-950/40 dark:text-blue-400",
-    badgeActive: "bg-blue-200 text-blue-800 border-blue-300",
-    iconBg: "bg-blue-500/15",
-    iconText: "text-blue-600 dark:text-blue-400",
-    bannerGradient: "from-blue-500/15 via-blue-500/5 to-card",
-    bannerBorder: "border-blue-500/30",
-    heroGradient: "from-blue-500 to-blue-700",
-  },
-  {
-    badge: "border-violet-300 bg-violet-50 text-violet-700 dark:border-violet-700 dark:bg-violet-950/40 dark:text-violet-400",
-    badgeActive: "bg-violet-200 text-violet-800 border-violet-300",
-    iconBg: "bg-violet-500/15",
-    iconText: "text-violet-600 dark:text-violet-400",
-    bannerGradient: "from-violet-500/15 via-violet-500/5 to-card",
-    bannerBorder: "border-violet-500/30",
-    heroGradient: "from-violet-500 to-violet-700",
-  },
-  {
-    badge: "border-orange-300 bg-orange-50 text-orange-700 dark:border-orange-700 dark:bg-orange-950/40 dark:text-orange-400",
-    badgeActive: "bg-orange-200 text-orange-800 border-orange-300",
-    iconBg: "bg-orange-500/15",
-    iconText: "text-orange-600 dark:text-orange-400",
-    bannerGradient: "from-orange-500/15 via-orange-500/5 to-card",
-    bannerBorder: "border-orange-500/30",
-    heroGradient: "from-orange-500 to-orange-700",
-  },
-  {
-    badge: "border-rose-300 bg-rose-50 text-rose-700 dark:border-rose-700 dark:bg-rose-950/40 dark:text-rose-400",
-    badgeActive: "bg-rose-200 text-rose-800 border-rose-300",
-    iconBg: "bg-rose-500/15",
-    iconText: "text-rose-600 dark:text-rose-400",
-    bannerGradient: "from-rose-500/15 via-rose-500/5 to-card",
-    bannerBorder: "border-rose-500/30",
-    heroGradient: "from-rose-500 to-rose-700",
-  },
-  {
-    badge: "border-cyan-300 bg-cyan-50 text-cyan-700 dark:border-cyan-700 dark:bg-cyan-950/40 dark:text-cyan-400",
-    badgeActive: "bg-cyan-200 text-cyan-800 border-cyan-300",
-    iconBg: "bg-cyan-500/15",
-    iconText: "text-cyan-600 dark:text-cyan-400",
-    bannerGradient: "from-cyan-500/15 via-cyan-500/5 to-card",
-    bannerBorder: "border-cyan-500/30",
-    heroGradient: "from-cyan-500 to-cyan-700",
-  },
-  {
-    badge: "border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-400",
-    badgeActive: "bg-amber-200 text-amber-800 border-amber-300",
-    iconBg: "bg-amber-500/15",
-    iconText: "text-amber-600 dark:text-amber-400",
-    bannerGradient: "from-amber-500/15 via-amber-500/5 to-card",
-    bannerBorder: "border-amber-500/30",
-    heroGradient: "from-amber-500 to-amber-700",
-  },
-  {
-    badge: "border-pink-300 bg-pink-50 text-pink-700 dark:border-pink-700 dark:bg-pink-950/40 dark:text-pink-400",
-    badgeActive: "bg-pink-200 text-pink-800 border-pink-300",
-    iconBg: "bg-pink-500/15",
-    iconText: "text-pink-600 dark:text-pink-400",
-    bannerGradient: "from-pink-500/15 via-pink-500/5 to-card",
-    bannerBorder: "border-pink-500/30",
-    heroGradient: "from-pink-500 to-pink-700",
-  },
-  {
-    badge: "border-teal-300 bg-teal-50 text-teal-700 dark:border-teal-700 dark:bg-teal-950/40 dark:text-teal-400",
-    badgeActive: "bg-teal-200 text-teal-800 border-teal-300",
-    iconBg: "bg-teal-500/15",
-    iconText: "text-teal-600 dark:text-teal-400",
-    bannerGradient: "from-teal-500/15 via-teal-500/5 to-card",
-    bannerBorder: "border-teal-500/30",
-    heroGradient: "from-teal-500 to-teal-700",
-  },
-  {
-    badge: "border-indigo-300 bg-indigo-50 text-indigo-700 dark:border-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-400",
-    badgeActive: "bg-indigo-200 text-indigo-800 border-indigo-300",
-    iconBg: "bg-indigo-500/15",
-    iconText: "text-indigo-600 dark:text-indigo-400",
-    bannerGradient: "from-indigo-500/15 via-indigo-500/5 to-card",
-    bannerBorder: "border-indigo-500/30",
-    heroGradient: "from-indigo-500 to-indigo-700",
-  },
-];
+// ---- Whitelisted Tailwind colors (must match safelist) ---------------------
+const ALLOWED_COLORS = [
+  "emerald", "blue", "violet", "orange", "rose", "cyan", "amber", "pink",
+  "teal", "indigo", "slate", "purple", "red", "yellow", "green", "sky",
+  "fuchsia", "lime",
+] as const;
+type AllowedColor = (typeof ALLOWED_COLORS)[number];
+
+function isAllowedColor(c?: string | null): c is AllowedColor {
+  return !!c && (ALLOWED_COLORS as readonly string[]).includes(c);
+}
+
+// ---- Whitelisted Lucide icons (kebab-case key → component) -----------------
+const ICON_MAP: Record<string, LucideIcon> = {
+  "graduation-cap": GraduationCap,
+  "book-open": BookOpen,
+  "sparkles": Sparkles,
+  "calendar-days": CalendarDays,
+  "briefcase": Briefcase,
+  "user": User,
+  "users": Users,
+  "award": Award,
+  "globe": Globe,
+  "languages": Languages,
+  "trophy": Trophy,
+  "target": Target,
+  "rocket": Rocket,
+  "star": Star,
+  "heart": Heart,
+};
+
+// ---- Static fallback (used when DB cache is empty / table unreachable) -----
+interface StaticEntry { color: AllowedColor; icon: string; label: string }
+const STATIC_FALLBACK: Record<string, StaticEntry> = {
+  ielts:      { color: "teal",   icon: "graduation-cap", label: "IELTS" },
+  wre:        { color: "violet", icon: "briefcase",      label: "WRE" },
+  private:    { color: "amber",  icon: "user",           label: "Private (1-1)" },
+  "1-1":      { color: "amber",  icon: "user",           label: "Private (1-1)" },
+  customized: { color: "amber",  icon: "user",           label: "Customized" },
+};
+
+// ---- Build a palette from a single Tailwind color name ---------------------
+function buildPalette(c: AllowedColor): ProgramPalette {
+  return {
+    badge: `border-${c}-300 bg-${c}-50 text-${c}-700 dark:border-${c}-700 dark:bg-${c}-950/40 dark:text-${c}-400`,
+    badgeActive: `bg-${c}-200 text-${c}-800 border-${c}-300`,
+    iconBg: `bg-${c}-500/15`,
+    iconText: `text-${c}-600 dark:text-${c}-400`,
+    bannerGradient: `from-${c}-500/15 via-${c}-500/5 to-card`,
+    bannerBorder: `border-${c}-500/30`,
+    heroGradient: `from-${c}-500 to-${c}-700`,
+    progressFill: `bg-${c}-500`,
+    borderTop: `border-t-${c}-500`,
+    borderLeft: `border-l-${c}-500`,
+    accentSoftBg: `bg-${c}-500/10`,
+    accentSoftHover: `hover:bg-${c}-500/15`,
+    accentText: `text-${c}-600 dark:text-${c}-400`,
+    accentBorder: `border-${c}-500/20`,
+    ring: `ring-${c}-500/40`,
+  };
+}
 
 const DEFAULT_PALETTE: ProgramPalette = {
   badge: "border-border bg-muted text-muted-foreground",
@@ -121,17 +135,94 @@ const DEFAULT_PALETTE: ProgramPalette = {
   bannerGradient: "from-primary/10 via-primary/5 to-card",
   bannerBorder: "border-primary/20",
   heroGradient: "from-primary to-primary/80",
+  progressFill: "bg-primary",
+  borderTop: "border-t-primary",
+  borderLeft: "border-l-primary",
+  accentSoftBg: "bg-primary/10",
+  accentSoftHover: "hover:bg-primary/15",
+  accentText: "text-primary",
+  accentBorder: "border-primary/20",
+  ring: "ring-primary/40",
 };
 
+// ---- Hash fallback (unknown programs get a stable color) -------------------
 function hash(str: string): number {
   let h = 0;
   for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0;
   return h;
 }
 
+// ---- DB lookup (key → name → substring) ------------------------------------
+function findProgram(input: string): Program | undefined {
+  const key = input.trim().toLowerCase();
+  if (!key) return undefined;
+  const programs = getCachedPrograms();
+  if (programs.length === 0) return undefined;
+
+  // 1) exact key match
+  let match = programs.find((p) => p.key.toLowerCase() === key);
+  if (match) return match;
+
+  // 2) exact name match
+  match = programs.find((p) => p.name.toLowerCase() === key);
+  if (match) return match;
+
+  // 3) substring match (e.g. "IELTS Junior" → key 'ielts')
+  match = programs.find((p) =>
+    key.includes(p.key.toLowerCase()) || key.includes(p.name.toLowerCase()),
+  );
+  return match;
+}
+
+// ---- Public API ------------------------------------------------------------
 export function getProgramPalette(program?: string | null): ProgramPalette {
   if (!program) return DEFAULT_PALETTE;
   const key = program.trim().toLowerCase();
   if (!key) return DEFAULT_PALETTE;
-  return PALETTES[hash(key) % PALETTES.length];
+
+  // 1) DB-driven
+  const dbHit = findProgram(key);
+  if (dbHit && isAllowedColor(dbHit.color_key)) return buildPalette(dbHit.color_key);
+
+  // 2) Static fallback
+  for (const [staticKey, entry] of Object.entries(STATIC_FALLBACK)) {
+    if (key === staticKey || key.includes(staticKey)) return buildPalette(entry.color);
+  }
+
+  // 3) Hash fallback
+  return buildPalette(ALLOWED_COLORS[hash(key) % ALLOWED_COLORS.length]);
+}
+
+export function getProgramIcon(program?: string | null): LucideIcon {
+  if (!program) return GraduationCap;
+  const key = program.trim().toLowerCase();
+  if (!key) return GraduationCap;
+
+  const dbHit = findProgram(key);
+  if (dbHit?.icon_key && ICON_MAP[dbHit.icon_key]) return ICON_MAP[dbHit.icon_key];
+
+  for (const [staticKey, entry] of Object.entries(STATIC_FALLBACK)) {
+    if (key === staticKey || key.includes(staticKey)) {
+      const ico = ICON_MAP[entry.icon];
+      if (ico) return ico;
+    }
+  }
+
+  return GraduationCap;
+}
+
+export function getProgramLabel(program?: string | null): string {
+  if (!program) return "—";
+  const key = program.trim().toLowerCase();
+  if (!key) return "—";
+
+  const dbHit = findProgram(key);
+  if (dbHit?.name) return dbHit.name;
+
+  for (const [staticKey, entry] of Object.entries(STATIC_FALLBACK)) {
+    if (key === staticKey || key.includes(staticKey)) return entry.label;
+  }
+
+  // Last resort — humanise the raw input
+  return program.trim();
 }
