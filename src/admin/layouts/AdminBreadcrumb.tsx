@@ -9,6 +9,7 @@ import { adminNavItems } from "@shared/config/navigation";
 // for nested / non-nav routes.
 const EXTRA_LABELS: Record<string, string> = {
   "/profile": "Hồ sơ",
+  "/teachers": "Giáo viên",
   "/study-plans/templates": "Mẫu kế hoạch",
 };
 
@@ -48,6 +49,7 @@ function resolveCrumbs(pathname: string): Crumb[] {
       if (seg === "preview") { crumbs.push({ label: "Xem trước", path: built }); continue; }
       if (seg === "performance") { crumbs.push({ label: "Kết quả", path: built }); continue; }
       if (seg === "stats") { crumbs.push({ label: "Thống kê", path: built }); continue; }
+      if (prev === "teachers") { crumbs.push({ label: "Hồ sơ giáo viên", path: built }); continue; }
     }
 
     // Dynamic ID under a known parent → add parent crumb once + "Chỉnh sửa"
