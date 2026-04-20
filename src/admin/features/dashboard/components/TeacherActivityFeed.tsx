@@ -532,17 +532,34 @@ export default function TeacherActivityFeed() {
           </Button>
         </div>
       ) : (
-        <ul className="space-y-1.5">
-          {filtered.map((it, idx) => (
-            <FeedRow
-              key={it.id}
-              item={it}
-              isHead={idx === 0}
-              pulse={pulseIds.has(it.id)}
-              onClick={() => navigate(it.navigateTo)}
-            />
-          ))}
-        </ul>
+        <>
+          <ul className="space-y-1.5">
+            {filtered.map((it, idx) => (
+              <FeedRow
+                key={it.id}
+                item={it}
+                isHead={idx === 0}
+                pulse={pulseIds.has(it.id)}
+                onClick={() => navigate(it.navigateTo)}
+              />
+            ))}
+          </ul>
+          {/* Show "Xem thêm" only when the server returned >= current limit
+              (i.e. likely more rows available) and no filter is hiding them */}
+          {items && items.length >= limit && (
+            <div className="mt-3 flex justify-center">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={isFetching}
+                onClick={() => setLimit(l => l + PAGE_SIZE)}
+                className="h-8 text-xs"
+              >
+                {isFetching ? "Đang tải…" : `Xem thêm (${PAGE_SIZE})`}
+              </Button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
