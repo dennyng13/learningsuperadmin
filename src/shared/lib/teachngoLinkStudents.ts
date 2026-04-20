@@ -79,7 +79,7 @@ export async function invokeTeachngoLinkStudents<T = Record<string, unknown>>(
   });
 
   if (error) {
-    return normalizeFunctionError(error);
+    return await normalizeFunctionError(error) as TeachngoLinkStudentsResult<T>;
   }
 
   const payload = (data ?? null) as (T & ErrorPayload) | null;
