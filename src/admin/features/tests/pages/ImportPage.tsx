@@ -13,7 +13,7 @@ export default function ImportPage() {
     <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-4 md:space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm text-muted-foreground">
-        <Link to="/admin" className="hover:text-foreground transition-colors">Dashboard</Link>
+        <Link to="/" className="hover:text-foreground transition-colors">Dashboard</Link>
         <ChevronRight className="h-3.5 w-3.5" />
         <span className="text-foreground font-medium">Import</span>
       </nav>

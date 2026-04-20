@@ -133,7 +133,7 @@ export default function PlacementTestEditorPage() {
     if (isDirty) {
       setShowExitDialog(true);
     } else {
-      navigate("/admin/placement");
+      navigate("/placement");
     }
   };
 
@@ -180,20 +180,20 @@ export default function PlacementTestEditorPage() {
     setIsDirty(false);
 
     if (isNew && testId) {
-      navigate(`/admin/placement/${testId}`, { replace: true });
+      navigate(`/placement/${testId}`, { replace: true });
     }
   };
 
   const handleSaveAndExit = async () => {
     setShowExitDialog(false);
     await handleSave();
-    navigate("/admin/placement");
+    navigate("/placement");
   };
 
   const handleDiscard = () => {
     setShowExitDialog(false);
     setIsDirty(false);
-    navigate("/admin/placement");
+    navigate("/placement");
   };
 
 
@@ -222,16 +222,16 @@ export default function PlacementTestEditorPage() {
       testId = (data as any).id;
       setIsDirty(false);
       // Update URL to the new ID
-      navigate(`/admin/placement/${testId}`, { replace: true });
+      navigate(`/placement/${testId}`, { replace: true });
     }
     const sectionType = skill.toUpperCase();
-    const returnUrl = `/admin/placement/${testId}`;
-    navigate(`/admin/tests/new?placementId=${testId}&skill=${skill}&sectionType=${sectionType}&returnTo=${encodeURIComponent(returnUrl)}`);
+    const returnUrl = `/placement/${testId}`;
+    navigate(`/tests/new?placementId=${testId}&skill=${skill}&sectionType=${sectionType}&returnTo=${encodeURIComponent(returnUrl)}`);
   };
 
   const navigateToEditAssessment = (assessmentId: string, skill: string) => {
-    const returnUrl = `/admin/placement/${id}`;
-    navigate(`/admin/tests/${assessmentId}?placementId=${id}&skill=${skill}&returnTo=${encodeURIComponent(returnUrl)}`);
+    const returnUrl = `/placement/${id}`;
+    navigate(`/tests/${assessmentId}?placementId=${id}&skill=${skill}&returnTo=${encodeURIComponent(returnUrl)}`);
   };
 
   const totalQuestions = sections.reduce((sum, s) => sum + (getAssessmentInfo(s.assessment_id)?.total_questions || 0), 0);

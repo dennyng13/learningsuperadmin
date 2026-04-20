@@ -33,7 +33,7 @@ export default function NotFoundPage() {
             Quay lại
           </Button>
           <Button asChild className="gap-2">
-            <Link to="/admin">
+            <Link to="/">
               <Home className="h-4 w-4" />
               Về Dashboard
             </Link>
@@ -43,11 +43,11 @@ export default function NotFoundPage() {
         <div className="pt-4 border-t border-border/50">
           <p className="text-xs text-muted-foreground mb-2">Có thể bạn đang tìm:</p>
           <div className="flex flex-wrap gap-1.5 justify-center text-xs">
-            <Link to="/admin/tests" className="px-2 py-1 rounded-md bg-muted hover:bg-muted/70 transition-colors">Tests</Link>
-            <Link to="/admin/users" className="px-2 py-1 rounded-md bg-muted hover:bg-muted/70 transition-colors">Users</Link>
-            <Link to="/admin/classes" className="px-2 py-1 rounded-md bg-muted hover:bg-muted/70 transition-colors">Classes</Link>
-            <Link to="/admin/study-plans" className="px-2 py-1 rounded-md bg-muted hover:bg-muted/70 transition-colors">Study Plans</Link>
-            <Link to="/admin/settings" className="px-2 py-1 rounded-md bg-muted hover:bg-muted/70 transition-colors">Settings</Link>
+            <Link to="/tests" className="px-2 py-1 rounded-md bg-muted hover:bg-muted/70 transition-colors">Tests</Link>
+            <Link to="/users" className="px-2 py-1 rounded-md bg-muted hover:bg-muted/70 transition-colors">Users</Link>
+            <Link to="/classes" className="px-2 py-1 rounded-md bg-muted hover:bg-muted/70 transition-colors">Classes</Link>
+            <Link to="/study-plans" className="px-2 py-1 rounded-md bg-muted hover:bg-muted/70 transition-colors">Study Plans</Link>
+            <Link to="/settings" className="px-2 py-1 rounded-md bg-muted hover:bg-muted/70 transition-colors">Settings</Link>
           </div>
         </div>
       </div>

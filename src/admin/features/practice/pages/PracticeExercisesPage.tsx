@@ -419,7 +419,7 @@ export default function PracticeExercisesPage() {
       .select().single();
     if (error) { toast.error("Lỗi tạo flashcard"); return; }
     toast.success("Đã tạo bộ flashcard");
-    navigate(`/admin/flashcards?edit=${(data as any).id}`);
+    navigate(`/flashcards?edit=${(data as any).id}`);
   };
 
   // ---- Question Group operations ----
@@ -1120,7 +1120,7 @@ export default function PracticeExercisesPage() {
           <p className="text-sm text-muted-foreground mt-1">Quản lý bài tập luyện theo dạng câu hỏi IELTS</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => navigate("/admin/import")}><FileUp className="h-4 w-4 mr-2" /> Import</Button>
+          <Button variant="outline" onClick={() => navigate("/tests/import")}><FileUp className="h-4 w-4 mr-2" /> Import</Button>
           <Button onClick={createNew}><Plus className="h-4 w-4 mr-2" /> Tạo bài tập</Button>
         </div>
       </div>
@@ -1533,7 +1533,7 @@ export default function PracticeExercisesPage() {
                             {ex.status === "published" ? <EyeOff className="h-4 w-4 mr-2" /> : <Eye className="h-4 w-4 mr-2" />}
                             {ex.status === "published" ? "Ẩn" : "Xuất bản"}
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => navigate(`/admin/practice/${ex.id}/stats`)}>
+                          <DropdownMenuItem onClick={() => navigate(`/practice/${ex.id}/stats`)}>
                             <BarChart3 className="h-4 w-4 mr-2" /> Thống kê
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => createFlashcardForExercise(ex.id, ex.title)}>

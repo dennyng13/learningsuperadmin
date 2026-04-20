@@ -199,7 +199,7 @@ export function StudyPlanList({ plans, isLoading, teacherMode = false, canCreate
         </div>
         <div className="flex items-center gap-2">
           {!teacherMode && (
-            <Button variant="outline" size="sm" onClick={() => navigate("/admin/study-plan-templates")}>
+            <Button variant="outline" size="sm" onClick={() => navigate("/study-plans/templates")}>
               <FileStack className="w-4 h-4 mr-1" /> Mẫu
             </Button>
           )}

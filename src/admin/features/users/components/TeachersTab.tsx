@@ -544,7 +544,7 @@ export default function TeachersTab() {
                               key={c.id}
                               variant="outline"
                               className="text-[10px] font-normal truncate max-w-[160px] cursor-pointer hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-colors gap-1"
-                              onClick={() => navigate(`/admin/classes`)}
+                              onClick={() => navigate(`/classes`)}
                             >
                               <ExternalLink className="h-2.5 w-2.5 shrink-0 opacity-50" />
                               {c.class_name}

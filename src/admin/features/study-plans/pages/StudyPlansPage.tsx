@@ -42,7 +42,7 @@ export default function StudyPlansPage() {
           <h1 className="font-display text-xl md:text-2xl font-extrabold">Kế hoạch học tập</h1>
           <p className="text-sm text-muted-foreground mt-0.5">{plans?.length || 0} kế hoạch</p>
         </div>
-        <Button onClick={() => navigate("/admin/study-plans/new")} size="sm">
+        <Button onClick={() => navigate("/study-plans/new")} size="sm">
           <Plus className="h-4 w-4 mr-1" /> Tạo kế hoạch
         </Button>
       </div>

@@ -24,7 +24,7 @@ export default function AdminLoginPage() {
       if (error) {
         toast.error(error.message);
       } else {
-        navigate("/admin");
+        navigate("/");
       }
     } catch {
       toast.error("Login failed");

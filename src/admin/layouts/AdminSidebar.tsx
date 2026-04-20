@@ -24,9 +24,9 @@ export function AdminSidebar() {
 
   const allPaths = adminNavItems.map(i => i.route);
   const isActive = (path: string) => {
-    if (path === "/admin") return location.pathname === "/admin";
+    if (path === "/") return location.pathname === "/";
     const matchingPaths = allPaths.filter(
-      p => p !== "/admin" && (location.pathname === p || location.pathname.startsWith(p + "/"))
+      p => p !== "/" && (location.pathname === p || location.pathname.startsWith(p + "/"))
     );
     if (matchingPaths.length === 0) return false;
     const longestMatch = matchingPaths.reduce((a, b) => (a.length >= b.length ? a : b));
@@ -35,7 +35,7 @@ export function AdminSidebar() {
 
   const handleSignOut = async () => {
     await signOut();
-    navigate("/admin/login");
+    navigate("/login");
   };
 
   const renderMenuItem = (item: typeof mainItems[0]) => {

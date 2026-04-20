@@ -6,23 +6,23 @@ import { useState, useCallback } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@shared/components/ui/sheet";
 
 const primaryItems = [
-  { title: "Dashboard", url: "/admin", icon: LayoutDashboard },
-  { title: "Đề thi", url: "/admin/tests", icon: FileText },
-  { title: "Import", url: "/admin/import", icon: Upload },
-  { title: "Người dùng", url: "/admin/users", icon: Users },
+  { title: "Dashboard", url: "/", icon: LayoutDashboard },
+  { title: "Đề thi", url: "/tests", icon: FileText },
+  { title: "Import", url: "/tests/import", icon: Upload },
+  { title: "Người dùng", url: "/users", icon: Users },
 ];
 
 const moreItems = [
-  { title: "Flashcard Sets", url: "/admin/flashcards", icon: BookOpen },
-  { title: "Huy hiệu", url: "/admin/badges", icon: Award },
-  { title: "Lớp học", url: "/admin/classes", icon: School },
-  { title: "Study Plans", url: "/admin/study-plans", icon: ClipboardList },
-  { title: "Điểm danh TnG", url: "/admin/teachngo-attendance", icon: CalendarDays },
+  { title: "Flashcard Sets", url: "/flashcards", icon: BookOpen },
+  { title: "Huy hiệu", url: "/badges", icon: Award },
+  { title: "Lớp học", url: "/classes", icon: School },
+  { title: "Study Plans", url: "/study-plans", icon: ClipboardList },
+  { title: "Điểm danh TnG", url: "/attendance", icon: CalendarDays },
 ];
 
 const superAdminMoreItems = [
-  { title: "Module Permissions", url: "/admin/modules", icon: ShieldCheck },
-  { title: "Settings", url: "/admin/settings", icon: Settings },
+  { title: "Module Permissions", url: "/modules", icon: ShieldCheck },
+  { title: "Settings", url: "/settings", icon: Settings },
 ];
 
 function triggerHaptic() {
@@ -39,7 +39,7 @@ export function AdminBottomNav() {
   const [tapped, setTapped] = useState<string | null>(null);
 
   const isActive = (path: string) => {
-    if (path === "/admin") return location.pathname === "/admin";
+    if (path === "/") return location.pathname === "/";
     return location.pathname === path || location.pathname.startsWith(path + "/");
   };
 

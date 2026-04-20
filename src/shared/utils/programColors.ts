@@ -1,5 +1,5 @@
 /**
- * Program color system — deterministic, shared across student/admin/teacher views.
+ * Program color system — deterministic, shared across student/teacher views.
  * Same program name → same palette everywhere.
  */
 

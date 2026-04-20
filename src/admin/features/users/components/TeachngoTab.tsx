@@ -1051,7 +1051,7 @@ export default function TeachngoTab({ roleCategory = "students" }: { roleCategor
                     </div>
                     <div className="flex gap-1.5 pt-1">
                       {s.linked_user_id && (
-                        <Button size="sm" variant="outline" className="h-7 text-[11px] gap-1" onClick={() => navigate(`/admin/student/${s.linked_user_id}/performance`)}>
+                        <Button size="sm" variant="outline" className="h-7 text-[11px] gap-1" onClick={() => navigate(`/users/${s.linked_user_id}/performance`)}>
                           <BarChart3 className="h-3 w-3" />Chi tiết
                         </Button>
                       )}
@@ -1112,7 +1112,7 @@ export default function TeachngoTab({ roleCategory = "students" }: { roleCategor
                           </button>
                           <div className="flex items-center gap-1">
                             <button className={cn("font-semibold text-left text-[13px] leading-tight", s.linked_user_id ? "hover:text-primary hover:underline cursor-pointer" : "cursor-default text-foreground/70")}
-                              onClick={() => s.linked_user_id && navigate(`/admin/student/${s.linked_user_id}/performance`)} disabled={!s.linked_user_id}>
+                              onClick={() => s.linked_user_id && navigate(`/users/${s.linked_user_id}/performance`)} disabled={!s.linked_user_id}>
                               {s.full_name}
                             </button>
                             {!s.email && (
@@ -1202,7 +1202,7 @@ export default function TeachngoTab({ roleCategory = "students" }: { roleCategor
                           )}
                           {s.linked_user_id && (
                             <>
-                              <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-primary" onClick={() => navigate(`/admin/student/${s.linked_user_id}/performance`)} title="Performance"><BarChart3 className="h-3.5 w-3.5" /></Button>
+                              <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-primary" onClick={() => navigate(`/users/${s.linked_user_id}/performance`)} title="Performance"><BarChart3 className="h-3.5 w-3.5" /></Button>
                               <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => openResultsDialog(s)} title="Kết quả"><Eye className="h-3.5 w-3.5" /></Button>
                             </>
                           )}
@@ -1249,7 +1249,7 @@ export default function TeachngoTab({ roleCategory = "students" }: { roleCategor
                                   {(studentClassesMap[s.teachngo_id] || []).map((c, i) => (
                                     <span key={i} className={cn("inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md cursor-pointer hover:opacity-80 transition-opacity",
                                       c.status === "enrolled" ? "bg-primary/10 text-primary ring-1 ring-primary/20" : "bg-muted text-muted-foreground ring-1 ring-border"
-                                    )} onClick={() => navigate(`/admin/classes?search=${encodeURIComponent(c.class_name)}`)}>
+                                    )} onClick={() => navigate(`/classes?search=${encodeURIComponent(c.class_name)}`)}>
                                       {c.class_name}
                                     </span>
                                   ))}

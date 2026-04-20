@@ -119,7 +119,7 @@ export default function ImportTestPage({ embedded = false }: { embedded?: boolea
         .single();
       if (error) throw error;
       toast.success("Đã tạo đề thi nháp");
-      navigate(`/admin/tests/${data.id}`);
+      navigate(`/tests/${data.id}`);
     } catch (e: any) {
       toast.error("Lỗi: " + (e.message || "Unknown"));
       setStep("upload");
@@ -610,7 +610,7 @@ export default function ImportTestPage({ embedded = false }: { embedded?: boolea
             {savedAssessmentId && (
               <Button
                 className="rounded-xl gap-2"
-                onClick={() => navigate(`/admin/tests/${savedAssessmentId}`)}
+                onClick={() => navigate(`/tests/${savedAssessmentId}`)}
               >
                 <FileText className="h-4 w-4" /> Mở chỉnh sửa
               </Button>

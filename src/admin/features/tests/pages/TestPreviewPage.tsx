@@ -84,7 +84,7 @@ export default function TestPreviewPage() {
       <div className="p-6 max-w-4xl mx-auto text-center space-y-4 py-20">
         <AlertTriangle className="h-12 w-12 mx-auto text-muted-foreground" />
         <h2 className="font-display text-xl font-bold">Không tìm thấy đề thi</h2>
-        <Button onClick={() => navigate("/admin/tests")}>Quay lại</Button>
+        <Button onClick={() => navigate("/tests")}>Quay lại</Button>
       </div>
     );
   }
@@ -134,7 +134,7 @@ export default function TestPreviewPage() {
           </div>
           {assessment.bookName && <p className="text-xs text-muted-foreground">{assessment.bookName}</p>}
         </div>
-        <Button variant="outline" onClick={() => navigate(`/admin/tests/${id}`)} className="gap-2 rounded-xl">
+        <Button variant="outline" onClick={() => navigate(`/tests/${id}`)} className="gap-2 rounded-xl">
           <PenTool className="h-4 w-4" /> Chỉnh sửa
         </Button>
         {assessment.sectionType === "LISTENING" && (

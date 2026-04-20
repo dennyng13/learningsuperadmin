@@ -127,7 +127,7 @@ export default function PracticeErrorStats({ results }: Props) {
                 <button
                   key={w.exerciseId}
                   className="w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-muted/30 transition-colors group"
-                  onClick={() => navigate(`/admin/practice/${w.exerciseId}/stats`)}
+                  onClick={() => navigate(`/practice/${w.exerciseId}/stats`)}
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
