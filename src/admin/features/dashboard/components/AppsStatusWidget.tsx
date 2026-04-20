@@ -378,6 +378,46 @@ function AppCard({
   );
 }
 
+/* ── Delta % vs prior 7-day window ── */
+function DeltaBadge({ current, previous }: { current?: number; previous?: number }) {
+  if (current == null || previous == null) return null;
+  // Edge cases
+  if (previous === 0 && current === 0) {
+    return (
+      <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground" title="Không có dữ liệu kỳ trước">
+        <Minus className="h-3 w-3" /> 0%
+      </span>
+    );
+  }
+  if (previous === 0) {
+    return (
+      <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-emerald-600" title={`Kỳ trước: 0 → kỳ này: ${current}`}>
+        <TrendingUp className="h-3 w-3" /> mới
+      </span>
+    );
+  }
+  const pct = ((current - previous) / previous) * 100;
+  const rounded = Math.round(pct);
+  const isUp = pct > 0;
+  const isFlat = Math.abs(pct) < 0.5;
+  const Icon = isFlat ? Minus : isUp ? TrendingUp : TrendingDown;
+  const cls = isFlat
+    ? "text-muted-foreground"
+    : isUp
+      ? "text-emerald-600"
+      : "text-rose-600";
+  const sign = isFlat ? "" : isUp ? "+" : "";
+  return (
+    <span
+      className={cn("inline-flex items-center gap-0.5 text-[10px] font-semibold", cls)}
+      title={`Kỳ này: ${current} · Kỳ trước (7 ngày trước đó): ${previous}`}
+    >
+      <Icon className="h-3 w-3" />
+      {sign}{rounded}%
+    </span>
+  );
+}
+
 /* ── Sparkline SVG with hover tooltip ── */
 function Sparkline({
   data, color, days, valueLabel, width = 280, height = 36,
