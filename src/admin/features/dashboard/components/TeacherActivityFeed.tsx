@@ -349,6 +349,12 @@ export default function TeacherActivityFeed() {
         const newRow = payload?.new || {};
         if (!oldRow.response_at && newRow.response_at) onChange();
       })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "study_plan_entries" }, (payload: any) => {
+        // Only trigger when a session is marked completed (completed_at goes from null → set)
+        const oldRow = payload?.old || {};
+        const newRow = payload?.new || {};
+        if (!oldRow.completed_at && newRow.completed_at) onChange();
+      })
       .subscribe((status) => setConnected(status === "SUBSCRIBED"));
 
     return () => {
