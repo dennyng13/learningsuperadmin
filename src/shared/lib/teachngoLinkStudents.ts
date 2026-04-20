@@ -36,7 +36,7 @@ async function readErrorPayload(response: Response) {
   }
 }
 
-async function normalizeFunctionError(error: unknown): Promise<TeachngoLinkStudentsResult<never>> {
+async function normalizeFunctionError(error: unknown): Promise<TeachngoLinkStudentsResult<unknown>> {
   if (error instanceof FunctionsHttpError) {
     const payload = await readErrorPayload(error.context);
     const message = payload.error || error.message || "Yêu cầu thất bại";
