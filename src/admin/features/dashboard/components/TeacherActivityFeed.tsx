@@ -183,6 +183,14 @@ async function fetchFeed(): Promise<FeedItem[]> {
     studentIds.add(r.student_id);
     if (r.class_id) classIds.add(r.class_id);
   });
+  // Sessions resolve teacher via the precomputed sessionClassMap (skip if no teacher).
+  (sessions || []).forEach(s => {
+    const cIds = planClassMap.get(s.plan_id) || [];
+    for (const cid of cIds) {
+      const info = sessionClassMap.get(cid);
+      if (info?.teacherId) { teacherIds.add(info.teacherId); break; }
+    }
+  });
 
   // Batch lookup names
   const [{ data: teachers }, { data: students }, { data: classes }] = await Promise.all([
@@ -257,6 +265,35 @@ async function fetchFeed(): Promise<FeedItem[]> {
       detail: r.title,
       createdAt: r.response_at,
       navigateTo: r.class_id ? `/classes?class_id=${r.class_id}` : `/users?tab=students&student_id=${r.student_id}`,
+    });
+  });
+
+  (sessions || []).forEach(s => {
+    if (!s.completed_at) return;
+    // Find first class with a teacher for this plan
+    const cIds = planClassMap.get(s.plan_id) || [];
+    let teacherId: string | null = null;
+    let className: string | null = null;
+    let classId: string | null = null;
+    for (const cid of cIds) {
+      const info = sessionClassMap.get(cid);
+      if (info) {
+        if (!className) { className = info.className; classId = cid; }
+        if (info.teacherId) { teacherId = info.teacherId; className = info.className; classId = cid; break; }
+      }
+    }
+    if (!teacherId) return; // skip orphan sessions (no class teacher)
+    const sessionLabel = s.session_title
+      || (s.session_number != null ? `Buổi #${s.session_number}` : "Buổi học");
+    items.push({
+      id: `e-${s.id}`,
+      kind: "session",
+      teacherId,
+      teacherName: tMap.get(teacherId) || "Giáo viên",
+      className,
+      detail: `${sessionLabel} · ${s.entry_date}`,
+      createdAt: s.completed_at,
+      navigateTo: classId ? `/classes?class_id=${classId}` : `/study-plans`,
     });
   });
 
