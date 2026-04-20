@@ -355,9 +355,12 @@ function AppCard({
       {/* Sparkline 7 ngày */}
       {series && series.length > 0 && (
         <div className="mt-1">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-[10px] text-muted-foreground">{seriesLabel ?? "7 ngày"}</span>
-            <span className="text-[10px] text-muted-foreground font-mono">
+          <div className="flex items-center justify-between mb-1 gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-[10px] text-muted-foreground truncate">{seriesLabel ?? "7 ngày"}</span>
+              <DeltaBadge current={total7d} previous={prev7d} />
+            </div>
+            <span className="text-[10px] text-muted-foreground font-mono shrink-0">
               {days ? `${format(new Date(days[0]), "dd/MM")} – ${format(new Date(days[days.length - 1]), "dd/MM")}` : ""}
             </span>
           </div>
