@@ -30,19 +30,20 @@ function useAppsStatus() {
       const since24h = subDays(now, 1).toISOString();
       const since7d = subDays(now, 7).toISOString();
       const todayStr = format(now, "yyyy-MM-dd");
+      const since7dDate = format(subDays(now, 6), "yyyy-MM-dd");
 
       const [
-        // ── IELTS Practice ──
         { count: activeStudents },
         { count: testsRun24h },
         { count: practicesRun24h },
         { count: testsRun7d },
-        // ── Teacher's Hub ──
+        { data: testRows7d },
+        { data: practiceRows7d },
         { count: activeTeachers },
         { count: activeClasses },
         { data: todayEntries },
+        { data: entries7d },
       ] = await Promise.all([
-        // active students = có linked_user_id (đã đăng nhập được app IELTS Practice)
         supabase.from("teachngo_students")
           .select("*", { count: "exact", head: true })
           .not("linked_user_id", "is", null),
@@ -55,6 +56,12 @@ function useAppsStatus() {
         supabase.from("test_results")
           .select("*", { count: "exact", head: true })
           .gte("created_at", since7d),
+        supabase.from("test_results")
+          .select("created_at")
+          .gte("created_at", since7d),
+        supabase.from("practice_results")
+          .select("created_at")
+          .gte("created_at", since7d),
         supabase.from("teachers")
           .select("*", { count: "exact", head: true }),
         supabase.from("teachngo_classes")
@@ -63,7 +70,33 @@ function useAppsStatus() {
         supabase.from("study_plan_entries")
           .select("id")
           .eq("entry_date", todayStr),
+        supabase.from("study_plan_entries")
+          .select("entry_date")
+          .gte("entry_date", since7dDate),
       ]);
+
+      // Build 7-day buckets (oldest → newest)
+      const days: string[] = Array.from({ length: 7 }, (_, i) =>
+        format(subDays(now, 6 - i), "yyyy-MM-dd")
+      );
+      const bucket = (
+        rows: Array<{ created_at?: string; entry_date?: string }> | null,
+        key: "created_at" | "entry_date",
+      ) => {
+        const map: Record<string, number> = Object.fromEntries(days.map((d) => [d, 0]));
+        (rows || []).forEach((r) => {
+          const raw = (r as any)[key];
+          if (!raw) return;
+          const d = key === "created_at" ? format(new Date(raw), "yyyy-MM-dd") : String(raw).slice(0, 10);
+          if (d in map) map[d] += 1;
+        });
+        return days.map((d) => map[d]);
+      };
+
+      const tSeries = bucket(testRows7d as any, "created_at");
+      const pSeries = bucket(practiceRows7d as any, "created_at");
+      const ieltsSeries = tSeries.map((v, i) => v + pSeries[i]);
+      const teacherSeries = bucket(entries7d as any, "entry_date");
 
       return {
         ielts: {
@@ -71,12 +104,15 @@ function useAppsStatus() {
           testsRun24h: testsRun24h ?? 0,
           practicesRun24h: practicesRun24h ?? 0,
           testsRun7d: testsRun7d ?? 0,
+          series7d: ieltsSeries,
         },
         teacher: {
           activeTeachers: activeTeachers ?? 0,
           activeClasses: activeClasses ?? 0,
           todaySessions: (todayEntries || []).length,
+          series7d: teacherSeries,
         },
+        days,
       };
     },
   });
@@ -191,10 +227,14 @@ export default function AppsStatusWidget() {
           icon={BookOpenCheck}
           accent="text-blue-600"
           bg="bg-blue-500/10"
+          stroke="hsl(217 91% 60%)"
           href={IELTS_URL}
           onManage={() => navigate("/users")}
           manageLabel="Quản lý học viên"
           metrics={ieltsMetrics}
+          series={ielts?.series7d}
+          seriesLabel="Bài làm / ngày"
+          days={data?.days}
           loading={isLoading}
         />
         <AppCard
@@ -203,10 +243,14 @@ export default function AppsStatusWidget() {
           icon={GraduationCap}
           accent="text-emerald-600"
           bg="bg-emerald-500/10"
+          stroke="hsl(160 84% 39%)"
           href={TEACHER_URL}
           onManage={() => navigate("/classes")}
           manageLabel="Quản lý lớp"
           metrics={teacherMetrics}
+          series={teacher?.series7d}
+          seriesLabel="Buổi học / ngày"
+          days={data?.days}
           loading={isLoading}
         />
       </div>
@@ -215,17 +259,21 @@ export default function AppsStatusWidget() {
 }
 
 function AppCard({
-  title, subtitle, icon: Icon, accent, bg, href, onManage, manageLabel, metrics, loading,
+  title, subtitle, icon: Icon, accent, bg, stroke, href, onManage, manageLabel, metrics, series, seriesLabel, days, loading,
 }: {
   title: string;
   subtitle: string;
   icon: typeof Users;
   accent: string;
   bg: string;
+  stroke: string;
   href: string;
   onManage: () => void;
   manageLabel: string;
   metrics: AppMetric[];
+  series?: number[];
+  seriesLabel?: string;
+  days?: string[];
   loading: boolean;
 }) {
   return (
@@ -270,6 +318,19 @@ function AppCard({
         ))}
       </div>
 
+      {/* Sparkline 7 ngày */}
+      {series && series.length > 0 && (
+        <div className="mt-1">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[10px] text-muted-foreground">{seriesLabel ?? "7 ngày"}</span>
+            <span className="text-[10px] text-muted-foreground font-mono">
+              {days ? `${format(new Date(days[0]), "dd/MM")} – ${format(new Date(days[days.length - 1]), "dd/MM")}` : ""}
+            </span>
+          </div>
+          <Sparkline data={series} color={stroke} />
+        </div>
+      )}
+
       <button
         onClick={onManage}
         className="text-xs text-primary hover:underline text-left mt-auto"
@@ -277,5 +338,52 @@ function AppCard({
         → {manageLabel}
       </button>
     </div>
+  );
+}
+
+/* ── Sparkline SVG ── */
+function Sparkline({ data, color, width = 280, height = 36 }: { data: number[]; color: string; width?: number; height?: number }) {
+  const max = Math.max(...data, 1);
+  const pad = 2;
+  const w = width - pad * 2;
+  const h = height - pad * 2;
+  const step = w / Math.max(data.length - 1, 1);
+
+  const points = data.map((v, i) => {
+    const x = pad + i * step;
+    const y = pad + h - (v / max) * h;
+    return `${x},${y}`;
+  });
+
+  const fillPoints = [...points, `${pad + (data.length - 1) * step},${height - pad}`, `${pad},${height - pad}`];
+
+  return (
+    <svg viewBox={`0 0 ${width} ${height}`} className="w-full" style={{ height }}>
+      <defs>
+        <linearGradient id={`spark-fill-${color.replace(/[^a-z0-9]/gi, "")}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity={0.2} />
+          <stop offset="100%" stopColor={color} stopOpacity={0} />
+        </linearGradient>
+      </defs>
+      <polygon
+        points={fillPoints.join(" ")}
+        fill={`url(#spark-fill-${color.replace(/[^a-z0-9]/gi, "")})`}
+      />
+      <polyline
+        points={points.join(" ")}
+        fill="none"
+        stroke={color}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      {/* Dot on last point */}
+      {data.length > 0 && (() => {
+        const last = data.length - 1;
+        const cx = pad + last * step;
+        const cy = pad + h - (data[last] / max) * h;
+        return <circle cx={cx} cy={cy} r={2.5} fill={color} />;
+      })()}
+    </svg>
   );
 }
