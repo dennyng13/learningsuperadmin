@@ -5,7 +5,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
-import { GraduationCap, BookOpenCheck, ExternalLink, Users, School, Activity, CalendarClock, FileText, Radio } from "lucide-react";
+import { GraduationCap, BookOpenCheck, ExternalLink, Users, School, Activity, CalendarClock, FileText, Radio, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format, subDays } from "date-fns";
 import { cn } from "@shared/lib/utils";
