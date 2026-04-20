@@ -94,6 +94,7 @@ export default function AppRoutes() {
 
           {/* System */}
           <Route path="modules" element={<ModulePermissionsPage />} />
+          <Route path="feature-flags" element={<FeatureFlagsPage />} />
           <Route path="settings" element={<AdminSettingsPage />} />
 
           {/* 404 */}
