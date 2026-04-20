@@ -9,6 +9,7 @@ import { GraduationCap, BookOpenCheck, ExternalLink, Users, School, Activity, Ca
 import { supabase } from "@/integrations/supabase/client";
 import { format, subDays } from "date-fns";
 import { cn } from "@shared/lib/utils";
+import DayDrillDownDialog, { type DrillDownKind } from "./DayDrillDownDialog";
 
 const IELTS_URL = "https://ielts.learningplus.vn";
 const TEACHER_URL = "https://teacher.learningplus.vn";
@@ -161,6 +162,9 @@ export default function AppsStatusWidget() {
   const [connected, setConnected] = useState(false);
   const refetchTimer = useRef<number | null>(null);
 
+  // Drill-down dialog state
+  const [drill, setDrill] = useState<{ kind: DrillDownKind; day: string } | null>(null);
+
   useEffect(() => {
     setRunningDelta(0);
     setClassesDelta(0);
@@ -266,6 +270,7 @@ export default function AppsStatusWidget() {
           total7d={ielts?.total7d}
           prev7d={ielts?.prev7d}
           loading={isLoading}
+          onPickDay={(day) => setDrill({ kind: "ielts", day })}
         />
         <AppCard
           title="Teacher's Hub"
@@ -284,14 +289,22 @@ export default function AppsStatusWidget() {
           total7d={teacher?.total7d}
           prev7d={teacher?.prev7d}
           loading={isLoading}
+          onPickDay={(day) => setDrill({ kind: "teacher", day })}
         />
       </div>
+
+      <DayDrillDownDialog
+        open={drill !== null}
+        onClose={() => setDrill(null)}
+        kind={drill?.kind ?? "ielts"}
+        day={drill?.day ?? null}
+      />
     </div>
   );
 }
 
 function AppCard({
-  title, subtitle, icon: Icon, accent, bg, stroke, href, onManage, manageLabel, metrics, series, seriesLabel, days, total7d, prev7d, loading,
+  title, subtitle, icon: Icon, accent, bg, stroke, href, onManage, manageLabel, metrics, series, seriesLabel, days, total7d, prev7d, loading, onPickDay,
 }: {
   title: string;
   subtitle: string;
@@ -309,6 +322,7 @@ function AppCard({
   total7d?: number;
   prev7d?: number;
   loading: boolean;
+  onPickDay?: (day: string) => void;
 }) {
   return (
     <div className="rounded-lg border bg-background/50 p-4 flex flex-col gap-3">
@@ -364,7 +378,7 @@ function AppCard({
               {days ? `${format(new Date(days[0]), "dd/MM")} – ${format(new Date(days[days.length - 1]), "dd/MM")}` : ""}
             </span>
           </div>
-          <Sparkline data={series} color={stroke} days={days} valueLabel={seriesLabel} />
+          <Sparkline data={series} color={stroke} days={days} valueLabel={seriesLabel} onPick={onPickDay} />
         </div>
       )}
 
@@ -420,12 +434,13 @@ function DeltaBadge({ current, previous }: { current?: number; previous?: number
 
 /* ── Sparkline SVG with hover tooltip ── */
 function Sparkline({
-  data, color, days, valueLabel, width = 280, height = 36,
+  data, color, days, valueLabel, onPick, width = 280, height = 36,
 }: {
   data: number[];
   color: string;
   days?: string[];
   valueLabel?: string;
+  onPick?: (day: string) => void;
   width?: number;
   height?: number;
 }) {
@@ -475,10 +490,13 @@ function Sparkline({
       <svg
         ref={svgRef}
         viewBox={`0 0 ${width} ${height}`}
-        className="w-full cursor-crosshair"
+        className={cn("w-full", onPick ? "cursor-pointer" : "cursor-crosshair")}
         style={{ height }}
         onMouseMove={handleMove}
         onMouseLeave={() => setHoverIdx(null)}
+        onClick={() => {
+          if (onPick && hoverIdx != null && days?.[hoverIdx]) onPick(days[hoverIdx]);
+        }}
       >
         <defs>
           <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
@@ -520,6 +538,7 @@ function Sparkline({
           <div className="font-bold tabular-nums" style={{ color }}>
             {hover.v} <span className="text-muted-foreground font-normal">{valueLabel?.replace(/\s*\/\s*ngày$/i, "") ?? ""}</span>
           </div>
+          {onPick && <div className="text-muted-foreground/70 text-[9px] mt-0.5">Click để xem chi tiết</div>}
         </div>
       )}
     </div>
