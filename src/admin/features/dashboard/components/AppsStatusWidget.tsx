@@ -2,9 +2,10 @@
  * Dashboard widget "Trạng thái 2 app" — tổng quan IELTS Practice & Teacher's Hub.
  * Tất cả query cùng 1 Supabase DB nên không cần gọi sang app khác.
  */
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { GraduationCap, BookOpenCheck, ExternalLink, Users, School, Activity, CalendarClock, FileText } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { GraduationCap, BookOpenCheck, ExternalLink, Users, School, Activity, CalendarClock, FileText, Radio } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format, subDays } from "date-fns";
 import { cn } from "@shared/lib/utils";
