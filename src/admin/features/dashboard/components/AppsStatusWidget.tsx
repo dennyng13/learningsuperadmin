@@ -29,8 +29,11 @@ function useAppsStatus() {
       const now = new Date();
       const since24h = subDays(now, 1).toISOString();
       const since7d = subDays(now, 7).toISOString();
+      const prev14d = subDays(now, 14).toISOString();
       const todayStr = format(now, "yyyy-MM-dd");
       const since7dDate = format(subDays(now, 6), "yyyy-MM-dd");
+      const prev14dDate = format(subDays(now, 13), "yyyy-MM-dd");
+      const prev7dEndDate = format(subDays(now, 7), "yyyy-MM-dd");
 
       const [
         { count: activeStudents },
@@ -39,10 +42,13 @@ function useAppsStatus() {
         { count: testsRun7d },
         { data: testRows7d },
         { data: practiceRows7d },
+        { count: testsPrev7d },
+        { count: practicesPrev7d },
         { count: activeTeachers },
         { count: activeClasses },
         { data: todayEntries },
         { data: entries7d },
+        { count: entriesPrev7d },
       ] = await Promise.all([
         supabase.from("teachngo_students")
           .select("*", { count: "exact", head: true })
@@ -62,6 +68,15 @@ function useAppsStatus() {
         supabase.from("practice_results")
           .select("created_at")
           .gte("created_at", since7d),
+        // Prior 7-day window: [now-14d, now-7d)
+        supabase.from("test_results")
+          .select("*", { count: "exact", head: true })
+          .gte("created_at", prev14d)
+          .lt("created_at", since7d),
+        supabase.from("practice_results")
+          .select("*", { count: "exact", head: true })
+          .gte("created_at", prev14d)
+          .lt("created_at", since7d),
         supabase.from("teachers")
           .select("*", { count: "exact", head: true }),
         supabase.from("teachngo_classes")
@@ -73,6 +88,10 @@ function useAppsStatus() {
         supabase.from("study_plan_entries")
           .select("entry_date")
           .gte("entry_date", since7dDate),
+        supabase.from("study_plan_entries")
+          .select("*", { count: "exact", head: true })
+          .gte("entry_date", prev14dDate)
+          .lt("entry_date", prev7dEndDate),
       ]);
 
       // Build 7-day buckets (oldest → newest)
