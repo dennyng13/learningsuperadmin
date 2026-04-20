@@ -318,6 +318,7 @@ export default function TeacherActivityFeed() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [pulseIds, setPulseIds] = useState<Set<string>>(new Set());
   const [connected, setConnected] = useState(false);
+  const [limit, setLimit] = useState<number>(PAGE_SIZE);
 
   // Filters synced with URL query params (?teacher=xxx&kind=writing)
   const teacherFilter = searchParams.get("teacher") || "all";
@@ -332,6 +333,7 @@ export default function TeacherActivityFeed() {
     if (!value || value === "all") next.delete(key);
     else next.set(key, value);
     setSearchParams(next, { replace: true });
+    setLimit(PAGE_SIZE); // reset paging when filter changes
   };
 
   const clearFilters = () => {
@@ -339,11 +341,12 @@ export default function TeacherActivityFeed() {
     next.delete("teacher");
     next.delete("kind");
     setSearchParams(next, { replace: true });
+    setLimit(PAGE_SIZE);
   };
 
-  const { data: items, isLoading } = useQuery({
-    queryKey: ["teacher-activity-feed"],
-    queryFn: fetchFeed,
+  const { data: items, isLoading, isFetching } = useQuery({
+    queryKey: ["teacher-activity-feed", limit],
+    queryFn: () => fetchFeed(limit),
     staleTime: 60_000,
   });
 
