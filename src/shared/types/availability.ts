@@ -108,3 +108,5 @@ export interface CandidateMatchResult {
   availabilityOk: boolean;
   conflicts: BusyBlock[];
 }
+
+export type TeacherAvailabilitySetupState = "ready" | "missing_required_tables" | "unavailable";
