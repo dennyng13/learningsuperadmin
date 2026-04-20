@@ -468,7 +468,13 @@ export default function TeachersTab() {
                 <tr key={t.id} className={cn("transition-colors group", idx % 2 === 0 ? "bg-card" : "bg-muted/20", "hover:bg-primary/8")}>
                   <td className="px-4 py-2.5 font-semibold text-[13px]">
                     <div className="flex items-center gap-1.5">
-                      {t.full_name}
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/teachers/${t.id}`)}
+                        className="text-left hover:text-primary transition-colors"
+                      >
+                        {t.full_name}
+                      </button>
                       {(() => {
                         const count = allClasses.filter(c => c.teacher_id === t.id && c.status === "active").length;
                         return count > 0 ? (
@@ -570,6 +576,9 @@ export default function TeachersTab() {
                   </td>
                   <td className="px-4 py-2.5 text-right">
                     <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => navigate(`/teachers/${t.id}`)} title="Xem hồ sơ">
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </Button>
                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(t)} title="Sửa">
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
