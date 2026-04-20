@@ -10,6 +10,9 @@ import { adminNavItems } from "@shared/config/navigation";
 const EXTRA_LABELS: Record<string, string> = {
   "/profile": "Hồ sơ",
   "/teachers": "Giáo viên",
+  "/teachers/availability": "Lịch rảnh",
+  "/teachers/performance": "Hiệu suất",
+  "/teachers/income": "Tính lương",
   "/study-plans/templates": "Mẫu kế hoạch",
 };
 

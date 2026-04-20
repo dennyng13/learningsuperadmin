@@ -37,8 +37,7 @@ export const adminNavItems: NavItem[] = [
   { id: "classes",      label: "Lớp học",      icon: School,          route: "/classes",                       group: "main",   order: 8 },
   { id: "study-plans",  label: "Study Plans",  icon: ClipboardList,   route: "/study-plans",                   group: "main",   order: 9 },
   { id: "placement",    label: "Sắp lớp",      icon: UserSearch,      route: "/placement",                     group: "main",   order: 10 },
-  { id: "teacher-perf", label: "Hiệu suất GV", icon: BarChart3,       route: "/performance/teachers",          group: "main",   order: 11 },
-  { id: "attendance",   label: "Điểm danh",    icon: CalendarDays,    route: "/attendance",                    group: "main",   order: 12 },
+  { id: "attendance",   label: "Điểm danh",    icon: CalendarDays,    route: "/attendance",                    group: "main",   order: 11 },
 
   { id: "permissions",  label: "Phân quyền",    icon: ShieldCheck,    route: "/modules",        group: "system", superAdminOnly: true, order: 20 },
   { id: "feature-flags", label: "Feature Flags", icon: Flag,           route: "/feature-flags",  group: "system", superAdminOnly: true, order: 21 },
