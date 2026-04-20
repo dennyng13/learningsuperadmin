@@ -30,19 +30,20 @@ function useAppsStatus() {
       const since24h = subDays(now, 1).toISOString();
       const since7d = subDays(now, 7).toISOString();
       const todayStr = format(now, "yyyy-MM-dd");
+      const since7dDate = format(subDays(now, 6), "yyyy-MM-dd");
 
       const [
-        // ── IELTS Practice ──
         { count: activeStudents },
         { count: testsRun24h },
         { count: practicesRun24h },
         { count: testsRun7d },
-        // ── Teacher's Hub ──
+        { data: testRows7d },
+        { data: practiceRows7d },
         { count: activeTeachers },
         { count: activeClasses },
         { data: todayEntries },
+        { data: entries7d },
       ] = await Promise.all([
-        // active students = có linked_user_id (đã đăng nhập được app IELTS Practice)
         supabase.from("teachngo_students")
           .select("*", { count: "exact", head: true })
           .not("linked_user_id", "is", null),
@@ -55,6 +56,12 @@ function useAppsStatus() {
         supabase.from("test_results")
           .select("*", { count: "exact", head: true })
           .gte("created_at", since7d),
+        supabase.from("test_results")
+          .select("created_at")
+          .gte("created_at", since7d),
+        supabase.from("practice_results")
+          .select("created_at")
+          .gte("created_at", since7d),
         supabase.from("teachers")
           .select("*", { count: "exact", head: true }),
         supabase.from("teachngo_classes")
@@ -63,7 +70,33 @@ function useAppsStatus() {
         supabase.from("study_plan_entries")
           .select("id")
           .eq("entry_date", todayStr),
+        supabase.from("study_plan_entries")
+          .select("entry_date")
+          .gte("entry_date", since7dDate),
       ]);
+
+      // Build 7-day buckets (oldest → newest)
+      const days: string[] = Array.from({ length: 7 }, (_, i) =>
+        format(subDays(now, 6 - i), "yyyy-MM-dd")
+      );
+      const bucket = (
+        rows: Array<{ created_at?: string; entry_date?: string }> | null,
+        key: "created_at" | "entry_date",
+      ) => {
+        const map: Record<string, number> = Object.fromEntries(days.map((d) => [d, 0]));
+        (rows || []).forEach((r) => {
+          const raw = (r as any)[key];
+          if (!raw) return;
+          const d = key === "created_at" ? format(new Date(raw), "yyyy-MM-dd") : String(raw).slice(0, 10);
+          if (d in map) map[d] += 1;
+        });
+        return days.map((d) => map[d]);
+      };
+
+      const tSeries = bucket(testRows7d as any, "created_at");
+      const pSeries = bucket(practiceRows7d as any, "created_at");
+      const ieltsSeries = tSeries.map((v, i) => v + pSeries[i]);
+      const teacherSeries = bucket(entries7d as any, "entry_date");
 
       return {
         ielts: {
@@ -71,12 +104,15 @@ function useAppsStatus() {
           testsRun24h: testsRun24h ?? 0,
           practicesRun24h: practicesRun24h ?? 0,
           testsRun7d: testsRun7d ?? 0,
+          series7d: ieltsSeries,
         },
         teacher: {
           activeTeachers: activeTeachers ?? 0,
           activeClasses: activeClasses ?? 0,
           todaySessions: (todayEntries || []).length,
+          series7d: teacherSeries,
         },
+        days,
       };
     },
   });
