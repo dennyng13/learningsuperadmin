@@ -291,7 +291,7 @@ export default function AppsStatusWidget() {
 }
 
 function AppCard({
-  title, subtitle, icon: Icon, accent, bg, stroke, href, onManage, manageLabel, metrics, series, seriesLabel, days, loading,
+  title, subtitle, icon: Icon, accent, bg, stroke, href, onManage, manageLabel, metrics, series, seriesLabel, days, total7d, prev7d, loading,
 }: {
   title: string;
   subtitle: string;
@@ -306,6 +306,8 @@ function AppCard({
   series?: number[];
   seriesLabel?: string;
   days?: string[];
+  total7d?: number;
+  prev7d?: number;
   loading: boolean;
 }) {
   return (
