@@ -16,9 +16,14 @@ import { formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
 import {
   PenLine, Mic2, Megaphone, MessageCircleReply, Activity, ChevronRight, Sparkles,
+  Filter, X,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@shared/lib/utils";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@shared/components/ui/select";
+import { Button } from "@shared/components/ui/button";
 
 type ActivityKind = "writing" | "speaking" | "announcement" | "answer";
 
