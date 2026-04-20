@@ -263,6 +263,8 @@ export default function AppsStatusWidget() {
           series={ielts?.series7d}
           seriesLabel="Bài làm / ngày"
           days={data?.days}
+          total7d={ielts?.total7d}
+          prev7d={ielts?.prev7d}
           loading={isLoading}
         />
         <AppCard
@@ -279,6 +281,8 @@ export default function AppsStatusWidget() {
           series={teacher?.series7d}
           seriesLabel="Buổi học / ngày"
           days={data?.days}
+          total7d={teacher?.total7d}
+          prev7d={teacher?.prev7d}
           loading={isLoading}
         />
       </div>
