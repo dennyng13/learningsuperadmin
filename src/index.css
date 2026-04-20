@@ -1,97 +1,184 @@
+@import url('https://fonts.googleapis.com/css2?family=Epilogue:wght@300;400;500;600;700;800&family=Source+Sans+3:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
-
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --foreground: 200 15% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 200 15% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 200 15% 15%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 174 52% 47%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 186 100% 94%;
+    --secondary-foreground: 174 52% 30%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 186 60% 96%;
+    --muted-foreground: 200 10% 46%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 10 93% 68%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --success: 152 60% 42%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    --border: 186 30% 88%;
+    --input: 186 30% 88%;
+    --ring: 174 52% 47%;
 
     --radius: 0.5rem;
 
-    --sidebar-background: 0 0% 98%;
+    --dark: 220 20% 10%;
+    --dark-foreground: 0 0% 98%;
+    --dark-muted: 220 15% 18%;
 
-    --sidebar-foreground: 240 5.3% 26.1%;
+    --exam-header: 220 20% 10%;
+    --exam-header-foreground: 0 0% 100%;
+    --exam-sidebar: 186 60% 96%;
+    --exam-highlight: 45 100% 90%;
+    --exam-correct: 174 52% 47%;
+    --exam-incorrect: 10 93% 68%;
+    --exam-unanswered: 38 92% 50%;
 
-    --sidebar-primary: 240 5.9% 10%;
+    /* Annotation colors */
+    --annotation-error: 0 84% 60%;
+    --annotation-correction: 25 95% 53%;
+    --annotation-good: 152 60% 42%;
+    --annotation-comment: 210 100% 50%;
 
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
-
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-background: 186 60% 97%;
+    --sidebar-foreground: 200 15% 20%;
+    --sidebar-primary: 174 52% 35%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 186 60% 94%;
+    --sidebar-accent-foreground: 174 52% 30%;
+    --sidebar-border: 186 30% 88%;
+    --sidebar-ring: 174 52% 47%;
   }
+}
+
+/* ═══ Annotation styles ═══ */
+.annotation-error {
+  text-decoration: line-through;
+  text-decoration-color: hsl(var(--annotation-error));
+  color: hsl(var(--annotation-error) / 0.6);
+}
+.annotation-error-correction {
+  color: hsl(var(--annotation-error));
+  font-weight: 500;
+  font-size: 0.85em;
+  position: relative;
+  top: -0.8em;
+}
+.annotation-suggestion {
+  text-decoration: underline wavy;
+  text-decoration-color: hsl(var(--annotation-correction));
+}
+.annotation-good {
+  background: hsl(var(--annotation-good) / 0.15);
+  border-radius: 2px;
+  padding: 0 2px;
+}
+.annotation-comment {
+  border-bottom: 2px dashed hsl(var(--annotation-comment) / 0.5);
+}
+
+/* ═══ Annotation toolbar animations ═══ */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes annotation-toolbar-in {
+    from { opacity: 0; transform: translateY(6px) scale(0.96); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  @keyframes annotation-sheet-in {
+    from { transform: translateY(100%); }
+    to   { transform: translateY(0); }
+  }
+  @keyframes annotation-backdrop-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  @keyframes annotation-form-in {
+    from { opacity: 0; transform: translateX(8px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  .annotation-toolbar-enter {
+    animation: annotation-toolbar-in 0.18s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .annotation-sheet-enter {
+    animation: annotation-sheet-in 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .annotation-backdrop-enter {
+    animation: annotation-backdrop-in 0.2s ease-out both;
+  }
+  .annotation-form-enter {
+    animation: annotation-form-in 0.2s ease-out both;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes page-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes card-in {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes slide-up {
+    from { opacity: 0; transform: translateY(100%); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .animate-page-in {
+    animation: page-in 0.2s ease-out both;
+  }
+  .animate-card-in {
+    animation: card-in 0.25s ease-out both;
+  }
+  .animate-slide-up {
+    animation: slide-up 0.3s ease-out both;
+  }
+
+  /* Staggered card delays (use with animate-card-in) */
+  .animate-card-in:nth-child(1) { animation-delay: 0ms; }
+  .animate-card-in:nth-child(2) { animation-delay: 50ms; }
+  .animate-card-in:nth-child(3) { animation-delay: 100ms; }
+  .animate-card-in:nth-child(4) { animation-delay: 150ms; }
+  .animate-card-in:nth-child(5) { animation-delay: 200ms; }
+  .animate-card-in:nth-child(6) { animation-delay: 250ms; }
+  .animate-card-in:nth-child(7) { animation-delay: 300ms; }
+  .animate-card-in:nth-child(8) { animation-delay: 350ms; }
+
+  /* Hide scrollbar utility */
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
+  .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+  /* Safe area padding for notched phones (iPhone X+, etc.) */
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+}
+
+@keyframes bar-grow {
+  0% { transform: scaleY(0); }
+  100% { transform: scaleY(1); }
 }
 
 @layer base {
@@ -100,6 +187,412 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-body antialiased;
+    -webkit-overflow-scrolling: touch;
   }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display;
+  }
+}
+
+/* ═══ Universal button hover effect ═══ */
+button:not([disabled]) {
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.12s ease, opacity 0.15s ease;
+}
+button:not([disabled]):hover {
+  filter: brightness(1.06);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+button:not([disabled]):active {
+  transform: scale(0.97);
+  box-shadow: none;
+  filter: brightness(0.98);
+}
+button[disabled] {
+  opacity: 0.55;
+  cursor: not-allowed !important;
+}
+
+/* ═══ Global hover utility classes ═══ */
+.hover-lift {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+}
+.hover-lift:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.hover-scale {
+  transition: transform 0.2s ease;
+}
+.hover-scale:hover {
+  transform: scale(1.05);
+}
+
+.hover-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.hover-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+  border-color: hsl(var(--primary) / 0.3);
+}
+
+@layer components {
+  .exam-passage {
+    @apply leading-[1.8] text-[15px] tracking-[0.01em];
+  }
+
+  .exam-passage p {
+    @apply mb-4 text-foreground/90;
+  }
+
+  .exam-passage p:first-child::first-letter {
+    @apply text-2xl font-bold text-primary;
+  }
+
+  .exam-passage strong {
+    @apply font-semibold text-foreground;
+  }
+
+  .exam-passage em {
+    @apply text-primary/80;
+  }
+
+  .question-input {
+    @apply border-b-2 border-primary/40 bg-primary/5 outline-none px-2 py-1 
+           min-w-[140px] text-center font-medium transition-all rounded-t-sm
+           focus:border-primary focus:bg-primary/10;
+  }
+
+  /* Scrollbar styling for exam panels */
+  .exam-passage::-webkit-scrollbar,
+  .overflow-y-auto::-webkit-scrollbar {
+    @apply w-1.5;
+  }
+
+  .exam-passage::-webkit-scrollbar-track,
+  .overflow-y-auto::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  .exam-passage::-webkit-scrollbar-thumb,
+  .overflow-y-auto::-webkit-scrollbar-thumb {
+    @apply bg-border rounded-full;
+  }
+
+  .exam-passage::-webkit-scrollbar-thumb:hover,
+  .overflow-y-auto::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/40;
+  }
+}
+
+@keyframes note-flash {
+  0%, 100% { background-color: transparent; }
+  25%, 75% { background-color: hsl(var(--primary) / 0.25); }
+}
+
+.exam-note-flash {
+  animation: note-flash 1.5s ease-in-out;
+}
+
+/* Blank shortcode highlight in RichTextEditor (legacy [blank_x]) */
+.blank-shortcode-highlight {
+  background-color: hsl(var(--primary) / 0.15);
+  color: hsl(var(--primary));
+  border: 1px solid hsl(var(--primary) / 0.3);
+  border-radius: 4px;
+  padding: 1px 4px;
+  font-weight: 600;
+  font-size: 0.85em;
+  font-family: ui-monospace, monospace;
+}
+
+/* Blank mark highlight in RichTextEditor (new ielts-blank format) */
+.ProseMirror .ielts-blank {
+  background-color: hsl(var(--primary) / 0.15);
+  color: hsl(var(--primary));
+  border-bottom: 2px solid hsl(var(--primary) / 0.5);
+  padding: 1px 2px;
+  font-weight: 600;
+  border-radius: 2px;
+  cursor: pointer;
+  position: relative;
+}
+
+.ProseMirror .ielts-blank::before {
+  content: attr(data-blank-num);
+  font-size: 9px;
+  font-weight: 800;
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  border-radius: 3px;
+  padding: 0 3px;
+  margin-right: 3px;
+  vertical-align: super;
+  line-height: 1;
+}
+
+/* Flash animation for answer key input when scrolled to from shortcode */
+@keyframes blank-answer-pulse {
+  0% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0.5); background-color: hsl(var(--primary) / 0.15); }
+  40% { box-shadow: 0 0 0 6px hsl(var(--primary) / 0); background-color: hsl(var(--primary) / 0.1); }
+  100% { box-shadow: 0 0 0 0 transparent; background-color: transparent; }
+}
+
+.blank-answer-flash {
+  animation: blank-answer-pulse 1.2s ease-out;
+  border-color: hsl(var(--primary)) !important;
+}
+
+/* Flash animation for shortcode/mark in editor when scrolled to from answer key */
+@keyframes blank-shortcode-pulse {
+  0% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0.6); transform: scale(1.05); }
+  40% { box-shadow: 0 0 0 8px hsl(var(--primary) / 0); transform: scale(1.02); }
+  100% { box-shadow: 0 0 0 0 transparent; transform: scale(1); }
+}
+
+.blank-shortcode-flash {
+  animation: blank-shortcode-pulse 1.2s ease-out;
+  background-color: hsl(var(--primary) / 0.3) !important;
+}
+
+/* Drag-and-drop visual feedback */
+[draggable]:active {
+  opacity: 0.7;
+}
+[draggable].drag-over {
+  border-color: hsl(var(--primary)) !important;
+  box-shadow: 0 0 0 2px hsl(var(--primary) / 0.2);
+}
+
+/* ═══ Prose list styles (restore bullets & numbers) ═══ */
+.prose ul, .rich-content ul {
+  list-style-type: disc;
+  padding-left: 1.5em;
+  margin: 0.5em 0;
+}
+.prose ol, .rich-content ol {
+  list-style-type: decimal;
+  padding-left: 1.5em;
+  margin: 0.5em 0;
+}
+.prose li, .rich-content li {
+  margin: 0.25em 0;
+}
+.prose ul ul, .rich-content ul ul { list-style-type: circle; }
+.prose ul ul ul, .rich-content ul ul ul { list-style-type: square; }
+
+/* ═══ IELTS Completion styled containers ═══ */
+
+/* Shared floating label */
+.ielts-form-box, .ielts-note-box, .ielts-table-box, .ielts-summary-box, .ielts-flowchart-box {
+  position: relative;
+}
+.ielts-form-box::before, .ielts-note-box::before, .ielts-table-box::before,
+.ielts-summary-box::before, .ielts-flowchart-box::before {
+  content: attr(data-form-title);
+  position: absolute;
+  top: -0.75em;
+  left: 1rem;
+  background: hsl(var(--card));
+  padding: 0 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: hsl(var(--primary));
+}
+
+/* Form Completion — bordered form/application style */
+.ielts-form-box {
+  border: 2px solid hsl(var(--border));
+  border-radius: 0.75rem;
+  padding: 1.25rem 1.5rem;
+  background: hsl(var(--card));
+}
+
+/* Note Completion — notepad/memo style with left accent */
+.ielts-note-box {
+  border: 1.5px dashed hsl(var(--border));
+  border-left: 4px solid hsl(var(--primary));
+  border-radius: 0.5rem;
+  padding: 1.25rem 1.5rem;
+  background: hsl(var(--muted) / 0.3);
+}
+.ielts-note-box::before {
+  background: hsl(var(--muted) / 0.3);
+}
+
+/* Table Completion — structured table-like container */
+.ielts-table-box {
+  border: 2px solid hsl(var(--foreground) / 0.2);
+  border-radius: 0.5rem;
+  padding: 1.25rem 1.5rem;
+  background: hsl(var(--card));
+}
+.ielts-table-box [class*="prose"] table,
+.ielts-table-box table {
+  border-collapse: collapse;
+  width: 100%;
+}
+.ielts-table-box td, .ielts-table-box th {
+  border: 1.5px solid hsl(var(--foreground) / 0.15);
+  padding: 0.5rem 0.75rem;
+}
+.ielts-table-box th {
+  background: hsl(var(--muted) / 0.5);
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.03em;
+}
+
+/* Summary Completion — paragraph excerpt with double-line border */
+.ielts-summary-box {
+  border: 2px double hsl(var(--primary) / 0.4);
+  border-radius: 0.75rem;
+  padding: 1.25rem 1.5rem;
+  background: hsl(var(--primary) / 0.03);
+}
+.ielts-summary-box::before {
+  background: hsl(var(--primary) / 0.03);
+}
+
+/* Flow Chart Completion — step-by-step diagram style */
+.ielts-flowchart-box {
+  border: 2px solid hsl(var(--foreground) / 0.15);
+  border-left: 4px solid hsl(var(--accent));
+  border-radius: 0.5rem;
+  padding: 1.25rem 1.5rem;
+  background: hsl(var(--card));
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 1.75rem,
+    hsl(var(--border) / 0.3) 1.75rem,
+    hsl(var(--border) / 0.3) calc(1.75rem + 1px)
+  );
+}
+.ielts-flowchart-box::before {
+  background: hsl(var(--card));
+}
+
+/* Diagram Label Completion — blueprint/schematic style */
+.ielts-diagram-box {
+  position: relative;
+  border: 2px solid hsl(var(--primary) / 0.35);
+  border-radius: 0.75rem;
+  padding: 1.25rem 1.5rem;
+  background:
+    radial-gradient(circle at 1px 1px, hsl(var(--primary) / 0.06) 1px, transparent 0) 0 0 / 20px 20px,
+    hsl(var(--card));
+}
+.ielts-diagram-box::before {
+  content: attr(data-form-title);
+  position: absolute;
+  top: -0.75em;
+  left: 1rem;
+  background: hsl(var(--card));
+  padding: 0 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: hsl(var(--primary));
+}
+
+/* Sentence Completion — clean underline-accent style */
+.ielts-sentence-box {
+  position: relative;
+  border: 1.5px solid hsl(var(--border));
+  border-bottom: 3px solid hsl(var(--primary) / 0.5);
+  border-radius: 0.5rem;
+  padding: 1.25rem 1.5rem;
+  background: hsl(var(--card));
+}
+.ielts-sentence-box::before {
+  content: attr(data-form-title);
+  position: absolute;
+  top: -0.75em;
+  left: 1rem;
+  background: hsl(var(--card));
+  padding: 0 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: hsl(var(--primary));
+}
+
+/* ── Print styles ── */
+@media print {
+  body { background: white !important; }
+  .print\\:hidden { display: none !important; }
+  .print\\:p-0 { padding: 0 !important; }
+  .print\\:max-w-none { max-width: none !important; }
+  .print\\:space-y-4 > :not([hidden]) ~ :not([hidden]) {
+    --tw-space-y-reverse: 0;
+    margin-top: calc(1rem * calc(1 - var(--tw-space-y-reverse)));
+    margin-bottom: calc(1rem * var(--tw-space-y-reverse));
+  }
+}
+
+@keyframes bounce-slow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+.animate-bounce-slow { animation: bounce-slow 3s ease-in-out infinite; }
+
+/* Card interactions */
+@keyframes card-press { 0% { transform: scale(1); } 50% { transform: scale(0.97); } 100% { transform: scale(1); } }
+.animate-card-press { animation: card-press 150ms ease-out; }
+
+/* Streak fire pulse */
+@keyframes fire-pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.15); opacity: 0.8; } }
+.animate-fire { animation: fire-pulse 2s ease-in-out infinite; }
+
+/* Mascot gentle float */
+@keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+.animate-float { animation: float 3s ease-in-out infinite; }
+
+/* Success checkmark */
+@keyframes check-pop { 0% { transform: scale(0) rotate(-10deg); opacity: 0; } 60% { transform: scale(1.2) rotate(5deg); } 100% { transform: scale(1) rotate(0); opacity: 1; } }
+.animate-check { animation: check-pop 400ms cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+/* Score counter */
+@keyframes count-up { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.animate-count { animation: count-up 600ms ease-out; }
+
+/* New badge shimmer */
+@keyframes shimmer { 0% { background-position: -200% center; } 100% { background-position: 200% center; } }
+.badge-new {
+  background: linear-gradient(90deg, hsl(var(--accent)) 0%, hsl(var(--accent) / 0.7) 50%, hsl(var(--accent)) 100%);
+  background-size: 200% auto;
+  animation: shimmer 2s linear infinite;
+}
+
+/* Important glow highlight (animated border) */
+@keyframes important-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 hsl(var(--primary) / 0.5), 0 0 8px 0 hsl(var(--primary) / 0.3);
+  }
+  50% {
+    box-shadow: 0 0 0 4px hsl(var(--primary) / 0), 0 0 16px 2px hsl(var(--primary) / 0.6);
+  }
+}
+.animate-important-glow {
+  animation: important-glow 2s ease-in-out infinite;
+  border-radius: 0.5rem;
+}
+
+/* All motion: respect user preference */
+@media (prefers-reduced-motion: reduce) {
+  .animate-fire, .animate-float, .animate-check,
+  .animate-count, .badge-new, .animate-card-press,
+  .animate-bounce-slow { animation: none; }
 }
