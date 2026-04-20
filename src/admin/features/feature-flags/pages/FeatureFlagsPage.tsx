@@ -386,34 +386,40 @@ function OverridesDialog({ flag, onClose }: { flag: FeatureFlag; onClose: () => 
     },
   });
 
-  // Map user_id → email (via profiles)
+  // Map user_id → full_name (profiles table không có email column)
   const userIds = (overrides || []).map((o) => o.user_id);
   const { data: profiles } = useQuery({
     queryKey: ["profiles-for-overrides", userIds.join(",")],
     enabled: userIds.length > 0,
     queryFn: async () => {
-      const { data } = await supabase.from("profiles").select("id, email, full_name").in("id", userIds);
-      return (data || []) as Array<{ id: string; email: string | null; full_name: string | null }>;
+      const { data } = await supabase.from("profiles").select("id, full_name").in("id", userIds);
+      return (data || []) as Array<{ id: string; full_name: string | null }>;
     },
   });
   const profMap = useMemo(() => {
-    const m: Record<string, { email: string | null; full_name: string | null }> = {};
-    (profiles || []).forEach((p) => { m[p.id] = { email: p.email, full_name: p.full_name }; });
+    const m: Record<string, { full_name: string | null }> = {};
+    (profiles || []).forEach((p) => { m[p.id] = { full_name: p.full_name }; });
     return m;
   }, [profiles]);
 
   const addOverride = async () => {
     if (!email.trim()) return;
     setAdding(true);
-    // Lookup user by email
-    const { data: prof } = await supabase.from("profiles").select("id").eq("email", email.trim()).maybeSingle();
-    if (!prof?.id) {
-      toast({ title: "Không tìm thấy user", description: email, variant: "destructive" });
+    // Lookup user bằng email qua teachngo_students.email (app đang dùng bảng này)
+    const { data: stu } = await supabase
+      .from("teachngo_students")
+      .select("linked_user_id")
+      .eq("email", email.trim())
+      .not("linked_user_id", "is", null)
+      .maybeSingle();
+    const userId = stu?.linked_user_id;
+    if (!userId) {
+      toast({ title: "Không tìm thấy user", description: `Email ${email} chưa liên kết với tài khoản.`, variant: "destructive" });
       setAdding(false);
       return;
     }
     const { error } = await supabase.from("feature_flag_overrides" as any).upsert(
-      { flag_id: flag.id, user_id: prof.id, enabled, note: note || null } as any,
+      { flag_id: flag.id, user_id: userId, enabled, note: note || null } as any,
       { onConflict: "flag_id,user_id" } as any
     );
     setAdding(false);
