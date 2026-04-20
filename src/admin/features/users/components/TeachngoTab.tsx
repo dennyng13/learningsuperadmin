@@ -296,26 +296,27 @@ export default function TeachngoTab({ roleCategory = "students" }: { roleCategor
   };
 
   const fetchRoles = async (studentList: UnifiedUser[]) => {
-    const linkedIds = studentList.filter(s => s.linked_user_id).map(s => s.linked_user_id!);
+    const linkedIds = Array.from(new Set(studentList.filter(s => s.linked_user_id).map(s => s.linked_user_id!)));
     if (linkedIds.length === 0) return;
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-      const res = await supabase.functions.invoke("teachngo-link-students", {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-        body: { action: "get_roles", user_ids: linkedIds },
-      });
-      if (res.data?.roles) {
-        const map: Record<string, string> = {};
-        for (const r of res.data.roles) {
-          const current = map[r.user_id];
-          const priority: Record<string, number> = { super_admin: 5, admin: 4, teacher: 3, user: 2, guest: 1 };
-          if (!current || (priority[r.role] || 0) > (priority[current] || 0)) {
-            map[r.user_id] = r.role;
-          }
+      const { data: roleRows, error } = await supabase
+        .from("user_roles")
+        .select("user_id, role")
+        .in("user_id", linkedIds);
+
+      if (error) throw error;
+
+      const map: Record<string, string> = {};
+      const priority: Record<string, number> = { super_admin: 5, admin: 4, teacher: 3, user: 2, guest: 1 };
+
+      for (const row of (roleRows || []) as { user_id: string; role: string }[]) {
+        const current = map[row.user_id];
+        if (!current || (priority[row.role] || 0) > (priority[current] || 0)) {
+          map[row.user_id] = row.role;
         }
-        setUserRolesMap(map);
       }
+
+      setUserRolesMap(map);
     } catch {}
   };
 
