@@ -21,6 +21,7 @@ import AdminActivityCalendar from "@admin/features/dashboard/components/AdminAct
 import TeacherProgressSummary from "@shared/components/teacher-shared/TeacherProgressSummary";
 import ContentAnalytics from "@admin/features/dashboard/components/ContentAnalytics";
 import SchoolOverview from "@admin/features/dashboard/components/SchoolOverview";
+import AppsStatusWidget from "@admin/features/dashboard/components/AppsStatusWidget";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@shared/components/ui/button";
 
@@ -235,6 +236,9 @@ export default function AdminDashboardPage() {
 
       {/* ── School Overview (Single Source of Truth) ── */}
       <SchoolOverview />
+
+      {/* ── Trạng thái 2 app (IELTS Practice + Teacher's Hub) ── */}
+      <AppsStatusWidget />
 
       {/* ── Stats Grid ── */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
