@@ -112,7 +112,7 @@ export function normalizeRules(input: unknown, teacherId?: string): TeacherAvail
 export function normalizeExceptions(input: unknown, teacherId?: string): TeacherAvailabilityException[] {
   if (!Array.isArray(input)) return [];
   return input
-    .map((row: any) => ({
+    .map((row: any): TeacherAvailabilityException => ({
       id: row?.id,
       teacher_id: row?.teacher_id || teacherId,
       exception_date: row?.exception_date || row?.date,
