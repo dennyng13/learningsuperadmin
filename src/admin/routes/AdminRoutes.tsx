@@ -72,6 +72,9 @@ export default function AppRoutes() {
           {/* Users (with nested performance) */}
           <Route path="users" element={<UserManagementPage />} />
           <Route path="teachers" element={<TeacherManagementPage />} />
+          <Route path="teachers/availability" element={<TeacherManagementPage />} />
+          <Route path="teachers/performance" element={<TeacherManagementPage />} />
+          <Route path="teachers/income" element={<TeacherManagementPage />} />
           <Route path="teachers/:teacherId" element={<TeacherProfilePage />} />
           <Route path="users/:userId/performance" element={<StudentPerformancePage />} />
 
@@ -89,7 +92,7 @@ export default function AppRoutes() {
           <Route path="placement/:id" element={<PlacementTestEditorPage />} />
 
           {/* Performance */}
-          <Route path="performance/teachers" element={<TeacherPerformancePage />} />
+          <Route path="performance/teachers" element={<Navigate to="/teachers/performance" replace />} />
 
           {/* Misc */}
           <Route path="flashcards" element={<FlashcardSetsPage />} />
