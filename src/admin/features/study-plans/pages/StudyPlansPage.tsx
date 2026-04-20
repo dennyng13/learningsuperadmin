@@ -3,6 +3,7 @@ import { useAllStudyPlans } from "@shared/hooks/useStudyPlan";
 import { StudyPlanList } from "@shared/components/study-plan/StudyPlanList";
 import { Input } from "@shared/components/ui/input";
 import { Button } from "@shared/components/ui/button";
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@shared/components/ui/breadcrumb";
 import { Search, Plus, ChevronDown, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@shared/lib/utils";
@@ -36,6 +37,18 @@ export default function StudyPlansPage() {
 
   return (
     <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-4 animate-page-in">
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/">Dashboard</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>Kế hoạch học tập</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
