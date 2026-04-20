@@ -8,6 +8,7 @@ import type {
   TeacherAvailabilityRule,
   TeacherCapability,
   TeacherRecordLite,
+  TeacherAvailabilitySetupState,
 } from "@shared/types/availability";
 import { normalizeExceptions, normalizeRules, relationMissing } from "@shared/utils/availability";
 
@@ -20,7 +21,26 @@ interface TeacherAvailabilityData {
   drafts: TeacherAvailabilityDraft[];
   capabilities: TeacherCapability[];
   setupMissing: boolean;
+  setupState: TeacherAvailabilitySetupState;
   setupMessage?: string;
+}
+
+function shouldTreatAsMissing(error: unknown) {
+  if (!error || !relationMissing(error)) return false;
+  const message = typeof error === "object" && error && "message" in error ? String((error as any).message).toLowerCase() : "";
+  return [
+    "teacher_availability_drafts",
+    "teacher_availability_rules",
+    "teacher_availability_exceptions",
+  ].some((table) => message.includes(table));
+}
+
+function isAccessProblem(error: unknown) {
+  if (!error) return false;
+  const message = typeof error === "object" && error && "message" in error ? String((error as any).message).toLowerCase() : "";
+  const code = typeof error === "object" && error && "code" in error ? String((error as any).code).toLowerCase() : "";
+  return ["permission denied", "jwt", "not authenticated", "unauthorized", "forbidden", "rls"].some((token) => message.includes(token))
+    || ["42501", "401", "403", "pgrst301"].includes(code);
 }
 
 async function loadTeacherAvailabilityData(): Promise<TeacherAvailabilityData> {
@@ -36,7 +56,7 @@ async function loadTeacherAvailabilityData(): Promise<TeacherAvailabilityData> {
   ]);
 
   const requiredErrors = [draftsRes.error, rulesRes.error, exceptionsRes.error].filter(Boolean);
-  if (requiredErrors.some(relationMissing)) {
+  if (requiredErrors.some(shouldTreatAsMissing)) {
     return {
       teachers: (teachersRes.data as TeacherRecordLite[]) ?? [],
       classes: (classesRes.data as TeachngoClassLite[]) ?? [],
@@ -46,7 +66,26 @@ async function loadTeacherAvailabilityData(): Promise<TeacherAvailabilityData> {
       drafts: [],
       capabilities: [],
       setupMissing: true,
+      setupState: "missing_required_tables",
       setupMessage: "Thiếu bảng teacher_availability_* trong DB dùng chung — hãy apply file docs/teacher-availability-flow-assumption.sql trước.",
+    };
+  }
+
+  if (requiredErrors.length > 0) {
+    const firstError = requiredErrors[0];
+    return {
+      teachers: (teachersRes.data as TeacherRecordLite[]) ?? [],
+      classes: (classesRes.data as TeachngoClassLite[]) ?? [],
+      classSessions: sessionsRes.error && relationMissing(sessionsRes.error) ? [] : (sessionsRes.data as any[]) ?? [],
+      rules: [],
+      exceptions: [],
+      drafts: [],
+      capabilities: capabilitiesRes.error && relationMissing(capabilitiesRes.error) ? [] : ((capabilitiesRes.data as TeacherCapability[]) ?? []),
+      setupMissing: false,
+      setupState: "unavailable",
+      setupMessage: isAccessProblem(firstError)
+        ? "Không tải được module lịch rảnh vì tài khoản hiện tại chưa có quyền đọc bảng availability trong DB dùng chung."
+        : `Không tải được dữ liệu availability: ${String((firstError as any)?.message || "Unknown error")}`,
     };
   }
 
@@ -63,6 +102,7 @@ async function loadTeacherAvailabilityData(): Promise<TeacherAvailabilityData> {
     })),
     capabilities: capabilitiesRes.error && relationMissing(capabilitiesRes.error) ? [] : ((capabilitiesRes.data as TeacherCapability[]) ?? []),
     setupMissing: false,
+    setupState: "ready",
   };
 }
 
