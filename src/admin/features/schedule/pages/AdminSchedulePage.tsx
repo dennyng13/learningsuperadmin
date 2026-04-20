@@ -226,6 +226,10 @@ function AdminSessionCard({ s, conflicted }: { s: SessionWithClass; conflicted: 
   );
 }
 
+function TeacherAvailabilityStateNotice({ message }: { message?: string }) {
+  return <ScheduleSetupNotice title="Module lịch rảnh chưa thể tải dữ liệu" message={message || "Không đọc được dữ liệu availability từ DB dùng chung."} />;
+}
+
 function AdminWeeklyGrid({ sessions, weekDates, conflictIds }: { sessions: SessionWithClass[]; weekDates: Date[]; conflictIds: Set<string> }) {
   const byDay = useMemo(() => {
     const map = new Map<number, SessionWithClass[]>();
@@ -702,6 +706,10 @@ export function AvailabilityDraftsTab() {
     return <ScheduleSetupNotice title="Module lịch rảnh đang chờ DB schema" message={data.setupMessage} />;
   }
 
+  if (data?.setupState === "unavailable") {
+    return <TeacherAvailabilityStateNotice message={data.setupMessage} />;
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
@@ -909,6 +917,10 @@ function ClassOpeningTab() {
 
   if (data?.setupMissing) {
     return <ScheduleSetupNotice title="Matching giáo viên cần schema availability" message={data.setupMessage} />;
+  }
+
+  if (data?.setupState === "unavailable") {
+    return <TeacherAvailabilityStateNotice message={data.setupMessage} />;
   }
 
   return (
