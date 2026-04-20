@@ -270,6 +270,7 @@ export default function AppsStatusWidget() {
           total7d={ielts?.total7d}
           prev7d={ielts?.prev7d}
           loading={isLoading}
+          onPickDay={(day) => setDrill({ kind: "ielts", day })}
         />
         <AppCard
           title="Teacher's Hub"
@@ -288,8 +289,16 @@ export default function AppsStatusWidget() {
           total7d={teacher?.total7d}
           prev7d={teacher?.prev7d}
           loading={isLoading}
+          onPickDay={(day) => setDrill({ kind: "teacher", day })}
         />
       </div>
+
+      <DayDrillDownDialog
+        open={drill !== null}
+        onClose={() => setDrill(null)}
+        kind={drill?.kind ?? "ielts"}
+        day={drill?.day ?? null}
+      />
     </div>
   );
 }
