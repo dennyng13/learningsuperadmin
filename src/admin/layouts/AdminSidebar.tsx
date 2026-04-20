@@ -1,5 +1,5 @@
 import {
-  LogOut, Shield, ExternalLink, ChevronRight,
+  LogOut, ExternalLink, ChevronRight,
 } from "lucide-react";
 import { NavLink } from "@shared/components/misc/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
