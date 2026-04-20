@@ -22,6 +22,7 @@ import TeacherProgressSummary from "@shared/components/teacher-shared/TeacherPro
 import ContentAnalytics from "@admin/features/dashboard/components/ContentAnalytics";
 import SchoolOverview from "@admin/features/dashboard/components/SchoolOverview";
 import AppsStatusWidget from "@admin/features/dashboard/components/AppsStatusWidget";
+import TeacherActivityFeed from "@admin/features/dashboard/components/TeacherActivityFeed";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@shared/components/ui/button";
 
@@ -236,6 +237,9 @@ export default function AdminDashboardPage() {
 
       {/* ── Trạng thái 2 app (IELTS Practice + Teacher's Hub) ── */}
       <AppsStatusWidget />
+
+      {/* ── Hoạt động giáo viên (realtime feed) ── */}
+      <TeacherActivityFeed />
 
       {/* ── Stats Grid ── */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
