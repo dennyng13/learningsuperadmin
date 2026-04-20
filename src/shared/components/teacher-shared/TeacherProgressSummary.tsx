@@ -297,7 +297,7 @@ export default function TeacherProgressSummary() {
                   {delayedClasses.map(dc => (
                     <button
                       key={dc.classId}
-                      onClick={() => navigate(`/admin/classes?search=${encodeURIComponent(dc.className)}`)}
+                      onClick={() => navigate(`/classes?search=${encodeURIComponent(dc.className)}`)}
                       className="w-full text-left rounded-lg border border-amber-200 dark:border-amber-800/50 bg-amber-50/50 dark:bg-amber-950/20 p-3 hover:bg-amber-100/50 dark:hover:bg-amber-900/30 transition-colors cursor-pointer"
                     >
                       <div className="flex items-center justify-between gap-2">

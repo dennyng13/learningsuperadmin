@@ -242,7 +242,7 @@ export default function TeacherPerformancePage() {
                 className="border-b last:border-0 hover:bg-muted/20 transition-colors cursor-pointer"
                 onClick={() => {
                   if (t.linked_user_id) {
-                    navigate(`/admin/student/${t.linked_user_id}/performance`);
+                    navigate(`/users/${t.linked_user_id}/performance`);
                   }
                 }}
               >

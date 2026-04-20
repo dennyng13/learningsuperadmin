@@ -289,7 +289,7 @@ export default function TestEditorPage() {
     return () => window.removeEventListener("beforeunload", handler);
   }, [isDirty]);
 
-  const backPath = returnTo ? decodeURIComponent(returnTo) : "/admin/tests";
+  const backPath = returnTo ? decodeURIComponent(returnTo) : "/tests";
 
   const handleBack = () => {
     if (isDirty) {
@@ -998,7 +998,7 @@ export default function TestEditorPage() {
         if (returnTo) {
           navigate(decodeURIComponent(returnTo), { replace: true });
         } else {
-          navigate(`/admin/tests/${assessmentId}`, { replace: true });
+          navigate(`/tests/${assessmentId}`, { replace: true });
         }
       }
 
@@ -1086,7 +1086,7 @@ export default function TestEditorPage() {
           </div>
         )}
         {!isNew && (
-          <Button variant="outline" onClick={() => navigate(`/admin/tests/${id}/preview`)} className="gap-2 rounded-xl">
+          <Button variant="outline" onClick={() => navigate(`/tests/${id}/preview`)} className="gap-2 rounded-xl">
             <Eye className="h-4 w-4" /> Preview
           </Button>
         )}

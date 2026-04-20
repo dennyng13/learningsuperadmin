@@ -137,7 +137,7 @@ export default function TestManagementPage() {
       .single();
     if (error) { toast.error("Lỗi tạo flashcard"); return; }
     toast.success("Đã tạo bộ flashcard");
-    navigate(`/admin/flashcards?edit=${(data as any).id}`);
+    navigate(`/flashcards?edit=${(data as any).id}`);
   };
 
   const usedLevels = [...new Set((assessments || []).map(t => (t as any).course_level).filter(Boolean))];
@@ -177,7 +177,7 @@ export default function TestManagementPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={() => navigate("/admin/tests/new")} className="gap-2 rounded-xl">
+          <Button onClick={() => navigate("/tests/new")} className="gap-2 rounded-xl">
             <Plus className="h-4 w-4" /> Tạo mới
           </Button>
         </div>
@@ -533,10 +533,10 @@ export default function TestManagementPage() {
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => navigate(`/admin/tests/${test.id}`)}>
+                    <DropdownMenuItem onClick={() => navigate(`/tests/${test.id}`)}>
                       <Pencil className="h-4 w-4 mr-2" /> Edit
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate(`/admin/tests/${test.id}/preview`)}>
+                    <DropdownMenuItem onClick={() => navigate(`/tests/${test.id}/preview`)}>
                       <Eye className="h-4 w-4 mr-2" /> Preview
                     </DropdownMenuItem>
                     <DropdownMenuItem

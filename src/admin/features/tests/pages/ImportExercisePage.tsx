@@ -147,7 +147,7 @@ export default function ImportExercisePage({ embedded = false }: { embedded?: bo
         .single();
       if (error) throw error;
       toast.success("Đã tạo bài tập nháp");
-      navigate("/admin/practice");
+      navigate("/tests?type=exercise");
     } catch (e: any) {
       toast.error("Lỗi: " + (e.message || "Unknown"));
       setStep("upload");
@@ -269,9 +269,9 @@ export default function ImportExercisePage({ embedded = false }: { embedded?: bo
       {!embedded && (
         <>
           <nav className="flex items-center gap-1.5 text-sm text-muted-foreground">
-            <Link to="/admin" className="hover:text-foreground transition-colors">Dashboard</Link>
+            <Link to="/" className="hover:text-foreground transition-colors">Dashboard</Link>
             <ChevronRight className="h-3.5 w-3.5" />
-            <Link to="/admin/practice" className="hover:text-foreground transition-colors">Kho bài tập</Link>
+            <Link to="/tests?type=exercise" className="hover:text-foreground transition-colors">Kho bài tập</Link>
             <ChevronRight className="h-3.5 w-3.5" />
             <span className="text-foreground font-medium">Import bài tập</span>
           </nav>
@@ -604,7 +604,7 @@ export default function ImportExercisePage({ embedded = false }: { embedded?: bo
           </p>
           <div className="flex gap-3 justify-center pt-2">
             <Button variant="outline" onClick={resetAll}>Import thêm</Button>
-            <Button onClick={() => navigate("/admin/practice")} className="gap-2">
+            <Button onClick={() => navigate("/tests?type=exercise")} className="gap-2">
               <ArrowRight className="h-4 w-4" /> Về kho bài tập
             </Button>
           </div>

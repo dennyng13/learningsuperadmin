@@ -246,7 +246,7 @@ function PlacementTestsTab() {
           <span className="text-xs text-muted-foreground ml-auto">{filtered.length} / {tests.length} đề thi</span>
         </div>
 
-        <Button onClick={() => navigate("/admin/placement/new")} className="gap-2 rounded-xl">
+        <Button onClick={() => navigate("/placement/new")} className="gap-2 rounded-xl">
           <Plus className="h-4 w-4" /> Tạo đề mới
         </Button>
       </div>
@@ -349,7 +349,7 @@ function PlacementTestsTab() {
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => navigate(`/admin/placement/${test.id}`)}>
+                    <DropdownMenuItem onClick={() => navigate(`/placement/${test.id}`)}>
                       <Pencil className="h-4 w-4 mr-2" /> Chỉnh sửa
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => toggleStatus(test)}>

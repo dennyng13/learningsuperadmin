@@ -238,17 +238,17 @@ export default function AdminDashboardPage() {
 
       {/* ── Stats Grid ── */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-        <StatCard icon={Users} label="Học viên" value={s.totalStudents} sub={`${s.linkedStudents} đã liên kết`} onClick={() => navigate("/admin/users")} />
-        <StatCard icon={GraduationCap} label="Giáo viên" value={s.totalTeachers} onClick={() => navigate("/admin/users")} />
-        <StatCard icon={FileText} label="Đề thi" value={s.totalTests} sub={`${s.publishedTests} published`} onClick={() => navigate("/admin/tests")} />
-        <StatCard icon={Layers} label="Bài tập" value={s.totalExercises} sub={`${s.publishedExercises} published`} onClick={() => navigate("/admin/practice")} />
-        <StatCard icon={School} label="Lớp học" value={s.totalClasses} onClick={() => navigate("/admin/classes")} />
+        <StatCard icon={Users} label="Học viên" value={s.totalStudents} sub={`${s.linkedStudents} đã liên kết`} onClick={() => navigate("/users")} />
+        <StatCard icon={GraduationCap} label="Giáo viên" value={s.totalTeachers} onClick={() => navigate("/users")} />
+        <StatCard icon={FileText} label="Đề thi" value={s.totalTests} sub={`${s.publishedTests} published`} onClick={() => navigate("/tests")} />
+        <StatCard icon={Layers} label="Bài tập" value={s.totalExercises} sub={`${s.publishedExercises} published`} onClick={() => navigate("/tests?type=exercise")} />
+        <StatCard icon={School} label="Lớp học" value={s.totalClasses} onClick={() => navigate("/classes")} />
       </div>
 
       {/* ── Today's Schedule Summary ── */}
       {todaySchedule && todaySchedule.count > 0 && (
         <button
-          onClick={() => navigate("/admin/schedule")}
+          onClick={() => navigate("/schedule")}
           className="w-full rounded-xl border bg-card p-4 text-left hover:bg-muted/50 transition-colors"
         >
           <div className="flex items-center justify-between">
@@ -379,11 +379,11 @@ export default function AdminDashboardPage() {
         <div className="lg:col-span-1 space-y-3">
           <h2 className="font-display text-sm font-bold text-muted-foreground uppercase tracking-wider">Thao tác nhanh</h2>
           <div className="space-y-2">
-            <QuickAction icon={PenLine} label="Tạo đề thi" desc="Tạo mới với câu hỏi IELTS" onClick={() => navigate("/admin/tests/new")} />
-            <QuickAction icon={Upload} label="Import đề" desc="Từ file Word/PDF" onClick={() => navigate("/admin/import")} />
-            <QuickAction icon={ListChecks} label="Tạo bài tập" desc="Luyện tập theo kỹ năng" onClick={() => navigate("/admin/practice")} />
-            <QuickAction icon={UserPlus} label="Quản lý người dùng" desc="Học viên, giáo viên, tài khoản" onClick={() => navigate("/admin/users")} />
-            <QuickAction icon={Award} label="Huy hiệu" desc="Trao huy hiệu cho học viên" onClick={() => navigate("/admin/badges")} />
+            <QuickAction icon={PenLine} label="Tạo đề thi" desc="Tạo mới với câu hỏi IELTS" onClick={() => navigate("/tests/new")} />
+            <QuickAction icon={Upload} label="Import đề" desc="Từ file Word/PDF" onClick={() => navigate("/tests/import")} />
+            <QuickAction icon={ListChecks} label="Tạo bài tập" desc="Luyện tập theo kỹ năng" onClick={() => navigate("/tests?type=exercise")} />
+            <QuickAction icon={UserPlus} label="Quản lý người dùng" desc="Học viên, giáo viên, tài khoản" onClick={() => navigate("/users")} />
+            <QuickAction icon={Award} label="Huy hiệu" desc="Trao huy hiệu cho học viên" onClick={() => navigate("/badges")} />
           </div>
         </div>
 
@@ -401,7 +401,7 @@ export default function AdminDashboardPage() {
                   <button
                     key={`${item.type}-${item.id}`}
                     className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted/30 transition-colors group"
-                    onClick={() => navigate(item.type === "test" ? `/admin/tests/${item.id}` : `/admin/practice`)}
+                    onClick={() => navigate(item.type === "test" ? `/tests/${item.id}` : `/tests?type=exercise`)}
                   >
                     <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
                       item.type === "test" ? "bg-primary/10 text-primary" : "bg-accent/10 text-accent"
@@ -536,7 +536,7 @@ function ProspectFunnel({ prospects, navigate }: { prospects: any[]; navigate: (
           <UserSearch className="h-3.5 w-3.5" /> Tuyển sinh
         </h2>
         <button
-          onClick={() => navigate("/admin/placement")}
+          onClick={() => navigate("/placement")}
           className="text-xs text-primary hover:underline flex items-center gap-0.5"
         >
           Placement Tests <ChevronRight className="h-3 w-3" />
@@ -605,7 +605,7 @@ function ProspectFunnel({ prospects, navigate }: { prospects: any[]; navigate: (
               <div
                 key={p.id}
                 className="flex items-center gap-2 text-sm px-2 py-1.5 rounded-lg hover:bg-muted/50 cursor-pointer"
-                onClick={() => navigate("/admin/placement")}
+                onClick={() => navigate("/placement")}
               >
                 <span className="flex-1 truncate font-medium">{p.full_name}</span>
                 <span className="text-[10px] text-muted-foreground shrink-0">{p.source}</span>

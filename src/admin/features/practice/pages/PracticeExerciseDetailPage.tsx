@@ -180,7 +180,7 @@ export default function PracticeExerciseDetailPage() {
     return (
       <div className="p-6 text-center text-muted-foreground">
         Không tìm thấy bài tập.
-        <Button variant="ghost" className="ml-2" onClick={() => navigate("/admin/practice")}>Quay lại</Button>
+        <Button variant="ghost" className="ml-2" onClick={() => navigate("/tests?type=exercise")}>Quay lại</Button>
       </div>
     );
   }
@@ -191,7 +191,7 @@ export default function PracticeExerciseDetailPage() {
     <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-start gap-3">
-        <Button variant="ghost" size="icon" className="shrink-0 mt-0.5" onClick={() => navigate("/admin/practice")}>
+        <Button variant="ghost" size="icon" className="shrink-0 mt-0.5" onClick={() => navigate("/tests?type=exercise")}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div className="flex-1 min-w-0">

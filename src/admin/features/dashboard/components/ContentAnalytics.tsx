@@ -151,7 +151,7 @@ export default function ContentAnalytics() {
                         <button
                           key={p.exercise_id}
                           className="w-full flex items-center gap-2 text-sm px-2 py-1.5 rounded-lg hover:bg-muted/50 text-left"
-                          onClick={() => navigate(`/admin/practice/${p.exercise_id}/stats`)}
+                          onClick={() => navigate(`/practice/${p.exercise_id}/stats`)}
                         >
                           <span className="text-muted-foreground text-xs w-5 shrink-0">{i + 1}</span>
                           <span className="flex-1 truncate">{p.title}</span>
@@ -170,7 +170,7 @@ export default function ContentAnalytics() {
                   icon={Ghost}
                   title="Bài tập ít được làm"
                   iconColor="text-muted-foreground"
-                  action={{ label: "Xem tất cả", onClick: () => navigate("/admin/practice") }}
+                  action={{ label: "Xem tất cả", onClick: () => navigate("/tests?type=exercise") }}
                 >
                   {unused.length === 0 ? (
                     <p className="text-sm text-muted-foreground">Tất cả bài tập đều có {">"}3 lượt làm </p>
@@ -180,7 +180,7 @@ export default function ContentAnalytics() {
                         <button
                           key={u.id}
                           className="w-full flex items-center gap-2 text-sm px-2 py-1.5 rounded-lg hover:bg-muted/50 text-left"
-                          onClick={() => navigate(`/admin/practice/${u.id}`)}
+                          onClick={() => navigate(`/practice/${u.id}`)}
                         >
                           <span className="flex-1 truncate">{u.title}</span>
                           <Badge variant="secondary" className="text-[10px] shrink-0">
@@ -202,7 +202,7 @@ export default function ContentAnalytics() {
                   icon={AlertCircle}
                   title="Question types thiếu content"
                   iconColor="text-amber-500"
-                  action={missingTypes.length > 0 ? { label: "Tạo bài tập", onClick: () => navigate("/admin/practice") } : undefined}
+                  action={missingTypes.length > 0 ? { label: "Tạo bài tập", onClick: () => navigate("/tests?type=exercise") } : undefined}
                 >
                   {missingTypes.length === 0 ? (
                     <p className="text-sm text-emerald-600">Đã có bài tập cho tất cả question types </p>

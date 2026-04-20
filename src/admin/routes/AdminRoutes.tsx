@@ -60,7 +60,7 @@ export default function AdminRoutes() {
           <Route path="classes" element={<ClassManagementPage />} />
           <Route path="modules" element={<ModulePermissionsPage />} />
           <Route path="flashcards" element={<FlashcardSetsPage />} />
-          <Route path="practice" element={<Navigate to="/admin/tests?type=exercise" replace />} />
+          <Route path="practice" element={<Navigate to="/tests?type=exercise" replace />} />
           <Route path="practice/:exerciseId/stats" element={<PracticeExerciseDetailPage />} />
           <Route path="badges" element={<BadgeManagementPage />} />
           <Route path="profile" element={<AdminProfilePage />} />

@@ -34,11 +34,11 @@ const App = () => (
       <BrowserRouter>
         <Suspense fallback={<PageLoader />}>
           <Routes>
-            <Route path="/admin/login" element={<AdminLoginPage />} />
+            <Route path="/login" element={<AdminLoginPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
-            <Route path="/admin/*" element={<AdminRoutes />} />
-            <Route path="/" element={<Navigate to="/admin" replace />} />
-            <Route path="*" element={<Navigate to="/admin/404" replace />} />
+            <Route path="/*" element={<AdminRoutes />} />
+            <Route path="/" element={<Navigate to="/" replace />} />
+            <Route path="*" element={<Navigate to="/404" replace />} />
           </Routes>
         </Suspense>
       </BrowserRouter>

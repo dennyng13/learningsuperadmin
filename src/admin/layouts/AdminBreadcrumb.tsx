@@ -6,22 +6,22 @@ import {
 } from "@shared/components/ui/breadcrumb";
 
 const routeLabels: Record<string, string> = {
-  "/admin": "Dashboard",
-  "/admin/tests": "Đề thi",
-  "/admin/import": "Import",
-  "/admin/users": "Người dùng",
-  "/admin/classes": "Lớp học",
-  "/admin/modules": "Phân quyền",
-  "/admin/flashcards": "Flashcard",
-  "/admin/practice": "Bài tập",
-  "/admin/badges": "Huy hiệu",
-  "/admin/profile": "Hồ sơ",
-  "/admin/settings": "Cài đặt",
-  "/admin/teachngo-attendance": "Điểm danh",
+  "/": "Dashboard",
+  "/tests": "Đề thi",
+  "/tests/import": "Import",
+  "/users": "Người dùng",
+  "/classes": "Lớp học",
+  "/modules": "Phân quyền",
+  "/flashcards": "Flashcard",
+  "/tests?type=exercise": "Bài tập",
+  "/badges": "Huy hiệu",
+  "/profile": "Hồ sơ",
+  "/settings": "Cài đặt",
+  "/attendance": "Điểm danh",
 };
 
 function resolveLabel(pathname: string): { crumbs: { label: string; path: string }[] } {
-  if (pathname === "/admin") {
+  if (pathname === "/") {
     return { crumbs: [] };
   }
 
@@ -33,9 +33,9 @@ function resolveLabel(pathname: string): { crumbs: { label: string; path: string
     return { crumbs };
   }
 
-  // Handle nested routes like /admin/tests/:id or /admin/student/:id/performance
-  const segments = pathname.replace("/admin/", "").split("/");
-  let built = "/admin";
+  // Handle nested routes like /tests/:id or /users/:id/performance
+  const segments = pathname.replace("/", "").split("/");
+  let built = "/";
 
   for (let i = 0; i < segments.length; i++) {
     built += "/" + segments[i];
@@ -49,8 +49,8 @@ function resolveLabel(pathname: string): { crumbs: { label: string; path: string
       // skip, will be handled by "performance"
     } else if (segments[i - 1] === "tests" || segments[i - 1] === "student") {
       // dynamic ID segment — add parent if not already added
-      if (!crumbs.find(c => c.path === "/admin/" + segments[i - 1])) {
-        const parentPath = "/admin/" + segments[i - 1];
+      if (!crumbs.find(c => c.path === "/" + segments[i - 1])) {
+        const parentPath = "/" + segments[i - 1];
         if (routeLabels[parentPath]) {
           crumbs.unshift({ label: routeLabels[parentPath], path: parentPath });
         }
@@ -75,7 +75,7 @@ export function AdminBreadcrumb() {
       <BreadcrumbList>
         <BreadcrumbItem>
           <BreadcrumbLink asChild>
-            <Link to="/admin" className="text-[11px]">Dashboard</Link>
+            <Link to="/" className="text-[11px]">Dashboard</Link>
           </BreadcrumbLink>
         </BreadcrumbItem>
         {crumbs.map((crumb, i) => (
