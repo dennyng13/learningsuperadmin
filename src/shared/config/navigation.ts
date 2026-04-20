@@ -33,7 +33,7 @@ export const adminNavItems: NavItem[] = [
   { id: "flashcards",   label: "Flashcard",    icon: BookOpen,        route: "/flashcards",                    group: "main",   order: 4 },
   { id: "badges",       label: "Huy hiệu",     icon: Award,           route: "/badges",                        group: "main",   order: 5 },
   { id: "users",        label: "Người dùng",   icon: Users,           route: "/users",                         group: "main",   order: 6 },
-  { id: "teachers",     label: "Giáo viên",    icon: GraduationCap,   route: "/teachers",                      group: "main",   order: 7 },
+  { id: "teachers",     label: "Quản lý giáo viên", icon: GraduationCap,   route: "/teachers",                      group: "main",   order: 7 },
   { id: "classes",      label: "Lớp học",      icon: School,          route: "/classes",                       group: "main",   order: 8 },
   { id: "study-plans",  label: "Study Plans",  icon: ClipboardList,   route: "/study-plans",                   group: "main",   order: 9 },
   { id: "placement",    label: "Sắp lớp",      icon: UserSearch,      route: "/placement",                     group: "main",   order: 10 },
