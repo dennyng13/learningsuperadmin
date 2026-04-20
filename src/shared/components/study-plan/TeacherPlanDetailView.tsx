@@ -6,6 +6,7 @@ import { ClassNoteFilesDisplay } from "./ClassNoteFiles";
 import { Card, CardContent } from "@shared/components/ui/card";
 import { Badge } from "@shared/components/ui/badge";
 import { Button } from "@shared/components/ui/button";
+import { Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@shared/components/ui/breadcrumb";
 import {
   ArrowLeft, CalendarDays, BookOpen, GraduationCap, Sparkles,
   ExternalLink, FileText, Layers, ChevronDown,
@@ -99,6 +100,18 @@ export default function TeacherPlanDetailView({ plan, onBack }: Props) {
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
+      <Breadcrumb className="mb-3">
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbPage>Kế hoạch học tập</BreadcrumbPage>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>Chi tiết kế hoạch</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+
       <Button variant="ghost" size="sm" className="-ml-2 mb-3 text-muted-foreground" onClick={onBack}>
         <ArrowLeft className="w-3.5 h-3.5 mr-1" /> Quay lại danh sách
       </Button>
