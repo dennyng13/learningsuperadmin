@@ -162,6 +162,9 @@ export default function AppsStatusWidget() {
   const [connected, setConnected] = useState(false);
   const refetchTimer = useRef<number | null>(null);
 
+  // Drill-down dialog state
+  const [drill, setDrill] = useState<{ kind: DrillDownKind; day: string } | null>(null);
+
   useEffect(() => {
     setRunningDelta(0);
     setClassesDelta(0);
