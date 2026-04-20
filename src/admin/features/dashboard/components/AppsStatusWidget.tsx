@@ -434,12 +434,13 @@ function DeltaBadge({ current, previous }: { current?: number; previous?: number
 
 /* ── Sparkline SVG with hover tooltip ── */
 function Sparkline({
-  data, color, days, valueLabel, width = 280, height = 36,
+  data, color, days, valueLabel, onPick, width = 280, height = 36,
 }: {
   data: number[];
   color: string;
   days?: string[];
   valueLabel?: string;
+  onPick?: (day: string) => void;
   width?: number;
   height?: number;
 }) {
