@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Calendar, Flame, ChevronLeft, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@shared/lib/utils";
-import { DayTooltip, type DaySkillData } from "@student/features/hub/components/DayTooltip";
+import { DayTooltip, type DaySkillData } from "@shared/components/misc/DayTooltip";
 
 const WEEKDAYS = ["T2","T3","T4","T5","T6","T7","CN"];
 const MONTH_NAMES = ["01","02","03","04","05","06","07","08","09","10","11","12"];
