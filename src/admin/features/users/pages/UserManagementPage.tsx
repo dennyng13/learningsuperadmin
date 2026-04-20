@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@shared/components/ui/tabs";
 import { TabSkeleton } from "@shared/components/ui/tab-skeleton";
-import { Users, Shield, UserCog } from "lucide-react";
+import { Users, Shield } from "lucide-react";
 import TeachngoTab from "@admin/features/users/components/TeachngoTab";
-import TeachersTab from "@admin/features/users/components/TeachersTab";
 
 export default function UserManagementPage() {
   const [tab, setTab] = useState("students");
@@ -24,10 +23,6 @@ export default function UserManagementPage() {
               <Users className="h-3.5 w-3.5 md:h-4 md:w-4" />
               Học viên
             </TabsTrigger>
-            <TabsTrigger value="teachers" className="gap-1.5 px-3 md:px-4 py-2 md:py-2.5 rounded-lg text-xs md:text-sm font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">
-              <UserCog className="h-3.5 w-3.5 md:h-4 md:w-4" />
-              Giáo viên
-            </TabsTrigger>
             <TabsTrigger value="admins" className="gap-1.5 px-3 md:px-4 py-2 md:py-2.5 rounded-lg text-xs md:text-sm font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">
               <Shield className="h-3.5 w-3.5 md:h-4 md:w-4" />
               Quản trị viên
@@ -41,10 +36,6 @@ export default function UserManagementPage() {
 
         <TabsContent value="admins" className="mt-6">
           <TabSkeleton><TeachngoTab roleCategory="admins" /></TabSkeleton>
-        </TabsContent>
-
-        <TabsContent value="teachers" className="mt-6">
-          <TabSkeleton><TeachersTab /></TabSkeleton>
         </TabsContent>
       </Tabs>
     </div>
