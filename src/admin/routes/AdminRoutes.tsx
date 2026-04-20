@@ -27,6 +27,7 @@ const TeachngoAttendancePage = lazy(() => import("@admin/features/attendance/pag
 const StudentPerformancePage = lazy(() => import("@admin/features/performance/pages/StudentPerformancePage"));
 const TeacherPerformancePage = lazy(() => import("@admin/features/performance/pages/TeacherPerformancePage"));
 const AdminSettingsPage = lazy(() => import("@admin/features/settings/pages/AdminSettingsPage"));
+const FeatureFlagsPage = lazy(() => import("@admin/features/feature-flags/pages/FeatureFlagsPage"));
 const StudyPlansPage = lazy(() => import("@admin/features/study-plans/pages/StudyPlansPage"));
 const StudyPlanTemplatesPage = lazy(() => import("@admin/features/study-plans/pages/StudyPlanTemplatesPage"));
 const PlacementTestPage = lazy(() => import("@admin/features/placement/pages/PlacementTestPage"));
