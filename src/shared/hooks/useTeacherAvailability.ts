@@ -1,4 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type {
   TeachngoClassLite,
@@ -66,9 +67,33 @@ async function loadTeacherAvailabilityData(): Promise<TeacherAvailabilityData> {
 }
 
 export function useTeacherAvailability() {
-  return useQuery({
+  const queryClient = useQueryClient();
+  const query = useQuery({
     queryKey: ["teacher-availability-admin"],
     queryFn: loadTeacherAvailabilityData,
     staleTime: 30_000,
   });
+
+  useEffect(() => {
+    const channel = (supabase as any)
+      .channel("teacher-availability-admin-sync")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "teacher_availability_drafts" },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["teacher-availability-admin"] });
+        },
+      )
+      .subscribe();
+
+    return () => {
+      try {
+        (supabase as any).removeChannel(channel);
+      } catch {
+        // noop
+      }
+    };
+  }, [queryClient]);
+
+  return query;
 }
