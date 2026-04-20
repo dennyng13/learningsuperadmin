@@ -27,7 +27,7 @@ interface TeacherRow {
   completedStudents: number;
 }
 
-export default function TeacherPerformancePage() {
+export function TeacherPerformanceContent() {
   const navigate = useNavigate();
   const [teachers, setTeachers] = useState<TeacherRow[]>([]);
   const [allLinkedUserIds, setAllLinkedUserIds] = useState<string[]>([]);
@@ -290,6 +290,10 @@ export default function TeacherPerformancePage() {
       </div>
     </div>
   );
+}
+
+export default function TeacherPerformancePage() {
+  return <TeacherPerformanceContent />;
 }
 
 function SummaryCard({ icon: Icon, label, value, color }: {

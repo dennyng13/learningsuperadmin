@@ -581,7 +581,7 @@ function ScheduleCalendarTab() {
   );
 }
 
-function AvailabilityDraftsTab() {
+export function AvailabilityDraftsTab() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { data, isLoading } = useTeacherAvailability();
