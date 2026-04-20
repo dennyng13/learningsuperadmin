@@ -327,7 +327,7 @@ function AppCard({
               {days ? `${format(new Date(days[0]), "dd/MM")} – ${format(new Date(days[days.length - 1]), "dd/MM")}` : ""}
             </span>
           </div>
-          <Sparkline data={series} color={stroke} />
+          <Sparkline data={series} color={stroke} days={days} valueLabel={seriesLabel} />
         </div>
       )}
 
@@ -341,49 +341,110 @@ function AppCard({
   );
 }
 
-/* ── Sparkline SVG ── */
-function Sparkline({ data, color, width = 280, height = 36 }: { data: number[]; color: string; width?: number; height?: number }) {
+/* ── Sparkline SVG with hover tooltip ── */
+function Sparkline({
+  data, color, days, valueLabel, width = 280, height = 36,
+}: {
+  data: number[];
+  color: string;
+  days?: string[];
+  valueLabel?: string;
+  width?: number;
+  height?: number;
+}) {
+  const [hoverIdx, setHoverIdx] = useState<number | null>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
+
   const max = Math.max(...data, 1);
   const pad = 2;
   const w = width - pad * 2;
   const h = height - pad * 2;
   const step = w / Math.max(data.length - 1, 1);
 
-  const points = data.map((v, i) => {
-    const x = pad + i * step;
-    const y = pad + h - (v / max) * h;
-    return `${x},${y}`;
-  });
+  const coords = data.map((v, i) => ({
+    x: pad + i * step,
+    y: pad + h - (v / max) * h,
+    v,
+  }));
 
+  const points = coords.map((c) => `${c.x},${c.y}`);
   const fillPoints = [...points, `${pad + (data.length - 1) * step},${height - pad}`, `${pad},${height - pad}`];
+  const gradId = `spark-fill-${color.replace(/[^a-z0-9]/gi, "")}`;
+
+  const handleMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    const svg = svgRef.current;
+    if (!svg) return;
+    const rect = svg.getBoundingClientRect();
+    const xRatio = (e.clientX - rect.left) / rect.width;
+    const xInVB = xRatio * width;
+    // Find nearest index
+    let nearest = 0;
+    let minDist = Infinity;
+    coords.forEach((c, i) => {
+      const d = Math.abs(c.x - xInVB);
+      if (d < minDist) { minDist = d; nearest = i; }
+    });
+    setHoverIdx(nearest);
+  };
+
+  const hover = hoverIdx != null ? coords[hoverIdx] : null;
+  const hoverDay = hoverIdx != null && days?.[hoverIdx] ? days[hoverIdx] : null;
+  // Tooltip x position in % for absolute div
+  const tooltipLeftPct = hover ? (hover.x / width) * 100 : 0;
+  const flipLeft = tooltipLeftPct > 70;
 
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} className="w-full" style={{ height }}>
-      <defs>
-        <linearGradient id={`spark-fill-${color.replace(/[^a-z0-9]/gi, "")}`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={color} stopOpacity={0.2} />
-          <stop offset="100%" stopColor={color} stopOpacity={0} />
-        </linearGradient>
-      </defs>
-      <polygon
-        points={fillPoints.join(" ")}
-        fill={`url(#spark-fill-${color.replace(/[^a-z0-9]/gi, "")})`}
-      />
-      <polyline
-        points={points.join(" ")}
-        fill="none"
-        stroke={color}
-        strokeWidth={1.5}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      {/* Dot on last point */}
-      {data.length > 0 && (() => {
-        const last = data.length - 1;
-        const cx = pad + last * step;
-        const cy = pad + h - (data[last] / max) * h;
-        return <circle cx={cx} cy={cy} r={2.5} fill={color} />;
-      })()}
-    </svg>
+    <div className="relative">
+      <svg
+        ref={svgRef}
+        viewBox={`0 0 ${width} ${height}`}
+        className="w-full cursor-crosshair"
+        style={{ height }}
+        onMouseMove={handleMove}
+        onMouseLeave={() => setHoverIdx(null)}
+      >
+        <defs>
+          <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity={0.2} />
+            <stop offset="100%" stopColor={color} stopOpacity={0} />
+          </linearGradient>
+        </defs>
+        <polygon points={fillPoints.join(" ")} fill={`url(#${gradId})`} />
+        <polyline
+          points={points.join(" ")}
+          fill="none"
+          stroke={color}
+          strokeWidth={1.5}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        {/* Last point dot (only when not hovering) */}
+        {hover == null && data.length > 0 && (
+          <circle cx={coords[coords.length - 1].x} cy={coords[coords.length - 1].y} r={2.5} fill={color} />
+        )}
+        {/* Hover guide */}
+        {hover && (
+          <>
+            <line x1={hover.x} x2={hover.x} y1={pad} y2={height - pad} stroke={color} strokeWidth={0.5} strokeDasharray="2 2" opacity={0.6} />
+            <circle cx={hover.x} cy={hover.y} r={3} fill={color} stroke="hsl(var(--background))" strokeWidth={1.5} />
+          </>
+        )}
+      </svg>
+
+      {hover && hoverDay && (
+        <div
+          className={cn(
+            "absolute -top-9 z-10 pointer-events-none rounded-md border bg-popover text-popover-foreground shadow-md px-2 py-1 text-[10px] whitespace-nowrap",
+            flipLeft ? "-translate-x-full" : "translate-x-0",
+          )}
+          style={{ left: `${tooltipLeftPct}%` }}
+        >
+          <div className="font-mono text-muted-foreground">{format(new Date(hoverDay), "EEE dd/MM")}</div>
+          <div className="font-bold tabular-nums" style={{ color }}>
+            {hover.v} <span className="text-muted-foreground font-normal">{valueLabel?.replace(/\s*\/\s*ngày$/i, "") ?? ""}</span>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
