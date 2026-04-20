@@ -9,6 +9,7 @@ import { GraduationCap, BookOpenCheck, ExternalLink, Users, School, Activity, Ca
 import { supabase } from "@/integrations/supabase/client";
 import { format, subDays } from "date-fns";
 import { cn } from "@shared/lib/utils";
+import DayDrillDownDialog, { type DrillDownKind } from "./DayDrillDownDialog";
 
 const IELTS_URL = "https://ielts.learningplus.vn";
 const TEACHER_URL = "https://teacher.learningplus.vn";
