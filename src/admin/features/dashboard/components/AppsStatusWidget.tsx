@@ -227,10 +227,14 @@ export default function AppsStatusWidget() {
           icon={BookOpenCheck}
           accent="text-blue-600"
           bg="bg-blue-500/10"
+          stroke="hsl(217 91% 60%)"
           href={IELTS_URL}
           onManage={() => navigate("/users")}
           manageLabel="Quản lý học viên"
           metrics={ieltsMetrics}
+          series={ielts?.series7d}
+          seriesLabel="Bài làm / ngày"
+          days={data?.days}
           loading={isLoading}
         />
         <AppCard
@@ -239,10 +243,14 @@ export default function AppsStatusWidget() {
           icon={GraduationCap}
           accent="text-emerald-600"
           bg="bg-emerald-500/10"
+          stroke="hsl(160 84% 39%)"
           href={TEACHER_URL}
           onManage={() => navigate("/classes")}
           manageLabel="Quản lý lớp"
           metrics={teacherMetrics}
+          series={teacher?.series7d}
+          seriesLabel="Buổi học / ngày"
+          days={data?.days}
           loading={isLoading}
         />
       </div>
