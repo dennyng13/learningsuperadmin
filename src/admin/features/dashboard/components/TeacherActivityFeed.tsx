@@ -16,7 +16,7 @@ import { formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
 import {
   PenLine, Mic2, Megaphone, MessageCircleReply, Activity, ChevronRight, Sparkles,
-  Filter, X,
+  Filter, X, CalendarClock,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@shared/lib/utils";
@@ -25,7 +25,7 @@ import {
 } from "@shared/components/ui/select";
 import { Button } from "@shared/components/ui/button";
 
-type ActivityKind = "writing" | "speaking" | "announcement" | "answer";
+type ActivityKind = "writing" | "speaking" | "announcement" | "answer" | "session";
 
 interface FeedItem {
   id: string;
@@ -78,6 +78,14 @@ const KIND_META: Record<ActivityKind, {
     ring: "ring-emerald-500/20",
     fg: "text-emerald-600 dark:text-emerald-400",
     verb: "đã trả lời câu hỏi của",
+  },
+  session: {
+    icon: CalendarClock,
+    label: "Buổi học",
+    bg: "bg-blue-500/10",
+    ring: "ring-blue-500/20",
+    fg: "text-blue-600 dark:text-blue-400",
+    verb: "đã cập nhật buổi học",
   },
 };
 
