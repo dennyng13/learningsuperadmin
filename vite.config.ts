@@ -16,7 +16,38 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      "@shared": path.resolve(__dirname, "./src/shared"),
+      "@student": path.resolve(__dirname, "./src/student"),
+      "@admin": path.resolve(__dirname, "./src/admin"),
+      "@teacher": path.resolve(__dirname, "./src/teacher"),
     },
-    dedupe: ["react", "react-dom", "react/jsx-runtime", "react/jsx-dev-runtime", "@tanstack/react-query", "@tanstack/query-core"],
+    dedupe: ["react", "react-dom", "react/jsx-runtime", "react/jsx-dev-runtime"],
+  },
+  build: {
+    target: "es2020",
+    cssCodeSplit: true,
+    sourcemap: false,
+    chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        // Split heavy vendors into separate chunks for parallel download + better caching.
+        // Each chunk is requested only by routes that actually need it.
+        manualChunks: (id) => {
+          if (!id.includes("node_modules")) return undefined;
+          if (id.includes("react-router")) return "vendor-router";
+          if (id.includes("@tanstack/react-query")) return "vendor-query";
+          if (id.includes("recharts") || id.includes("d3-")) return "vendor-charts";
+          if (id.includes("@radix-ui")) return "vendor-radix";
+          if (id.includes("lucide-react")) return "vendor-icons";
+          if (id.includes("@supabase")) return "vendor-supabase";
+          if (id.includes("date-fns")) return "vendor-date";
+          if (id.includes("framer-motion")) return "vendor-motion";
+          if (id.includes("@tiptap") || id.includes("prosemirror")) return "vendor-editor";
+          if (id.includes("xlsx")) return "vendor-xlsx";
+          if (id.includes("html2canvas") || id.includes("jspdf")) return "vendor-pdf";
+          if (id.includes("react-dom") || id.includes("/react/")) return "vendor-react";
+        },
+      },
+    },
   },
 }));
