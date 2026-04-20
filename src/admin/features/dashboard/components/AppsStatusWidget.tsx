@@ -234,15 +234,15 @@ export default function AppsStatusWidget() {
   const liveSessions = (teacher?.todaySessions ?? 0) + sessionsDelta;
 
   const ieltsMetrics: AppMetric[] = [
-    { icon: Users, label: "Học viên kết nối", value: ielts?.activeStudents ?? 0 },
-    { icon: Activity, label: "Đang làm bài (24h)", value: liveRunning, hint: "test + practice", live: pulseRunning },
-    { icon: FileText, label: "Bài thi 7 ngày", value: ielts?.testsRun7d ?? 0 },
+    { icon: Users, label: "Học viên kết nối", value: ielts?.activeStudents ?? 0, tone: "blue" },
+    { icon: Activity, label: "Đang làm bài (24h)", value: liveRunning, hint: "test + practice", live: pulseRunning, tone: "emerald" },
+    { icon: FileText, label: "Bài thi 7 ngày", value: ielts?.testsRun7d ?? 0, tone: "violet" },
   ];
 
   const teacherMetrics: AppMetric[] = [
-    { icon: GraduationCap, label: "Giáo viên", value: teacher?.activeTeachers ?? 0 },
-    { icon: School, label: "Lớp đang hoạt động", value: liveClasses, live: pulseClasses },
-    { icon: CalendarClock, label: "Buổi học hôm nay", value: liveSessions, live: pulseSessions },
+    { icon: GraduationCap, label: "Giáo viên", value: teacher?.activeTeachers ?? 0, tone: "emerald" },
+    { icon: School, label: "Lớp đang hoạt động", value: liveClasses, live: pulseClasses, tone: "amber" },
+    { icon: CalendarClock, label: "Buổi học hôm nay", value: liveSessions, live: pulseSessions, tone: "sky" },
   ];
 
   return (
