@@ -327,7 +327,7 @@ function AppCard({
               {days ? `${format(new Date(days[0]), "dd/MM")} – ${format(new Date(days[days.length - 1]), "dd/MM")}` : ""}
             </span>
           </div>
-          <Sparkline data={series} color={stroke} />
+          <Sparkline data={series} color={stroke} days={days} valueLabel={seriesLabel} />
         </div>
       )}
 
