@@ -1,72 +1,71 @@
-import { useLocation } from "react-router-dom";
-import { Link } from "react-router-dom";
+import { useLocation, Link } from "react-router-dom";
 import {
   Breadcrumb, BreadcrumbList, BreadcrumbItem,
   BreadcrumbLink, BreadcrumbPage, BreadcrumbSeparator,
 } from "@shared/components/ui/breadcrumb";
+import { adminNavItems } from "@shared/config/navigation";
 
-const routeLabels: Record<string, string> = {
-  "/": "Dashboard",
-  "/tests": "Đề thi",
-  "/tests/import": "Import",
-  "/users": "Người dùng",
-  "/classes": "Lớp học",
-  "/modules": "Phân quyền",
-  "/flashcards": "Flashcard",
-  "/tests?type=exercise": "Bài tập",
-  "/badges": "Huy hiệu",
+// Build label map from single source of truth (adminNavItems) + a few extras
+// for nested / non-nav routes.
+const EXTRA_LABELS: Record<string, string> = {
   "/profile": "Hồ sơ",
-  "/settings": "Cài đặt",
-  "/attendance": "Điểm danh",
+  "/study-plans/templates": "Mẫu kế hoạch",
 };
 
-function resolveLabel(pathname: string): { crumbs: { label: string; path: string }[] } {
-  if (pathname === "/") {
-    return { crumbs: [] };
-  }
+const routeLabels: Record<string, string> = {
+  ...Object.fromEntries(adminNavItems.map(i => [i.route, i.label])),
+  ...EXTRA_LABELS,
+};
 
-  const crumbs: { label: string; path: string }[] = [];
+interface Crumb { label: string; path: string }
 
-  // Try direct match first
+function resolveCrumbs(pathname: string): Crumb[] {
+  if (pathname === "/") return [];
+
+  // Direct match
   if (routeLabels[pathname]) {
-    crumbs.push({ label: routeLabels[pathname], path: pathname });
-    return { crumbs };
+    return [{ label: routeLabels[pathname], path: pathname }];
   }
 
-  // Handle nested routes like /tests/:id or /users/:id/performance
-  const segments = pathname.replace("/", "").split("/");
-  let built = "/";
+  // Try nested matching with dynamic segments: /tests/:id, /users/:id/performance,
+  // /placement/:id, /tests/:id/preview, /practice/:exerciseId/stats
+  const segments = pathname.split("/").filter(Boolean);
+  const crumbs: Crumb[] = [];
+  let built = "";
 
   for (let i = 0; i < segments.length; i++) {
     built += "/" + segments[i];
+    const seg = segments[i];
+    const prev = segments[i - 1];
+
     if (routeLabels[built]) {
       crumbs.push({ label: routeLabels[built], path: built });
-    } else if (i === segments.length - 1 && segments[i] === "preview") {
-      crumbs.push({ label: "Xem trước", path: built });
-    } else if (i === segments.length - 1 && segments[i] === "performance") {
-      crumbs.push({ label: "Kết quả học viên", path: built });
-    } else if (segments[i] === "student") {
-      // skip, will be handled by "performance"
-    } else if (segments[i - 1] === "tests" || segments[i - 1] === "student") {
-      // dynamic ID segment — add parent if not already added
-      if (!crumbs.find(c => c.path === "/" + segments[i - 1])) {
-        const parentPath = "/" + segments[i - 1];
-        if (routeLabels[parentPath]) {
-          crumbs.unshift({ label: routeLabels[parentPath], path: parentPath });
-        }
-      }
-      if (segments[i - 1] === "tests") {
+      continue;
+    }
+
+    // Terminal verbs
+    if (i === segments.length - 1) {
+      if (seg === "preview") { crumbs.push({ label: "Xem trước", path: built }); continue; }
+      if (seg === "performance") { crumbs.push({ label: "Kết quả", path: built }); continue; }
+      if (seg === "stats") { crumbs.push({ label: "Thống kê", path: built }); continue; }
+    }
+
+    // Dynamic ID under a known parent → add parent crumb once + "Chỉnh sửa"
+    const parentPath = "/" + prev;
+    if (prev && routeLabels[parentPath] && !crumbs.find(c => c.path === parentPath)) {
+      crumbs.unshift({ label: routeLabels[parentPath], path: parentPath });
+      if (prev === "tests" || prev === "placement") {
         crumbs.push({ label: "Chỉnh sửa", path: built });
       }
     }
   }
 
-  return { crumbs };
+  return crumbs;
 }
 
 export function AdminBreadcrumb() {
   const { pathname } = useLocation();
-  const { crumbs } = resolveLabel(pathname);
+  const crumbs = resolveCrumbs(pathname);
 
   if (crumbs.length === 0) return null;
 

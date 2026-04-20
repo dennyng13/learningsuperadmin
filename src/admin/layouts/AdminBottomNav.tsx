@@ -1,34 +1,23 @@
-import { LayoutDashboard, FileText, Upload, Users, MoreHorizontal, School, Layers, Award, Settings, CalendarDays, BookOpen, ShieldCheck, ClipboardList } from "lucide-react";
+import { MoreHorizontal } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@shared/hooks/useAuth";
 import { cn } from "@shared/lib/utils";
 import { useState, useCallback } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@shared/components/ui/sheet";
+import { adminNavItems } from "@shared/config/navigation";
 
-const primaryItems = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Đề thi", url: "/tests", icon: FileText },
-  { title: "Import", url: "/tests/import", icon: Upload },
-  { title: "Người dùng", url: "/users", icon: Users },
-];
+// Primary 4 quick-access items on bottom bar (mobile).
+const PRIMARY_IDS = ["dashboard", "tests", "users", "classes"];
 
-const moreItems = [
-  { title: "Flashcard Sets", url: "/flashcards", icon: BookOpen },
-  { title: "Huy hiệu", url: "/badges", icon: Award },
-  { title: "Lớp học", url: "/classes", icon: School },
-  { title: "Study Plans", url: "/study-plans", icon: ClipboardList },
-  { title: "Điểm danh TnG", url: "/attendance", icon: CalendarDays },
-];
+const primaryItems = PRIMARY_IDS
+  .map(id => adminNavItems.find(i => i.id === id)!)
+  .filter(Boolean);
 
-const superAdminMoreItems = [
-  { title: "Module Permissions", url: "/modules", icon: ShieldCheck },
-  { title: "Settings", url: "/settings", icon: Settings },
-];
+const moreMainItems = adminNavItems.filter(i => i.group === "main" && !PRIMARY_IDS.includes(i.id));
+const moreSystemItems = adminNavItems.filter(i => i.group === "system");
 
 function triggerHaptic() {
-  if (navigator.vibrate) {
-    navigator.vibrate(8);
-  }
+  if (navigator.vibrate) navigator.vibrate(8);
 }
 
 export function AdminBottomNav() {
@@ -43,8 +32,8 @@ export function AdminBottomNav() {
     return location.pathname === path || location.pathname.startsWith(path + "/");
   };
 
-  const isMoreActive = [...moreItems, ...superAdminMoreItems].some(i => isActive(i.url));
-  const allMore = [...moreItems, ...(isSuperAdmin ? superAdminMoreItems : [])];
+  const allMore = [...moreMainItems, ...(isSuperAdmin ? moreSystemItems : [])];
+  const isMoreActive = allMore.some(i => isActive(i.route));
 
   const handleTap = useCallback((url: string) => {
     triggerHaptic();
@@ -57,12 +46,12 @@ export function AdminBottomNav() {
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-lg border-t border-border md:hidden" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
       <div className="flex items-center justify-around h-14 px-1">
         {primaryItems.map((item) => {
-          const active = isActive(item.url);
-          const isTapped = tapped === item.url;
+          const active = isActive(item.route);
+          const isTapped = tapped === item.route;
           return (
             <button
-              key={item.url}
-              onClick={() => handleTap(item.url)}
+              key={item.route}
+              onClick={() => handleTap(item.route)}
               className={cn(
                 "relative flex flex-col items-center justify-center gap-0.5 flex-1 py-1 rounded-lg transition-all duration-200",
                 active ? "text-primary" : "text-muted-foreground",
@@ -79,7 +68,7 @@ export function AdminBottomNav() {
               <span className={cn(
                 "text-[10px] font-medium leading-tight transition-all duration-200",
                 active && "font-semibold"
-              )}>{item.title}</span>
+              )}>{item.label}</span>
               {active && (
                 <span className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-4 h-0.5 bg-primary rounded-full animate-in fade-in zoom-in-50 duration-300" />
               )}
@@ -109,11 +98,11 @@ export function AdminBottomNav() {
             </SheetHeader>
             <div className="grid grid-cols-3 gap-3 mt-4">
               {allMore.map((item, i) => {
-                const active = isActive(item.url);
+                const active = isActive(item.route);
                 return (
                   <button
-                    key={item.url}
-                    onClick={() => { triggerHaptic(); navigate(item.url); setOpen(false); }}
+                    key={item.route}
+                    onClick={() => { triggerHaptic(); navigate(item.route); setOpen(false); }}
                     className={cn(
                       "flex flex-col items-center gap-1.5 p-3 rounded-xl transition-all duration-200 active:scale-95 animate-in fade-in slide-in-from-bottom-2",
                       active ? "bg-primary/10 text-primary" : "bg-secondary/50 text-foreground hover:bg-secondary"
@@ -121,7 +110,7 @@ export function AdminBottomNav() {
                     style={{ animationDelay: `${i * 50}ms`, animationFillMode: "both" }}
                   >
                     <item.icon className="h-5 w-5" />
-                    <span className="text-xs font-medium text-center leading-tight">{item.title}</span>
+                    <span className="text-xs font-medium text-center leading-tight">{item.label}</span>
                   </button>
                 );
               })}
