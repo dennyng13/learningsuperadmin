@@ -301,7 +301,7 @@ async function fetchFeed(limit: number): Promise<FeedItem[]> {
 
   return items
     .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))
-    .slice(0, FEED_LIMIT);
+    .slice(0, limit);
 }
 
 const KIND_FILTERS: { value: ActivityKind; label: string }[] = [
