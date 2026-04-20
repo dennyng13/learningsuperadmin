@@ -13,6 +13,7 @@ import { Textarea } from "@shared/components/ui/textarea";
 import { Checkbox } from "@shared/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@shared/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@shared/components/ui/dialog";
+import { Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@shared/components/ui/breadcrumb";
 import { toast } from "sonner";
 import {
   Plus, Pencil, Upload, X, ArrowLeft, ArrowRight, BookOpen, GraduationCap,
@@ -1499,6 +1500,17 @@ export function SharedPlanEditor({ plan, onClose, teacherMode = false }: SharedP
       <Dialog open onOpenChange={() => handleCloseAttempt()}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbPage>Kế hoạch học tập</BreadcrumbPage>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>{isEditing ? "Chỉnh sửa kế hoạch" : "Tạo kế hoạch"}</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
             <DialogTitle className="text-base">
               {isEditing ? "Chỉnh sửa kế hoạch" : "Tạo kế hoạch học tập"}
             </DialogTitle>

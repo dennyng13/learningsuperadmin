@@ -7,6 +7,7 @@ import { Textarea } from "@shared/components/ui/textarea";
 import { Button } from "@shared/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@shared/components/ui/select";
 import { Badge } from "@shared/components/ui/badge";
+import { Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@shared/components/ui/breadcrumb";
 import { toast } from "sonner";
 import { Plus, Trash2, ChevronDown, ChevronUp, BookOpen, GraduationCap, Sparkles } from "lucide-react";
 import { SessionCard, SESSION_TYPES } from "./SessionCard";
@@ -173,6 +174,21 @@ export function TemplateEditor({ template, onClose }: Props) {
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbPage>Kế hoạch học tập</BreadcrumbPage>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage>Mẫu kế hoạch</BreadcrumbPage>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage>{isNew ? "Tạo mẫu" : "Chỉnh sửa mẫu"}</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
           <DialogTitle>{isNew ? "Tạo mẫu kế hoạch mới" : "Chỉnh sửa mẫu"}</DialogTitle>
           <DialogDescription>
             Mẫu là khuôn chung. Khi gán cho lớp/học viên, hệ thống sẽ tự sao chép thành kế hoạch độc lập.
