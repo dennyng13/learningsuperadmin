@@ -496,12 +496,11 @@ function OverridesDialog({ flag, onClose }: { flag: FeatureFlag; onClose: () => 
                 <div key={o.id} className="flex items-center justify-between gap-2 rounded-md border bg-card px-3 py-2 text-sm">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="font-medium truncate">{p?.full_name || p?.email || o.user_id.slice(0, 8)}</span>
+                      <span className="font-medium truncate">{p?.full_name || o.user_id.slice(0, 8)}</span>
                       <Badge variant={o.enabled ? "default" : "outline"} className="text-[10px]">
                         {o.enabled ? "BẬT" : "TẮT"}
                       </Badge>
                     </div>
-                    {p?.email && p.full_name && <p className="text-[11px] text-muted-foreground truncate">{p.email}</p>}
                     {o.note && <p className="text-[11px] text-muted-foreground italic mt-0.5">{o.note}</p>}
                   </div>
                   <Button variant="ghost" size="sm" onClick={() => removeOverride(o.id)}>
