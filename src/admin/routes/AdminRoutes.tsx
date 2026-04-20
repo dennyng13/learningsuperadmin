@@ -6,7 +6,7 @@ import { ProtectedAdminRoute } from "@admin/guards/ProtectedAdminRoute";
 
 const AdminLayout = lazy(() => import("@admin/layouts/AdminLayout"));
 
-/* ── Auth (public) ── */
+/* ── Public ── */
 const AdminLoginPage = lazy(() => import("@admin/features/auth/pages/AdminLoginPage"));
 const ResetPasswordPage = lazy(() => import("@admin/features/auth/pages/ResetPasswordPage"));
 
@@ -42,40 +42,71 @@ function PageLoader() {
   );
 }
 
-export default function AdminRoutes() {
+export default function AppRoutes() {
   return (
     <Suspense fallback={<PageLoader />}>
       <Routes>
-        {/* Public auth */}
-        <Route path="login" element={<AdminLoginPage />} />
+        {/* ─── Public ─── */}
+        <Route path="/login" element={<AdminLoginPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
 
-        {/* Protected — wrapped with AdminLayout */}
+        {/* ─── Legacy redirects (back-compat for old /admin/* URLs) ─── */}
+        <Route path="/admin" element={<Navigate to="/" replace />} />
+        <Route path="/admin/login" element={<Navigate to="/login" replace />} />
+        <Route path="/admin/*" element={<LegacyAdminRedirect />} />
+
+        {/* ─── Protected ─── */}
         <Route element={<ProtectedAdminRoute><ErrorBoundary><AdminLayout /></ErrorBoundary></ProtectedAdminRoute>}>
           <Route index element={<AdminDashboardPage />} />
+
+          {/* Tests / Practice */}
           <Route path="tests" element={<TestManagementPage />} />
+          <Route path="tests/import" element={<ImportPage />} />
           <Route path="tests/:id" element={<TestEditorPage />} />
           <Route path="tests/:id/preview" element={<TestPreviewPage />} />
-          <Route path="import" element={<ImportPage />} />
-          <Route path="users" element={<UserManagementPage />} />
-          <Route path="classes" element={<ClassManagementPage />} />
-          <Route path="modules" element={<ModulePermissionsPage />} />
-          <Route path="flashcards" element={<FlashcardSetsPage />} />
-          <Route path="practice" element={<Navigate to="/tests?type=exercise" replace />} />
           <Route path="practice/:exerciseId/stats" element={<PracticeExerciseDetailPage />} />
-          <Route path="badges" element={<BadgeManagementPage />} />
-          <Route path="profile" element={<AdminProfilePage />} />
-          <Route path="teachngo-attendance" element={<TeachngoAttendancePage />} />
-          <Route path="student/:userId/performance" element={<StudentPerformancePage />} />
+
+          {/* Users (with nested performance) */}
+          <Route path="users" element={<UserManagementPage />} />
+          <Route path="users/:userId/performance" element={<StudentPerformancePage />} />
+
+          {/* Classes & Schedule */}
+          <Route path="classes" element={<ClassManagementPage />} />
+          <Route path="schedule" element={<AdminSchedulePage />} />
+          <Route path="attendance" element={<TeachngoAttendancePage />} />
+
+          {/* Study plans (templates nested) */}
           <Route path="study-plans" element={<StudyPlansPage />} />
-          <Route path="study-plan-templates" element={<StudyPlanTemplatesPage />} />
-          <Route path="teacher-performance" element={<TeacherPerformancePage />} />
-          <Route path="settings" element={<AdminSettingsPage />} />
+          <Route path="study-plans/templates" element={<StudyPlanTemplatesPage />} />
+
+          {/* Placement */}
           <Route path="placement" element={<PlacementTestPage />} />
           <Route path="placement/:id" element={<PlacementTestEditorPage />} />
-          <Route path="schedule" element={<AdminSchedulePage />} />
+
+          {/* Performance */}
+          <Route path="performance/teachers" element={<TeacherPerformancePage />} />
+
+          {/* Misc */}
+          <Route path="flashcards" element={<FlashcardSetsPage />} />
+          <Route path="badges" element={<BadgeManagementPage />} />
+          <Route path="profile" element={<AdminProfilePage />} />
+
+          {/* System */}
+          <Route path="modules" element={<ModulePermissionsPage />} />
+          <Route path="settings" element={<AdminSettingsPage />} />
+
+          {/* 404 */}
+          <Route path="404" element={<NotFoundPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Routes>
     </Suspense>
   );
+}
+
+/** Strip /admin prefix from any legacy URL and redirect once. */
+function LegacyAdminRedirect() {
+  const { pathname, search, hash } = window.location;
+  const stripped = pathname.replace(/^\/admin/, "") || "/";
+  return <Navigate to={`${stripped}${search}${hash}`} replace />;
 }
