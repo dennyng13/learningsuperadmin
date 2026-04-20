@@ -18,6 +18,7 @@ interface AppMetric {
   label: string;
   value: number | string;
   hint?: string;
+  live?: boolean;
 }
 
 function useAppsStatus() {
