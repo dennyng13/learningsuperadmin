@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@shared/hooks/useAuth";
+import { useTeacherAccessScope } from "@shared/hooks/useTeacherAccessScope";
 import {
   BookOpen, Target, CheckCircle2, AlertTriangle, Clock,
 } from "lucide-react";
@@ -29,7 +30,8 @@ interface DelayedClassInfo {
 }
 
 export default function TeacherProgressSummary() {
-  const { user, isSuperAdmin } = useAuth();
+  const { user } = useAuth();
+  const { data: scope } = useTeacherAccessScope();
   const navigate = useNavigate();
   const [stats, setStats] = useState<{
     totalPlans: number;
@@ -48,23 +50,15 @@ export default function TeacherProgressSummary() {
   useEffect(() => {
     if (!user) return;
     fetchData();
-  }, [user, isSuperAdmin]);
+  }, [user, scope?.teacherId, scope?.canViewAllClasses]);
 
   async function fetchData() {
     setLoading(true);
 
-    let teacherId: string | null = null;
-    if (!isSuperAdmin) {
-      const { data: teacher } = await supabase
-        .from("teachers")
-        .select("id")
-        .eq("linked_user_id", user!.id)
-        .maybeSingle();
-      teacherId = teacher?.id || null;
-    }
+    const teacherId = scope?.teacherId || null;
 
     let classQuery = supabase.from("teachngo_classes").select("id, class_name, level, program");
-    if (!isSuperAdmin && teacherId) {
+    if (!scope?.canViewAllClasses && teacherId) {
       classQuery = classQuery.eq("teacher_id", teacherId);
     }
     const { data: classes } = await classQuery;

@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@shared/hooks/useAuth";
+import { useTeacherAccessScope } from "@shared/hooks/useTeacherAccessScope";
 import type {
   TeachngoClassLite,
   TeacherAvailabilityDraft,
@@ -45,18 +46,32 @@ function isAccessProblem(error: unknown) {
     || ["42501", "401", "403", "pgrst301"].includes(code);
 }
 
-async function loadTeacherSelfAvailabilityData(userId: string): Promise<TeacherSelfAvailabilityData> {
+async function loadTeacherSelfAvailabilityData(userId: string, teacherIdOverride?: string | null, canViewAllClasses?: boolean): Promise<TeacherSelfAvailabilityData> {
   const today = new Date().toISOString().slice(0, 10);
 
-  const { data: teacher, error: teacherError } = await supabase
-    .from("teachers")
-    .select("id, full_name, email, phone, status, linked_user_id, subjects, classes")
-    .eq("linked_user_id", userId)
-    .maybeSingle();
+  let teacher: TeacherRecordLite | null = null;
 
-  if (teacherError) throw teacherError;
+  if (teacherIdOverride) {
+    const { data: teacherById, error: teacherError } = await supabase
+      .from("teachers")
+      .select("id, full_name, email, phone, status, linked_user_id, subjects, classes")
+      .eq("id", teacherIdOverride)
+      .maybeSingle();
 
-  if (!teacher) {
+    if (teacherError) throw teacherError;
+    teacher = teacherById as TeacherRecordLite | null;
+  } else if (!canViewAllClasses) {
+    const { data: teacherByUser, error: teacherError } = await supabase
+      .from("teachers")
+      .select("id, full_name, email, phone, status, linked_user_id, subjects, classes")
+      .eq("linked_user_id", userId)
+      .maybeSingle();
+
+    if (teacherError) throw teacherError;
+    teacher = teacherByUser as TeacherRecordLite | null;
+  }
+
+  if (!teacher && !canViewAllClasses) {
     return {
       teacher: null,
       classes: [],
@@ -70,36 +85,41 @@ async function loadTeacherSelfAvailabilityData(userId: string): Promise<TeacherS
     };
   }
 
-  const teacherId = teacher.id;
+  const teacherId = teacher?.id ?? null;
 
   const [classesRes, draftsRes, rulesRes, exceptionsRes, capabilityRes, sessionsRes] = await Promise.all([
-    supabase
-      .from("teachngo_classes")
-      .select("id, class_name, teacher_id, status, level, program, schedule, class_type, room, default_start_time, default_end_time")
-      .eq("teacher_id", teacherId)
-      .order("class_name"),
-    (supabase.from as any)("teacher_availability_drafts")
-      .select("*")
-      .eq("teacher_id", teacherId)
-      .order("created_at", { ascending: false }),
-    (supabase.from as any)("teacher_availability_rules")
-      .select("*")
-      .eq("teacher_id", teacherId)
-      .order("effective_from", { ascending: false }),
-    (supabase.from as any)("teacher_availability_exceptions")
-      .select("*")
-      .eq("teacher_id", teacherId)
-      .gte("exception_date", today)
-      .order("exception_date", { ascending: true }),
-    (supabase.from as any)("teacher_capabilities")
-      .select("*")
-      .eq("teacher_id", teacherId)
-      .maybeSingle(),
-    (supabase.from as any)("class_sessions")
-      .select("*")
-      .eq("teacher_id", teacherId)
-      .gte("session_date", today)
-      .order("session_date", { ascending: true }),
+    (async () => {
+      let query = supabase
+        .from("teachngo_classes")
+        .select("id, class_name, teacher_id, status, level, program, schedule, class_type, room, default_start_time, default_end_time")
+        .order("class_name");
+      if (teacherId && !canViewAllClasses) query = query.eq("teacher_id", teacherId);
+      return query;
+    })(),
+    (async () => {
+      let query = (supabase.from as any)("teacher_availability_drafts").select("*").order("created_at", { ascending: false });
+      if (teacherId) query = query.eq("teacher_id", teacherId);
+      return query;
+    })(),
+    (async () => {
+      let query = (supabase.from as any)("teacher_availability_rules").select("*").order("effective_from", { ascending: false });
+      if (teacherId) query = query.eq("teacher_id", teacherId);
+      return query;
+    })(),
+    (async () => {
+      let query = (supabase.from as any)("teacher_availability_exceptions").select("*").gte("exception_date", today).order("exception_date", { ascending: true });
+      if (teacherId) query = query.eq("teacher_id", teacherId);
+      return query;
+    })(),
+    (async () => {
+      if (!teacherId) return { data: null, error: null };
+      return (supabase.from as any)("teacher_capabilities").select("*").eq("teacher_id", teacherId).maybeSingle();
+    })(),
+    (async () => {
+      let query = (supabase.from as any)("class_sessions").select("*").gte("session_date", today).order("session_date", { ascending: true });
+      if (teacherId && !canViewAllClasses) query = query.eq("teacher_id", teacherId);
+      return query;
+    })(),
   ]);
 
   const requiredErrors = [draftsRes.error, rulesRes.error, exceptionsRes.error, capabilityRes.error].filter(Boolean);
@@ -155,12 +175,13 @@ async function loadTeacherSelfAvailabilityData(userId: string): Promise<TeacherS
 
 export function useTeacherSelfAvailability() {
   const { user } = useAuth();
+  const { data: scope } = useTeacherAccessScope();
   const queryClient = useQueryClient();
 
   const query = useQuery({
-    queryKey: ["teacher-self-availability", user?.id],
+    queryKey: ["teacher-self-availability", user?.id, scope?.teacherId, scope?.canViewAllClasses],
     enabled: !!user?.id,
-    queryFn: () => loadTeacherSelfAvailabilityData(user!.id),
+    queryFn: () => loadTeacherSelfAvailabilityData(user!.id, scope?.teacherId, scope?.canViewAllClasses),
     staleTime: 30_000,
   });
 

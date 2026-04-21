@@ -9,7 +9,7 @@ import { Checkbox } from "@shared/components/ui/checkbox";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@shared/hooks/useAuth";
+import { useTeacherAccessScope } from "@shared/hooks/useTeacherAccessScope";
 import { Loader2, School, UserCheck, Calendar, Sparkles } from "lucide-react";
 import { Badge } from "@shared/components/ui/badge";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@shared/components/ui/breadcrumb";
@@ -26,8 +26,8 @@ interface Props {
 }
 
 export function CloneTemplateDialog({ template, teacherMode = false, onClose }: Props) {
-  const { user } = useAuth();
   const { cloneTemplate } = useTemplateMutations();
+  const { data: scope } = useTeacherAccessScope();
 
   const [tab, setTab] = useState<"class" | "student">("class");
   const [selectedClassIds, setSelectedClassIds] = useState<string[]>([]);
@@ -39,34 +39,25 @@ export function CloneTemplateDialog({ template, teacherMode = false, onClose }: 
   const [autoFromClass, setAutoFromClass] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
-  const { data: teacherRecord } = useQuery({
-    queryKey: ["teacher-rec-clone", user?.id],
-    enabled: teacherMode && !!user,
-    queryFn: async () => {
-      const { data } = await supabase.from("teachers").select("id").eq("linked_user_id", user!.id).single();
-      return data;
-    },
-  });
-
   const { data: classes } = useQuery({
-    queryKey: ["classes-clone", template.program, teacherMode, teacherRecord?.id],
+    queryKey: ["classes-clone", template.program, teacherMode, scope?.teacherId, scope?.canViewAllClasses],
     queryFn: async () => {
       let q = supabase.from("teachngo_classes").select("id, class_name, program, level, start_date, end_date, schedule").order("class_name");
       if (template.program) {
         const programNorm = template.program === "customized" ? "Customized" : template.program === "wre" ? "WRE" : "IELTS";
         q = q.eq("program", programNorm);
       }
-      if (teacherMode && teacherRecord?.id) q = q.eq("teacher_id", teacherRecord.id);
+      if (teacherMode && !scope?.canViewAllClasses && scope?.teacherId) q = q.eq("teacher_id", scope.teacherId);
       const { data } = await q;
       return data || [];
     },
   });
 
   const { data: students } = useQuery({
-    queryKey: ["students-clone", teacherMode, teacherRecord?.id],
+    queryKey: ["students-clone", teacherMode, scope?.teacherId, scope?.canViewAllClasses],
     queryFn: async () => {
-      if (teacherMode && teacherRecord?.id) {
-        const { data: tc } = await supabase.from("teachngo_classes").select("id").eq("teacher_id", teacherRecord.id);
+      if (teacherMode && !scope?.canViewAllClasses && scope?.teacherId) {
+        const { data: tc } = await supabase.from("teachngo_classes").select("id").eq("teacher_id", scope.teacherId);
         if (!tc || tc.length === 0) return [];
         const { data: cs } = await supabase.from("teachngo_class_students").select("teachngo_student_id").in("class_id", tc.map(c => c.id));
         if (!cs) return [];

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { getLevelColorConfig } from "@shared/utils/levelColors";
 import { useStudyPlanEntries, useStudyPlanMutations, type StudyPlan } from "@shared/hooks/useStudyPlan";
 import { useAuth } from "@shared/hooks/useAuth";
+import { useTeacherAccessScope } from "@shared/hooks/useTeacherAccessScope";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@shared/components/ui/card";
@@ -66,6 +67,7 @@ export function SharedPlanEditor({ plan, onClose, teacherMode = false }: SharedP
   const isNew = !plan?.id;
   const isEditing = !!plan?.id;
   const { user } = useAuth();
+  const { data: scope } = useTeacherAccessScope();
   const { upsertPlan, bulkUpsertEntries } = useStudyPlanMutations();
 
   const [createMode, setCreateMode] = useState<"new" | "copy">("new");
@@ -141,15 +143,6 @@ export function SharedPlanEditor({ plan, onClose, teacherMode = false }: SharedP
   const isStructured = program === "wre" || program === "ielts";
 
   // ─── Queries ─────────────────────────────────────────
-  const { data: teacherRecord } = useQuery({
-    queryKey: ["teacher-record", user?.id],
-    enabled: teacherMode && !!user,
-    queryFn: async () => {
-      const { data } = await supabase.from("teachers").select("id").eq("linked_user_id", user!.id).single();
-      return data;
-    },
-  });
-
   const { data: courseLevels } = useQuery({
     queryKey: ["course-levels-for-plan"],
     queryFn: async () => {
@@ -159,13 +152,13 @@ export function SharedPlanEditor({ plan, onClose, teacherMode = false }: SharedP
   });
 
   const { data: classes } = useQuery({
-    queryKey: ["classes-for-plan", program, selectedLevel, teacherMode, teacherRecord?.id],
+    queryKey: ["classes-for-plan", program, selectedLevel, teacherMode, scope?.teacherId, scope?.canViewAllClasses],
     enabled: !!program,
     queryFn: async () => {
       let q = supabase.from("teachngo_classes").select("id, class_name, level, program, teacher_name, schedule").order("class_name");
       if (program) q = q.eq("program", program === "customized" ? "Customized" : program === "wre" ? "WRE" : "IELTS");
       if (selectedLevel) q = q.eq("level", selectedLevel);
-      if (teacherMode && teacherRecord?.id) q = q.eq("teacher_id", teacherRecord.id);
+      if (teacherMode && !scope?.canViewAllClasses && scope?.teacherId) q = q.eq("teacher_id", scope.teacherId);
       const { data } = await q;
       return data || [];
     },
@@ -191,10 +184,10 @@ export function SharedPlanEditor({ plan, onClose, teacherMode = false }: SharedP
   });
 
   const { data: allStudents } = useQuery({
-    queryKey: ["all-students-for-plan", teacherMode, teacherRecord?.id],
+    queryKey: ["all-students-for-plan", teacherMode, scope?.teacherId, scope?.canViewAllClasses],
     queryFn: async () => {
-      if (teacherMode && teacherRecord?.id) {
-        const { data: tc } = await supabase.from("teachngo_classes").select("id").eq("teacher_id", teacherRecord.id);
+      if (teacherMode && !scope?.canViewAllClasses && scope?.teacherId) {
+        const { data: tc } = await supabase.from("teachngo_classes").select("id").eq("teacher_id", scope.teacherId);
         if (!tc || tc.length === 0) return [];
         const { data: cs } = await supabase.from("teachngo_class_students").select("teachngo_student_id").in("class_id", tc.map(c => c.id));
         if (!cs || cs.length === 0) return [];
@@ -242,7 +235,7 @@ export function SharedPlanEditor({ plan, onClose, teacherMode = false }: SharedP
   });
 
   const { data: existingPlans } = useQuery({
-    queryKey: ["existing-plans-for-copy", teacherMode, teacherRecord?.id],
+    queryKey: ["existing-plans-for-copy", teacherMode, scope?.teacherId, scope?.canViewAllClasses],
     enabled: isNew,
     queryFn: async () => {
       const { data: plans } = await supabase.from("study_plans").select("id, plan_name, program, plan_type, assigned_level, teachngo_student_id, class_ids, student_ids, total_sessions, session_duration, skills, materials_links, exercise_ids, flashcard_set_ids, teacher_notes, test_date, target_score, current_score, status, progress").order("updated_at", { ascending: false });

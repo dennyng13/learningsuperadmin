@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
+import { useTeacherAccessScope } from "./useTeacherAccessScope";
 
 export interface ClassNoteFile {
   name: string;
@@ -257,14 +258,15 @@ export function useUpdateEntryStatus() {
  *  Covers: individual (teachngo_student_id), class-based (class_ids), and student_ids plans
  *  Admin/super_admin users see ALL plans */
 export function useTeacherStudyPlans() {
-  const { user, isAdmin, isSuperAdmin } = useAuth();
+  const { user } = useAuth();
+  const { data: scope } = useTeacherAccessScope();
 
   return useQuery({
-    queryKey: ["teacher-study-plans", user?.id, isAdmin, isSuperAdmin],
+    queryKey: ["teacher-study-plans", user?.id, scope?.teacherId, scope?.canViewAllClasses],
     enabled: !!user,
     queryFn: async () => {
       // Admin/super_admin: return all plans (same as useAllStudyPlans)
-      if (isAdmin || isSuperAdmin) {
+      if (scope?.canViewAllClasses) {
         const { data: plans } = await supabase
           .from("study_plans")
           .select("*")
@@ -289,18 +291,12 @@ export function useTeacherStudyPlans() {
       }
 
       // Teacher: filter by their classes/students
-      const { data: teacher } = await supabase
-        .from("teachers")
-        .select("id")
-        .eq("linked_user_id", user!.id)
-        .single();
-
-      if (!teacher) return [];
+      if (!scope?.teacherId) return [];
 
       const { data: classes } = await supabase
         .from("teachngo_classes")
         .select("id")
-        .eq("teacher_id", teacher.id);
+        .eq("teacher_id", scope.teacherId);
 
       if (!classes || classes.length === 0) return [];
 
