@@ -7,9 +7,10 @@ import { Card, CardContent } from "@shared/components/ui/card";
 import { Users, School, TrendingUp, Loader2 } from "lucide-react";
 import { getPerformanceLabel } from "@shared/utils/performance";
 import { cn } from "@shared/lib/utils";
+import WidgetRetryState from "./WidgetRetryState";
 
 export default function SchoolOverview({ className }: { className?: string }) {
-  const { data, isLoading } = useSchoolOverview();
+  const { data, isLoading, error, refetch, isFetching } = useSchoolOverview();
 
   if (isLoading) {
     return (
@@ -22,7 +23,28 @@ export default function SchoolOverview({ className }: { className?: string }) {
     );
   }
 
-  if (!data) return null;
+  if (error) {
+    return (
+      <div className={className}>
+        <WidgetRetryState
+          title="Chưa tải được tổng quan toàn trường"
+          message={error instanceof Error ? error.message : "Dữ liệu toàn trường đang tạm gián đoạn."}
+          onRetry={() => refetch()}
+          compact
+        />
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <Card className={cn("rounded-2xl", className)}>
+        <CardContent className="p-5 text-center text-xs text-muted-foreground">
+          Chưa có dữ liệu tổng quan toàn trường.
+        </CardContent>
+      </Card>
+    );
+  }
 
   const perf = getPerformanceLabel(data.avg_lifetime_score || null);
 
@@ -33,6 +55,9 @@ export default function SchoolOverview({ className }: { className?: string }) {
           <h2 className="font-display text-sm font-bold text-muted-foreground uppercase tracking-wider">
             Tổng quan toàn trường
           </h2>
+          {isFetching && !isLoading ? (
+            <p className="mt-1 text-[10px] text-muted-foreground">Đang làm mới dữ liệu…</p>
+          ) : null}
         </div>
         <div className="grid grid-cols-3 divide-x border-t">
           <Stat icon={Users} label="HV đang học" value={data.active_students} accent="text-primary" />
