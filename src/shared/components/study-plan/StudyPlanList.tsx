@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { useStudyPlanMutations, type StudyPlan } from "@shared/hooks/useStudyPlan";
 import { useTemplateMutations } from "@shared/hooks/useStudyPlanTemplates";
 import { useAuth } from "@shared/hooks/useAuth";
+import { useTeacherAccessScope } from "@shared/hooks/useTeacherAccessScope";
 import { useNavigate } from "react-router-dom";
 import { PlanAssignmentInfo, useAssignmentLookups } from "@shared/components/study-plan/PlanAssignmentInfo";
 import { SharedPlanEditor } from "@shared/components/study-plan/SharedPlanEditor";
@@ -16,6 +17,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@shared/components/ui/tooltip";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, CalendarDays, BookOpen, GraduationCap, Sparkles, Search, X, Image, Lock, ClipboardList, Eye, FileStack, AlertCircle, RefreshCw } from "lucide-react";
+import { Shield, User as UserIcon } from "lucide-react";
 import { cn } from "@shared/lib/utils";
 import { getEffectiveStatus } from "@shared/utils/studyPlanStatus";
 import TeacherPlanDetailView from "@shared/components/study-plan/TeacherPlanDetailView";
@@ -137,6 +139,7 @@ interface StudyPlanListProps {
 export function StudyPlanList({ plans, isLoading, teacherMode = false, canCreate = true }: StudyPlanListProps) {
   const { deletePlan } = useStudyPlanMutations();
   const { syncToTemplate } = useTemplateMutations();
+  const { data: scope } = useTeacherAccessScope();
   const { isAdmin, isSuperAdmin } = useAuth();
   const navigate = useNavigate();
   const { classNames, studentNames } = useAssignmentLookups(plans || []);
@@ -195,7 +198,20 @@ export function StudyPlanList({ plans, isLoading, teacherMode = false, canCreate
       <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
         <div>
           <h1 className="text-xl font-extrabold">Kế hoạch học tập</h1>
-          <p className="text-sm text-muted-foreground">{plans?.length || 0} kế hoạch</p>
+          <div className="flex items-center gap-2 mt-0.5">
+            <p className="text-sm text-muted-foreground">{plans?.length || 0} kế hoạch</p>
+            {scope && (
+              scope.canViewAllClasses ? (
+                <Badge variant="outline" className="text-[10px] gap-1 border-primary/40 text-primary">
+                  <Shield className="w-3 h-3" /> Admin · tất cả lớp
+                </Badge>
+              ) : scope.teacherId ? (
+                <Badge variant="outline" className="text-[10px] gap-1">
+                  <UserIcon className="w-3 h-3" /> Giáo viên · phạm vi của bạn
+                </Badge>
+              ) : null
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-2">
           {!teacherMode && (
