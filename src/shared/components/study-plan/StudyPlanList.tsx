@@ -139,6 +139,7 @@ interface StudyPlanListProps {
 export function StudyPlanList({ plans, isLoading, teacherMode = false, canCreate = true }: StudyPlanListProps) {
   const { deletePlan } = useStudyPlanMutations();
   const { syncToTemplate } = useTemplateMutations();
+  const { data: scope } = useTeacherAccessScope();
   const { isAdmin, isSuperAdmin } = useAuth();
   const navigate = useNavigate();
   const { classNames, studentNames } = useAssignmentLookups(plans || []);
