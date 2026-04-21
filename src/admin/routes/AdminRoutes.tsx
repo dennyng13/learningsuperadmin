@@ -36,6 +36,7 @@ const PlacementTestPage = lazy(() => import("@admin/features/placement/pages/Pla
 const PlacementTestEditorPage = lazy(() => import("@admin/features/placement/pages/PlacementTestEditorPage"));
 const AdminSchedulePage = lazy(() => import("@admin/features/schedule/pages/AdminSchedulePage"));
 const NotFoundPage = lazy(() => import("@admin/features/misc/pages/NotFoundPage"));
+const HealthCheckPage = lazy(() => import("@admin/features/misc/pages/HealthCheckPage"));
 
 function PageLoader() {
   return (
@@ -52,6 +53,7 @@ export default function AppRoutes() {
         {/* ─── Public ─── */}
         <Route path="/login" element={<AdminLoginPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/health-check" element={<HealthCheckPage />} />
 
         {/* ─── Legacy redirects (back-compat for old /admin/* URLs) ─── */}
         <Route path="/admin" element={<Navigate to="/" replace />} />
