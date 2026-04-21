@@ -615,6 +615,53 @@ export function SharedPlanEditor({ plan, onClose, teacherMode = false }: SharedP
   const handleSave = async () => {
     setSaving(true);
     try {
+      // ─── Scope enforcement ────────────────────────────
+      // Teachers (non-admin) must operate within their own classes/students.
+      if (teacherMode && !scope?.canViewAllClasses) {
+        if (!scope?.teacherId) {
+          toast.error("Không xác định được phạm vi giáo viên. Vui lòng tải lại trang.");
+          setSaving(false);
+          return;
+        }
+        // Validate class_ids belong to this teacher
+        const classIdsToCheck = isCustomized ? selectedClassIds : selectedClassIds;
+        if (classIdsToCheck.length > 0) {
+          const { data: ownClasses } = await supabase
+            .from("teachngo_classes")
+            .select("id")
+            .eq("teacher_id", scope.teacherId)
+            .in("id", classIdsToCheck);
+          const ownIds = new Set((ownClasses || []).map((c: any) => c.id));
+          const foreign = classIdsToCheck.filter(id => !ownIds.has(id));
+          if (foreign.length > 0) {
+            toast.error("Bạn không có quyền tạo/sửa kế hoạch cho lớp ngoài phạm vi của mình.");
+            setSaving(false);
+            return;
+          }
+        }
+        // Validate selected students belong to teacher's classes
+        if (selectedStudentIds.length > 0) {
+          const { data: tc } = await supabase
+            .from("teachngo_classes")
+            .select("id")
+            .eq("teacher_id", scope.teacherId);
+          const teacherClassIds = (tc || []).map((c: any) => c.id);
+          if (teacherClassIds.length > 0) {
+            const { data: cs } = await supabase
+              .from("teachngo_class_students")
+              .select("teachngo_student_id")
+              .in("class_id", teacherClassIds);
+            const ownStudentIds = new Set((cs || []).map((r: any) => r.teachngo_student_id));
+            const foreignStudents = selectedStudentIds.filter(id => !ownStudentIds.has(id));
+            if (foreignStudents.length > 0) {
+              toast.error("Một số học viên không nằm trong lớp của bạn.");
+              setSaving(false);
+              return;
+            }
+          }
+        }
+      }
+
       if (isCustomized) {
         const studentIds = (selectedStudentIds.length > 0
           ? selectedStudentIds
