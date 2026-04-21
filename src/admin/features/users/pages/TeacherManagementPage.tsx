@@ -37,7 +37,9 @@ export default function TeacherManagementPage() {
   };
 
   const renderTabContent = (content: React.ReactNode) => (
-    <Suspense fallback={<TabSkeleton />}>{content}</Suspense>
+    <Suspense fallback={<div className="min-h-[240px] animate-pulse rounded-xl border border-border/40 bg-muted/20" />}>
+      {content}
+    </Suspense>
   );
 
   return (
