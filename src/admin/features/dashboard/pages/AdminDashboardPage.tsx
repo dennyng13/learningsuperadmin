@@ -67,6 +67,7 @@ export default function AdminDashboardPage() {
   const [practiceResultsForAnalysis, setPracticeResultsForAnalysis] = useState<any[]>([]);
   const [prospects, setProspects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // Today's schedule summary
   const todayStr = format(new Date(), "yyyy-MM-dd");
@@ -116,104 +117,128 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     async function fetchData() {
       setLoading(true);
-      const now = new Date();
-      const sevenDaysAgo = subDays(now, 7).toISOString();
-      const fourteenDaysAgo = subDays(now, 14).toISOString();
+      setLoadError(null);
 
-      const [
-        { data: assessments },
-        { data: exercises },
-        { count: studentCount },
-        { count: linkedCount },
-        { count: teacherCount },
-        { count: classCount },
-        { count: recentResultCount },
-        { count: recentPracticeCount },
-      ] = await Promise.all([
-        supabase.from("assessments").select("id, name, book_name, status, created_at, section_type").order("created_at", { ascending: false }),
-        supabase.from("practice_exercises").select("id, title, status, skill, created_at").order("created_at", { ascending: false }),
-        supabase.from("teachngo_students").select("*", { count: "exact", head: true }),
-        supabase.from("teachngo_students").select("*", { count: "exact", head: true }).not("linked_user_id", "is", null),
-        supabase.from("teachers").select("*", { count: "exact", head: true }),
-        supabase.from("teachngo_classes").select("*", { count: "exact", head: true }),
-        supabase.from("test_results").select("*", { count: "exact", head: true }).gte("created_at", sevenDaysAgo),
-        supabase.from("practice_results").select("*", { count: "exact", head: true }).gte("created_at", sevenDaysAgo),
-      ]);
+      try {
+        const now = new Date();
+        const sevenDaysAgo = subDays(now, 7).toISOString();
+        const fourteenDaysAgo = subDays(now, 14).toISOString();
 
-      const allTests = assessments || [];
-      const allExercises = exercises || [];
+        const [
+          assessmentsRes,
+          exercisesRes,
+          studentCountRes,
+          linkedCountRes,
+          teacherCountRes,
+          classCountRes,
+          recentResultCountRes,
+          recentPracticeCountRes,
+        ] = await Promise.all([
+          supabase.from("assessments").select("id, name, book_name, status, created_at, section_type").order("created_at", { ascending: false }),
+          supabase.from("practice_exercises").select("id, title, status, skill, created_at").order("created_at", { ascending: false }),
+          supabase.from("teachngo_students").select("*", { count: "exact", head: true }),
+          supabase.from("teachngo_students").select("*", { count: "exact", head: true }).not("linked_user_id", "is", null),
+          supabase.from("teachers").select("*", { count: "exact", head: true }),
+          supabase.from("teachngo_classes").select("*", { count: "exact", head: true }),
+          supabase.from("test_results").select("*", { count: "exact", head: true }).gte("created_at", sevenDaysAgo),
+          supabase.from("practice_results").select("*", { count: "exact", head: true }).gte("created_at", sevenDaysAgo),
+        ]);
 
-      setStats({
-        totalTests: allTests.length,
-        publishedTests: allTests.filter(a => a.status === "published").length,
-        draftTests: allTests.filter(a => a.status === "draft").length,
-        totalExercises: allExercises.length,
-        publishedExercises: allExercises.filter(e => e.status === "published").length,
-        totalStudents: studentCount || 0,
-        linkedStudents: linkedCount || 0,
-        totalTeachers: teacherCount || 0,
-        totalClasses: classCount || 0,
-        recentResults7d: recentResultCount || 0,
-        recentPractice7d: recentPracticeCount || 0,
-      });
+        const criticalError = [
+          assessmentsRes.error,
+          exercisesRes.error,
+          studentCountRes.error,
+          linkedCountRes.error,
+          teacherCountRes.error,
+          classCountRes.error,
+          recentResultCountRes.error,
+          recentPracticeCountRes.error,
+        ].find(Boolean);
 
-      // Merge recent tests + exercises
-      const merged: RecentItem[] = [
-        ...allTests.slice(0, 5).map(t => ({
-          id: t.id, name: t.name, type: "test" as const,
-          status: t.status, section_type: t.section_type, created_at: t.created_at,
-        })),
-        ...allExercises.slice(0, 5).map(e => ({
-          id: e.id, name: e.title, type: "exercise" as const,
-          status: e.status, skill: e.skill, created_at: e.created_at,
-        })),
-      ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 8);
+        if (criticalError) {
+          throw criticalError;
+        }
 
-      setRecentItems(merged);
+        const allTests = assessmentsRes.data || [];
+        const allExercises = exercisesRes.data || [];
 
-      // Fetch activity trend (14 days)
-      const [{ data: trendResults }, { data: trendPractice }] = await Promise.all([
-        supabase.from("test_results").select("created_at").gte("created_at", fourteenDaysAgo),
-        supabase.from("practice_results").select("created_at").gte("created_at", fourteenDaysAgo),
-      ]);
+        setStats({
+          totalTests: allTests.length,
+          publishedTests: allTests.filter(a => a.status === "published").length,
+          draftTests: allTests.filter(a => a.status === "draft").length,
+          totalExercises: allExercises.length,
+          publishedExercises: allExercises.filter(e => e.status === "published").length,
+          totalStudents: studentCountRes.count || 0,
+          linkedStudents: linkedCountRes.count || 0,
+          totalTeachers: teacherCountRes.count || 0,
+          totalClasses: classCountRes.count || 0,
+          recentResults7d: recentResultCountRes.count || 0,
+          recentPractice7d: recentPracticeCountRes.count || 0,
+        });
 
-      const days = eachDayOfInterval({ start: subDays(now, 13), end: now });
-      const trend: DailyActivity[] = days.map(day => {
-        const dateStr = format(day, "yyyy-MM-dd");
-        const tests = (trendResults || []).filter(r => r.created_at.startsWith(dateStr)).length;
-        const practices = (trendPractice || []).filter(r => r.created_at.startsWith(dateStr)).length;
-        return {
-          date: dateStr,
-          label: format(day, "dd/MM", { locale: vi }),
-          tests,
-          practices,
-        };
-      });
-      setActivityTrend(trend);
+        const merged: RecentItem[] = [
+          ...allTests.slice(0, 5).map(t => ({
+            id: t.id, name: t.name, type: "test" as const,
+            status: t.status, section_type: t.section_type, created_at: t.created_at,
+          })),
+          ...allExercises.slice(0, 5).map(e => ({
+            id: e.id, name: e.title, type: "exercise" as const,
+            status: e.status, skill: e.skill, created_at: e.created_at,
+          })),
+        ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 8);
 
-      // Fetch test results + practice results for analysis (last 30 days)
-      const thirtyDaysAgo = subDays(now, 30).toISOString();
-      const [{ data: analysisResults }, { data: practiceAnalysis }] = await Promise.all([
-        supabase
-          .from("test_results")
-          .select("user_id, section_type, answers, parts_data")
-          .gte("created_at", thirtyDaysAgo),
-        supabase
-          .from("practice_results")
-          .select("exercise_id, exercise_title, skill, question_type, correct_answers, total_questions")
-          .gte("created_at", thirtyDaysAgo),
-      ]);
-      setTestResultsForAnalysis(analysisResults || []);
-      setPracticeResultsForAnalysis(practiceAnalysis || []);
+        setRecentItems(merged);
 
-      // Fetch prospects
-      const { data: prospectsData } = await supabase
-        .from("prospects")
-        .select("id, full_name, source, status, suggested_level, created_at, placement_test_id, token")
-        .order("created_at", { ascending: false });
-      setProspects(prospectsData || []);
+        const [trendResultsRes, trendPracticeRes] = await Promise.all([
+          supabase.from("test_results").select("created_at").gte("created_at", fourteenDaysAgo),
+          supabase.from("practice_results").select("created_at").gte("created_at", fourteenDaysAgo),
+        ]);
 
-      setLoading(false);
+        const days = eachDayOfInterval({ start: subDays(now, 13), end: now });
+        const trend: DailyActivity[] = days.map(day => {
+          const dateStr = format(day, "yyyy-MM-dd");
+          const tests = (trendResultsRes.data || []).filter(r => typeof r.created_at === "string" && r.created_at.startsWith(dateStr)).length;
+          const practices = (trendPracticeRes.data || []).filter(r => typeof r.created_at === "string" && r.created_at.startsWith(dateStr)).length;
+          return {
+            date: dateStr,
+            label: format(day, "dd/MM", { locale: vi }),
+            tests,
+            practices,
+          };
+        });
+        setActivityTrend(trend);
+
+        const thirtyDaysAgo = subDays(now, 30).toISOString();
+        const [analysisResultsRes, practiceAnalysisRes, prospectsRes] = await Promise.all([
+          supabase
+            .from("test_results")
+            .select("user_id, section_type, answers, parts_data")
+            .gte("created_at", thirtyDaysAgo),
+          supabase
+            .from("practice_results")
+            .select("exercise_id, exercise_title, skill, question_type, correct_answers, total_questions")
+            .gte("created_at", thirtyDaysAgo),
+          supabase
+            .from("prospects")
+            .select("id, full_name, source, status, suggested_level, created_at, placement_test_id, token")
+            .order("created_at", { ascending: false }),
+        ]);
+
+        setTestResultsForAnalysis(analysisResultsRes.data || []);
+        setPracticeResultsForAnalysis(practiceAnalysisRes.data || []);
+        setProspects(prospectsRes.data || []);
+      } catch (error) {
+        console.error("[AdminDashboardPage] Failed to load dashboard", error);
+        setStats(null);
+        setRecentItems([]);
+        setActivityTrend([]);
+        setTestResultsForAnalysis([]);
+        setPracticeResultsForAnalysis([]);
+        setProspects([]);
+        setLoadError(error instanceof Error ? error.message : "Không tải được dữ liệu dashboard.");
+      } finally {
+        setLoading(false);
+      }
     }
     fetchData();
   }, [isSuperAdmin]);
@@ -226,7 +251,28 @@ export default function AdminDashboardPage() {
     );
   }
 
-  const s = stats!;
+  if (loadError || !stats) {
+    return (
+      <div className="p-4 md:p-6 max-w-7xl mx-auto">
+        <div className="rounded-xl border border-border bg-card p-5 md:p-6">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+            </div>
+            <div className="min-w-0 space-y-2">
+              <h1 className="font-display text-lg font-bold text-foreground">Dashboard tạm thời chưa tải được</h1>
+              <p className="text-sm text-muted-foreground">
+                {loadError || "Dữ liệu dashboard hiện chưa sẵn sàng. Bạn có thể thử tải lại trang."}
+              </p>
+              <Button onClick={() => window.location.reload()} size="sm">Thử lại</Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const s = stats;
 
   return (
     <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
