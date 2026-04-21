@@ -3,6 +3,13 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 
+const BUILD_HASH = (() => {
+  const t = Date.now().toString(36);
+  const r = Math.random().toString(36).slice(2, 8);
+  return `${t}-${r}`;
+})();
+const BUILD_TIME = new Date().toISOString();
+
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
@@ -13,6 +20,11 @@ export default defineConfig(({ mode }) => ({
     },
   },
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
+  define: {
+    __BUILD_HASH__: JSON.stringify(BUILD_HASH),
+    __BUILD_TIME__: JSON.stringify(BUILD_TIME),
+    __BUILD_MODE__: JSON.stringify(mode),
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
