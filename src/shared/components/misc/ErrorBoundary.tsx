@@ -1,6 +1,38 @@
 import React from "react";
 import mascotDizzy from "@/assets/mascot-dizzy.png";
 
+const CHUNK_RELOAD_KEY = "__lp_chunk_reload_attempt__";
+
+function isChunkError(error: Error | null): boolean {
+  if (!error) return false;
+  const source = `${error.name} ${error.message}`.toLowerCase();
+  return (
+    source.includes("loading chunk") ||
+    source.includes("failed to fetch dynamically imported module") ||
+    source.includes("importing a module script failed") ||
+    source.includes("loading css chunk")
+  );
+}
+
+async function clearAppCachesAndReload() {
+  try {
+    if ("caches" in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map((k) => caches.delete(k)));
+    }
+    if ("serviceWorker" in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map((r) => r.unregister()));
+    }
+  } catch (e) {
+    console.warn("[ErrorBoundary] cache clear failed", e);
+  }
+  // Cache-bust the URL so the new index.html is fetched
+  const url = new URL(window.location.href);
+  url.searchParams.set("_r", Date.now().toString(36));
+  window.location.replace(url.toString());
+}
+
 function getErrorCode(error: Error | null) {
   if (!error) return "APP-UNKNOWN";
 
