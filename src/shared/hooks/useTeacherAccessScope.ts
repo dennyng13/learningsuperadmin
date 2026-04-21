@@ -35,6 +35,11 @@ export function useTeacherAccessScope() {
     enabled: !!user?.id,
     staleTime: 300_000,
     gcTime: 600_000,
+    refetchInterval: 300_000,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: false,
+    placeholderData: (prev) => prev,
+    networkMode: "offlineFirst",
     queryFn: () => loadTeacherAccessScope(user!.id, canViewAllClasses),
   });
 }
