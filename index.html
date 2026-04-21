@@ -26,6 +26,82 @@
 
   <body>
     <div id="root"></div>
+    <script>
+      (function () {
+        var TIMEOUT_MS = 8000;
+        function showFallback() {
+          var root = document.getElementById("root");
+          if (!root || root.childElementCount > 0) return;
+          if (document.getElementById("__boot_fallback__")) return;
+          var wrap = document.createElement("div");
+          wrap.id = "__boot_fallback__";
+          wrap.style.cssText =
+            "position:fixed;inset:0;display:flex;align-items:center;justify-content:center;" +
+            "background:#ffffff;color:#0f172a;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;" +
+            "padding:24px;z-index:99999;";
+          wrap.innerHTML =
+            '<div style="max-width:420px;width:100%;text-align:center;border:1px solid #e5e7eb;' +
+            'border-radius:16px;padding:28px;box-shadow:0 10px 30px -12px rgba(15,23,42,0.15);background:#fff;">' +
+              '<div style="font-size:11px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:#64748b;margin-bottom:8px;">' +
+                'Đang khởi động' +
+              '</div>' +
+              '<h1 style="font-size:20px;font-weight:700;margin:0 0 8px;">Ứng dụng tải hơi lâu</h1>' +
+              '<p style="font-size:14px;line-height:1.55;color:#475569;margin:0 0 18px;">' +
+                'Có vẻ như trình duyệt đang giữ phiên bản cũ hoặc kết nối mạng không ổn định. ' +
+                'Hãy thử tải lại để lấy phiên bản mới nhất.' +
+              '</p>' +
+              '<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">' +
+                '<button id="__boot_reload__" style="appearance:none;border:0;border-radius:10px;padding:10px 18px;' +
+                'font-size:14px;font-weight:700;background:#0f172a;color:#fff;cursor:pointer;">Tải lại trang</button>' +
+                '<button id="__boot_hard__" style="appearance:none;border:1px solid #e2e8f0;border-radius:10px;padding:10px 18px;' +
+                'font-size:14px;font-weight:600;background:#fff;color:#0f172a;cursor:pointer;">Xoá cache & tải lại</button>' +
+              '</div>' +
+              '<p style="font-size:11px;color:#94a3b8;margin:14px 0 0;">Mã: APP-BOOT-TIMEOUT</p>' +
+            '</div>';
+          document.body.appendChild(wrap);
+          var reloadBtn = document.getElementById("__boot_reload__");
+          if (reloadBtn) reloadBtn.onclick = function () { window.location.reload(); };
+          var hardBtn = document.getElementById("__boot_hard__");
+          if (hardBtn) hardBtn.onclick = function () {
+            try {
+              if ("caches" in window) {
+                caches.keys().then(function (keys) {
+                  keys.forEach(function (k) { caches.delete(k); });
+                });
+              }
+              if ("serviceWorker" in navigator) {
+                navigator.serviceWorker.getRegistrations().then(function (regs) {
+                  regs.forEach(function (r) { r.unregister(); });
+                  setTimeout(function () { window.location.reload(); }, 250);
+                });
+                return;
+              }
+            } catch (e) {}
+            window.location.reload();
+          };
+        }
+        var timer = setTimeout(showFallback, TIMEOUT_MS);
+        var observer;
+        try {
+          observer = new MutationObserver(function () {
+            var root = document.getElementById("root");
+            if (root && root.childElementCount > 0) {
+              clearTimeout(timer);
+              if (observer) observer.disconnect();
+              var fb = document.getElementById("__boot_fallback__");
+              if (fb && fb.parentNode) fb.parentNode.removeChild(fb);
+            }
+          });
+          var rootEl = document.getElementById("root");
+          if (rootEl) observer.observe(rootEl, { childList: true });
+        } catch (e) {}
+        window.addEventListener("error", function (ev) {
+          if (ev && ev.message && /chunk|import|useState|undefined/i.test(String(ev.message))) {
+            showFallback();
+          }
+        });
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
