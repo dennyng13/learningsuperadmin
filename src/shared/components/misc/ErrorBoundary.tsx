@@ -1,6 +1,38 @@
 import React from "react";
 import mascotDizzy from "@/assets/mascot-dizzy.png";
 
+const CHUNK_RELOAD_KEY = "__lp_chunk_reload_attempt__";
+
+function isChunkError(error: Error | null): boolean {
+  if (!error) return false;
+  const source = `${error.name} ${error.message}`.toLowerCase();
+  return (
+    source.includes("loading chunk") ||
+    source.includes("failed to fetch dynamically imported module") ||
+    source.includes("importing a module script failed") ||
+    source.includes("loading css chunk")
+  );
+}
+
+async function clearAppCachesAndReload() {
+  try {
+    if ("caches" in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map((k) => caches.delete(k)));
+    }
+    if ("serviceWorker" in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map((r) => r.unregister()));
+    }
+  } catch (e) {
+    console.warn("[ErrorBoundary] cache clear failed", e);
+  }
+  // Cache-bust the URL so the new index.html is fetched
+  const url = new URL(window.location.href);
+  url.searchParams.set("_r", Date.now().toString(36));
+  window.location.replace(url.toString());
+}
+
 function getErrorCode(error: Error | null) {
   if (!error) return "APP-UNKNOWN";
 
@@ -54,10 +86,31 @@ export default class ErrorBoundary extends React.Component<Props, State> {
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
     console.error("[ErrorBoundary]", error, info.componentStack);
+
+    // Auto-recover from chunk loading errors caused by stale index.html
+    // referencing chunks that no longer exist after a redeploy.
+    if (isChunkError(error)) {
+      try {
+        const attempted = sessionStorage.getItem(CHUNK_RELOAD_KEY);
+        if (!attempted) {
+          sessionStorage.setItem(CHUNK_RELOAD_KEY, String(Date.now()));
+          console.warn("[ErrorBoundary] chunk error detected — clearing caches & reloading once");
+          void clearAppCachesAndReload();
+          return;
+        }
+        console.error("[ErrorBoundary] chunk error persisted after auto-reload — showing fallback UI");
+      } catch {
+        // sessionStorage may be unavailable (private mode) — fall through to UI
+      }
+    } else {
+      // Non-chunk errors: clear the sentinel so the next chunk error can auto-recover
+      try { sessionStorage.removeItem(CHUNK_RELOAD_KEY); } catch { /* noop */ }
+    }
   }
 
   handleReload = () => {
-    window.location.reload();
+    try { sessionStorage.removeItem(CHUNK_RELOAD_KEY); } catch { /* noop */ }
+    void clearAppCachesAndReload();
   };
 
   render() {
