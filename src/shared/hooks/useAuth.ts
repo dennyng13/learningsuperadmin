@@ -31,13 +31,28 @@ export function useAuth() {
     primaryRole: null,
   });
 
+  const applyAuthState = useCallback((user: User | null, session: Session | null, roles: AppRole[], loading: boolean) => {
+    setState(computeState(user, session, roles, loading));
+  }, []);
+
   const fetchRoles = useCallback(async (userId: string) => {
-    const { data } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userId);
-    const roles = (data?.map((r: any) => r.role as AppRole)) ?? [];
-    return roles;
+    try {
+      const { data, error } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId);
+
+      if (error) {
+        console.warn("[useAuth] Failed to load roles", error);
+        return [];
+      }
+
+      const roles = (data?.map((r: any) => r.role as AppRole)) ?? [];
+      return roles;
+    } catch (error) {
+      console.warn("[useAuth] Unexpected role fetch error", error);
+      return [];
+    }
   }, []);
 
   const computeState = (user: User | null, session: Session | null, roles: AppRole[], loading: boolean): AuthState => {
@@ -57,25 +72,36 @@ export function useAuth() {
         if (session?.user) {
           setTimeout(async () => {
             const roles = await fetchRoles(session.user.id);
-            setState(computeState(session.user, session, roles, false));
+            applyAuthState(session.user, session, roles, false);
           }, 0);
         } else {
-          setState(computeState(null, null, [], false));
+          applyAuthState(null, null, [], false);
         }
       }
     );
 
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session?.user) {
-        const roles = await fetchRoles(session.user.id);
-        setState(computeState(session.user, session, roles, false));
-      } else {
-        setState((s) => ({ ...s, loading: false }));
-      }
-    });
+    supabase.auth.getSession()
+      .then(async ({ data: { session }, error }) => {
+        if (error) {
+          console.warn("[useAuth] Failed to restore session", error);
+          applyAuthState(null, null, [], false);
+          return;
+        }
+
+        if (session?.user) {
+          const roles = await fetchRoles(session.user.id);
+          applyAuthState(session.user, session, roles, false);
+        } else {
+          setState((s) => ({ ...s, loading: false }));
+        }
+      })
+      .catch((error) => {
+        console.warn("[useAuth] Unexpected session restore error", error);
+        applyAuthState(null, null, [], false);
+      });
 
     return () => subscription.unsubscribe();
-  }, [fetchRoles]);
+  }, [applyAuthState, fetchRoles]);
 
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
