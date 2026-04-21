@@ -10,6 +10,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@shared/components/ui/collapsible";
 import { Badge } from "@shared/components/ui/badge";
 import { ALL_TYPE_LABELS_EN as ALL_QT_LABELS } from "@shared/utils/questionTypes";
+import WidgetRetryState from "./WidgetRetryState";
 
 const ALL_QUESTION_TYPES = Object.keys(ALL_QT_LABELS);
 
@@ -48,76 +49,78 @@ export default function ContentAnalytics() {
   const [unused, setUnused] = useState<UnusedExercise[]>([]);
   const [skillCoverage, setSkillCoverage] = useState<{ name: string; value: number }[]>([]);
   const [missingTypes, setMissingTypes] = useState<string[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  const load = async () => {
+    setLoadError(null);
+    const { data: prData, error: prError } = await supabase
+      .from("practice_results")
+      .select("exercise_id, exercise_title, skill")
+      .order("created_at", { ascending: false })
+      .limit(1000) as any;
+
+    if (prError) throw prError;
+
+    const attemptMap: Record<string, { title: string; skill: string; count: number }> = {};
+    for (const r of prData || []) {
+      if (!attemptMap[r.exercise_id]) {
+        attemptMap[r.exercise_id] = { title: r.exercise_title, skill: r.skill, count: 0 };
+      }
+      attemptMap[r.exercise_id].count++;
+    }
+
+    const sorted = Object.entries(attemptMap)
+      .map(([id, v]) => ({ exercise_id: id, title: v.title, skill: v.skill, attempts: v.count }))
+      .sort((a, b) => b.attempts - a.attempts);
+
+    setPopular(sorted.slice(0, 10));
+
+    const { data: allExercises, error: exercisesError } = await supabase
+      .from("practice_exercises")
+      .select("id, title, skill, question_type, question_types")
+      .eq("status", "published") as any;
+
+    if (exercisesError) throw exercisesError;
+
+    const unusedList = (allExercises || [])
+      .map((e: any) => ({
+        id: e.id,
+        title: e.title,
+        skill: e.skill,
+        attempts: attemptMap[e.id]?.count || 0,
+      }))
+      .filter((e: any) => e.attempts < 3)
+      .sort((a: any, b: any) => a.attempts - b.attempts)
+      .slice(0, 10);
+    setUnused(unusedList);
+
+    const skillCount: Record<string, number> = { reading: 0, listening: 0, writing: 0, speaking: 0 };
+    for (const e of allExercises || []) {
+      if (skillCount[e.skill] !== undefined) skillCount[e.skill]++;
+    }
+    setSkillCoverage(
+      Object.entries(skillCount)
+        .filter(([_, v]) => v > 0)
+        .map(([name, value]) => ({ name, value }))
+    );
+
+    const existingTypes = new Set<string>();
+    for (const e of allExercises || []) {
+      if (e.question_type) existingTypes.add(e.question_type);
+      if (Array.isArray(e.question_types)) {
+        for (const qt of e.question_types) existingTypes.add(qt);
+      }
+    }
+    setMissingTypes(ALL_QUESTION_TYPES.filter(qt => !existingTypes.has(qt)));
+    setLoaded(true);
+  };
 
   useEffect(() => {
     if (!open || loaded) return;
-
-    async function load() {
-      // 1. Practice results grouped by exercise
-      const { data: prData } = await supabase
-        .from("practice_results")
-        .select("exercise_id, exercise_title, skill")
-        .order("created_at", { ascending: false })
-        .limit(1000) as any;
-
-      const attemptMap: Record<string, { title: string; skill: string; count: number }> = {};
-      for (const r of prData || []) {
-        if (!attemptMap[r.exercise_id]) {
-          attemptMap[r.exercise_id] = { title: r.exercise_title, skill: r.skill, count: 0 };
-        }
-        attemptMap[r.exercise_id].count++;
-      }
-
-      const sorted = Object.entries(attemptMap)
-        .map(([id, v]) => ({ exercise_id: id, title: v.title, skill: v.skill, attempts: v.count }))
-        .sort((a, b) => b.attempts - a.attempts);
-
-      setPopular(sorted.slice(0, 10));
-
-      // 2. All published exercises
-      const { data: allExercises } = await supabase
-        .from("practice_exercises")
-        .select("id, title, skill, question_type, question_types")
-        .eq("status", "published") as any;
-
-      const exerciseAttemptSet = new Set(Object.keys(attemptMap));
-      const unusedList = (allExercises || [])
-        .map((e: any) => ({
-          id: e.id,
-          title: e.title,
-          skill: e.skill,
-          attempts: attemptMap[e.id]?.count || 0,
-        }))
-        .filter((e: any) => e.attempts < 3)
-        .sort((a: any, b: any) => a.attempts - b.attempts)
-        .slice(0, 10);
-      setUnused(unusedList);
-
-      // 3. Skill coverage
-      const skillCount: Record<string, number> = { reading: 0, listening: 0, writing: 0, speaking: 0 };
-      for (const e of allExercises || []) {
-        if (skillCount[e.skill] !== undefined) skillCount[e.skill]++;
-      }
-      setSkillCoverage(
-        Object.entries(skillCount)
-          .filter(([_, v]) => v > 0)
-          .map(([name, value]) => ({ name, value }))
-      );
-
-      // 4. Missing question types
-      const existingTypes = new Set<string>();
-      for (const e of allExercises || []) {
-        if (e.question_type) existingTypes.add(e.question_type);
-        if (Array.isArray(e.question_types)) {
-          for (const qt of e.question_types) existingTypes.add(qt);
-        }
-      }
-      setMissingTypes(ALL_QUESTION_TYPES.filter(qt => !existingTypes.has(qt)));
-
-      setLoaded(true);
-    }
-
-    load();
+    load().catch((error) => {
+      console.error("[ContentAnalytics] Failed to load", error);
+      setLoadError(error instanceof Error ? error.message : "Không tải được phân tích nội dung.");
+    });
   }, [open, loaded]);
 
   return (
@@ -132,7 +135,20 @@ export default function ContentAnalytics() {
       </CollapsibleTrigger>
       <CollapsibleContent>
         <div className="mt-3 space-y-4">
-          {!loaded ? (
+          {loadError ? (
+            <WidgetRetryState
+              title="Chưa tải được phân tích nội dung"
+              message={loadError}
+              onRetry={() => {
+                setLoaded(false);
+                load().catch((error) => {
+                  console.error("[ContentAnalytics] Retry failed", error);
+                  setLoadError(error instanceof Error ? error.message : "Không tải được phân tích nội dung.");
+                });
+              }}
+              compact
+            />
+          ) : !loaded ? (
             <div className="text-center py-8 text-sm text-muted-foreground">Đang tải...</div>
           ) : (
             <>
