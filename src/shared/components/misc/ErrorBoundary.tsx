@@ -86,10 +86,31 @@ export default class ErrorBoundary extends React.Component<Props, State> {
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
     console.error("[ErrorBoundary]", error, info.componentStack);
+
+    // Auto-recover from chunk loading errors caused by stale index.html
+    // referencing chunks that no longer exist after a redeploy.
+    if (isChunkError(error)) {
+      try {
+        const attempted = sessionStorage.getItem(CHUNK_RELOAD_KEY);
+        if (!attempted) {
+          sessionStorage.setItem(CHUNK_RELOAD_KEY, String(Date.now()));
+          console.warn("[ErrorBoundary] chunk error detected — clearing caches & reloading once");
+          void clearAppCachesAndReload();
+          return;
+        }
+        console.error("[ErrorBoundary] chunk error persisted after auto-reload — showing fallback UI");
+      } catch {
+        // sessionStorage may be unavailable (private mode) — fall through to UI
+      }
+    } else {
+      // Non-chunk errors: clear the sentinel so the next chunk error can auto-recover
+      try { sessionStorage.removeItem(CHUNK_RELOAD_KEY); } catch { /* noop */ }
+    }
   }
 
   handleReload = () => {
-    window.location.reload();
+    try { sessionStorage.removeItem(CHUNK_RELOAD_KEY); } catch { /* noop */ }
+    void clearAppCachesAndReload();
   };
 
   render() {
