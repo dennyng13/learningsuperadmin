@@ -36,7 +36,6 @@ export default defineConfig(({ mode }) => ({
           if (!id.includes("node_modules")) return undefined;
           if (id.includes("react-router")) return "vendor-router";
           if (id.includes("@tanstack/react-query")) return "vendor-query";
-          if (id.includes("recharts") || id.includes("d3-")) return "vendor-charts";
           if (id.includes("@radix-ui")) return "vendor-radix";
           if (id.includes("lucide-react")) return "vendor-icons";
           if (id.includes("@supabase")) return "vendor-supabase";
