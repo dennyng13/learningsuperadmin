@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@shared/components/ui/
 import { TabSkeleton } from "@shared/components/ui/tab-skeleton";
 import TeacherTabErrorBoundary from "@admin/features/users/components/TeacherTabErrorBoundary";
 
-function logImportError(name: string, err: unknown) {
+function logImportError(name: string, err: unknown): never {
   // eslint-disable-next-line no-console
   console.error(`[TeachersRoute] failed to load chunk "${name}"`, {
     name,
