@@ -1,12 +1,19 @@
-import { useMemo } from "react";
+import { lazy, Suspense, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Clock3, GraduationCap, Receipt, TrendingUp, Users } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@shared/components/ui/tabs";
 import { TabSkeleton } from "@shared/components/ui/tab-skeleton";
-import TeachersTab from "@admin/features/users/components/TeachersTab";
-import TeacherIncomeTab from "@admin/features/users/components/TeacherIncomeTab";
-import { AvailabilityDraftsTab } from "@admin/features/schedule/pages/AdminSchedulePage";
-import { TeacherPerformanceContent } from "@admin/features/performance/pages/TeacherPerformancePage";
+
+const TeachersTab = lazy(() => import("@admin/features/users/components/TeachersTab"));
+const TeacherIncomeTab = lazy(() => import("@admin/features/users/components/TeacherIncomeTab"));
+const AvailabilityDraftsTab = lazy(async () => {
+  const mod = await import("@admin/features/schedule/pages/AdminSchedulePage");
+  return { default: mod.AvailabilityDraftsTab };
+});
+const TeacherPerformanceContent = lazy(async () => {
+  const mod = await import("@admin/features/performance/pages/TeacherPerformancePage");
+  return { default: mod.TeacherPerformanceContent };
+});
 
 export default function TeacherManagementPage() {
   const navigate = useNavigate();
@@ -28,6 +35,10 @@ export default function TeacherManagementPage() {
     };
     navigate(routeMap[value] || "/teachers");
   };
+
+  const renderTabContent = (content: React.ReactNode) => (
+    <Suspense fallback={<TabSkeleton />}>{content}</Suspense>
+  );
 
   return (
     <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-4 md:space-y-6">
@@ -60,16 +71,16 @@ export default function TeacherManagementPage() {
         </div>
 
         <TabsContent value="directory" className="mt-0">
-          <TabSkeleton><TeachersTab /></TabSkeleton>
+          {renderTabContent(<TeachersTab />)}
         </TabsContent>
         <TabsContent value="availability" className="mt-0">
-          <TabSkeleton><AvailabilityDraftsTab /></TabSkeleton>
+          {renderTabContent(<AvailabilityDraftsTab />)}
         </TabsContent>
         <TabsContent value="performance" className="mt-0">
-          <TabSkeleton><TeacherPerformanceContent /></TabSkeleton>
+          {renderTabContent(<TeacherPerformanceContent />)}
         </TabsContent>
         <TabsContent value="income" className="mt-0">
-          <TabSkeleton><TeacherIncomeTab /></TabSkeleton>
+          {renderTabContent(<TeacherIncomeTab />)}
         </TabsContent>
       </Tabs>
     </div>
