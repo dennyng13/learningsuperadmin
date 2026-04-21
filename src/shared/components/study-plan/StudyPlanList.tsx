@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { useStudyPlanMutations, type StudyPlan } from "@shared/hooks/useStudyPlan";
 import { useTemplateMutations } from "@shared/hooks/useStudyPlanTemplates";
 import { useAuth } from "@shared/hooks/useAuth";
+import { useTeacherAccessScope } from "@shared/hooks/useTeacherAccessScope";
 import { useNavigate } from "react-router-dom";
 import { PlanAssignmentInfo, useAssignmentLookups } from "@shared/components/study-plan/PlanAssignmentInfo";
 import { SharedPlanEditor } from "@shared/components/study-plan/SharedPlanEditor";
@@ -16,6 +17,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@shared/components/ui/tooltip";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, CalendarDays, BookOpen, GraduationCap, Sparkles, Search, X, Image, Lock, ClipboardList, Eye, FileStack, AlertCircle, RefreshCw } from "lucide-react";
+import { Shield, User as UserIcon } from "lucide-react";
 import { cn } from "@shared/lib/utils";
 import { getEffectiveStatus } from "@shared/utils/studyPlanStatus";
 import TeacherPlanDetailView from "@shared/components/study-plan/TeacherPlanDetailView";
