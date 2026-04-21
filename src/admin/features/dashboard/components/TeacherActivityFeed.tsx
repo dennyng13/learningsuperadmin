@@ -24,6 +24,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@shared/components/ui/select";
 import { Button } from "@shared/components/ui/button";
+import WidgetRetryState from "./WidgetRetryState";
 
 type ActivityKind = "writing" | "speaking" | "announcement" | "answer" | "session";
 
@@ -101,13 +102,7 @@ async function fetchFeed(limit: number): Promise<FeedItem[]> {
   const sinceIso = new Date(Date.now() - 7 * 24 * 3600_000).toISOString();
   const perSource = Math.max(10, Math.ceil(limit / 2));
 
-  const [
-    { data: writing },
-    { data: speaking },
-    { data: announcements },
-    { data: answers },
-    { data: sessions },
-  ] = await Promise.all([
+  const [writingRes, speakingRes, announcementsRes, answersRes, sessionsRes] = await Promise.all([
     supabase
       .from("writing_feedback")
       .select("id, teacher_id, student_id, task_key, overall_band, result_id, created_at")
@@ -144,6 +139,15 @@ async function fetchFeed(limit: number): Promise<FeedItem[]> {
       .order("completed_at", { ascending: false })
       .limit(Math.max(15, perSource)),
   ]);
+
+  const criticalError = [writingRes.error, speakingRes.error, announcementsRes.error, answersRes.error, sessionsRes.error].find(Boolean);
+  if (criticalError) throw criticalError;
+
+  const writing = writingRes.data;
+  const speaking = speakingRes.data;
+  const announcements = announcementsRes.data;
+  const answers = answersRes.data;
+  const sessions = sessionsRes.data;
 
   // Resolve session → teacher via plan.class_ids → class.teacher_id.
   // Each plan may map to multiple classes — pick the first class with a teacher.
@@ -344,7 +348,7 @@ export default function TeacherActivityFeed() {
     setLimit(PAGE_SIZE);
   };
 
-  const { data: items, isLoading, isFetching } = useQuery({
+  const { data: items, isLoading, isFetching, error, refetch } = useQuery({
     queryKey: ["teacher-activity-feed", limit],
     queryFn: () => fetchFeed(limit),
     staleTime: 60_000,
@@ -434,6 +438,17 @@ export default function TeacherActivityFeed() {
 
   const hasActiveFilter = teacherFilter !== "all" || kindFilter !== "all";
   const showSkeleton = isLoading && !items;
+
+  if (error) {
+    return (
+      <WidgetRetryState
+        title="Chưa tải được hoạt động giáo viên"
+        message={error instanceof Error ? error.message : "Feed hoạt động đang tạm gián đoạn."}
+        onRetry={() => refetch()}
+        compact
+      />
+    );
+  }
 
   return (
     <div className="rounded-xl border bg-card p-4">

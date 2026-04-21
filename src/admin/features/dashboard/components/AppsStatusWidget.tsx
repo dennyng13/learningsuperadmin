@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { format, subDays } from "date-fns";
 import { cn } from "@shared/lib/utils";
 import DayDrillDownDialog, { type DrillDownKind } from "./DayDrillDownDialog";
+import WidgetRetryState from "./WidgetRetryState";
 
 const IELTS_URL = "https://ielts.learningplus.vn";
 const TEACHER_URL = "https://teacher.learningplus.vn";
@@ -49,19 +50,19 @@ function useAppsStatus() {
       const prev7dEndDate = format(subDays(now, 7), "yyyy-MM-dd");
 
       const [
-        { count: activeStudents },
-        { count: testsRun24h },
-        { count: practicesRun24h },
-        { count: testsRun7d },
-        { data: testRows7d },
-        { data: practiceRows7d },
-        { count: testsPrev7d },
-        { count: practicesPrev7d },
-        { count: activeTeachers },
-        { count: activeClasses },
-        { data: todayEntries },
-        { data: entries7d },
-        { count: entriesPrev7d },
+        activeStudentsRes,
+        testsRun24hRes,
+        practicesRun24hRes,
+        testsRun7dRes,
+        testRows7dRes,
+        practiceRows7dRes,
+        testsPrev7dRes,
+        practicesPrev7dRes,
+        activeTeachersRes,
+        activeClassesRes,
+        todayEntriesRes,
+        entries7dRes,
+        entriesPrev7dRes,
       ] = await Promise.all([
         supabase.from("teachngo_students")
           .select("*", { count: "exact", head: true })
@@ -107,6 +108,24 @@ function useAppsStatus() {
           .lt("entry_date", prev7dEndDate),
       ]);
 
+      const criticalError = [
+        activeStudentsRes.error,
+        testsRun24hRes.error,
+        practicesRun24hRes.error,
+        testsRun7dRes.error,
+        testRows7dRes.error,
+        practiceRows7dRes.error,
+        testsPrev7dRes.error,
+        practicesPrev7dRes.error,
+        activeTeachersRes.error,
+        activeClassesRes.error,
+        todayEntriesRes.error,
+        entries7dRes.error,
+        entriesPrev7dRes.error,
+      ].find(Boolean);
+
+      if (criticalError) throw criticalError;
+
       // Build 7-day buckets (oldest → newest)
       const days: string[] = Array.from({ length: 7 }, (_, i) =>
         format(subDays(now, 6 - i), "yyyy-MM-dd")
@@ -125,30 +144,30 @@ function useAppsStatus() {
         return days.map((d) => map[d]);
       };
 
-      const tSeries = bucket(testRows7d as any, "created_at");
-      const pSeries = bucket(practiceRows7d as any, "created_at");
+      const tSeries = bucket(testRows7dRes.data as any, "created_at");
+      const pSeries = bucket(practiceRows7dRes.data as any, "created_at");
       const ieltsSeries = tSeries.map((v, i) => v + pSeries[i]);
-      const teacherSeries = bucket(entries7d as any, "entry_date");
+      const teacherSeries = bucket(entries7dRes.data as any, "entry_date");
 
       const ieltsTotal7d = ieltsSeries.reduce((a, b) => a + b, 0);
-      const ieltsPrev7dTotal = (testsPrev7d ?? 0) + (practicesPrev7d ?? 0);
+      const ieltsPrev7dTotal = (testsPrev7dRes.count ?? 0) + (practicesPrev7dRes.count ?? 0);
       const teacherTotal7d = teacherSeries.reduce((a, b) => a + b, 0);
-      const teacherPrev7dTotal = entriesPrev7d ?? 0;
+      const teacherPrev7dTotal = entriesPrev7dRes.count ?? 0;
 
       return {
         ielts: {
-          activeStudents: activeStudents ?? 0,
-          testsRun24h: testsRun24h ?? 0,
-          practicesRun24h: practicesRun24h ?? 0,
-          testsRun7d: testsRun7d ?? 0,
+          activeStudents: activeStudentsRes.count ?? 0,
+          testsRun24h: testsRun24hRes.count ?? 0,
+          practicesRun24h: practicesRun24hRes.count ?? 0,
+          testsRun7d: testsRun7dRes.count ?? 0,
           series7d: ieltsSeries,
           total7d: ieltsTotal7d,
           prev7d: ieltsPrev7dTotal,
         },
         teacher: {
-          activeTeachers: activeTeachers ?? 0,
-          activeClasses: activeClasses ?? 0,
-          todaySessions: (todayEntries || []).length,
+          activeTeachers: activeTeachersRes.count ?? 0,
+          activeClasses: activeClassesRes.count ?? 0,
+          todaySessions: (todayEntriesRes.data || []).length,
           series7d: teacherSeries,
           total7d: teacherTotal7d,
           prev7d: teacherPrev7dTotal,
@@ -162,7 +181,7 @@ function useAppsStatus() {
 export default function AppsStatusWidget() {
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const { data, isLoading } = useAppsStatus();
+  const { data, isLoading, error, refetch, isFetching } = useAppsStatus();
 
   // Live deltas — tăng ngay khi có INSERT từ Realtime, reset về 0 khi React Query refetch
   const [runningDelta, setRunningDelta] = useState(0);
@@ -245,6 +264,17 @@ export default function AppsStatusWidget() {
     { icon: CalendarClock, label: "Buổi học hôm nay", value: liveSessions, live: pulseSessions, tone: "sky" },
   ];
 
+  if (error) {
+    return (
+      <WidgetRetryState
+        title="Chưa tải được tổng quan toàn trung tâm"
+        message={error instanceof Error ? error.message : "Kết nối dashboard tạm thời bị gián đoạn."}
+        onRetry={() => refetch()}
+        compact
+      />
+    );
+  }
+
   return (
     <div className="rounded-xl border bg-card p-4">
       <div className="flex items-center justify-between mb-4">
@@ -260,7 +290,7 @@ export default function AppsStatusWidget() {
             {connected && <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-60 animate-ping" />}
             <span className={cn("relative inline-flex rounded-full h-2 w-2", connected ? "bg-emerald-500" : "bg-muted-foreground/40")} />
           </span>
-          {connected ? "Realtime · live" : "Đang kết nối…"}
+          {isFetching ? "Đang làm mới…" : connected ? "Realtime · live" : "Đang kết nối…"}
         </span>
       </div>
 
