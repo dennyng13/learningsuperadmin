@@ -6,12 +6,13 @@ export interface TeacherAccessScope {
   teacherId: string | null;
   teacherName: string | null;
   canViewAllClasses: boolean;
+  canUseAiGrading: boolean;
 }
 
 async function loadTeacherAccessScope(userId: string, canViewAllClasses: boolean): Promise<TeacherAccessScope> {
   const { data: teacher, error } = await supabase
     .from("teachers")
-    .select("id, full_name")
+    .select("id, full_name, can_use_ai_grading")
     .eq("linked_user_id", userId)
     .maybeSingle();
 
@@ -21,6 +22,7 @@ async function loadTeacherAccessScope(userId: string, canViewAllClasses: boolean
     teacherId: teacher?.id ?? null,
     teacherName: teacher?.full_name ?? null,
     canViewAllClasses,
+    canUseAiGrading: (teacher as any)?.can_use_ai_grading === true,
   };
 }
 
@@ -32,6 +34,7 @@ export function useTeacherAccessScope() {
     queryKey: ["teacher-access-scope", user?.id, canViewAllClasses],
     enabled: !!user?.id,
     staleTime: 300_000,
+    gcTime: 600_000,
     queryFn: () => loadTeacherAccessScope(user!.id, canViewAllClasses),
   });
 }
