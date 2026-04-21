@@ -154,10 +154,11 @@ async function fetchFeed(limit: number): Promise<FeedItem[]> {
   const planIds = [...new Set((sessions || []).map(s => s.plan_id).filter(Boolean))];
   const planClassMap = new Map<string, string[]>();
   if (planIds.length > 0) {
-    const { data: plans } = await supabase
+    const { data: plans, error: plansError } = await supabase
       .from("study_plans")
       .select("id, class_ids")
       .in("id", planIds);
+    if (plansError) throw plansError;
     (plans || []).forEach(p => {
       const ids = Array.isArray(p.class_ids) ? (p.class_ids as string[]).filter(Boolean) : [];
       if (ids.length > 0) planClassMap.set(p.id, ids);
@@ -166,10 +167,11 @@ async function fetchFeed(limit: number): Promise<FeedItem[]> {
   const sessionClassIds = [...new Set([...planClassMap.values()].flat())];
   const sessionClassMap = new Map<string, { teacherId: string | null; className: string }>();
   if (sessionClassIds.length > 0) {
-    const { data: cls } = await supabase
+    const { data: cls, error: classesLookupError } = await supabase
       .from("teachngo_classes")
       .select("id, class_name, teacher_id")
       .in("id", sessionClassIds);
+    if (classesLookupError) throw classesLookupError;
     (cls || []).forEach(c => sessionClassMap.set(c.id, {
       teacherId: c.teacher_id ?? null,
       className: c.class_name,
@@ -199,17 +201,28 @@ async function fetchFeed(limit: number): Promise<FeedItem[]> {
   });
 
   // Batch lookup names
-  const [{ data: teachers }, { data: students }, { data: classes }] = await Promise.all([
+  const emptyTeachersRes = { data: [] as TeacherLite[], error: null };
+  const emptyStudentsRes = { data: [] as StudentLite[], error: null };
+  const emptyClassesRes = { data: [] as ClassLite[], error: null };
+
+  const [teachersRes, studentsRes, classesRes] = await Promise.all([
     teacherIds.size
       ? supabase.from("teachers").select("id, full_name").in("id", [...teacherIds])
-      : Promise.resolve({ data: [] as TeacherLite[] }),
+      : Promise.resolve(emptyTeachersRes),
     studentIds.size
       ? supabase.from("teachngo_students").select("id, full_name").in("id", [...studentIds])
-      : Promise.resolve({ data: [] as StudentLite[] }),
+      : Promise.resolve(emptyStudentsRes),
     classIds.size
       ? supabase.from("teachngo_classes").select("id, class_name").in("id", [...classIds])
-      : Promise.resolve({ data: [] as ClassLite[] }),
+      : Promise.resolve(emptyClassesRes),
   ]);
+
+  const lookupError = [teachersRes.error, studentsRes.error, classesRes.error].find(Boolean);
+  if (lookupError) throw lookupError;
+
+  const teachers = teachersRes.data;
+  const students = studentsRes.data;
+  const classes = classesRes.data;
 
   const tMap = new Map((teachers || []).map(t => [t.id, t.full_name]));
   const sMap = new Map((students || []).map(s => [s.id, s.full_name]));
