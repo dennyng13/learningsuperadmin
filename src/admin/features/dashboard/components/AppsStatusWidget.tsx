@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { format, subDays } from "date-fns";
 import { cn } from "@shared/lib/utils";
 import DayDrillDownDialog, { type DrillDownKind } from "./DayDrillDownDialog";
+import WidgetRetryState from "./WidgetRetryState";
 
 const IELTS_URL = "https://ielts.learningplus.vn";
 const TEACHER_URL = "https://teacher.learningplus.vn";
@@ -107,6 +108,10 @@ function useAppsStatus() {
           .lt("entry_date", prev7dEndDate),
       ]);
 
+      const criticalError = [
+        testRows7d?.error,
+      ];
+
       // Build 7-day buckets (oldest → newest)
       const days: string[] = Array.from({ length: 7 }, (_, i) =>
         format(subDays(now, 6 - i), "yyyy-MM-dd")
@@ -162,7 +167,7 @@ function useAppsStatus() {
 export default function AppsStatusWidget() {
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const { data, isLoading } = useAppsStatus();
+  const { data, isLoading, error, refetch, isFetching } = useAppsStatus();
 
   // Live deltas — tăng ngay khi có INSERT từ Realtime, reset về 0 khi React Query refetch
   const [runningDelta, setRunningDelta] = useState(0);
@@ -245,6 +250,17 @@ export default function AppsStatusWidget() {
     { icon: CalendarClock, label: "Buổi học hôm nay", value: liveSessions, live: pulseSessions, tone: "sky" },
   ];
 
+  if (error) {
+    return (
+      <WidgetRetryState
+        title="Chưa tải được tổng quan toàn trung tâm"
+        message={error instanceof Error ? error.message : "Kết nối dashboard tạm thời bị gián đoạn."}
+        onRetry={() => refetch()}
+        compact
+      />
+    );
+  }
+
   return (
     <div className="rounded-xl border bg-card p-4">
       <div className="flex items-center justify-between mb-4">
@@ -260,7 +276,7 @@ export default function AppsStatusWidget() {
             {connected && <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-60 animate-ping" />}
             <span className={cn("relative inline-flex rounded-full h-2 w-2", connected ? "bg-emerald-500" : "bg-muted-foreground/40")} />
           </span>
-          {connected ? "Realtime · live" : "Đang kết nối…"}
+          {isFetching ? "Đang làm mới…" : connected ? "Realtime · live" : "Đang kết nối…"}
         </span>
       </div>
 

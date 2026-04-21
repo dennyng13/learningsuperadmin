@@ -31,9 +31,9 @@ export function useAuth() {
     primaryRole: null,
   });
 
-  const applyAuthState = useCallback((user: User | null, session: Session | null, roles: AppRole[], loading: boolean) => {
+  const applyAuthState = (user: User | null, session: Session | null, roles: AppRole[], loading: boolean) => {
     setState(computeState(user, session, roles, loading));
-  }, []);
+  };
 
   const fetchRoles = useCallback(async (userId: string) => {
     try {
@@ -101,7 +101,7 @@ export function useAuth() {
       });
 
     return () => subscription.unsubscribe();
-  }, [applyAuthState, fetchRoles]);
+  }, [fetchRoles]);
 
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
