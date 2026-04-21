@@ -1552,7 +1552,20 @@ export function SharedPlanEditor({ plan, onClose, teacherMode = false }: SharedP
               </BreadcrumbList>
             </Breadcrumb>
             <DialogTitle className="text-base">
-              {isEditing ? "Chỉnh sửa kế hoạch" : "Tạo kế hoạch học tập"}
+              <div className="flex items-center gap-2 flex-wrap">
+                <span>{isEditing ? "Chỉnh sửa kế hoạch" : "Tạo kế hoạch học tập"}</span>
+                {scope && (
+                  scope.canViewAllClasses ? (
+                    <Badge variant="outline" className="text-[10px] gap-1 border-primary/40 text-primary font-normal">
+                      <Shield className="w-3 h-3" /> Admin
+                    </Badge>
+                  ) : scope.teacherId ? (
+                    <Badge variant="outline" className="text-[10px] gap-1 font-normal">
+                      <UserIcon className="w-3 h-3" /> Giáo viên
+                    </Badge>
+                  ) : null
+                )}
+              </div>
             </DialogTitle>
             <DialogDescription className="text-xs">
               {isEditing ? "Chọn bước để chỉnh sửa, hoặc bấm Lưu" :
