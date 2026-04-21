@@ -5,6 +5,7 @@ import { Toaster as Sonner } from "@shared/components/ui/sonner";
 import { Toaster } from "@shared/components/ui/toaster";
 import { TooltipProvider } from "@shared/components/ui/tooltip";
 import OfflineFallback from "@shared/components/misc/OfflineFallback";
+import ErrorBoundary from "@shared/components/misc/ErrorBoundary";
 import { Loader2 } from "lucide-react";
 
 const AppRoutes = lazy(() => import("@admin/routes/AdminRoutes"));
@@ -24,18 +25,20 @@ function PageLoader() {
 }
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <OfflineFallback />
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Suspense fallback={<PageLoader />}>
-          <AppRoutes />
-        </Suspense>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+  <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <OfflineFallback />
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Suspense fallback={<PageLoader />}>
+            <AppRoutes />
+          </Suspense>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;
