@@ -41,7 +41,6 @@ export default defineConfig(({ mode }) => ({
           if (id.includes("@supabase")) return "vendor-supabase";
           if (id.includes("date-fns")) return "vendor-date";
           if (id.includes("framer-motion")) return "vendor-motion";
-          if (id.includes("@tiptap") || id.includes("prosemirror")) return "vendor-editor";
           if (id.includes("xlsx")) return "vendor-xlsx";
           if (id.includes("html2canvas") || id.includes("jspdf")) return "vendor-pdf";
           if (id.includes("react-dom") || id.includes("/react/")) return "vendor-react";
