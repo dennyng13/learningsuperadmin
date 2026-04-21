@@ -201,16 +201,20 @@ async function fetchFeed(limit: number): Promise<FeedItem[]> {
   });
 
   // Batch lookup names
+  const emptyTeachersRes = { data: [] as TeacherLite[], error: null };
+  const emptyStudentsRes = { data: [] as StudentLite[], error: null };
+  const emptyClassesRes = { data: [] as ClassLite[], error: null };
+
   const [teachersRes, studentsRes, classesRes] = await Promise.all([
     teacherIds.size
       ? supabase.from("teachers").select("id, full_name").in("id", [...teacherIds])
-      : Promise.resolve({ data: [] as TeacherLite[] }),
+      : Promise.resolve(emptyTeachersRes),
     studentIds.size
       ? supabase.from("teachngo_students").select("id, full_name").in("id", [...studentIds])
-      : Promise.resolve({ data: [] as StudentLite[] }),
+      : Promise.resolve(emptyStudentsRes),
     classIds.size
       ? supabase.from("teachngo_classes").select("id, class_name").in("id", [...classIds])
-      : Promise.resolve({ data: [] as ClassLite[] }),
+      : Promise.resolve(emptyClassesRes),
   ]);
 
   const lookupError = [teachersRes.error, studentsRes.error, classesRes.error].find(Boolean);
