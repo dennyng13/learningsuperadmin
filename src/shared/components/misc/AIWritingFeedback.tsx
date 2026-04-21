@@ -2,6 +2,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@shared/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
+import { useTeacherAccessScope } from "@shared/hooks/useTeacherAccessScope";
 import { Button } from "@shared/components/ui/button";
 import { Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
@@ -19,13 +20,14 @@ interface AIWritingFeedbackProps {
 
 export default function AIWritingFeedback({ writingResponse, taskPrompt, onResult }: AIWritingFeedbackProps) {
   const { user, isSuperAdmin, isAdmin, isTeacher } = useAuth();
+  const { data: scope } = useTeacherAccessScope();
   const [loading, setLoading] = useState(false);
 
-  // Check if user has AI grading permission
+  // Check if user has AI grading permission (teacher scope is cached via useTeacherAccessScope)
   const { data: canUseAI } = useQuery({
-    queryKey: ["ai-grading-permission", user?.id],
-    enabled: !!user,
-    staleTime: 60000,
+    queryKey: ["ai-grading-permission", user?.id, isAdmin, isSuperAdmin, isTeacher, scope?.canUseAiGrading],
+    enabled: !!user && (!isTeacher || scope !== undefined),
+    staleTime: 300_000,
     queryFn: async () => {
       if (isSuperAdmin) return true;
 
@@ -39,12 +41,7 @@ export default function AIWritingFeedback({ writingResponse, taskPrompt, onResul
       }
 
       if (isTeacher) {
-        const { data } = await supabase
-          .from("teachers")
-          .select("can_use_ai_grading")
-          .eq("linked_user_id", user!.id)
-          .maybeSingle();
-        return data?.can_use_ai_grading === true;
+        return scope?.canUseAiGrading === true;
       }
 
       return false;
