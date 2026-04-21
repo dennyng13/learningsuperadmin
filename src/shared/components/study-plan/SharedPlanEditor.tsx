@@ -20,7 +20,7 @@ import {
   Plus, Pencil, Upload, X, ArrowLeft, ArrowRight, BookOpen, GraduationCap,
   Users, Search, Library, ChevronDown, ChevronUp, Copy, Sparkles, Layers,
   ClipboardList, School, UserCheck, FileText as FileTextIcon, type LucideIcon,
-  FilePlus2, Calendar, RefreshCw, Ban,
+  FilePlus2, Calendar, RefreshCw, Ban, Shield, User as UserIcon,
 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@shared/components/ui/popover";
 import { Calendar as CalendarWidget } from "@shared/components/ui/calendar";
