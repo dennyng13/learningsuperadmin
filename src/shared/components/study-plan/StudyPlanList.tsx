@@ -198,7 +198,20 @@ export function StudyPlanList({ plans, isLoading, teacherMode = false, canCreate
       <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
         <div>
           <h1 className="text-xl font-extrabold">Kế hoạch học tập</h1>
-          <p className="text-sm text-muted-foreground">{plans?.length || 0} kế hoạch</p>
+          <div className="flex items-center gap-2 mt-0.5">
+            <p className="text-sm text-muted-foreground">{plans?.length || 0} kế hoạch</p>
+            {scope && (
+              scope.canViewAllClasses ? (
+                <Badge variant="outline" className="text-[10px] gap-1 border-primary/40 text-primary">
+                  <Shield className="w-3 h-3" /> Admin · tất cả lớp
+                </Badge>
+              ) : scope.teacherId ? (
+                <Badge variant="outline" className="text-[10px] gap-1">
+                  <UserIcon className="w-3 h-3" /> Giáo viên · phạm vi của bạn
+                </Badge>
+              ) : null
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-2">
           {!teacherMode && (
