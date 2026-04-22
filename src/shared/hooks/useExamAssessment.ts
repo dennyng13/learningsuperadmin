@@ -52,7 +52,11 @@ export function useExamAssessment(id: string | undefined) {
       // 4. Fetch passages, question_groups, questions in parallel
       const [passagesRes, qgRes] = await Promise.all([
         supabase.from("passages").select("*").in("part_id", partIds),
-        supabase.from("question_groups").select("*").in("part_id", partIds),
+        supabase
+          .from("question_groups")
+          .select("*")
+          .in("part_id", partIds)
+          .order("start_question_number", { ascending: true }),
       ]);
 
       const dbPassages = passagesRes.data || [];
@@ -80,7 +84,9 @@ export function useExamAssessment(id: string | undefined) {
 
         const partQGs = dbQGs.filter((qg) => qg.part_id === dbPart.id);
         const questionGroups: QuestionGroup[] = partQGs.map((qg) => {
-          const qgQuestions = dbQuestions.filter((q) => q.question_group_id === qg.id);
+          const qgQuestions = dbQuestions
+            .filter((q) => q.question_group_id === qg.id)
+            .sort((a, b) => (a.question_number ?? 0) - (b.question_number ?? 0));
 
           const questions: Question[] = qgQuestions.map((q) => {
             let choices: Choice[] | undefined;

@@ -12,7 +12,30 @@ import FontSize from "@tiptap/extension-font-size";
 import Heading from "@tiptap/extension-heading";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useId, useRef } from "react";
+
+/**
+ * Clean text pasted from Word/PDF/Google Docs:
+ * - normalize smart quotes → straight quotes
+ * - remove non-breaking spaces (\u00A0)
+ * - collapse runs of whitespace inside a line into one space
+ * - trim each line, preserve line breaks
+ */
+function cleanPastedText(input: string): string {
+  const normalized = input
+    // Smart quotes / curly quotes → straight
+    .replace(/[\u2018\u2019\u201A\u201B\u2032]/g, "'")
+    .replace(/[\u201C\u201D\u201E\u201F\u2033]/g, '"')
+    // Other typographic chars
+    .replace(/[\u2013\u2014]/g, "-") // en/em dash → hyphen
+    .replace(/\u2026/g, "...")
+    .replace(/\u00A0/g, " "); // NBSP → space
+
+  return normalized
+    .split(/\r?\n/)
+    .map((line) => line.replace(/[ \t]+/g, " ").replace(/\s+$/g, "").replace(/^[ \t]+/, ""))
+    .join("\n");
+}
 
 /**
  * TipTap Mark extension that wraps selected text as a blank answer.
@@ -101,6 +124,18 @@ interface RichTextEditorProps {
   showHeadings?: boolean;
   /** Called when a blank is created from highlighted text. Returns the selected text as the answer. */
   onBlankCreated?: (blankNumber: number, selectedText: string) => void;
+  /**
+   * Optional unique scope id for this editor instance. Used to namespace blank-answer DOM ids
+   * so multiple editors on the same page (e.g. several passages) don't collide.
+   * If omitted, a stable React useId is used.
+   */
+  scopeId?: string;
+  /**
+   * Optional starting blank number for this editor (default 1). When numbering blanks
+   * across multiple passages of the same test, pass the running offset so the blanks
+   * created here continue the global sequence (passage 1 ends at 7 → passage 2 starts at 8).
+   */
+  blankStart?: number;
 }
 
 function ToolbarButton({
@@ -129,14 +164,15 @@ function ToolbarDivider() {
   return <div className="w-px h-5 bg-border mx-0.5" />;
 }
 
-function Toolbar({ editor, showHeadings, onBlankCreated }: { editor: Editor; showHeadings?: boolean; onBlankCreated?: (blankNumber: number, selectedText: string) => void }) {
+function Toolbar({ editor, showHeadings, onBlankCreated, blankStart = 1 }: { editor: Editor; showHeadings?: boolean; onBlankCreated?: (blankNumber: number, selectedText: string) => void; blankStart?: number }) {
   const insertBlank = useCallback(() => {
     const html = editor.getHTML();
     // Count existing blanks from both formats
     const markNums = (html.match(/data-blank-num="(\d+)"/g) || []).map(m => parseInt(m.match(/\d+/)?.[0] || "0"));
     const shortcodeNums = (html.match(/\[blank_(\d+)\]/g) || []).map(m => parseInt(m.match(/\d+/)?.[0] || "0"));
     const allNums = [...markNums, ...shortcodeNums];
-    const next = allNums.length > 0 ? Math.max(...allNums) + 1 : 1;
+    // Continue numbering from blankStart so multiple passages keep a global running sequence.
+    const next = allNums.length > 0 ? Math.max(...allNums) + 1 : blankStart;
 
     const { from, to, empty } = editor.state.selection;
     if (!empty) {
@@ -150,10 +186,10 @@ function Toolbar({ editor, showHeadings, onBlankCreated }: { editor: Editor; sho
       // No selection: insert old-style shortcode as fallback
       editor.chain().focus().insertContent(`[blank_${next}]`).run();
     }
-  }, [editor, onBlankCreated]);
+  }, [editor, onBlankCreated, blankStart]);
 
   return (
-    <div className="flex items-center gap-0.5 flex-wrap border-b bg-muted/30 px-2 py-1.5 rounded-t-xl">
+    <div className="sticky top-0 z-20 flex items-center gap-0.5 flex-wrap border-b bg-muted/95 backdrop-blur supports-[backdrop-filter]:bg-muted/70 px-2 py-1.5 rounded-t-xl">
       {/* Headings */}
       {showHeadings && (
         <>
@@ -264,7 +300,20 @@ function Toolbar({ editor, showHeadings, onBlankCreated }: { editor: Editor; sho
   );
 }
 
-export default function RichTextEditor({ value, onChange, placeholder, className, minHeight = "120px", showHeadings = false, onBlankCreated }: RichTextEditorProps) {
+export default function RichTextEditor({
+  value,
+  onChange,
+  placeholder,
+  className,
+  minHeight = "120px",
+  showHeadings = false,
+  onBlankCreated,
+  scopeId,
+  blankStart = 1,
+}: RichTextEditorProps) {
+  const fallbackScope = useId().replace(/[:]/g, "");
+  const scope = scopeId || fallbackScope;
+  const containerRef = useRef<HTMLDivElement>(null);
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -297,6 +346,35 @@ export default function RichTextEditor({ value, onChange, placeholder, className
           "[&_th]:border [&_th]:border-border [&_th]:px-2 [&_th]:py-1 [&_th]:text-sm [&_th]:font-bold [&_th]:bg-muted/50",
         ),
         style: `min-height: ${minHeight}`,
+        spellcheck: "true",
+      },
+      handlePaste: (view, event) => {
+        const cb = event.clipboardData;
+        if (!cb) return false;
+        const text = cb.getData("text/plain");
+        if (!text) return false;
+        // Strip rich formatting from PDF/Word, normalize whitespace + smart quotes.
+        const cleaned = cleanPastedText(text);
+        event.preventDefault();
+        const { state, dispatch } = view;
+        const lines = cleaned.split(/\n/);
+        let tr = state.tr.deleteSelection();
+        lines.forEach((line, idx) => {
+          if (idx > 0) tr = tr.split(tr.selection.from);
+          if (line) tr = tr.insertText(line);
+        });
+        dispatch(tr);
+        return true;
+      },
+      handleKeyDown: (_view, event) => {
+        // Prevent the browser's default Cmd/Ctrl+B (toggle bookmarks bar in some browsers)
+        // — Tiptap's bold shortcut still runs because it's installed first via the extension.
+        if ((event.metaKey || event.ctrlKey) && (event.key === "b" || event.key === "B")) {
+          event.preventDefault();
+          // Let Tiptap process it via its own keymap (returning false continues the chain).
+          return false;
+        }
+        return false;
       },
     },
   });
@@ -317,20 +395,22 @@ export default function RichTextEditor({ value, onChange, placeholder, className
     if (!blankEl) return;
     const num = blankEl.getAttribute("data-blank-num");
     if (!num) return;
-    const input = document.getElementById(`blank-answer-${num}`);
+    // Scoped first (current editor instance), fallback to legacy global id
+    const scopedInput = document.getElementById(`blank-answer-${scope}-${num}`);
+    const input = scopedInput || document.getElementById(`blank-answer-${num}`);
     if (input) {
       input.scrollIntoView({ behavior: "smooth", block: "center" });
       input.classList.add("blank-answer-flash");
       setTimeout(() => input.classList.remove("blank-answer-flash"), 1200);
       setTimeout(() => input.focus(), 300);
     }
-  }, []);
+  }, [scope]);
 
   if (!editor) return null;
 
   return (
-    <div className={cn("rounded-xl border bg-card overflow-hidden", className)}>
-      <Toolbar editor={editor} showHeadings={showHeadings} onBlankCreated={onBlankCreated} />
+    <div ref={containerRef} className={cn("rounded-xl border bg-card overflow-hidden", className)}>
+      <Toolbar editor={editor} showHeadings={showHeadings} onBlankCreated={onBlankCreated} blankStart={blankStart} />
       <div className="relative" onClick={handleEditorClick}>
         <EditorContent editor={editor} />
         {placeholder && editor.isEmpty && (

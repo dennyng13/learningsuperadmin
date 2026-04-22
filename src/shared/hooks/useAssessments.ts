@@ -219,7 +219,11 @@ export function useAssessmentDetail(id: string | undefined) {
       if (partIds.length > 0) {
         const [pRes, qgRes] = await Promise.all([
           supabase.from("passages").select("*").in("part_id", partIds),
-          supabase.from("question_groups").select("*").in("part_id", partIds),
+          supabase
+            .from("question_groups")
+            .select("*")
+            .in("part_id", partIds)
+            .order("start_question_number", { ascending: true }),
         ]);
         passages = pRes.data || [];
         questionGroups = qgRes.data || [];
