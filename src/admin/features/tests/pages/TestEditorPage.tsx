@@ -1726,6 +1726,7 @@ export default function TestEditorPage() {
                               <div>
                                 <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">{part.skill === "LISTENING" ? "Nội dung Transcript" : "Nội dung bài đọc"}</label>
                                 <RichTextEditor
+                                  scopeId={`passage-${ps.id}`}
                                   value={ps.content}
                                   onChange={(html) => setPartsWithHistory((prev) => prev.map((p) => p.id === part.id ? { ...p, passages: p.passages.map((pp) => pp.id === ps.id ? { ...pp, content: html } : pp) } : p))}
                                   placeholder={part.skill === "LISTENING" ? "Nhập transcript (tuỳ chọn)..." : "Nhập nội dung bài đọc: các đoạn văn (paragraphs A, B, C...)..."}
@@ -1796,6 +1797,7 @@ export default function TestEditorPage() {
                           </div>
 
                           <RichTextEditor
+                            scopeId={`groupdesc-${group.id}`}
                             value={group.description || ""}
                             onChange={(html) => setPartsWithHistory((prev) => prev.map((p) => p.id === part.id ? { ...p, questionGroups: p.questionGroups.map((g) => g.id === group.id ? { ...g, description: html } : g) } : p))}
                             placeholder="Group description / instructions (supports tables, formatting, [blank_x])..."
@@ -2037,6 +2039,8 @@ export default function TestEditorPage() {
                             <div className="bg-muted/20 rounded-lg border p-3 space-y-3">
                               <p className="text-xs font-bold text-muted-foreground">Completion Paragraph — <span className="text-primary">bôi đen chữ</span> rồi bấm <strong>Blank</strong> để tạo ô trống (đáp án = chữ được bôi)</p>
                               <RichTextEditor
+                                scopeId={`group-${group.id}`}
+                                blankStart={group.startQuestionNumber || 1}
                                 value={group.completionParagraph || ""}
                                 onChange={(html) => {
                                   // Extract blanks from both formats
@@ -2071,9 +2075,12 @@ export default function TestEditorPage() {
                                 minHeight="120px"
                               />
                               <BlankAnswerKeySync
+                                scopeId={`group-${group.id}`}
                                 startQuestionNumber={group.startQuestionNumber || 1}
                                 onBlankFocus={(num) => {
-                                  const el = document.querySelector(`.ielts-blank[data-blank-num="${num}"], [data-blank-num="${num}"]`);
+                                  // Scope to current group container so we don't jump to a blank in another passage/group.
+                                  const root = document.getElementById(`blank-answer-group-${group.id}-${num}`)?.closest(".rounded-lg");
+                                  const el = (root || document).querySelector(`[data-blank-num="${num}"]`);
                                   if (el) { el.scrollIntoView({ behavior: "smooth", block: "center" }); el.classList.add("blank-shortcode-flash"); setTimeout(() => el.classList.remove("blank-shortcode-flash"), 1200); }
                                 }}
                                 html={group.completionParagraph || ""}
