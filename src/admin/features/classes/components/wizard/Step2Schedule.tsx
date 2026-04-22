@@ -4,7 +4,7 @@ import { Input } from "@shared/components/ui/input";
 import { Checkbox } from "@shared/components/ui/checkbox";
 import { Button } from "@shared/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@shared/components/ui/select";
-import { Loader2, Search, Users } from "lucide-react";
+import { AlertTriangle, Loader2, Search, Users } from "lucide-react";
 import { useAvailableTeachers } from "@shared/hooks/useAvailableTeachers";
 import { useTeacherSlots } from "@shared/hooks/useTeacherSlots";
 import { useQuery } from "@tanstack/react-query";
@@ -156,14 +156,26 @@ function ModeAByTimeSlot({ classInfo, slot, setSlot, teachers, setTeachers }: Pr
         <div className="border rounded-lg divide-y">
           {matched.map((t) => {
             const assigned = teachers.find((x) => x.teacher_id === t.teacher_id);
+            const ruleTime = t.rule_start && t.rule_end
+              ? `${t.rule_start.slice(0, 5)}–${t.rule_end.slice(0, 5)}`
+              : null;
             return (
               <div key={t.teacher_id} className="p-3 flex items-center gap-3">
                 <Checkbox checked={!!assigned} onCheckedChange={() => toggleTeacher(t.teacher_id, t.full_name)} />
                 <div className="flex-1">
-                  <div className="font-medium text-sm">{t.full_name}</div>
-                  {t.matching_reasons && t.matching_reasons.length > 0 && (
-                    <div className="text-xs text-muted-foreground">{t.matching_reasons.join(" · ")}</div>
-                  )}
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-sm">{t.full_name}</span>
+                    {t.has_conflict && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 text-destructive px-2 py-0.5 text-[10px] font-semibold">
+                        <AlertTriangle className="h-3 w-3" /> Đã có lớp khác
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {ruleTime && <span>Khung rảnh: {ruleTime}</span>}
+                    {t.rule_mode && <span> · {t.rule_mode}</span>}
+                    {t.email && <span> · {t.email}</span>}
+                  </div>
                 </div>
                 {assigned && (
                   <Select value={assigned.role} onValueChange={(v) => setRole(t.teacher_id, v as "primary" | "ta")}>
