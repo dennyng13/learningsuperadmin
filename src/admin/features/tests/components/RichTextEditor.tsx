@@ -101,6 +101,18 @@ interface RichTextEditorProps {
   showHeadings?: boolean;
   /** Called when a blank is created from highlighted text. Returns the selected text as the answer. */
   onBlankCreated?: (blankNumber: number, selectedText: string) => void;
+  /**
+   * Optional unique scope id for this editor instance. Used to namespace blank-answer DOM ids
+   * so multiple editors on the same page (e.g. several passages) don't collide.
+   * If omitted, a stable React useId is used.
+   */
+  scopeId?: string;
+  /**
+   * Optional starting blank number for this editor (default 1). When numbering blanks
+   * across multiple passages of the same test, pass the running offset so the blanks
+   * created here continue the global sequence (passage 1 ends at 7 → passage 2 starts at 8).
+   */
+  blankStart?: number;
 }
 
 function ToolbarButton({
