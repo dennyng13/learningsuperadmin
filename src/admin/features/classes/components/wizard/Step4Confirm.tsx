@@ -41,7 +41,7 @@ export default function Step4Confirm({ classInfo, teachers, sessions }: Props) {
         <h3 className="font-semibold mb-2">Buổi học</h3>
         <p className="text-sm">
           Tổng <span className="font-medium">{sessions.length}</span> buổi —
-          <span className="text-emerald-600 font-medium ml-1">{active.length}</span> active,
+          <span className="text-primary font-medium ml-1">{active.length}</span> active,
           <span className="text-muted-foreground ml-1">{sessions.length - active.length}</span> cancelled
         </p>
       </section>
