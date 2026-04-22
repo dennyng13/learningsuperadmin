@@ -959,13 +959,14 @@ export default function TestEditorPage() {
 
           for (const q of qg.questions) {
             totalQuestions++;
+            const skipsAnswer = part.skill === "SPEAKING" || part.skill === "WRITING";
             await supabase.from("questions").insert({
               question_group_id: newQg.id,
               question_number: q.questionNumber,
               title: null,
               text: q.text || null,
               choices: q.choices || null,
-              correct_answer: q.answer || "N/A",
+              correct_answer: skipsAnswer ? (q.answer || "") : (q.answer || "N/A"),
               explain: q.explain || null,
               passage_evidence: q.passageEvidence || null,
               points: q.points ?? null,
