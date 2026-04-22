@@ -2133,7 +2133,7 @@ export default function TestEditorPage() {
                           {!["sentence_completion", "summary_completion", "form_completion", "note_completion", "table_completion"].includes(group.type) && (
                             <>
                               {group.questions.map((q, qi) => (
-                                <div key={q.id} className="flex gap-3 items-start pl-4 group/q" onDragOver={(e) => handleQuestionDragOver(e, part.id, group.id, qi)} onDragEnd={handleQuestionDragEnd}>
+                                <div id={`question-row-${q.id}`} key={q.id} className="flex gap-3 items-start pl-4 group/q rounded-md transition-colors" onDragOver={(e) => handleQuestionDragOver(e, part.id, group.id, qi)} onDragEnd={handleQuestionDragEnd}>
                                   <div draggable onDragStart={(e) => handleQuestionDragStart(e, part.id, group.id, qi)} className="cursor-grab active:cursor-grabbing mt-2.5 text-muted-foreground hover:text-foreground">
                                     <GripVertical className="h-3 w-3" />
                                   </div>
