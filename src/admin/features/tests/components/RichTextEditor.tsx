@@ -189,7 +189,7 @@ function Toolbar({ editor, showHeadings, onBlankCreated, blankStart = 1 }: { edi
   }, [editor, onBlankCreated, blankStart]);
 
   return (
-    <div className="flex items-center gap-0.5 flex-wrap border-b bg-muted/30 px-2 py-1.5 rounded-t-xl">
+    <div className="sticky top-0 z-20 flex items-center gap-0.5 flex-wrap border-b bg-muted/95 backdrop-blur supports-[backdrop-filter]:bg-muted/70 px-2 py-1.5 rounded-t-xl">
       {/* Headings */}
       {showHeadings && (
         <>
