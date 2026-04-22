@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface AvailableTeacherSlotParams {
-  weekdays: number[]; // 0-6 (Sun-Sat) or 1-7 depending on backend; we pass as-is
+  weekdays: number[]; // Backend convention: Sun=0..Sat=6
   start_time: string; // "HH:MM"
   end_time: string;
   mode: "online" | "offline" | "hybrid";
@@ -13,10 +13,13 @@ export interface AvailableTeacher {
   teacher_id: string;
   full_name: string;
   email?: string | null;
-  phone?: string | null;
-  matching_reasons?: string[];
-  weekly_minutes?: number;
-  active_class_count?: number;
+  matching_rule_id?: string | null;
+  rule_start?: string | null;       // e.g. "19:00:00"
+  rule_end?: string | null;
+  rule_mode?: "online" | "offline" | "hybrid" | null;
+  effective_from?: string | null;
+  effective_to?: string | null;
+  has_conflict?: boolean;
 }
 
 /**

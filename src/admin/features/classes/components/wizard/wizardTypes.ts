@@ -18,7 +18,7 @@ export type DeliveryMode = "online" | "offline" | "hybrid";
 export type TeacherRole = "primary" | "ta";
 
 export interface WizardSlot {
-  weekdays: number[];   // 1=Mon..7=Sun
+  weekdays: number[];   // Backend convention: Sun=0, Mon=1..Sat=6
   start_time: string;   // "HH:MM"
   end_time: string;
   mode: DeliveryMode;
@@ -57,6 +57,7 @@ export const EMPTY_CLASS_INFO: WizardClassInfo = {
   leaderboard_enabled: false,
 };
 
+// Display order T2..CN; values follow backend convention (Sun=0..Sat=6).
 export const WEEKDAY_LABELS: { value: number; label: string }[] = [
   { value: 1, label: "T2" },
   { value: 2, label: "T3" },
@@ -64,7 +65,7 @@ export const WEEKDAY_LABELS: { value: number; label: string }[] = [
   { value: 4, label: "T5" },
   { value: 5, label: "T6" },
   { value: 6, label: "T7" },
-  { value: 7, label: "CN" },
+  { value: 0, label: "CN" },
 ];
 
 /** Generate sessions between start..end for given weekdays + times, default teacher = first primary */
@@ -85,9 +86,8 @@ export function generateSessions(
   if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) return [];
 
   for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-    // JS getDay: 0=Sun..6=Sat → map to 1..7 (Mon=1..Sun=7)
-    const js = d.getDay();
-    const wd = js === 0 ? 7 : js;
+    // JS getDay returns 0=Sun..6=Sat — already matches backend convention.
+    const wd = d.getDay();
     if (!weekdays.includes(wd)) continue;
     out.push({
       id: `${d.toISOString().slice(0, 10)}-${startTime}`,
