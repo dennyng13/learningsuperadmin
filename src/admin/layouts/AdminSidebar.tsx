@@ -11,6 +11,7 @@ import {
   SidebarHeader, SidebarFooter, SidebarSeparator, useSidebar,
 } from "@shared/components/ui/sidebar";
 import { adminNavItems } from "@shared/config/navigation";
+import { usePendingDraftCount } from "@shared/hooks/useAvailabilityDrafts";
 
 const mainItems = adminNavItems.filter(i => i.group === "main").sort((a, b) => a.order - b.order);
 const superAdminItems = adminNavItems.filter(i => i.group === "system").sort((a, b) => a.order - b.order);
@@ -21,6 +22,7 @@ export function AdminSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, isSuperAdmin, signOut } = useAuth();
+  const pendingDrafts = usePendingDraftCount();
 
   const allPaths = adminNavItems.map(i => i.route);
   const isActive = (path: string) => {
@@ -40,6 +42,7 @@ export function AdminSidebar() {
 
   const renderMenuItem = (item: typeof mainItems[0]) => {
     const active = isActive(item.route);
+    const badgeCount = item.id === "availability-drafts" ? pendingDrafts : 0;
     return (
       <SidebarMenuItem key={item.id}>
         <SidebarMenuButton
@@ -55,7 +58,12 @@ export function AdminSidebar() {
           <NavLink to={item.route} end={item.end}>
             <item.icon className={cn("h-3.5 w-3.5 shrink-0", active && "text-primary")} />
             <span>{item.label}</span>
-            {active && <ChevronRight className="ml-auto h-3 w-3 text-primary/40" />}
+            {badgeCount > 0 && (
+              <span className="ml-auto inline-flex items-center justify-center h-4 min-w-4 px-1 rounded-full bg-amber-500 text-white text-[9px] font-semibold leading-none group-data-[collapsible=icon]:hidden">
+                {badgeCount > 99 ? "99+" : badgeCount}
+              </span>
+            )}
+            {active && badgeCount === 0 && <ChevronRight className="ml-auto h-3 w-3 text-primary/40" />}
           </NavLink>
         </SidebarMenuButton>
       </SidebarMenuItem>
