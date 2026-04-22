@@ -15,6 +15,29 @@ import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import { useEffect, useCallback, useId, useRef } from "react";
 
 /**
+ * Clean text pasted from Word/PDF/Google Docs:
+ * - normalize smart quotes → straight quotes
+ * - remove non-breaking spaces (\u00A0)
+ * - collapse runs of whitespace inside a line into one space
+ * - trim each line, preserve line breaks
+ */
+function cleanPastedText(input: string): string {
+  const normalized = input
+    // Smart quotes / curly quotes → straight
+    .replace(/[\u2018\u2019\u201A\u201B\u2032]/g, "'")
+    .replace(/[\u201C\u201D\u201E\u201F\u2033]/g, '"')
+    // Other typographic chars
+    .replace(/[\u2013\u2014]/g, "-") // en/em dash → hyphen
+    .replace(/\u2026/g, "...")
+    .replace(/\u00A0/g, " "); // NBSP → space
+
+  return normalized
+    .split(/\r?\n/)
+    .map((line) => line.replace(/[ \t]+/g, " ").replace(/\s+$/g, "").replace(/^[ \t]+/, ""))
+    .join("\n");
+}
+
+/**
  * TipTap Mark extension that wraps selected text as a blank answer.
  * Renders as <span class="ielts-blank" data-blank-num="1">text</span>
  */
