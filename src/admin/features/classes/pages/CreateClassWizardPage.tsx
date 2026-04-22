@@ -105,10 +105,10 @@ export default function CreateClassWizardPage() {
     if (step === 1 && !validateStep1()) return;
     if (step === 2 && !validateStep2()) return;
     if (step === 3 && !validateStep3()) return;
-    setStep((s) => Math.min(4, (s + 1) as 1 | 2 | 3 | 4));
+    setStep((s) => (Math.min(4, s + 1) as 1 | 2 | 3 | 4));
   };
 
-  const goBack = () => setStep((s) => Math.max(1, (s - 1) as 1 | 2 | 3 | 4));
+  const goBack = () => setStep((s) => (Math.max(1, s - 1) as 1 | 2 | 3 | 4));
 
   const handleCancel = () => {
     if (isDirty && !confirm("Bạn có dữ liệu chưa lưu. Hủy?")) return;
