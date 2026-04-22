@@ -13,6 +13,7 @@ import Heading from "@tiptap/extension-heading";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import { useEffect, useCallback } from "react";
+import { useId, useRef } from "react";
 
 /**
  * TipTap Mark extension that wraps selected text as a blank answer.
