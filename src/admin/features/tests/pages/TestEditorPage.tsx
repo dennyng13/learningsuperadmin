@@ -881,6 +881,8 @@ export default function TestEditorPage() {
       const missingCount = getMissingAnswerCount();
       if (missingCount > 0) {
         toast.error(`Còn ${missingCount} câu hỏi chưa có đáp án đúng. Vui lòng điền đầy đủ trước khi lưu.`);
+        const firstMissing = findFirstMissingQuestionId();
+        if (firstMissing) focusMissingQuestion(firstMissing);
         return;
       }
     }
