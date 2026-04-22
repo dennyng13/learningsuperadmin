@@ -351,33 +351,19 @@ export default function RichTextEditor({
       handlePaste: (view, event) => {
         const cb = event.clipboardData;
         if (!cb) return false;
-        // Prefer plain text to strip Word/PDF formatting noise.
         const text = cb.getData("text/plain");
         if (!text) return false;
+        // Strip rich formatting from PDF/Word, normalize whitespace + smart quotes.
         const cleaned = cleanPastedText(text);
+        event.preventDefault();
         const { state, dispatch } = view;
-        const { tr, schema } = state;
-        // Insert as paragraphs split by newlines so line breaks are preserved.
         const lines = cleaned.split(/\n/);
-        const nodes = lines
-          .filter((l, i) => l.length > 0 || i < lines.length - 1)
-          .map((l) => schema.nodes.paragraph.create(null, l ? schema.text(l) : null));
-        if (nodes.length === 0) return true;
-        const fragment = state.schema.nodes.doc
-          ? nodes
-          : nodes;
-        const slice = state.tr.doc.slice(0, 0);
-        // Replace selection with the cleaned content.
-        let trNew = tr.deleteSelection();
-        nodes.forEach((node, idx) => {
-          if (idx === 0) {
-            trNew = trNew.insertText(lines[0] || "");
-          } else {
-            trNew = trNew.split(trNew.selection.from);
-            if (lines[idx]) trNew = trNew.insertText(lines[idx]);
-          }
+        let tr = state.tr.deleteSelection();
+        lines.forEach((line, idx) => {
+          if (idx > 0) tr = tr.split(tr.selection.from);
+          if (line) tr = tr.insertText(line);
         });
-        dispatch(trNew);
+        dispatch(tr);
         return true;
       },
       handleKeyDown: (_view, event) => {
