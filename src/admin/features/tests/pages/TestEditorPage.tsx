@@ -302,6 +302,8 @@ export default function TestEditorPage() {
   const getMissingAnswerCount = useCallback(() => {
     let missing = 0;
     for (const p of parts) {
+      // Speaking & Writing don't have fixed correct answers — skip validation.
+      if (p.skill === "SPEAKING" || p.skill === "WRITING") continue;
       for (const g of p.questionGroups) {
         for (const q of g.questions) {
           if (!q.answer || !q.answer.trim()) missing++;
