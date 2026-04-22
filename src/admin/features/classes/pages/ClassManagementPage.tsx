@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@shared/components/ui/button";
 import { RefreshCw, Loader2, Settings2, Link2, Tags, Plus, ArrowRightLeft } from "lucide-react";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 import TeachngoClassesTab from "@admin/features/users/components/TeachngoClassesTab";
 import CourseLevelManager from "@admin/features/settings/components/CourseLevelManager";
 import CreateClassDialog from "@admin/features/classes/components/CreateClassDialog";
@@ -16,6 +17,7 @@ export default function ClassManagementPage() {
   const [autoAssigning, setAutoAssigning] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [migrateOpen, setMigrateOpen] = useState(false);
+  const navigate = useNavigate();
 
   const handleAutoAssignLevels = async () => {
     setAutoAssigning(true);
@@ -114,8 +116,11 @@ export default function ClassManagementPage() {
                   <Plus className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Tạo lớp mới</TooltipContent>
+              <TooltipContent>Tạo nhanh (legacy)</TooltipContent>
             </Tooltip>
+            <Button onClick={() => navigate("/classes/new")} size="sm" variant="primary" className="h-8 text-xs px-3 rounded-md gap-1">
+              <Plus className="h-3.5 w-3.5" /> Tạo lớp mới
+            </Button>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button onClick={() => setMigrateOpen(true)} size="icon" variant="ghost" className="h-8 w-8 rounded-md">
