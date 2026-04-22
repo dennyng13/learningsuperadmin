@@ -1751,7 +1751,7 @@ export default function TestEditorPage() {
                       {part.questionGroups.map((group, gi) => (
                         <div
                           key={group.id}
-                          className="border rounded-lg p-4 space-y-3 ml-4 transition-shadow"
+                          className="border rounded-lg p-4 space-y-3 transition-shadow"
                           onDragOver={(e) => { e.stopPropagation(); handleGroupDragOver(e, part.id, gi); }}
                           onDragEnd={handleGroupDragEnd}
                         >
