@@ -1751,7 +1751,7 @@ export default function TestEditorPage() {
                       {part.questionGroups.map((group, gi) => (
                         <div
                           key={group.id}
-                          className="border rounded-lg p-4 space-y-3 ml-4 transition-shadow"
+                          className="border rounded-lg p-4 space-y-3 transition-shadow"
                           onDragOver={(e) => { e.stopPropagation(); handleGroupDragOver(e, part.id, gi); }}
                           onDragEnd={handleGroupDragEnd}
                         >
@@ -2188,15 +2188,44 @@ export default function TestEditorPage() {
                                               {q.choices.map((c, ci) => {
                                                 const letter = String.fromCharCode(65 + ci);
                                                 const isCorrect = q.answer.toUpperCase() === letter;
+                                                const canRemove = (q.choices?.length || 0) > 2;
                                                 return (
                                                   <div key={ci} className={cn("flex items-center gap-2 rounded-lg border px-2.5 py-1.5 transition-colors", isCorrect ? "border-emerald-400 bg-emerald-50 dark:bg-emerald-950/20" : "border-border hover:border-muted-foreground/30")}>
                                                     <input type="radio" name={`correct-${q.id}`} checked={isCorrect} onChange={() => setPartsWithHistory((prev) => prev.map((p) => p.id === part.id ? { ...p, questionGroups: p.questionGroups.map((g) => g.id === group.id ? { ...g, questions: g.questions.map((qq) => qq.id === q.id ? { ...qq, answer: letter } : qq) } : g) } : p))} className="accent-emerald-600 h-4 w-4 shrink-0 cursor-pointer" title="Đánh dấu là đáp án đúng" />
                                                     <span className="text-xs font-bold text-muted-foreground w-5 shrink-0">{letter}.</span>
                                                     <Input value={c} onChange={(e) => { const newChoices = [...(q.choices || [])]; newChoices[ci] = e.target.value; setPartsWithHistory((prev) => prev.map((p) => p.id === part.id ? { ...p, questionGroups: p.questionGroups.map((g) => g.id === group.id ? { ...g, questions: g.questions.map((qq) => qq.id === q.id ? { ...qq, choices: newChoices } : qq) } : g) } : p)); }} placeholder={`Option ${letter}`} className="rounded-lg text-xs flex-1 border-0 bg-transparent shadow-none focus-visible:ring-0 px-0 h-7" />
                                                     {isCorrect && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />}
+                                                    <button
+                                                      type="button"
+                                                      disabled={!canRemove}
+                                                      onClick={() => {
+                                                        const newChoices = (q.choices || []).filter((_, idx) => idx !== ci);
+                                                        // If correct answer was on a removed/shifted letter, recompute
+                                                        const oldLetter = letter;
+                                                        let newAnswer = q.answer;
+                                                        if (q.answer.toUpperCase() === oldLetter) newAnswer = "";
+                                                        setPartsWithHistory((prev) => prev.map((p) => p.id === part.id ? { ...p, questionGroups: p.questionGroups.map((g) => g.id === group.id ? { ...g, questions: g.questions.map((qq) => qq.id === q.id ? { ...qq, choices: newChoices, answer: newAnswer } : qq) } : g) } : p));
+                                                      }}
+                                                      className="p-0.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
+                                                      title={canRemove ? "Xóa lựa chọn này" : "Tối thiểu 2 lựa chọn"}
+                                                    >
+                                                      <Trash2 className="h-3.5 w-3.5" />
+                                                    </button>
                                                   </div>
                                                 );
                                               })}
+                                              {(q.choices?.length || 0) < 8 && (
+                                                <button
+                                                  type="button"
+                                                  onClick={() => {
+                                                    const newChoices = [...(q.choices || []), ""];
+                                                    setPartsWithHistory((prev) => prev.map((p) => p.id === part.id ? { ...p, questionGroups: p.questionGroups.map((g) => g.id === group.id ? { ...g, questions: g.questions.map((qq) => qq.id === q.id ? { ...qq, choices: newChoices } : qq) } : g) } : p));
+                                                  }}
+                                                  className="text-[11px] text-primary hover:underline flex items-center gap-1 font-medium pt-1"
+                                                >
+                                                  <Plus className="h-3 w-3" /> Thêm lựa chọn ({(q.choices?.length || 0)}/8)
+                                                </button>
+                                              )}
                                             </div>
                                           )}
                                           {!q.choices && !isWritingOrSpeaking && (
@@ -2226,17 +2255,36 @@ export default function TestEditorPage() {
                                                 </div>
                                               ) : (MATCHING_TYPES.includes(group.type) || group.type === "multiple_choice_pick2") && group.groupChoices && group.groupChoices.length > 0 ? (
                                                 <div className="flex items-center gap-2 flex-wrap">
-                                                  <span className="text-xs text-muted-foreground shrink-0">Đáp án:</span>
+                                                  <span className="text-xs text-muted-foreground shrink-0">
+                                                    {group.type === "multiple_choice_pick2" ? "Đáp án (chọn nhiều):" : "Đáp án:"}
+                                                  </span>
                                                   {group.groupChoices.map((gc, gci) => {
                                                     const optLabel = group.type === "matching_headings"
                                                       ? ["i", "ii", "iii", "iv", "v", "vi", "vii", "viii", "ix", "x", "xi", "xii"][gci] || String(gci + 1)
                                                       : String.fromCharCode(65 + gci);
-                                                    const isSelected = q.answer === optLabel;
+                                                    const isMulti = group.type === "multiple_choice_pick2";
+                                                    const selectedLetters = isMulti
+                                                      ? (q.answer || "").split("|").map(s => s.trim()).filter(Boolean)
+                                                      : [];
+                                                    const isSelected = isMulti
+                                                      ? selectedLetters.includes(optLabel)
+                                                      : q.answer === optLabel;
                                                     return (
                                                       <button
                                                         key={gci}
                                                         type="button"
-                                                        onClick={() => setPartsWithHistory((prev) => prev.map((p) => p.id === part.id ? { ...p, questionGroups: p.questionGroups.map((g) => g.id === group.id ? { ...g, questions: g.questions.map((qq) => qq.id === q.id ? { ...qq, answer: optLabel } : qq) } : g) } : p))}
+                                                        onClick={() => {
+                                                          let nextAnswer: string;
+                                                          if (isMulti) {
+                                                            const next = isSelected
+                                                              ? selectedLetters.filter(l => l !== optLabel)
+                                                              : [...selectedLetters, optLabel].sort();
+                                                            nextAnswer = next.join("|");
+                                                          } else {
+                                                            nextAnswer = optLabel;
+                                                          }
+                                                          setPartsWithHistory((prev) => prev.map((p) => p.id === part.id ? { ...p, questionGroups: p.questionGroups.map((g) => g.id === group.id ? { ...g, questions: g.questions.map((qq) => qq.id === q.id ? { ...qq, answer: nextAnswer } : qq) } : g) } : p));
+                                                        }}
                                                         className={cn(
                                                           "px-2.5 py-1 rounded-md text-xs font-semibold transition-all border",
                                                           isSelected
@@ -2249,6 +2297,11 @@ export default function TestEditorPage() {
                                                       </button>
                                                     );
                                                   })}
+                                                  {group.type === "multiple_choice_pick2" && q.answer && (
+                                                    <span className="text-[10px] text-muted-foreground ml-1">
+                                                      → lưu: <code className="bg-muted px-1 rounded">{q.answer}</code>
+                                                    </span>
+                                                  )}
                                                 </div>
                                               ) : (
                                                 <Input value={q.answer} onChange={(e) => setPartsWithHistory((prev) => prev.map((p) => p.id === part.id ? { ...p, questionGroups: p.questionGroups.map((g) => g.id === group.id ? { ...g, questions: g.questions.map((qq) => qq.id === q.id ? { ...qq, answer: e.target.value } : qq) } : g) } : p))} placeholder="Correct answer"className="rounded-lg text-xs border-emerald-300 bg-emerald-50/50 dark:bg-emerald-950/10"/>
