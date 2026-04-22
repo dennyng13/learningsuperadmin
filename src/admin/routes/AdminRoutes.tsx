@@ -1,44 +1,39 @@
-import { lazy, Suspense } from "react";
+import { Suspense } from "react";
 import { Route, Routes, Navigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import ErrorBoundary from "@shared/components/misc/ErrorBoundary";
 import { ProtectedAdminRoute } from "@admin/guards/ProtectedAdminRoute";
-
-const AdminLayout = lazy(() => import("@admin/layouts/AdminLayout"));
-
-/* ── Public ── */
-const AdminLoginPage = lazy(() => import("@admin/features/auth/pages/AdminLoginPage"));
-const ResetPasswordPage = lazy(() => import("@admin/features/auth/pages/ResetPasswordPage"));
-
-/* ── Pages ── */
-const AdminDashboardPage = lazy(() => import("@admin/features/dashboard/pages/AdminDashboardPage"));
-const AdminProfilePage = lazy(() => import("@admin/features/auth/pages/AdminProfilePage"));
-const TestManagementPage = lazy(() => import("@admin/features/tests/pages/TestManagementPage"));
-const TestEditorPage = lazy(() => import("@admin/features/tests/pages/TestEditorPage"));
-const TestPreviewPage = lazy(() => import("@admin/features/tests/pages/TestPreviewPage"));
-const ImportPage = lazy(() => import("@admin/features/tests/pages/ImportPage"));
-const UserManagementPage = lazy(() => import("@admin/features/users/pages/UserManagementPage"));
-const TeacherManagementPage = lazy(() => import("@admin/features/users/pages/TeacherManagementPage"));
-const TeacherProfilePage = lazy(() => import("@admin/features/users/pages/TeacherProfilePage"));
-const ClassManagementPage = lazy(() => import("@admin/features/classes/pages/ClassManagementPage"));
-const ModulePermissionsPage = lazy(() => import("@admin/features/modules/pages/ModulePermissionsPage"));
-const FlashcardSetsPage = lazy(() => import("@admin/features/flashcards/pages/FlashcardSetsPage"));
-const PracticeExerciseDetailPage = lazy(() => import("@admin/features/practice/pages/PracticeExerciseDetailPage"));
-const BadgeManagementPage = lazy(() => import("@admin/features/badges/pages/BadgeManagementPage"));
-const TeachngoAttendancePage = lazy(() => import("@admin/features/attendance/pages/TeachngoAttendancePage"));
-const StudentPerformancePage = lazy(() => import("@admin/features/performance/pages/StudentPerformancePage"));
-const TeacherPerformancePage = lazy(() => import("@admin/features/performance/pages/TeacherPerformancePage"));
-const AdminSettingsPage = lazy(() => import("@admin/features/settings/pages/AdminSettingsPage"));
-const EmailTemplatePreviewPage = lazy(() => import("@admin/features/settings/pages/EmailTemplatePreviewPage"));
-const FeatureFlagsPage = lazy(() => import("@admin/features/feature-flags/pages/FeatureFlagsPage"));
-const StudyPlansPage = lazy(() => import("@admin/features/study-plans/pages/StudyPlansPage"));
-const StudyPlanTemplatesPage = lazy(() => import("@admin/features/study-plans/pages/StudyPlanTemplatesPage"));
-const PlacementTestPage = lazy(() => import("@admin/features/placement/pages/PlacementTestPage"));
-const PlacementTestEditorPage = lazy(() => import("@admin/features/placement/pages/PlacementTestEditorPage"));
-const AdminSchedulePage = lazy(() => import("@admin/features/schedule/pages/AdminSchedulePage"));
-const AvailabilityDraftsPage = lazy(() => import("@admin/features/availability-drafts/pages/AvailabilityDraftsPage"));
-const NotFoundPage = lazy(() => import("@admin/features/misc/pages/NotFoundPage"));
-const HealthCheckPage = lazy(() => import("@admin/features/misc/pages/HealthCheckPage"));
+import AdminLayout from "@admin/layouts/AdminLayout";
+import AdminLoginPage from "@admin/features/auth/pages/AdminLoginPage";
+import ResetPasswordPage from "@admin/features/auth/pages/ResetPasswordPage";
+import AdminDashboardPage from "@admin/features/dashboard/pages/AdminDashboardPage";
+import AdminProfilePage from "@admin/features/auth/pages/AdminProfilePage";
+import TestManagementPage from "@admin/features/tests/pages/TestManagementPage";
+import TestEditorPage from "@admin/features/tests/pages/TestEditorPage";
+import TestPreviewPage from "@admin/features/tests/pages/TestPreviewPage";
+import ImportPage from "@admin/features/tests/pages/ImportPage";
+import UserManagementPage from "@admin/features/users/pages/UserManagementPage";
+import TeacherManagementPage from "@admin/features/users/pages/TeacherManagementPage";
+import TeacherProfilePage from "@admin/features/users/pages/TeacherProfilePage";
+import ClassManagementPage from "@admin/features/classes/pages/ClassManagementPage";
+import ModulePermissionsPage from "@admin/features/modules/pages/ModulePermissionsPage";
+import FlashcardSetsPage from "@admin/features/flashcards/pages/FlashcardSetsPage";
+import PracticeExerciseDetailPage from "@admin/features/practice/pages/PracticeExerciseDetailPage";
+import BadgeManagementPage from "@admin/features/badges/pages/BadgeManagementPage";
+import TeachngoAttendancePage from "@admin/features/attendance/pages/TeachngoAttendancePage";
+import StudentPerformancePage from "@admin/features/performance/pages/StudentPerformancePage";
+import TeacherPerformancePage from "@admin/features/performance/pages/TeacherPerformancePage";
+import AdminSettingsPage from "@admin/features/settings/pages/AdminSettingsPage";
+import EmailTemplatePreviewPage from "@admin/features/settings/pages/EmailTemplatePreviewPage";
+import FeatureFlagsPage from "@admin/features/feature-flags/pages/FeatureFlagsPage";
+import StudyPlansPage from "@admin/features/study-plans/pages/StudyPlansPage";
+import StudyPlanTemplatesPage from "@admin/features/study-plans/pages/StudyPlanTemplatesPage";
+import PlacementTestPage from "@admin/features/placement/pages/PlacementTestPage";
+import PlacementTestEditorPage from "@admin/features/placement/pages/PlacementTestEditorPage";
+import AdminSchedulePage from "@admin/features/schedule/pages/AdminSchedulePage";
+import AvailabilityDraftsPage from "@admin/features/availability-drafts/pages/AvailabilityDraftsPage";
+import NotFoundPage from "@admin/features/misc/pages/NotFoundPage";
+import HealthCheckPage from "@admin/features/misc/pages/HealthCheckPage";
 
 function PageLoader() {
   return (
