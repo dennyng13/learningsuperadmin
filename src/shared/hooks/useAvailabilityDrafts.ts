@@ -1,6 +1,7 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 import type {
   TeacherAvailabilityDraft,
   TeacherRecordLite,
@@ -68,17 +69,24 @@ export function useAvailabilityDrafts() {
     staleTime: 30_000,
   });
 
+  const qcRef = useRef(qc);
+  qcRef.current = qc;
+
   useEffect(() => {
-    const channel = (supabase as any)
-      .channel("availability-drafts-admin-sync")
-      .on("postgres_changes", { event: "*", schema: "public", table: "teacher_availability_drafts" }, () => {
-        qc.invalidateQueries({ queryKey: ["availability-drafts-admin"] });
-      })
+    const channel: RealtimeChannel = supabase
+      .channel(`availability-drafts-admin-${Math.random().toString(36).slice(2, 8)}`)
+      .on(
+        "postgres_changes" as any,
+        { event: "*", schema: "public", table: "teacher_availability_drafts" },
+        () => {
+          qcRef.current.invalidateQueries({ queryKey: ["availability-drafts-admin"] });
+        },
+      )
       .subscribe();
     return () => {
-      try { (supabase as any).removeChannel(channel); } catch { /* noop */ }
+      try { supabase.removeChannel(channel); } catch { /* noop */ }
     };
-  }, [qc]);
+  }, []);
 
   return query;
 }
