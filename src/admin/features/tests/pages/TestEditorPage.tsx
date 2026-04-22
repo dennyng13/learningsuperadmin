@@ -2167,7 +2167,13 @@ export default function TestEditorPage() {
                                         <>
                                           <div className="flex gap-2 items-start">
                                             <div className="flex-1">
-                                              <Textarea value={q.text} onChange={(e) => setPartsWithHistory((prev) => prev.map((p) => p.id === part.id ? { ...p, questionGroups: p.questionGroups.map((g) => g.id === group.id ? { ...g, questions: g.questions.map((qq) => qq.id === q.id ? { ...qq, text: e.target.value } : qq) } : g) } : p))} placeholder={isWriting ? "Đề bài Writing (prompt / task description)..." : isSpeaking ? (isCueCard ? "Cue Card topic (ví dụ: Describe a place you have visited)" : "Question / topic") : "Question text (hỗ trợ nhiều dòng)"} className="rounded-lg text-sm min-h-[56px] resize-y" rows={isWriting ? 4 : isCueCard ? 3 : 2} />
+                                              {isWriting ? (
+                                                <div className="rounded-lg border border-dashed border-primary/30 bg-primary/5 px-3 py-2 text-[11px] text-muted-foreground italic">
+                                                  📝 Đề bài Writing được lấy từ <strong className="text-foreground">Group description</strong> phía trên (mục “Group title / instructions”). Không cần điền lại ở đây.
+                                                </div>
+                                              ) : (
+                                                <Textarea value={q.text} onChange={(e) => setPartsWithHistory((prev) => prev.map((p) => p.id === part.id ? { ...p, questionGroups: p.questionGroups.map((g) => g.id === group.id ? { ...g, questions: g.questions.map((qq) => qq.id === q.id ? { ...qq, text: e.target.value } : qq) } : g) } : p))} placeholder={isSpeaking ? (isCueCard ? "Cue Card topic (ví dụ: Describe a place you have visited)" : "Question / topic") : "Question text (hỗ trợ nhiều dòng)"} className="rounded-lg text-sm min-h-[56px] resize-y" rows={isCueCard ? 3 : 2} />
+                                              )}
                                             </div>
                                             {isCustomScoring && (
                                               <div className="shrink-0 w-20">
