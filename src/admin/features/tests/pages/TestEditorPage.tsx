@@ -1118,8 +1118,13 @@ export default function TestEditorPage() {
           </div>
         )}
         {!isNew && (
-          <Button variant="outline" onClick={() => navigate(`/tests/${id}/preview`)} className="gap-2 rounded-xl">
-            <Eye className="h-4 w-4" /> Preview
+          <Button
+            variant="outline"
+            onClick={() => window.open(`/tests/${id}/preview`, "_blank", "noopener,noreferrer")}
+            className="gap-2 rounded-xl"
+            title="Mở tab mới với UI giống Student app (không lưu kết quả)"
+          >
+            <Eye className="h-4 w-4" /> Xem dưới góc độ học viên
           </Button>
         )}
       </div>
