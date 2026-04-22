@@ -343,20 +343,22 @@ export default function RichTextEditor({
     if (!blankEl) return;
     const num = blankEl.getAttribute("data-blank-num");
     if (!num) return;
-    const input = document.getElementById(`blank-answer-${num}`);
+    // Scoped first (current editor instance), fallback to legacy global id
+    const scopedInput = document.getElementById(`blank-answer-${scope}-${num}`);
+    const input = scopedInput || document.getElementById(`blank-answer-${num}`);
     if (input) {
       input.scrollIntoView({ behavior: "smooth", block: "center" });
       input.classList.add("blank-answer-flash");
       setTimeout(() => input.classList.remove("blank-answer-flash"), 1200);
       setTimeout(() => input.focus(), 300);
     }
-  }, []);
+  }, [scope]);
 
   if (!editor) return null;
 
   return (
-    <div className={cn("rounded-xl border bg-card overflow-hidden", className)}>
-      <Toolbar editor={editor} showHeadings={showHeadings} onBlankCreated={onBlankCreated} />
+    <div ref={containerRef} className={cn("rounded-xl border bg-card overflow-hidden", className)}>
+      <Toolbar editor={editor} showHeadings={showHeadings} onBlankCreated={onBlankCreated} blankStart={blankStart} />
       <div className="relative" onClick={handleEditorClick}>
         <EditorContent editor={editor} />
         {placeholder && editor.isEmpty && (
