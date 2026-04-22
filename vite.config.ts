@@ -46,22 +46,24 @@ export default defineConfig(({ mode }) => ({
         // Each chunk is requested only by routes that actually need it.
         manualChunks: (id) => {
           if (!id.includes("node_modules")) return undefined;
-          // CRITICAL: React must be checked FIRST so it's never bundled into
-          // another vendor chunk (e.g. vendor-radix). Otherwise consumers can
-          // load before React is initialized → "Cannot read properties of
-          // undefined (reading 'forwardRef')".
+
+          // Keep the React runtime and Radix primitives in Rollup's default graph.
+          // Splitting them into separate manual chunks can create a circular import
+          // during bootstrap (vendor-react <-> vendor-radix), which breaks
+          // React.forwardRef in production.
           if (
             id.includes("/node_modules/react/") ||
             id.includes("/node_modules/react-dom/") ||
             id.includes("/node_modules/scheduler/") ||
             id.includes("/node_modules/react/jsx-runtime") ||
-            id.includes("/node_modules/react/jsx-dev-runtime")
+            id.includes("/node_modules/react/jsx-dev-runtime") ||
+            id.includes("@radix-ui")
           ) {
-            return "vendor-react";
+            return undefined;
           }
+
           if (id.includes("react-router")) return "vendor-router";
           if (id.includes("@tanstack/react-query")) return "vendor-query";
-          if (id.includes("@radix-ui")) return "vendor-radix";
           if (id.includes("lucide-react")) return "vendor-icons";
           if (id.includes("@supabase")) return "vendor-supabase";
           if (id.includes("date-fns")) return "vendor-date";
