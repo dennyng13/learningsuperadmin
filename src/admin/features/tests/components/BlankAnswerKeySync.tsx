@@ -14,6 +14,11 @@ interface BlankAnswerKeySyncProps {
   onBlankFocus?: (blankNumber: number) => void;
   /** Base question number for this group */
   startQuestionNumber?: number;
+  /**
+   * Optional unique scope id used to namespace input DOM ids so editors on the same page
+   * (e.g. multiple passages) don't collide when the rich-text editor scrolls to a blank.
+   */
+  scopeId?: string;
 }
 
 /**
@@ -27,6 +32,7 @@ export default function BlankAnswerKeySync({
   onAnswersChange,
   onBlankFocus,
   startQuestionNumber = 1,
+  scopeId,
 }: BlankAnswerKeySyncProps) {
   const blanks = useMemo(() => extractBlanks(html, startQuestionNumber), [html, startQuestionNumber]);
 
@@ -62,7 +68,7 @@ export default function BlankAnswerKeySync({
                   Q{blank.questionNumber}
                 </span>
                 <Input
-                  id={`blank-answer-${blank.blankNum}`}
+                  id={scopeId ? `blank-answer-${scopeId}-${blank.blankNum}` : `blank-answer-${blank.blankNum}`}
                   value={entries[0] || ""}
                   onChange={(e) => {
                     const newAlts = [...entries];
