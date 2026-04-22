@@ -1,0 +1,120 @@
+import { useEffect, useMemo } from "react";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import type {
+  TeacherAvailabilityDraft,
+  TeacherRecordLite,
+  TeacherCapability,
+  TeachngoClassLite,
+} from "@shared/types/availability";
+import { normalizeRules, normalizeExceptions, relationMissing } from "@shared/utils/availability";
+
+export interface DraftWithTeacher extends TeacherAvailabilityDraft {
+  teacher?: TeacherRecordLite | null;
+  capability?: TeacherCapability | null;
+}
+
+interface AvailabilityDraftsData {
+  drafts: DraftWithTeacher[];
+  classes: TeachngoClassLite[];
+  classSessions: any[];
+  setupMissing: boolean;
+  errorMessage?: string;
+}
+
+async function loadDrafts(): Promise<AvailabilityDraftsData> {
+  const today = new Date().toISOString().slice(0, 10);
+  const [draftsRes, teachersRes, capsRes, classesRes, sessionsRes] = await Promise.all([
+    (supabase.from as any)("teacher_availability_drafts").select("*").order("created_at", { ascending: false }),
+    supabase.from("teachers").select("id, full_name, email, phone, status, linked_user_id, subjects, classes"),
+    (supabase.from as any)("teacher_capabilities").select("*"),
+    supabase.from("teachngo_classes").select("id, class_name, teacher_id, status, level, program, schedule, class_type, room, default_start_time, default_end_time"),
+    (supabase.from as any)("class_sessions").select("*").gte("session_date", today),
+  ]);
+
+  if (draftsRes.error) {
+    if (relationMissing(draftsRes.error)) {
+      return { drafts: [], classes: [], classSessions: [], setupMissing: true, errorMessage: "Bảng teacher_availability_drafts chưa tồn tại — apply migration availability trước." };
+    }
+    return { drafts: [], classes: [], classSessions: [], setupMissing: false, errorMessage: String(draftsRes.error.message || draftsRes.error) };
+  }
+
+  const teachers = (teachersRes.data as TeacherRecordLite[]) || [];
+  const teacherMap = new Map(teachers.map((t) => [t.id, t]));
+  const caps = capsRes.error ? [] : ((capsRes.data as TeacherCapability[]) || []);
+  const capMap = new Map(caps.map((c) => [c.teacher_id, c]));
+
+  const drafts = ((draftsRes.data as TeacherAvailabilityDraft[]) || []).map((d) => ({
+    ...d,
+    availability_rules: normalizeRules((d as any).availability_rules, d.teacher_id),
+    availability_exceptions: normalizeExceptions((d as any).availability_exceptions, d.teacher_id),
+    teacher: teacherMap.get(d.teacher_id) || null,
+    capability: capMap.get(d.teacher_id) || null,
+  })) as DraftWithTeacher[];
+
+  return {
+    drafts,
+    classes: (classesRes.data as TeachngoClassLite[]) || [],
+    classSessions: sessionsRes.error && relationMissing(sessionsRes.error) ? [] : ((sessionsRes.data as any[]) || []),
+    setupMissing: false,
+  };
+}
+
+export function useAvailabilityDrafts() {
+  const qc = useQueryClient();
+  const query = useQuery({
+    queryKey: ["availability-drafts-admin"],
+    queryFn: loadDrafts,
+    staleTime: 30_000,
+  });
+
+  useEffect(() => {
+    const channel = (supabase as any)
+      .channel("availability-drafts-admin-sync")
+      .on("postgres_changes", { event: "*", schema: "public", table: "teacher_availability_drafts" }, () => {
+        qc.invalidateQueries({ queryKey: ["availability-drafts-admin"] });
+      })
+      .subscribe();
+    return () => {
+      try { (supabase as any).removeChannel(channel); } catch { /* noop */ }
+    };
+  }, [qc]);
+
+  return query;
+}
+
+export function usePendingDraftCount() {
+  const { data } = useAvailabilityDrafts();
+  return useMemo(() => (data?.drafts || []).filter((d) => d.status === "pending").length, [data]);
+}
+
+export function useReviewDraftMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (params: { draftId: string; newStatus: "needs_changes" | "rejected"; reviewNote: string }) => {
+      const { data, error } = await (supabase as any).rpc("review_availability_draft", {
+        p_draft_id: params.draftId,
+        p_new_status: params.newStatus,
+        p_review_note: params.reviewNote,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["availability-drafts-admin"] }),
+  });
+}
+
+export function useApproveAndApplyMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (params: { draftId: string; reviewNote?: string | null }) => {
+      const { data, error } = await (supabase as any).rpc("approve_and_apply_availability", {
+        p_draft_id: params.draftId,
+        p_review_note: params.reviewNote ?? null,
+      });
+      if (error) throw error;
+      return data as { rules_inserted?: number; exceptions_inserted?: number } | null;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["availability-drafts-admin"] }),
+  });
+}
