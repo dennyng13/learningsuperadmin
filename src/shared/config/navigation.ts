@@ -2,7 +2,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   LayoutDashboard, FileText, Upload, Award, Users, School,
   CalendarDays, UserSearch, Settings, ShieldCheck, BarChart3,
-  BookOpen, ClipboardList, Flag, GraduationCap,
+  BookOpen, ClipboardList, Flag, GraduationCap, CalendarCheck,
 } from "lucide-react";
 
 export interface NavItem {
@@ -35,6 +35,7 @@ export const adminNavItems: NavItem[] = [
   { id: "users",        label: "Người dùng",   icon: Users,           route: "/users",                         group: "main",   order: 6 },
   { id: "teachers",     label: "Quản lý giáo viên", icon: GraduationCap,   route: "/teachers",                      group: "main",   order: 7 },
   { id: "classes",      label: "Lớp học",      icon: School,          route: "/classes",                       group: "main",   order: 8 },
+  { id: "availability-drafts", label: "Duyệt lịch rảnh", icon: CalendarCheck, route: "/availability-drafts",     group: "main",   order: 8.5 },
   { id: "study-plans",  label: "Study Plans",  icon: ClipboardList,   route: "/study-plans",                   group: "main",   order: 9 },
   { id: "placement",    label: "Sắp lớp",      icon: UserSearch,      route: "/placement",                     group: "main",   order: 10 },
   { id: "attendance",   label: "Điểm danh",    icon: CalendarDays,    route: "/attendance",                    group: "main",   order: 11 },

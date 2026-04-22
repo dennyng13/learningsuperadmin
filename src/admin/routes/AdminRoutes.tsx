@@ -36,6 +36,7 @@ const StudyPlanTemplatesPage = lazy(() => import("@admin/features/study-plans/pa
 const PlacementTestPage = lazy(() => import("@admin/features/placement/pages/PlacementTestPage"));
 const PlacementTestEditorPage = lazy(() => import("@admin/features/placement/pages/PlacementTestEditorPage"));
 const AdminSchedulePage = lazy(() => import("@admin/features/schedule/pages/AdminSchedulePage"));
+const AvailabilityDraftsPage = lazy(() => import("@admin/features/availability-drafts/pages/AvailabilityDraftsPage"));
 const NotFoundPage = lazy(() => import("@admin/features/misc/pages/NotFoundPage"));
 const HealthCheckPage = lazy(() => import("@admin/features/misc/pages/HealthCheckPage"));
 
@@ -85,6 +86,9 @@ export default function AppRoutes() {
           <Route path="classes" element={<ClassManagementPage />} />
           <Route path="schedule" element={<AdminSchedulePage />} />
           <Route path="attendance" element={<TeachngoAttendancePage />} />
+
+          {/* Availability review */}
+          <Route path="availability-drafts" element={<AvailabilityDraftsPage />} />
 
           {/* Study plans (templates nested) */}
           <Route path="study-plans" element={<StudyPlansPage />} />
