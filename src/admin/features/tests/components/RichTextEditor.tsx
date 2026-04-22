@@ -346,6 +346,49 @@ export default function RichTextEditor({
           "[&_th]:border [&_th]:border-border [&_th]:px-2 [&_th]:py-1 [&_th]:text-sm [&_th]:font-bold [&_th]:bg-muted/50",
         ),
         style: `min-height: ${minHeight}`,
+        spellcheck: "true",
+      },
+      handlePaste: (view, event) => {
+        const cb = event.clipboardData;
+        if (!cb) return false;
+        // Prefer plain text to strip Word/PDF formatting noise.
+        const text = cb.getData("text/plain");
+        if (!text) return false;
+        const cleaned = cleanPastedText(text);
+        const { state, dispatch } = view;
+        const { tr, schema } = state;
+        // Insert as paragraphs split by newlines so line breaks are preserved.
+        const lines = cleaned.split(/\n/);
+        const nodes = lines
+          .filter((l, i) => l.length > 0 || i < lines.length - 1)
+          .map((l) => schema.nodes.paragraph.create(null, l ? schema.text(l) : null));
+        if (nodes.length === 0) return true;
+        const fragment = state.schema.nodes.doc
+          ? nodes
+          : nodes;
+        const slice = state.tr.doc.slice(0, 0);
+        // Replace selection with the cleaned content.
+        let trNew = tr.deleteSelection();
+        nodes.forEach((node, idx) => {
+          if (idx === 0) {
+            trNew = trNew.insertText(lines[0] || "");
+          } else {
+            trNew = trNew.split(trNew.selection.from);
+            if (lines[idx]) trNew = trNew.insertText(lines[idx]);
+          }
+        });
+        dispatch(trNew);
+        return true;
+      },
+      handleKeyDown: (_view, event) => {
+        // Prevent the browser's default Cmd/Ctrl+B (toggle bookmarks bar in some browsers)
+        // — Tiptap's bold shortcut still runs because it's installed first via the extension.
+        if ((event.metaKey || event.ctrlKey) && (event.key === "b" || event.key === "B")) {
+          event.preventDefault();
+          // Let Tiptap process it via its own keymap (returning false continues the chain).
+          return false;
+        }
+        return false;
       },
     },
   });
