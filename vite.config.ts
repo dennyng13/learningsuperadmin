@@ -46,6 +46,19 @@ export default defineConfig(({ mode }) => ({
         // Each chunk is requested only by routes that actually need it.
         manualChunks: (id) => {
           if (!id.includes("node_modules")) return undefined;
+          // CRITICAL: React must be checked FIRST so it's never bundled into
+          // another vendor chunk (e.g. vendor-radix). Otherwise consumers can
+          // load before React is initialized → "Cannot read properties of
+          // undefined (reading 'forwardRef')".
+          if (
+            id.includes("/node_modules/react/") ||
+            id.includes("/node_modules/react-dom/") ||
+            id.includes("/node_modules/scheduler/") ||
+            id.includes("/node_modules/react/jsx-runtime") ||
+            id.includes("/node_modules/react/jsx-dev-runtime")
+          ) {
+            return "vendor-react";
+          }
           if (id.includes("react-router")) return "vendor-router";
           if (id.includes("@tanstack/react-query")) return "vendor-query";
           if (id.includes("@radix-ui")) return "vendor-radix";
@@ -55,7 +68,6 @@ export default defineConfig(({ mode }) => ({
           if (id.includes("framer-motion")) return "vendor-motion";
           if (id.includes("xlsx")) return "vendor-xlsx";
           if (id.includes("html2canvas") || id.includes("jspdf")) return "vendor-pdf";
-          if (id.includes("react-dom") || id.includes("/react/")) return "vendor-react";
         },
       },
     },
