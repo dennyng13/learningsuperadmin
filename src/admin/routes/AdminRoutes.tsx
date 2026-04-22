@@ -29,6 +29,7 @@ const TeachngoAttendancePage = lazy(() => import("@admin/features/attendance/pag
 const StudentPerformancePage = lazy(() => import("@admin/features/performance/pages/StudentPerformancePage"));
 const TeacherPerformancePage = lazy(() => import("@admin/features/performance/pages/TeacherPerformancePage"));
 const AdminSettingsPage = lazy(() => import("@admin/features/settings/pages/AdminSettingsPage"));
+const EmailTemplatePreviewPage = lazy(() => import("@admin/features/settings/pages/EmailTemplatePreviewPage"));
 const FeatureFlagsPage = lazy(() => import("@admin/features/feature-flags/pages/FeatureFlagsPage"));
 const StudyPlansPage = lazy(() => import("@admin/features/study-plans/pages/StudyPlansPage"));
 const StudyPlanTemplatesPage = lazy(() => import("@admin/features/study-plans/pages/StudyPlanTemplatesPage"));
@@ -105,6 +106,7 @@ export default function AppRoutes() {
           <Route path="modules" element={<ModulePermissionsPage />} />
           <Route path="feature-flags" element={<FeatureFlagsPage />} />
           <Route path="settings" element={<AdminSettingsPage />} />
+          <Route path="settings/email-preview" element={<EmailTemplatePreviewPage />} />
 
           {/* 404 */}
           <Route path="404" element={<NotFoundPage />} />
