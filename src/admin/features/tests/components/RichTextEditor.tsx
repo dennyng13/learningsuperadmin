@@ -12,7 +12,7 @@ import FontSize from "@tiptap/extension-font-size";
 import Heading from "@tiptap/extension-heading";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
-import { useEffect, useCallback, useId, useRef } from "react";
+import { useEffect, useCallback, useId, useRef, useState } from "react";
 
 /**
  * Clean text pasted from Word/PDF/Google Docs:
