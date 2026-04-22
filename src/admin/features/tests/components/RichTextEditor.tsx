@@ -324,6 +324,57 @@ function Toolbar({ editor, showHeadings, onBlankCreated, blankStart = 1 }: { edi
           <Highlighter className="h-3.5 w-3.5" /> Blank
         </span>
       </ToolbarButton>
+
+      <ToolbarDivider />
+
+      {/* Special characters dropdown */}
+      <SymbolMenu editor={editor} />
+    </div>
+  );
+}
+
+function SymbolMenu({ editor }: { editor: Editor }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDocClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative">
+      <ToolbarButton
+        active={open}
+        onClick={() => setOpen((v) => !v)}
+        title="Chèn ký tự đặc biệt (€ £ ° ± × ÷ → ≤ ≥ ...)"
+      >
+        <span className="flex items-center gap-1 text-[10px] font-bold">
+          <Sigma className="h-3.5 w-3.5" /> Symbol
+        </span>
+      </ToolbarButton>
+      {open && (
+        <div className="absolute z-30 mt-1 left-0 w-56 grid grid-cols-6 gap-0.5 rounded-lg border bg-popover p-2 shadow-lg">
+          {SPECIAL_CHARS.map(({ char, label }) => (
+            <button
+              key={char}
+              type="button"
+              title={label}
+              onClick={() => {
+                editor.chain().focus().insertContent(char).run();
+                setOpen(false);
+              }}
+              className="h-8 w-8 flex items-center justify-center text-base rounded hover:bg-primary/10 hover:text-primary text-foreground"
+            >
+              {char}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
