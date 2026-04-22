@@ -110,10 +110,38 @@ import {
   Bold, Italic, Underline as UnderlineIcon, Strikethrough,
   Superscript as SuperscriptIcon, Subscript as SubscriptIcon,
   List, ListOrdered, Table as TableIcon, Plus, Trash2, Minus,
-  FormInput, Type, Heading1, Heading2, Heading3, Highlighter,
+  FormInput, Type, Heading1, Heading2, Heading3, Highlighter, Sigma,
 } from "lucide-react";
 
 const FONT_SIZES = ["12px", "14px", "16px", "18px", "20px", "24px"];
+
+/** Special character set commonly needed in IELTS / academic content. */
+const SPECIAL_CHARS: { char: string; label: string }[] = [
+  { char: "€", label: "Euro" },
+  { char: "£", label: "Pound" },
+  { char: "¥", label: "Yen" },
+  { char: "$", label: "Dollar" },
+  { char: "°", label: "Degree" },
+  { char: "±", label: "Plus-minus" },
+  { char: "÷", label: "Divide" },
+  { char: "×", label: "Multiply" },
+  { char: "≤", label: "Less or equal" },
+  { char: "≥", label: "Greater or equal" },
+  { char: "≠", label: "Not equal" },
+  { char: "≈", label: "Approximately" },
+  { char: "→", label: "Right arrow" },
+  { char: "←", label: "Left arrow" },
+  { char: "↑", label: "Up arrow" },
+  { char: "↓", label: "Down arrow" },
+  { char: "•", label: "Bullet" },
+  { char: "–", label: "En dash" },
+  { char: "—", label: "Em dash" },
+  { char: "©", label: "Copyright" },
+  { char: "®", label: "Registered" },
+  { char: "™", label: "Trademark" },
+  { char: "§", label: "Section" },
+  { char: "¶", label: "Paragraph" },
+];
 
 interface RichTextEditorProps {
   value: string;
