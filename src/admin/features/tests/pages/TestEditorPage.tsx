@@ -313,10 +313,37 @@ export default function TestEditorPage() {
     return missing;
   }, [parts]);
 
+  /** Returns the id of the first question missing an answer (Reading/Listening only), or null. */
+  const findFirstMissingQuestionId = useCallback((): string | null => {
+    for (const p of parts) {
+      if (p.skill === "SPEAKING" || p.skill === "WRITING") continue;
+      for (const g of p.questionGroups) {
+        for (const q of g.questions) {
+          if (!q.answer || !q.answer.trim()) return q.id;
+        }
+      }
+    }
+    return null;
+  }, [parts]);
+
+  /** Scroll to + flash-highlight a question row by its id. */
+  const focusMissingQuestion = useCallback((questionId: string) => {
+    // Defer one frame so toast/dialog state can settle first.
+    requestAnimationFrame(() => {
+      const el = document.getElementById(`question-row-${questionId}`);
+      if (!el) return;
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.classList.add("missing-answer-flash");
+      setTimeout(() => el.classList.remove("missing-answer-flash"), 2000);
+    });
+  }, []);
+
   const handleSaveAndExit = async () => {
     const missingCount = getMissingAnswerCount();
     if (missingCount > 0) {
       toast.error(`Còn ${missingCount} câu hỏi chưa có đáp án đúng. Vui lòng điền đầy đủ trước khi lưu.`);
+      const firstMissing = findFirstMissingQuestionId();
+      if (firstMissing) focusMissingQuestion(firstMissing);
       setShowExitDialog(false);
       return;
     }
