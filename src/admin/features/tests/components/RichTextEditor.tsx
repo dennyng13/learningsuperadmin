@@ -141,14 +141,15 @@ function ToolbarDivider() {
   return <div className="w-px h-5 bg-border mx-0.5" />;
 }
 
-function Toolbar({ editor, showHeadings, onBlankCreated }: { editor: Editor; showHeadings?: boolean; onBlankCreated?: (blankNumber: number, selectedText: string) => void }) {
+function Toolbar({ editor, showHeadings, onBlankCreated, blankStart = 1 }: { editor: Editor; showHeadings?: boolean; onBlankCreated?: (blankNumber: number, selectedText: string) => void; blankStart?: number }) {
   const insertBlank = useCallback(() => {
     const html = editor.getHTML();
     // Count existing blanks from both formats
     const markNums = (html.match(/data-blank-num="(\d+)"/g) || []).map(m => parseInt(m.match(/\d+/)?.[0] || "0"));
     const shortcodeNums = (html.match(/\[blank_(\d+)\]/g) || []).map(m => parseInt(m.match(/\d+/)?.[0] || "0"));
     const allNums = [...markNums, ...shortcodeNums];
-    const next = allNums.length > 0 ? Math.max(...allNums) + 1 : 1;
+    // Continue numbering from blankStart so multiple passages keep a global running sequence.
+    const next = allNums.length > 0 ? Math.max(...allNums) + 1 : blankStart;
 
     const { from, to, empty } = editor.state.selection;
     if (!empty) {
@@ -162,7 +163,7 @@ function Toolbar({ editor, showHeadings, onBlankCreated }: { editor: Editor; sho
       // No selection: insert old-style shortcode as fallback
       editor.chain().focus().insertContent(`[blank_${next}]`).run();
     }
-  }, [editor, onBlankCreated]);
+  }, [editor, onBlankCreated, blankStart]);
 
   return (
     <div className="flex items-center gap-0.5 flex-wrap border-b bg-muted/30 px-2 py-1.5 rounded-t-xl">
@@ -276,7 +277,20 @@ function Toolbar({ editor, showHeadings, onBlankCreated }: { editor: Editor; sho
   );
 }
 
-export default function RichTextEditor({ value, onChange, placeholder, className, minHeight = "120px", showHeadings = false, onBlankCreated }: RichTextEditorProps) {
+export default function RichTextEditor({
+  value,
+  onChange,
+  placeholder,
+  className,
+  minHeight = "120px",
+  showHeadings = false,
+  onBlankCreated,
+  scopeId,
+  blankStart = 1,
+}: RichTextEditorProps) {
+  const fallbackScope = useId().replace(/[:]/g, "");
+  const scope = scopeId || fallbackScope;
+  const containerRef = useRef<HTMLDivElement>(null);
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
