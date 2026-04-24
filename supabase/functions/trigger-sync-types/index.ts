@@ -1,5 +1,5 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.95.0";
-import { z } from "https://esm.sh/zod@3.23.8";
+import { createClient } from "npm:@supabase/supabase-js@2.45.0";
+import { z } from "npm:zod@3.23.8";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -49,13 +49,13 @@ Deno.serve(async (req) => {
     );
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
+    const { data: userData, error: userError } = await supabase.auth.getUser(token);
+    if (userError || !userData?.user) {
+      console.error("[trigger-sync-types] auth error", userError);
       return jsonResponse({ error: "Unauthorized" }, 401);
     }
-
-    const userId = claimsData.claims.sub as string;
-    const userEmail = (claimsData.claims.email as string | undefined) ?? undefined;
+    const userId = userData.user.id;
+    const userEmail = userData.user.email ?? undefined;
 
     // ── Admin check ──
     const { data: roles, error: rolesError } = await supabase
