@@ -1,3 +1,4 @@
+// trigger-sync-types — v3 (force redeploy)
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
