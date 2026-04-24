@@ -10,7 +10,9 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "sync:types": "npx -y supabase@latest gen types typescript --project-id jcavqutyfvalaugneash --schema public > src/integrations/supabase/types.ts",
+    "sync:types:check": "npm run sync:types && git diff --stat src/integrations/supabase/types.ts"
   },
   "dependencies": {
     "@fontsource/epilogue": "^5.2.8",
