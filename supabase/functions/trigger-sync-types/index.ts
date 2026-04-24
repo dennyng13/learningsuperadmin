@@ -1,5 +1,4 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { z } from "https://esm.sh/zod@3.23.8";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,11 +12,7 @@ const ALLOWED_REPOS = [
   "dennyng13/learningsuperadmin",
   "dennyng13/teachingwithlearningplus-52cac937",
 ] as const;
-
-const BodySchema = z.object({
-  repo: z.enum(ALLOWED_REPOS),
-  triggered_by: z.string().email().optional(),
-});
+type AllowedRepo = (typeof ALLOWED_REPOS)[number];
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -83,16 +78,15 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "Invalid JSON body" }, 400);
     }
 
-    const parsed = BodySchema.safeParse(rawBody);
-    if (!parsed.success) {
+    const body = (rawBody ?? {}) as { repo?: string; triggered_by?: string };
+    if (!body.repo || !ALLOWED_REPOS.includes(body.repo as AllowedRepo)) {
       return jsonResponse(
-        { error: "Validation failed", details: parsed.error.flatten().fieldErrors },
+        { error: "Invalid or missing 'repo'", allowed: ALLOWED_REPOS },
         400,
       );
     }
-
-    const { repo } = parsed.data;
-    const triggeredBy = parsed.data.triggered_by ?? userEmail ?? "unknown";
+    const repo = body.repo as AllowedRepo;
+    const triggeredBy = body.triggered_by ?? userEmail ?? "unknown";
 
     // ── GitHub PAT ──
     const githubPat = Deno.env.get("GITHUB_PAT");
