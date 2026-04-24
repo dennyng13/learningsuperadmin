@@ -69,7 +69,7 @@ function StatusBadge({ status, conclusion }: { status: string; conclusion: strin
   if (status === "completed") {
     if (conclusion === "success") {
       return (
-        <Badge variant="outline" className="gap-1 border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400">
+        <Badge variant="outline" className="gap-1 border-primary/40 bg-primary/10 text-primary">
           <CheckCircle2 className="h-3 w-3" /> Thành công
         </Badge>
       );
