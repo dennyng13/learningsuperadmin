@@ -9,9 +9,9 @@ const corsHeaders = {
 };
 
 const ALLOWED_REPOS = [
-  "dennyng13/ieltspractice-aa5eb78f",
+  "dennyng13/ieltspractice",
   "dennyng13/learningsuperadmin",
-  "dennyng13/teachingwithlearningplus-52cac937",
+  "dennyng13/teachingwithlearningplus",
 ] as const;
 type AllowedRepo = (typeof ALLOWED_REPOS)[number];
 
