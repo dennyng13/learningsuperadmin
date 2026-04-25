@@ -15,29 +15,41 @@ export interface DraftWithTeacher extends TeacherAvailabilityDraft {
   capability?: TeacherCapability | null;
 }
 
+export interface ProgramLite {
+  id: string;
+  key: string;
+  name: string;
+  program_key: string | null;
+  level: string | null;
+  color_key: string | null;
+  sort_order: number;
+}
+
 interface AvailabilityDraftsData {
   drafts: DraftWithTeacher[];
   classes: TeachngoClassLite[];
   classSessions: any[];
+  programs: ProgramLite[];
   setupMissing: boolean;
   errorMessage?: string;
 }
 
 async function loadDrafts(): Promise<AvailabilityDraftsData> {
   const today = new Date().toISOString().slice(0, 10);
-  const [draftsRes, teachersRes, capsRes, classesRes, sessionsRes] = await Promise.all([
+  const [draftsRes, teachersRes, capsRes, classesRes, sessionsRes, programsRes] = await Promise.all([
     (supabase.from as any)("teacher_availability_drafts").select("*").order("created_at", { ascending: false }),
     supabase.from("teachers").select("id, full_name, email, phone, status, linked_user_id, subjects, classes"),
     (supabase.from as any)("teacher_capabilities").select("*"),
     supabase.from("teachngo_classes").select("id, class_name, teacher_id, status, level, program, schedule, class_type, room, default_start_time, default_end_time"),
     (supabase.from as any)("class_sessions").select("*").gte("session_date", today),
+    (supabase.from as any)("programs").select("id, key, name, program_key, level, color_key, sort_order").eq("is_active", true).order("sort_order", { ascending: true }),
   ]);
 
   if (draftsRes.error) {
     if (relationMissing(draftsRes.error)) {
-      return { drafts: [], classes: [], classSessions: [], setupMissing: true, errorMessage: "Bảng teacher_availability_drafts chưa tồn tại — apply migration availability trước." };
+      return { drafts: [], classes: [], classSessions: [], programs: [], setupMissing: true, errorMessage: "Bảng teacher_availability_drafts chưa tồn tại — apply migration availability trước." };
     }
-    return { drafts: [], classes: [], classSessions: [], setupMissing: false, errorMessage: String(draftsRes.error.message || draftsRes.error) };
+    return { drafts: [], classes: [], classSessions: [], programs: [], setupMissing: false, errorMessage: String(draftsRes.error.message || draftsRes.error) };
   }
 
   const teachers = (teachersRes.data as TeacherRecordLite[]) || [];
@@ -57,6 +69,7 @@ async function loadDrafts(): Promise<AvailabilityDraftsData> {
     drafts,
     classes: (classesRes.data as TeachngoClassLite[]) || [],
     classSessions: sessionsRes.error && relationMissing(sessionsRes.error) ? [] : ((sessionsRes.data as any[]) || []),
+    programs: programsRes.error ? [] : ((programsRes.data as ProgramLite[]) || []),
     setupMissing: false,
   };
 }

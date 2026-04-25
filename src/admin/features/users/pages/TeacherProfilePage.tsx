@@ -18,6 +18,7 @@ import { Input } from "@shared/components/ui/input";
 import { Label } from "@shared/components/ui/label";
 import { Textarea } from "@shared/components/ui/textarea";
 import { toast } from "sonner";
+import TeacherProgramEligibilityCard from "@admin/features/users/components/TeacherProgramEligibilityCard";
 
 type TeacherRow = {
   id: string;
@@ -241,6 +242,8 @@ export default function TeacherProfilePage() {
             </div>
           </section>
         </div>
+
+        <TeacherProgramEligibilityCard teacherId={teacher.id} />
 
         {(classesList.length > 0 || subjectsList.length > 0) && (
           <div className="grid md:grid-cols-2 gap-6">

@@ -29,11 +29,14 @@ export interface TeacherAvailabilityDraft {
   id: string;
   teacher_id: string;
   effective_from: string;
+  effective_to?: string | null;
   status: AvailabilityDraftStatus | string;
   availability_rules: TeacherAvailabilityRule[] | unknown;
   availability_exceptions: TeacherAvailabilityException[] | unknown;
   validation_summary?: Record<string, unknown> | null;
   review_note?: string | null;
+  desired_programs?: string[] | null;
+  notes?: string | null;
   created_at?: string;
   updated_at?: string;
   reviewed_at?: string | null;
@@ -45,6 +48,7 @@ export interface TeacherCapability {
   teacher_id: string;
   level_keys?: string[] | null;
   program_keys?: string[] | null;
+  eligible_program_keys?: string[] | null;
   can_teach_online?: boolean | null;
   can_teach_offline?: boolean | null;
   max_hours_per_week?: number | null;
