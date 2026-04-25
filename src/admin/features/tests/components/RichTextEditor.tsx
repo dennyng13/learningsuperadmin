@@ -199,8 +199,12 @@ function Toolbar({ editor, showHeadings, onBlankCreated, blankStart = 1 }: { edi
     const markNums = (html.match(/data-blank-num="(\d+)"/g) || []).map(m => parseInt(m.match(/\d+/)?.[0] || "0"));
     const shortcodeNums = (html.match(/\[blank_(\d+)\]/g) || []).map(m => parseInt(m.match(/\d+/)?.[0] || "0"));
     const allNums = [...markNums, ...shortcodeNums];
-    // Continue numbering from blankStart so multiple passages keep a global running sequence.
-    const next = allNums.length > 0 ? Math.max(...allNums) + 1 : blankStart;
+    // Continue numbering from blankStart so multiple passages / question
+    // groups keep their own running sequence. Including `blankStart - 1`
+    // in the max guarantees the first blank inserted into a group with
+    // no blanks yet always uses blankStart, even if the editor still
+    // contains stale [blank_N] shortcodes pasted from another group.
+    const next = Math.max(...allNums, blankStart - 1) + 1;
 
     const { from, to, empty } = editor.state.selection;
     if (!empty) {
@@ -474,9 +478,11 @@ export default function RichTextEditor({
     if (!blankEl) return;
     const num = blankEl.getAttribute("data-blank-num");
     if (!num) return;
-    // Scoped first (current editor instance), fallback to legacy global id
-    const scopedInput = document.getElementById(`blank-answer-${scope}-${num}`);
-    const input = scopedInput || document.getElementById(`blank-answer-${num}`);
+    // Look up the answer-key input for THIS editor only. Falling back to
+    // the unscoped `blank-answer-${num}` would pick the first matching
+    // input in DOM order, which could belong to a different passage /
+    // question group (see "edit blank in Passage 2 jumps to Passage 1").
+    const input = document.getElementById(`blank-answer-${scope}-${num}`);
     if (input) {
       input.scrollIntoView({ behavior: "smooth", block: "center" });
       input.classList.add("blank-answer-flash");
