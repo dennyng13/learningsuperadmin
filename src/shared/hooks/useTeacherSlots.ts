@@ -17,9 +17,15 @@ export interface TeacherSlotsParams {
   program_key?: string | null;
 }
 
+// Normalize Postgres `time` (HH:MM:SS) → "HH:MM" for UI consistency.
+const trimTime = (t: unknown): string => (typeof t === "string" ? t.slice(0, 5) : "");
+
 /**
  * Returns available slots intersection across all selected teachers.
  * Calls get_teacher_available_slots RPC for each teacher and intersects by (weekday|start|end|mode).
+ *
+ * RPC returns: { teacher_id, from_date, to_date, slot_count, slots: TeacherSlot[] }
+ * — read `data.slots`, NOT `data`.
  */
 export function useTeacherSlots(params: TeacherSlotsParams | null) {
   return useQuery({
@@ -36,7 +42,17 @@ export function useTeacherSlots(params: TeacherSlotsParams | null) {
           p_program_key: params.program_key ?? null,
         });
         if (error) throw error;
-        lists.push((data as TeacherSlot[]) || []);
+        const payload = (data ?? {}) as { slots?: Array<Record<string, unknown>> };
+        const rawSlots = Array.isArray(payload.slots) ? payload.slots : [];
+        const slots: TeacherSlot[] = rawSlots.map((s) => ({
+          weekday: Number(s.weekday),
+          start_time: trimTime(s.start_time),
+          end_time: trimTime(s.end_time),
+          mode: (s.mode as TeacherSlot["mode"]) ?? null,
+          effective_from: (s.effective_from as string | undefined) ?? undefined,
+          effective_to: (s.effective_to as string | null | undefined) ?? null,
+        }));
+        lists.push(slots);
       }
       if (lists.length === 0) return [];
       const key = (s: TeacherSlot) => `${s.weekday}|${s.start_time}|${s.end_time}|${s.mode ?? ""}`;

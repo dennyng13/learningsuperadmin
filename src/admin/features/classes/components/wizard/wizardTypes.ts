@@ -1,7 +1,8 @@
 export interface WizardClassInfo {
   class_name: string;
   course_title: string;
-  program: string;            // e.g. "IELTS" | "WRE" | "Customized"
+  /** Backend program_key — lowercase: "ielts" | "wre" | "customized". */
+  program: string;
   level: string;              // empty for non-IELTS
   class_type: "standard" | "online" | "hybrid" | "private";
   start_date: string;         // YYYY-MM-DD
