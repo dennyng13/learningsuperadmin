@@ -638,7 +638,12 @@ export default function TestEditorPage() {
       };
     });
 
-    setParts(loadedParts);
+    // Run the same renumberQuestions pass we apply on every edit so that
+    // any drift in question_number from older data (e.g. tests imported
+    // before the wizard wrote sequential numbers) self-heals on open.
+    // This is what keeps Reading / Listening at a continuous 1–40 across
+    // all parts and groups instead of restarting per group.
+    setParts(renumberQuestions(loadedParts));
 
     // Auto-detect audio mode
     if (a.section_type === "LISTENING" && loadedParts.length > 0) {
@@ -651,6 +656,7 @@ export default function TestEditorPage() {
         setAudioMode("per_part");
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [detail]);
 
   const addPart = (skill?: string) => {

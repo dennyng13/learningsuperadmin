@@ -51,7 +51,13 @@ export function useExamAssessment(id: string | undefined) {
 
       // 4. Fetch passages, question_groups, questions in parallel
       const [passagesRes, qgRes] = await Promise.all([
-        supabase.from("passages").select("*").in("part_id", partIds),
+        // Match the admin editor: order passages by created_at so the
+        // student sees Passage 1 / 2 / 3 in insertion order.
+        supabase
+          .from("passages")
+          .select("*")
+          .in("part_id", partIds)
+          .order("created_at", { ascending: true }),
         supabase
           .from("question_groups")
           .select("*")

@@ -218,7 +218,16 @@ export function useAssessmentDetail(id: string | undefined) {
 
       if (partIds.length > 0) {
         const [pRes, qgRes] = await Promise.all([
-          supabase.from("passages").select("*").in("part_id", partIds),
+          // Order passages by created_at so admin sees them in the same
+          // sequence they were added (Passage 1, Passage 2, ...). Without
+          // this Postgres returns rows in arbitrary heap order, which
+          // caused "edit blank in Passage 2 jumps to Passage 1" — the
+          // visually-Passage-2 card was rendering Passage 1's content.
+          supabase
+            .from("passages")
+            .select("*")
+            .in("part_id", partIds)
+            .order("created_at", { ascending: true }),
           supabase
             .from("question_groups")
             .select("*")
