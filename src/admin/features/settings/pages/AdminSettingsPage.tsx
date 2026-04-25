@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ChevronRight, Settings, Database, HardDrive, Globe, Bell, Mail, BookTemplate, Sparkles, BookOpen, ShieldCheck, RefreshCw } from "lucide-react";
+import { ChevronRight, Settings, Database, HardDrive, Globe, Bell, Mail, BookTemplate, Sparkles, BookOpen, ShieldCheck, RefreshCw, Github } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@shared/components/ui/tabs";
 import { TabSkeleton } from "@shared/components/ui/tab-skeleton";
 import AdminBackupTab from "@admin/features/settings/components/AdminBackupTab";
@@ -13,6 +13,7 @@ import AdminAIGradingTab from "@admin/features/settings/components/AdminAIGradin
 import AdminBandDescriptorsTab from "@admin/features/settings/components/AdminBandDescriptorsTab";
 import AdminFieldAccessTab from "@admin/features/settings/components/AdminFieldAccessTab";
 import AdminSyncTypesTab from "@admin/features/settings/components/AdminSyncTypesTab";
+import AdminGitHubSyncTab from "@admin/features/settings/components/AdminGitHubSyncTab";
 import { useAuth } from "@shared/hooks/useAuth";
 
 export default function AdminSettingsPage() {
@@ -72,6 +73,11 @@ export default function AdminSettingsPage() {
                 <RefreshCw className="h-3.5 w-3.5 md:h-4 md:w-4" /> Sync Types
               </TabsTrigger>
             )}
+            {isAdmin && (
+              <TabsTrigger value="github-sync" className="gap-1.5 px-3 md:px-4 py-2 md:py-2.5 rounded-lg text-xs md:text-sm font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">
+                <Github className="h-3.5 w-3.5 md:h-4 md:w-4" /> GitHub Sync
+              </TabsTrigger>
+            )}
             </TabsList>
         </div>
 
@@ -105,6 +111,11 @@ export default function AdminSettingsPage() {
         {isAdmin && (
           <TabsContent value="sync-types" className="mt-6">
             <TabSkeleton><AdminSyncTypesTab /></TabSkeleton>
+          </TabsContent>
+        )}
+        {isAdmin && (
+          <TabsContent value="github-sync" className="mt-6">
+            <TabSkeleton><AdminGitHubSyncTab /></TabSkeleton>
           </TabsContent>
         )}
       </Tabs>
