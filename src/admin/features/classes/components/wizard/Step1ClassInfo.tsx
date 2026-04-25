@@ -14,30 +14,52 @@ interface Props {
   errors: Record<string, string>;
 }
 
-const PROGRAM_FALLBACK = [
-  { program_key: "IELTS", label: "IELTS" },
-  { program_key: "WRE", label: "WRE" },
-  { program_key: "Customized", label: "Customized" },
+// Backend convention: program_keys are lowercase ('ielts' | 'wre' | 'customized').
+// Must match values stored in `programs.program_key` and used by RPC
+// `find_available_teachers_for_slot(p_program_key)`.
+const PROGRAM_FALLBACK: { program_key: string; label: string }[] = [
+  { program_key: "ielts", label: "IELTS" },
+  { program_key: "wre", label: "WRE" },
+  { program_key: "customized", label: "Customized" },
 ];
+
+const PROGRAM_GROUP_LABEL: Record<string, string> = {
+  ielts: "IELTS",
+  wre: "WRE",
+  customized: "Customized",
+};
 
 export default function Step1ClassInfo({ value, onChange, errors }: Props) {
   const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
 
+  // The `programs` table contains one row per individual program (e.g. 8 IELTS
+  // levels share program_key='ielts'). The wizard picks a *group*, so dedupe
+  // by program_key. Use a hardcoded label per group rather than the per-row
+  // `name` (which would be e.g. "Căng buồm").
   const programsQ = useQuery({
     queryKey: ["wizard-programs"],
     queryFn: async () => {
       const { data, error } = await (supabase.from as any)("programs")
-        .select("program_key, label")
+        .select("program_key, sort_order, is_active")
+        .eq("is_active", true)
         .order("sort_order", { ascending: true });
       if (error) return PROGRAM_FALLBACK;
-      const list = (data || []) as Array<{ program_key: string; label?: string | null }>;
-      return list.length ? list.map((p) => ({ program_key: p.program_key, label: p.label || p.program_key })) : PROGRAM_FALLBACK;
+      const list = (data || []) as Array<{ program_key: string | null }>;
+      const seen = new Set<string>();
+      const unique: { program_key: string; label: string }[] = [];
+      for (const row of list) {
+        const key = (row.program_key || "").trim().toLowerCase();
+        if (!key || seen.has(key)) continue;
+        seen.add(key);
+        unique.push({ program_key: key, label: PROGRAM_GROUP_LABEL[key] || key.toUpperCase() });
+      }
+      return unique.length ? unique : PROGRAM_FALLBACK;
     },
   });
 
   const levelsQ = useQuery({
     queryKey: ["wizard-levels", value.program],
-    enabled: value.program === "IELTS",
+    enabled: value.program === "ielts",
     queryFn: async () => {
       const { data, error } = await supabase
         .from("course_levels")
@@ -71,7 +93,7 @@ export default function Step1ClassInfo({ value, onChange, errors }: Props) {
 
   // Reset level when program changes away from IELTS
   useEffect(() => {
-    if (value.program !== "IELTS" && value.level) onChange({ ...value, level: "" });
+    if (value.program !== "ielts" && value.level) onChange({ ...value, level: "" });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value.program]);
 
@@ -115,9 +137,9 @@ export default function Step1ClassInfo({ value, onChange, errors }: Props) {
       </div>
 
       <div>
-        <Label>Level {value.program !== "IELTS" && <span className="text-muted-foreground text-xs">(chỉ IELTS)</span>}</Label>
-        <Select value={value.level} onValueChange={(v) => set("level", v)} disabled={value.program !== "IELTS"}>
-          <SelectTrigger><SelectValue placeholder={value.program === "IELTS" ? "Chọn level" : "—"} /></SelectTrigger>
+        <Label>Level {value.program !== "ielts" && <span className="text-muted-foreground text-xs">(chỉ IELTS)</span>}</Label>
+        <Select value={value.level} onValueChange={(v) => set("level", v)} disabled={value.program !== "ielts"}>
+          <SelectTrigger><SelectValue placeholder={value.program === "ielts" ? "Chọn level" : "—"} /></SelectTrigger>
           <SelectContent>
             {(levelsQ.data || []).map((l: any) => (
               <SelectItem key={l.id} value={l.name}>{l.name}</SelectItem>
