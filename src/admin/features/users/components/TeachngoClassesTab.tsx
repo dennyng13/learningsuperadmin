@@ -8,7 +8,7 @@ import { Checkbox } from "@shared/components/ui/checkbox";
 import { toast } from "sonner";
 import { cn } from "@shared/lib/utils";
 import {
-  Search, Loader2, BookOpen, Users, ChevronDown, ChevronUp, User, Pencil, Tags, GraduationCap, Link2, Archive, X, ClipboardList, Layers,
+  Search, Loader2, BookOpen, Users, ChevronDown, ChevronUp, User, Pencil, Tags, GraduationCap, Link2, Archive, X, ClipboardList, Layers, Mail,
 } from "lucide-react";
 import { Switch } from "@shared/components/ui/switch";
 import {
@@ -23,6 +23,7 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@shared/components/ui/dialog";
+import ClassInvitationsDialog from "@admin/features/classes/components/ClassInvitationsDialog";
 
 const PROGRAM_COLORS: Record<string, string> = {};
 const COLOR_POOL = [
@@ -119,6 +120,7 @@ export default function TeachngoClassesTab() {
   const [bulkStudyPlan, setBulkStudyPlan] = useState("");
   const [bulkSaving, setBulkSaving] = useState(false);
   const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
+  const [invitationsForClass, setInvitationsForClass] = useState<TnGClass | null>(null);
   const [teacherOptions, setTeacherOptions] = useState<TeacherOption[]>([]);
   const [studyPlans, setStudyPlans] = useState<{ id: string; plan_name: string | null; display_name: string; class_ids: string[] }[]>([]);
   const [classPlansMap, setClassPlansMap] = useState<Record<string, { id: string; plan_name: string }[]>>({});
@@ -935,6 +937,7 @@ export default function TeachngoClassesTab() {
                 <TableHead>Sĩ số</TableHead>
                 <TableHead>Lịch học</TableHead>
                 <TableHead>Trạng thái</TableHead>
+                <TableHead className="w-20 text-center">Lời mời</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -1052,11 +1055,22 @@ export default function TeachngoClassesTab() {
                         <TableCell>
                           <Badge variant={statusColor(c.status) as any}>{statusLabel(c.status)}</Badge>
                         </TableCell>
+                        <TableCell className="text-center" onClick={e => e.stopPropagation()}>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 px-2"
+                            onClick={() => setInvitationsForClass(c)}
+                            title="Quản lý lời mời"
+                          >
+                            <Mail className="h-3.5 w-3.5" />
+                          </Button>
+                        </TableCell>
                       </TableRow>
                     </CollapsibleTrigger>
                     <CollapsibleContent asChild>
                       <TableRow>
-                        <TableCell colSpan={10} className="bg-muted/30 p-0">
+                        <TableCell colSpan={11} className="bg-muted/30 p-0">
                           <div className="px-6 py-4 space-y-4">
                             {/* Leaderboard toggle */}
                             <div className="flex items-center justify-between rounded-lg border bg-card px-4 py-2.5">
@@ -1103,6 +1117,15 @@ export default function TeachngoClassesTab() {
             </TableBody>
           </Table>
         </div>
+      )}
+
+      {invitationsForClass && (
+        <ClassInvitationsDialog
+          open={!!invitationsForClass}
+          onOpenChange={(o) => { if (!o) setInvitationsForClass(null); }}
+          classId={invitationsForClass.id}
+          className={invitationsForClass.class_name}
+        />
       )}
     </div>
   );
