@@ -35,6 +35,9 @@ import AdminSchedulePage from "@admin/features/schedule/pages/AdminSchedulePage"
 import AvailabilityDraftsPage from "@admin/features/availability-drafts/pages/AvailabilityDraftsPage";
 import NotFoundPage from "@admin/features/misc/pages/NotFoundPage";
 import HealthCheckPage from "@admin/features/misc/pages/HealthCheckPage";
+import ContractsListPage from "@admin/features/contracts/pages/ContractsListPage";
+import ContractCreatePage from "@admin/features/contracts/pages/ContractCreatePage";
+import ContractDetailPage from "@admin/features/contracts/pages/ContractDetailPage";
 
 function PageLoader() {
   return (
@@ -97,6 +100,11 @@ export default function AppRoutes() {
 
           {/* Performance */}
           <Route path="performance/teachers" element={<Navigate to="/teachers/performance" replace />} />
+
+          {/* Contracts (Stage F1) */}
+          <Route path="contracts" element={<ContractsListPage />} />
+          <Route path="contracts/new" element={<ContractCreatePage />} />
+          <Route path="contracts/:contractId" element={<ContractDetailPage />} />
 
           {/* Misc */}
           <Route path="flashcards" element={<FlashcardSetsPage />} />
