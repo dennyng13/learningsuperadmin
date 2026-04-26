@@ -13,6 +13,7 @@ import {
 import { adminNavItems } from "@shared/config/navigation";
 import { usePendingDraftCount } from "@shared/hooks/useAvailabilityDrafts";
 import { useBrandAsset } from "@shared/hooks/useBrandAsset";
+import { useOrgShortName } from "@shared/hooks/useOrgShortName";
 
 const byOrder = (a: { order: number }, b: { order: number }) => a.order - b.order;
 const academicItems = adminNavItems.filter(i => i.group === "academic").sort(byOrder);
@@ -28,6 +29,7 @@ export function AdminSidebar() {
   const navigate = useNavigate();
   const { user, isSuperAdmin, signOut } = useAuth();
   const pendingDrafts = usePendingDraftCount();
+  const orgShortName = useOrgShortName();
   // Resolve the app logo from the brand-assets registry.
   // DB convention is kebab-case (logo-app / logo-main); camelCase variants
   // kept as fallback for any historic uploads.
@@ -102,7 +104,7 @@ export function AdminSidebar() {
           </div>
           <div className="min-w-0 group-data-[collapsible=icon]:hidden">
             <p className="font-display text-sm font-extrabold text-sidebar-foreground leading-tight truncate tracking-tight">
-              <span className="text-primary">Learn</span><span className="text-accent">+</span>
+              <BrandShortName name={orgShortName} />
               <span className="text-sidebar-foreground/40 font-medium ml-1 text-[10px]">Admin</span>
             </p>
             <p className="text-[10px] text-sidebar-foreground/50 leading-tight truncate mt-0.5">{user?.email}</p>
@@ -240,4 +242,23 @@ export function AdminSidebar() {
       </SidebarFooter>
     </Sidebar>
   );
+}
+
+/**
+ * Hiển thị tên viết tắt của tổ chức với nhấn nhá màu:
+ * - Nếu tên kết thúc bằng dấu "+": phần trước = primary, "+" = accent
+ *   (vd: "Learn+" → Learn(primary) + (accent))
+ * - Ngược lại: toàn bộ dùng màu primary
+ */
+function BrandShortName({ name }: { name: string }) {
+  const trimmed = name.trim();
+  if (trimmed.endsWith("+") && trimmed.length > 1) {
+    return (
+      <>
+        <span className="text-primary">{trimmed.slice(0, -1)}</span>
+        <span className="text-accent">+</span>
+      </>
+    );
+  }
+  return <span className="text-primary">{trimmed}</span>;
 }
