@@ -736,32 +736,45 @@ export function AvailabilityDraftsTab() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <div>
-          <h2 className="font-display text-lg font-bold flex items-center gap-2"><Clock3 className="h-5 w-5 text-primary" />Duyệt đăng ký lịch rảnh</h2>
-          <p className="text-xs text-muted-foreground mt-1">Draft chỉ được apply vào bảng gốc nếu không conflict lịch lớp và effective_from cách hôm nay ít nhất 14 ngày.</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Select value={teacherFilter} onValueChange={setTeacherFilter}>
-            <SelectTrigger className="h-9 min-w-[160px] text-xs"><SelectValue placeholder="Giáo viên" /></SelectTrigger>
-            <SelectContent><SelectItem value="all">Tất cả giáo viên</SelectItem>{teachers.map((t) => <SelectItem key={t.id} value={t.id}>{t.full_name}</SelectItem>)}</SelectContent>
-          </Select>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="h-9 min-w-[150px] text-xs"><SelectValue placeholder="Trạng thái" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tất cả trạng thái</SelectItem>
-              <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="needs_changes">Needs changes</SelectItem>
-              <SelectItem value="rejected">Rejected</SelectItem>
-              <SelectItem value="applied">Applied</SelectItem>
-            </SelectContent>
-          </Select>
+    <div className="space-y-5">
+      <div className="rounded-2xl border border-border/60 bg-gradient-to-b from-muted/30 to-transparent p-4 md:p-5">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <div className="h-10 w-10 rounded-xl bg-background border border-border/60 flex items-center justify-center shadow-sm shrink-0">
+              <Clock3 className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <h2 className="font-display text-base md:text-lg font-bold tracking-tight">Duyệt đăng ký lịch rảnh</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">Cần ≥ 14 ngày lead time và không xung đột với lớp đang dạy</p>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Select value={teacherFilter} onValueChange={setTeacherFilter}>
+              <SelectTrigger className="h-9 min-w-[160px] text-xs rounded-lg border-border/60 bg-background"><SelectValue placeholder="Giáo viên" /></SelectTrigger>
+              <SelectContent><SelectItem value="all">Tất cả giáo viên</SelectItem>{teachers.map((t) => <SelectItem key={t.id} value={t.id}>{t.full_name}</SelectItem>)}</SelectContent>
+            </Select>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="h-9 min-w-[150px] text-xs rounded-lg border-border/60 bg-background"><SelectValue placeholder="Trạng thái" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tất cả trạng thái</SelectItem>
+                <SelectItem value="pending">Chờ duyệt</SelectItem>
+                <SelectItem value="needs_changes">Cần sửa</SelectItem>
+                <SelectItem value="rejected">Từ chối</SelectItem>
+                <SelectItem value="applied">Đã áp dụng</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
 
       {isLoading ? <div className="flex items-center justify-center py-12"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div> : filteredDrafts.length === 0 ? (
-        <Card><CardContent className="py-10 text-center text-sm text-muted-foreground">Chưa có draft lịch rảnh nào theo bộ lọc hiện tại.</CardContent></Card>
+        <div className="rounded-2xl border border-dashed border-border/60 bg-card/50 py-16 text-center text-muted-foreground flex flex-col items-center gap-3">
+          <div className="h-12 w-12 rounded-full bg-muted/40 flex items-center justify-center">
+            <Clock3 className="h-5 w-5 opacity-50" />
+          </div>
+          <p className="text-sm font-medium text-foreground">Chưa có draft nào</p>
+          <p className="text-xs">Không có đăng ký lịch rảnh khớp với bộ lọc hiện tại</p>
+        </div>
       ) : (
         <div className="space-y-4">
           {filteredDrafts.map((draft) => {
@@ -772,64 +785,124 @@ export function AvailabilityDraftsTab() {
             const isBusy = actingId === draft.id;
 
             return (
-              <Card key={draft.id} className="overflow-hidden">
-                <CardHeader className="pb-4">
+              <Card key={draft.id} className="overflow-hidden border-border/60 shadow-sm hover:shadow-md transition-shadow">
+                <CardHeader className="pb-4 bg-gradient-to-b from-muted/20 to-transparent border-b border-border/40">
                   <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3">
-                    <div className="space-y-2">
+                    <div className="space-y-2 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <CardTitle className="text-base">{teacher?.full_name || draft.teacher_id}</CardTitle>
-                        <Badge variant="outline">Hiệu lực từ {draft.effective_from}</Badge>
-                        <Badge variant={draft.status === "applied" ? "default" : "secondary"}>{draft.status}</Badge>
+                        <CardTitle className="text-base tracking-tight truncate">{teacher?.full_name || draft.teacher_id}</CardTitle>
+                        <Badge variant={draft.status === "applied" ? "default" : "secondary"} className="text-[10px] uppercase tracking-wide">
+                          {draft.status === "pending" && "Chờ duyệt"}
+                          {draft.status === "needs_changes" && "Cần sửa"}
+                          {draft.status === "approved" && "Đã duyệt"}
+                          {draft.status === "applied" && "Đã áp dụng"}
+                          {draft.status === "rejected" && "Từ chối"}
+                          {!["pending", "needs_changes", "approved", "applied", "rejected"].includes(draft.status) && draft.status}
+                        </Badge>
                       </div>
-                      <CardDescription>
+                      <CardDescription className="text-xs">
+                        Hiệu lực từ <span className="font-semibold text-foreground tabular-nums">{draft.effective_from}</span>
+                        {" · "}
                         {draft.status === "approved"
-                          ? "Draft đã được duyệt, có thể apply vào bảng gốc khi sẵn sàng."
+                          ? "Đã được duyệt, sẵn sàng apply"
                           : validation.can_apply
-                            ? "Đủ điều kiện apply vào bảng gốc."
-                            : "Chưa đủ điều kiện apply, sẽ giữ ở draft/pending cho đến khi admin duyệt hoặc yêu cầu chỉnh sửa."}
+                            ? "Đủ điều kiện apply ngay"
+                            : "Chưa đủ điều kiện apply"}
                       </CardDescription>
                     </div>
-                    <div className="flex flex-wrap gap-2 text-xs">
-                      <Badge variant={validation.lead_time_ok ? "default" : "destructive"}>Lead time: {validation.lead_time_days} ngày</Badge>
-                      <Badge variant={validation.conflict_count === 0 ? "default" : "destructive"}>Conflict: {validation.conflict_count}</Badge>
+                    <div className="flex flex-wrap gap-1.5">
+                      <span className={cn(
+                        "inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-[11px] font-medium border",
+                        validation.lead_time_ok
+                          ? "bg-emerald-50 text-emerald-700 border-emerald-200/70 dark:bg-emerald-500/10 dark:text-emerald-300 dark:border-emerald-500/25"
+                          : "bg-orange-50 text-orange-700 border-orange-200/70 dark:bg-orange-500/10 dark:text-orange-300 dark:border-orange-500/25",
+                      )}>
+                        {validation.lead_time_ok ? <CheckCircle2 className="h-3 w-3" /> : <AlertTriangle className="h-3 w-3" />}
+                        Lead time {validation.lead_time_days}d
+                      </span>
+                      <span className={cn(
+                        "inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-[11px] font-medium border",
+                        validation.conflict_count === 0
+                          ? "bg-emerald-50 text-emerald-700 border-emerald-200/70 dark:bg-emerald-500/10 dark:text-emerald-300 dark:border-emerald-500/25"
+                          : "bg-rose-50 text-rose-700 border-rose-200/70 dark:bg-rose-500/10 dark:text-rose-300 dark:border-rose-500/25",
+                      )}>
+                        {validation.conflict_count === 0 ? <CheckCircle2 className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
+                        {validation.conflict_count} xung đột
+                      </span>
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-4 pt-5">
                   <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
                     <div className="space-y-3">
                       <div>
-                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Recurring slots</p>
-                        <div className="flex flex-wrap gap-2">{rules.length === 0 ? <span className="text-sm text-muted-foreground">Không có slot recurring</span> : rules.map((rule, idx) => <Badge key={`${draft.id}-rule-${idx}`} variant="outline">{describeRule(rule)}</Badge>)}</div>
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1.5">
+                          <Layers className="h-3 w-3" />Slot định kỳ
+                          <span className="text-muted-foreground/60 normal-case font-normal">({rules.length})</span>
+                        </p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {rules.length === 0
+                            ? <span className="text-xs text-muted-foreground italic">Không có slot recurring</span>
+                            : rules.map((rule, idx) => <Badge key={`${draft.id}-rule-${idx}`} variant="outline" className="text-[11px] font-normal bg-muted/40 border-border/50">{describeRule(rule)}</Badge>)}
+                        </div>
                       </div>
                       <div>
-                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Exceptions</p>
-                        <div className="flex flex-wrap gap-2">{exceptions.length === 0 ? <span className="text-sm text-muted-foreground">Không có exception</span> : exceptions.map((item, idx) => <Badge key={`${draft.id}-exception-${idx}`} variant="outline">{describeException(item)}</Badge>)}</div>
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1.5">
+                          <CalendarDays className="h-3 w-3" />Ngoại lệ
+                          <span className="text-muted-foreground/60 normal-case font-normal">({exceptions.length})</span>
+                        </p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {exceptions.length === 0
+                            ? <span className="text-xs text-muted-foreground italic">Không có ngoại lệ</span>
+                            : exceptions.map((item, idx) => <Badge key={`${draft.id}-exception-${idx}`} variant="outline" className="text-[11px] font-normal bg-muted/40 border-border/50">{describeException(item)}</Badge>)}
+                        </div>
                       </div>
                     </div>
-                    <div className="rounded-xl border bg-muted/30 p-3 space-y-2">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Validation summary</p>
+                    <div className="rounded-xl border border-border/50 bg-muted/20 p-3.5 space-y-2.5">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Tóm tắt kiểm tra</p>
                       <div className="space-y-2 text-sm">
-                        <div className="flex items-center gap-2">{validation.lead_time_ok ? <CheckCircle2 className="h-4 w-4 text-primary" /> : <XCircle className="h-4 w-4 text-destructive" />}<span>Cách ngày hiện tại ít nhất 2 tuần</span></div>
-                        <div className="flex items-center gap-2">{validation.conflict_count === 0 ? <CheckCircle2 className="h-4 w-4 text-primary" /> : <XCircle className="h-4 w-4 text-destructive" />}<span>Không conflict với lớp đang dạy</span></div>
+                        <div className="flex items-center gap-2">
+                          {validation.lead_time_ok
+                            ? <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                            : <XCircle className="h-4 w-4 text-destructive" />}
+                          <span>Lead time ≥ 2 tuần</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {validation.conflict_count === 0
+                            ? <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                            : <XCircle className="h-4 w-4 text-destructive" />}
+                          <span>Không xung đột lớp đang dạy</span>
+                        </div>
                       </div>
                       {validation.conflicts.length > 0 && (
-                        <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-xs text-muted-foreground space-y-1 max-h-36 overflow-auto">
-                          {validation.conflicts.map((conflict, idx) => <p key={`${draft.id}-conflict-${idx}`}>• {conflict.class_name} · {conflict.date || DAY_LABELS[conflict.weekday ?? 0]} · {fmtTime(conflict.start_time)}–{fmtTime(conflict.end_time)}</p>)}
+                        <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-2.5 text-xs space-y-1 max-h-36 overflow-auto">
+                          {validation.conflicts.map((conflict, idx) => (
+                            <p key={`${draft.id}-conflict-${idx}`} className="flex items-center gap-1.5 text-muted-foreground">
+                              <span className="h-1 w-1 rounded-full bg-destructive/70 shrink-0" />
+                              <span className="font-medium text-foreground">{conflict.class_name}</span>
+                              <span className="opacity-50">·</span>
+                              <span className="tabular-nums">{conflict.date || DAY_LABELS[conflict.weekday ?? 0]} {fmtTime(conflict.start_time)}–{fmtTime(conflict.end_time)}</span>
+                            </p>
+                          ))}
                         </div>
                       )}
                     </div>
                   </div>
 
-                  <Textarea placeholder="Ghi chú review cho giáo viên..." value={reviewNote[draft.id] || draft.review_note || ""} onChange={(e) => setReviewNote((prev) => ({ ...prev, [draft.id]: e.target.value }))} className="min-h-[88px]" />
+                  <Textarea
+                    placeholder="Ghi chú review cho giáo viên..."
+                    value={reviewNote[draft.id] || draft.review_note || ""}
+                    onChange={(e) => setReviewNote((prev) => ({ ...prev, [draft.id]: e.target.value }))}
+                    className="min-h-[80px] rounded-xl border-border/60 bg-card resize-none"
+                  />
 
-                  <div className="flex flex-wrap gap-2 justify-end">
-                    <Button variant="outline" disabled={isBusy} onClick={() => updateDraftStatus(draft.id, "needs_changes")}>Yêu cầu sửa</Button>
-                    <Button variant="outline" disabled={isBusy} onClick={() => updateDraftStatus(draft.id, "approved")}>Duyệt</Button>
-                    <Button variant="outline" disabled={isBusy} onClick={() => updateDraftStatus(draft.id, "rejected")}>Từ chối</Button>
-                    <Button disabled={isBusy || !validation.can_apply} onClick={() => approveAndApply(draft)}>
+                  <div className="flex flex-wrap gap-2 justify-end pt-1">
+                    <Button variant="outline" size="sm" disabled={isBusy} className="border-orange-200 text-orange-700 hover:bg-orange-50 hover:border-orange-300 dark:border-orange-500/30 dark:text-orange-300 dark:hover:bg-orange-500/10" onClick={() => updateDraftStatus(draft.id, "needs_changes")}>Yêu cầu sửa</Button>
+                    <Button variant="outline" size="sm" disabled={isBusy} className="border-rose-200 text-rose-700 hover:bg-rose-50 hover:border-rose-300 dark:border-rose-500/30 dark:text-rose-300 dark:hover:bg-rose-500/10" onClick={() => updateDraftStatus(draft.id, "rejected")}>Từ chối</Button>
+                    <Button variant="outline" size="sm" disabled={isBusy} onClick={() => updateDraftStatus(draft.id, "approved")}>Duyệt</Button>
+                    <Button size="sm" disabled={isBusy || !validation.can_apply} onClick={() => approveAndApply(draft)} className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shadow-emerald-600/20 gap-1.5">
                       {isBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                      Duyệt & Apply
+                      Duyệt & Áp dụng
                     </Button>
                   </div>
                 </CardContent>
