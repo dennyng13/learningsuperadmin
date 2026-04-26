@@ -179,24 +179,35 @@ const SectionCard = forwardRef<
       <BrandShapeFigure url={shapeUrl} palette={section.palette} />
 
       {/* ─── Icon flat ở GÓC TRÊN-PHẢI ───
-         Đặt absolute để không tham gia flex flow của text.
-         Z-index cao hơn shape để icon luôn rõ. */}
+         Avatar absolute, z-20 (trên shape). Offset & size scale theo
+         breakpoint: mobile (h-32 card) icon nhỏ + sát mép; desktop (h-40 card)
+         icon to + cách mép xa hơn. Bbox icon giúp hint vùng "cấm" cho shape.
+         Mobile : 32px @ top-2.5/right-2.5  → bbox ≈ 42px
+         sm     : 36px @ top-3/right-3      → bbox ≈ 48px
+         md+    : 40px @ top-3.5/right-3.5  → bbox ≈ 54px */}
       <div
         className={cn(
-          "absolute top-3 right-3 sm:top-3.5 sm:right-3.5 z-20",
-          "flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl",
+          "absolute z-20 flex items-center justify-center rounded-xl",
+          "top-2.5 right-2.5 h-8 w-8",
+          "sm:top-3 sm:right-3 sm:h-9 sm:w-9",
+          "md:top-3.5 md:right-3.5 md:h-10 md:w-10",
           "bg-background/85 backdrop-blur-sm border border-border/60 shadow-sm",
         )}
       >
         <Icon
-          className={cn("h-5 w-5 sm:h-[1.375rem] sm:w-[1.375rem]", ICON_TONE[section.palette])}
+          className={cn(
+            "text-current",
+            "h-[1.05rem] w-[1.05rem] sm:h-5 sm:w-5 md:h-[1.375rem] md:w-[1.375rem]",
+            ICON_TONE[section.palette],
+          )}
           strokeWidth={1.85}
         />
       </div>
 
       {/* ─── Top row: title + blurb ───
-         Padding-right chừa chỗ cho icon (avatar ~40px + offset 14px ≈ 56px). */}
-      <div className="relative z-10 p-4 sm:p-5 pr-14 sm:pr-16">
+         Padding-right chừa đủ chỗ cho icon avatar:
+         mobile bbox≈42px → pr-12; sm≈48px → pr-14; md≈54px → pr-16. */}
+      <div className="relative z-10 p-4 sm:p-5 pr-12 sm:pr-14 md:pr-16">
         <h3 className="font-display text-base sm:text-lg font-extrabold tracking-tight leading-tight text-foreground">
           {section.title}
         </h3>
@@ -306,10 +317,18 @@ function BrandShapeFigure({ url, palette }: { url: string | null; palette: Shape
       aria-hidden
       className={cn(
         "pointer-events-none absolute",
-        "-bottom-5 -right-5 sm:-bottom-6 sm:-right-6 md:-bottom-7 md:-right-7",
-        // Giảm chiều cao xuống ~70-80% để shape không trườn lên góc trên-phải
-        // (nơi đặt flat icon avatar). Width giữ nguyên để decoration vẫn đầy.
-        "h-[72%] w-[48%] sm:h-[78%] sm:w-[52%] md:h-[82%] md:w-[56%]",
+        // Offset từ góc dưới-phải (negative để shape tràn nhẹ ra ngoài card,
+        // tránh viền vuông giả). Đồng bộ với card-padding theo breakpoint.
+        "-bottom-4 -right-4 sm:-bottom-5 sm:-right-5 md:-bottom-6 md:-right-6",
+        // Chiều cao shape PHẢI dừng dưới đáy của icon avatar top-right để
+        // không bao giờ chạm. Card heights: 128 / 144 / 160 px.
+        // Icon avatar bbox (top + size + breathing): ~50 / 60 / 68 px.
+        // → Shape height tối đa = (card_h − bbox − 8px gap) / card_h:
+        //   mobile : (128−50−8)/128 ≈ 55%
+        //   sm     : (144−60−8)/144 ≈ 53%
+        //   md     : (160−68−8)/160 ≈ 53%
+        // Width có thể rộng hơn vì icon ở GÓC, không lan sang trái.
+        "h-[55%] w-[50%] sm:h-[55%] sm:w-[54%] md:h-[55%] md:w-[58%]",
         "opacity-95 transition-all duration-500 ease-out group-hover:scale-[1.06]",
         "origin-bottom-right",
       )}
