@@ -107,7 +107,7 @@ export function AdminSidebar() {
               <BrandShortName name={orgShortName} />
               <span className="text-sidebar-foreground/40 font-medium ml-1 text-[10px]">Admin</span>
             </p>
-            <p className="text-[10px] text-sidebar-foreground/50 leading-tight truncate mt-0.5">{user?.email}</p>
+            <p className="text-[10px] text-sidebar-foreground/50 leading-tight truncate mt-0.5">Admin Portal</p>
           </div>
         </div>
       </SidebarHeader>
