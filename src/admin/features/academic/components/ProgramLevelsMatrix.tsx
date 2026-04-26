@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Loader2, Save, RotateCcw, LayoutGrid } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@shared/components/ui/button";
@@ -35,12 +35,13 @@ export default function ProgramLevelsMatrix({ programs, levels, onSave }: Props)
   const [savingId, setSavingId] = useState<string | null>(null);
   const [savingAll, setSavingAll] = useState(false);
 
-  // re-sync khi danh sách programs đổi (sau refetch)
-  useState(() => {});
-  // dùng key trick: nếu initial thay đổi (programs đổi), reset
-  if (pending !== null && pending.size !== initial.size) {
+  // Re-sync local state khi programs đổi (sau refetch). So sánh shallow
+  // theo size + danh sách level_ids đã hash để tránh ghi đè state khi user
+  // đang edit.
+  useEffect(() => {
     setPending(cloneMap(initial));
-  }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initial]);
 
   const isChecked = (pid: string, lid: string) => pending.get(pid)?.has(lid) ?? false;
 
