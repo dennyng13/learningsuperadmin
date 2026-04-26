@@ -25,6 +25,7 @@ import {
 } from "@shared/components/ui/select";
 import { Button } from "@shared/components/ui/button";
 import WidgetRetryState from "./WidgetRetryState";
+import WidgetRefreshButton from "./WidgetRefreshButton";
 import {
   type AnalyticsRange,
   DEFAULT_RANGE,
@@ -485,21 +486,28 @@ export default function TeacherActivityFeed({
           <span className="truncate">Hoạt động giáo viên</span>
           <AnalyticsRangeBadge range={range} className="ml-1 normal-case tracking-normal" />
         </h2>
-        <span className={cn(
-          "text-[11px] flex items-center gap-1.5 transition-colors shrink-0",
-          connected ? "text-emerald-600" : "text-muted-foreground",
-        )}>
-          <span className="relative flex h-2 w-2">
-            {connected && (
-              <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-60 animate-ping" />
-            )}
-            <span className={cn(
-              "relative inline-flex rounded-full h-2 w-2",
-              connected ? "bg-emerald-500" : "bg-muted-foreground/40",
-            )} />
+        <div className="flex items-center gap-2 shrink-0">
+          <span className={cn(
+            "text-[11px] flex items-center gap-1.5 transition-colors",
+            connected ? "text-emerald-600" : "text-muted-foreground",
+          )}>
+            <span className="relative flex h-2 w-2">
+              {connected && (
+                <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-60 animate-ping" />
+              )}
+              <span className={cn(
+                "relative inline-flex rounded-full h-2 w-2",
+                connected ? "bg-emerald-500" : "bg-muted-foreground/40",
+              )} />
+            </span>
+            {connected ? "Live" : "Đang kết nối…"}
           </span>
-          {connected ? "Live" : "Đang kết nối…"}
-        </span>
+          <WidgetRefreshButton
+            onClick={() => refetch()}
+            refreshing={isFetching}
+            title="Tải lại hoạt động giáo viên"
+          />
+        </div>
       </div>
 
       {/* Filters */}
