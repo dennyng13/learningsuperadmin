@@ -79,6 +79,10 @@ export default function AdminSettingsPage() {
   const legacyTab = params.get("tab");
   const redirect = legacyTab ? LEGACY_TAB_REDIRECTS[legacyTab] : null;
 
+  const [activeId, setActiveId] = useState("general");
+  const [search, setSearch] = useState("");
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
   useEffect(() => {
     if (redirect) {
       toast.info(`"${redirect.label}" đã chuyển sang trang riêng`, {
@@ -86,14 +90,6 @@ export default function AdminSettingsPage() {
       });
     }
   }, [redirect]);
-
-  if (redirect) {
-    return <Navigate to={redirect.to} replace />;
-  }
-
-  const [activeId, setActiveId] = useState("general");
-  const [search, setSearch] = useState("");
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   const visibleGroups = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -128,6 +124,11 @@ export default function AdminSettingsPage() {
     setActiveId(id);
     setMobileNavOpen(false);
   };
+
+  // Early return SAU khi tất cả hooks đã chạy → giữ rules-of-hooks order.
+  if (redirect) {
+    return <Navigate to={redirect.to} replace />;
+  }
 
   return (
     <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-4 md:space-y-6">
