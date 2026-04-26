@@ -25,6 +25,11 @@ import {
 } from "@shared/components/ui/select";
 import { Button } from "@shared/components/ui/button";
 import WidgetRetryState from "./WidgetRetryState";
+import {
+  type AnalyticsRange,
+  DEFAULT_RANGE,
+  AnalyticsRangeBadge,
+} from "@shared/components/dashboard/analyticsRange";
 
 type ActivityKind = "writing" | "speaking" | "announcement" | "answer" | "session";
 
@@ -333,7 +338,9 @@ const KIND_FILTERS: { value: ActivityKind; label: string }[] = [
   { value: "session", label: "Buổi học" },
 ];
 
-export default function TeacherActivityFeed() {
+export default function TeacherActivityFeed({
+  range = DEFAULT_RANGE,
+}: { range?: AnalyticsRange } = {}) {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -365,9 +372,12 @@ export default function TeacherActivityFeed() {
     setLimit(PAGE_SIZE);
   };
 
+  const sinceIso = range.from.toISOString();
+  const untilIso = range.to.toISOString();
+
   const { data: items, isLoading, isFetching, error, refetch } = useQuery({
-    queryKey: ["teacher-activity-feed", limit],
-    queryFn: () => fetchFeed(limit),
+    queryKey: ["teacher-activity-feed", limit, sinceIso, untilIso],
+    queryFn: () => fetchFeed(limit, sinceIso, untilIso),
     staleTime: 60_000,
   });
 
