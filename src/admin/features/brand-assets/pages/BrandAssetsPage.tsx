@@ -10,12 +10,7 @@ import { Badge } from "@shared/components/ui/badge";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@shared/components/ui/select";
-import {
-  listBrandAssets,
-  replaceBrandAsset,
-  updateBrandAssetMetadata,
-  deleteBrandAsset,
-} from "@admin/lib/brandAssets";
+import { listBrandAssets } from "@admin/lib/brandAssets";
 import {
   type BrandAsset,
   type BrandAssetType,
@@ -23,10 +18,8 @@ import {
   type ShapePalette,
   extractShapePalette,
 } from "@admin/features/brand-assets/types";
-import AssetCard from "../components/AssetCard";
-import EditMetadataDialog from "../components/EditMetadataDialog";
+import { BrandAssetCard } from "../components/BrandAssetCard";
 import UploadAssetDialog from "../components/UploadAssetDialog";
-import PreviewDialog from "../components/PreviewDialog";
 
 const QUERY_KEY = ["brand-assets"] as const;
 
@@ -43,8 +36,6 @@ export default function BrandAssetsPage() {
   const [activeFilter, setActiveFilter] = useState<"all" | "active" | "hidden">("all");
   const [paletteFilter, setPaletteFilter] = useState<ShapePalette | "all">("all");
 
-  const [previewAsset, setPreviewAsset] = useState<BrandAsset | null>(null);
-  const [editAsset, setEditAsset] = useState<BrandAsset | null>(null);
   const [uploadOpen, setUploadOpen] = useState(false);
 
   const invalidate = () => qc.invalidateQueries({ queryKey: QUERY_KEY });
@@ -77,31 +68,6 @@ export default function BrandAssetsPage() {
       : byType.shape.filter((a) => extractShapePalette(a.asset_key) === paletteFilter);
     return list;
   }, [byType.shape, paletteFilter]);
-
-  /* ─── Mutation handlers (return promises so cards can show busy) ─── */
-
-  const handleReplace = async (asset: BrandAsset, file: File) => {
-    await replaceBrandAsset(asset.storage_path, file);
-    invalidate();
-  };
-
-  const handleEdit = async (
-    asset: BrandAsset,
-    patch: Partial<Pick<BrandAsset, "display_name" | "description" | "sort_order" | "is_active">>,
-  ) => {
-    await updateBrandAssetMetadata(asset.id, patch);
-    invalidate();
-  };
-
-  const handleToggleActive = async (asset: BrandAsset) => {
-    await updateBrandAssetMetadata(asset.id, { is_active: !asset.is_active });
-    invalidate();
-  };
-
-  const handleDelete = async (asset: BrandAsset) => {
-    await deleteBrandAsset(asset);
-    invalidate();
-  };
 
   /* ─── Render ─── */
 
