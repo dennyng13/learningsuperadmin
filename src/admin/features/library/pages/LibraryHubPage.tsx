@@ -323,7 +323,9 @@ function BrandShapeFigure({ url, palette }: { url: string | null; palette: Shape
       className={cn(
         "pointer-events-none select-none absolute z-0 overflow-hidden",
         "-bottom-4 -right-4 sm:-bottom-5 sm:-right-5 md:-bottom-6 md:-right-6",
-        "h-[55%] w-[50%] sm:h-[55%] sm:w-[54%] md:h-[55%] md:w-[58%]",
+        // Shape decoration to hơn để nổi bật — icon nằm top-right
+        // (~h-9 / 36px) nên giữ chiều cao ≤ 70% vẫn còn safe zone đủ cho icon.
+        "h-[68%] w-[62%] sm:h-[70%] sm:w-[66%] md:h-[72%] md:w-[70%]",
         "opacity-95 transition-transform duration-500 ease-out group-hover:scale-[1.06]",
         "origin-bottom-right",
       )}
