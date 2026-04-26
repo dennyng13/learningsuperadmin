@@ -60,6 +60,7 @@ interface TnGClass {
   status: string | null;
   synced_at: string;
   leaderboard_enabled: boolean;
+  allow_self_checkin?: boolean | null;
 }
 
 interface TeacherOption {
@@ -1083,6 +1084,26 @@ export default function TeachngoClassesTab() {
                                 onCheckedChange={async (checked) => {
                                   await supabase.from("teachngo_classes").update({ leaderboard_enabled: checked, updated_at: new Date().toISOString() }).eq("id", c.id);
                                   setClasses(prev => prev.map(cl => cl.id === c.id ? { ...cl, leaderboard_enabled: checked } : cl));
+                                }}
+                              />
+                            </div>
+
+                            {/* Self check-in toggle */}
+                            <div className="flex items-center justify-between rounded-lg border bg-card px-4 py-2.5">
+                              <div>
+                                <p className="text-sm font-medium">Học viên tự check-in</p>
+                                <p className="text-[10px] text-muted-foreground">
+                                  Khi bật: học viên trong lớp có thể tự check-in qua portal trong khung ±30 phút quanh giờ học. Khi tắt: chỉ giáo viên/admin được điểm danh.
+                                </p>
+                              </div>
+                              <Switch
+                                checked={c.allow_self_checkin === true}
+                                onCheckedChange={async (checked) => {
+                                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                  await (supabase.from("teachngo_classes") as any)
+                                    .update({ allow_self_checkin: checked, updated_at: new Date().toISOString() })
+                                    .eq("id", c.id);
+                                  setClasses(prev => prev.map(cl => cl.id === c.id ? { ...cl, allow_self_checkin: checked } : cl));
                                 }}
                               />
                             </div>
