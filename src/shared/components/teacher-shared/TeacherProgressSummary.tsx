@@ -266,6 +266,21 @@ export default function TeacherProgressSummary() {
               {stats.totalCompleted} xong
             </span>
           )}
+          <span
+            role="button"
+            tabIndex={0}
+            onClick={(e) => { e.stopPropagation(); void fetchData(); }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); void fetchData(); }
+            }}
+            className="inline-flex"
+          >
+            <WidgetRefreshButton
+              onClick={() => void fetchData()}
+              refreshing={isFetching}
+              title="Tải lại tiến độ"
+            />
+          </span>
           <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", open && "rotate-180")} />
         </div>
       </CollapsibleTrigger>
