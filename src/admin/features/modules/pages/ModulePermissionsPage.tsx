@@ -69,6 +69,9 @@ export default function ModulePermissionsPage() {
   return (
     <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-6">
       <div>
+        <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1">
+          Người dùng
+        </p>
         <h1 className="font-display text-2xl font-extrabold flex items-center gap-2">
           <ShieldCheck className="h-6 w-6 text-primary" />
           Phân quyền Module
