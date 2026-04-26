@@ -1,3 +1,4 @@
+import { forwardRef } from "react";
 import { ConstructionIcon } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -15,10 +16,17 @@ interface Props {
  * Plan Progress / Activity / Leaderboard). Hiển thị thông báo rõ ràng
  * cho admin biết phần này đang trong giai đoạn xây dựng và liệt kê đúng
  * những gì còn thiếu — tránh cảm giác "trống không hiểu vì sao".
+ *
+ * Wrap bằng forwardRef vì Radix Tabs.Content có thể truyền ref xuống child
+ * khi render trực tiếp. Không có forwardRef → React warning "Function
+ * components cannot be given refs".
  */
-export function BackendPendingTab({ icon: Icon = ConstructionIcon, title, description, checklist }: Props) {
+export const BackendPendingTab = forwardRef<HTMLDivElement, Props>(function BackendPendingTab(
+  { icon: Icon = ConstructionIcon, title, description, checklist },
+  ref,
+) {
   return (
-    <div className="rounded-2xl border border-dashed bg-muted/20 p-6 sm:p-8 text-center space-y-3">
+    <div ref={ref} className="rounded-2xl border border-dashed bg-muted/20 p-6 sm:p-8 text-center space-y-3">
       <div className="mx-auto h-12 w-12 rounded-full bg-muted flex items-center justify-center">
         <Icon className="h-5 w-5 text-muted-foreground" />
       </div>
@@ -43,4 +51,4 @@ export function BackendPendingTab({ icon: Icon = ConstructionIcon, title, descri
       )}
     </div>
   );
-}
+});
