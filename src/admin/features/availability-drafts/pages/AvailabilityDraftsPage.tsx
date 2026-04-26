@@ -367,48 +367,53 @@ export default function AvailabilityDraftsPage() {
           {/* RIGHT: detail */}
           <div>
             {selected ? (
-              <Card className="overflow-hidden">
-                <div className="h-1.5 bg-gradient-to-r from-primary via-primary/60 to-primary/30" />
-                <CardContent className="p-5 space-y-5">
+              <Card className="overflow-hidden border-border/60 shadow-sm">
+                <CardContent className="p-0">
                   {/* Teacher header */}
-                  <div className="flex items-start gap-4">
-                    <Avatar className="h-14 w-14 shrink-0 ring-2 ring-primary/20">
-                      <AvatarFallback className="bg-primary/10 text-primary text-lg font-bold">
-                        {initialsOf(selected.teacher?.full_name)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h2 className="text-lg font-bold truncate">{selected.teacher?.full_name || "—"}</h2>
-                        <StatusBadge status={selected.status} />
-                      </div>
-                      <p className="text-sm text-muted-foreground truncate mt-0.5">{selected.teacher?.email || "—"}</p>
-                      <div className="flex flex-wrap gap-1.5 mt-2.5">
-                        {(selected.capability?.level_keys || []).map((lvl) => (
-                          <Badge key={lvl} variant="secondary" className="text-[10px] px-1.5 py-0 gap-1">
-                            <ShieldCheck className="h-2.5 w-2.5" />{lvl}
-                          </Badge>
-                        ))}
-                        {selected.capability?.can_teach_online && (
-                          <Badge className="text-[10px] px-1.5 py-0 gap-1 bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-500/15 dark:text-blue-200 dark:border-blue-500/30" variant="outline">
-                            <Wifi className="h-2.5 w-2.5" />Online
-                          </Badge>
-                        )}
-                        {selected.capability?.can_teach_offline && (
-                          <Badge className="text-[10px] px-1.5 py-0 gap-1 bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-500/15 dark:text-purple-200 dark:border-purple-500/30" variant="outline">
-                            <MapPin className="h-2.5 w-2.5" />Offline
-                          </Badge>
-                        )}
+                  <div className="px-6 pt-6 pb-5 border-b border-border/50 bg-gradient-to-b from-muted/20 to-transparent">
+                    <div className="flex items-start gap-4">
+                      <Avatar className="h-14 w-14 shrink-0 ring-2 ring-background shadow-sm">
+                        <AvatarFallback className="bg-gradient-to-br from-primary/15 to-primary/5 text-primary text-base font-bold">
+                          {initialsOf(selected.teacher?.full_name)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h2 className="text-lg font-bold truncate tracking-tight">{selected.teacher?.full_name || "—"}</h2>
+                          <StatusBadge status={selected.status} />
+                        </div>
+                        <p className="text-sm text-muted-foreground truncate mt-0.5">{selected.teacher?.email || "—"}</p>
+                        <div className="flex flex-wrap gap-1.5 mt-3">
+                          {(selected.capability?.level_keys || []).map((lvl) => (
+                            <Badge key={lvl} variant="secondary" className="text-[10px] px-2 py-0.5 gap-1 font-medium">
+                              <ShieldCheck className="h-2.5 w-2.5" />{lvl}
+                            </Badge>
+                          ))}
+                          {selected.capability?.can_teach_online && (
+                            <Badge className="text-[10px] px-2 py-0.5 gap-1 bg-sky-50 text-sky-700 border-sky-200/70 dark:bg-sky-500/10 dark:text-sky-300 dark:border-sky-500/25" variant="outline">
+                              <Wifi className="h-2.5 w-2.5" />Online
+                            </Badge>
+                          )}
+                          {selected.capability?.can_teach_offline && (
+                            <Badge className="text-[10px] px-2 py-0.5 gap-1 bg-violet-50 text-violet-700 border-violet-200/70 dark:bg-violet-500/10 dark:text-violet-300 dark:border-violet-500/25" variant="outline">
+                              <MapPin className="h-2.5 w-2.5" />Offline
+                            </Badge>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
 
+                  <div className="p-6 space-y-5">
+
                   {/* Effective range */}
-                  <div className="rounded-lg bg-primary/5 border border-primary/15 px-3 py-2.5 flex items-center gap-2.5">
-                    <Clock className="h-4 w-4 text-primary shrink-0" />
-                    <div className="text-sm">
-                      <span className="text-muted-foreground">Hiệu lực:</span>{" "}
-                      <span className="font-semibold">{formatRange(selected.effective_from, selected.effective_to)}</span>
+                  <div className="rounded-xl border border-border/50 bg-muted/20 px-4 py-3 flex items-center gap-3">
+                    <div className="h-8 w-8 rounded-lg bg-background border border-border/60 flex items-center justify-center shrink-0">
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Khoảng hiệu lực</p>
+                      <p className="text-sm font-semibold tabular-nums mt-0.5">{formatRange(selected.effective_from, selected.effective_to)}</p>
                     </div>
                   </div>
 
@@ -428,41 +433,54 @@ export default function AvailabilityDraftsPage() {
                   )}
 
                   {/* Validation */}
-                  <div className={cn(
-                    "rounded-lg border p-3 space-y-2",
-                    !validation || validation.conflicts.length === 0
-                      ? "border-emerald-200 bg-emerald-50/50 dark:bg-emerald-500/10 dark:border-emerald-500/30"
-                      : "border-orange-200 bg-orange-50/50 dark:bg-orange-500/10 dark:border-orange-500/30",
-                  )}>
-                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Kiểm tra xung đột</p>
-                    {!validation || validation.conflicts.length === 0 ? (
-                      <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-300 text-sm">
-                        <CheckCircle2 className="h-4 w-4" />
-                        <span>Không có xung đột lịch</span>
-                      </div>
-                    ) : (
-                      <div className="space-y-1.5">
-                        <div className="flex items-center gap-2 text-orange-700 dark:text-orange-300 text-sm">
-                          <AlertCircle className="h-4 w-4" />
-                          <span className="font-medium">{validation.conflicts.length} xung đột với lớp đang dạy</span>
+                  {(() => {
+                    const ok = !validation || validation.conflicts.length === 0;
+                    return (
+                      <div className={cn(
+                        "rounded-xl border p-4 space-y-2.5",
+                        ok
+                          ? "border-emerald-200/60 bg-emerald-50/40 dark:bg-emerald-500/[0.06] dark:border-emerald-500/20"
+                          : "border-orange-200/70 bg-orange-50/50 dark:bg-orange-500/[0.06] dark:border-orange-500/25",
+                      )}>
+                        <div className="flex items-center justify-between">
+                          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Kiểm tra xung đột</p>
+                          {validation && (
+                            <span className={cn(
+                              "text-[10px] font-medium px-2 py-0.5 rounded-full",
+                              validation.lead_time_ok
+                                ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300"
+                                : "bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300",
+                            )}>
+                              Lead time {validation.lead_time_days}d
+                            </span>
+                          )}
                         </div>
-                        <ul className="text-xs space-y-1 pl-1">
-                          {validation.conflicts.map((c, i) => (
-                            <li key={i} className="flex items-center gap-2 text-muted-foreground">
-                              <span className="font-medium text-foreground">{c.class_name}</span>
-                              <span>·</span>
-                              <span>{c.weekday !== undefined ? WEEKDAY_LABELS[c.weekday] : c.date} {c.start_time}–{c.end_time}</span>
-                            </li>
-                          ))}
-                        </ul>
+                        {ok ? (
+                          <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-300 text-sm font-medium">
+                            <CheckCircle2 className="h-4 w-4" />
+                            <span>Không có xung đột lịch</span>
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2 text-orange-700 dark:text-orange-300 text-sm font-medium">
+                              <AlertCircle className="h-4 w-4" />
+                              <span>{validation.conflicts.length} xung đột với lớp đang dạy</span>
+                            </div>
+                            <ul className="text-xs space-y-1.5 pl-1 max-h-32 overflow-y-auto">
+                              {validation.conflicts.map((c, i) => (
+                                <li key={i} className="flex items-center gap-2 text-muted-foreground">
+                                  <span className="h-1 w-1 rounded-full bg-orange-500/70" />
+                                  <span className="font-medium text-foreground">{c.class_name}</span>
+                                  <span className="opacity-50">·</span>
+                                  <span className="tabular-nums">{c.weekday !== undefined ? WEEKDAY_LABELS[c.weekday] : c.date} {c.start_time}–{c.end_time}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
                       </div>
-                    )}
-                    {validation && !validation.lead_time_ok && (
-                      <p className="text-xs text-orange-700 dark:text-orange-300 flex items-center gap-1.5">
-                        <AlertCircle className="h-3 w-3" />Lead time chỉ {validation.lead_time_days} ngày (yêu cầu ≥ 14)
-                      </p>
-                    )}
-                  </div>
+                    );
+                  })()}
 
                   {/* Availability grid */}
                   <AvailabilityGrid rules={Array.isArray(selected.availability_rules) ? selected.availability_rules as any : []} />
@@ -481,38 +499,39 @@ export default function AvailabilityDraftsPage() {
 
                   {/* Review history */}
                   {selected.reviewed_at && (
-                    <div className="rounded-lg bg-muted/40 border border-border p-3 text-xs space-y-0.5">
-                      <p className="font-semibold uppercase tracking-wider text-muted-foreground">Lịch sử duyệt</p>
+                    <div className="rounded-xl bg-muted/30 border border-border/50 p-3.5 text-xs space-y-1">
+                      <p className="font-semibold uppercase tracking-wider text-muted-foreground text-[10px]">Lịch sử duyệt</p>
                       <p className="text-muted-foreground">
-                        Lúc {format(parseISO(selected.reviewed_at), "dd/MM/yyyy HH:mm", { locale: vi })}
-                        {selected.reviewed_by ? ` · bởi ${selected.reviewed_by.slice(0, 8)}…` : ""}
+                        {format(parseISO(selected.reviewed_at), "dd/MM/yyyy 'lúc' HH:mm", { locale: vi })}
+                        {selected.reviewed_by ? ` · ${selected.reviewed_by.slice(0, 8)}…` : ""}
                       </p>
-                      {selected.review_note && <p className="italic text-foreground/80 mt-1">"{selected.review_note}"</p>}
+                      {selected.review_note && <p className="italic text-foreground/80 mt-1.5 pl-2 border-l-2 border-border">"{selected.review_note}"</p>}
                     </div>
                   )}
+                  </div>
 
-                  {/* Actions */}
+                  {/* Sticky action footer */}
                   {canReview && (
-                    <div className="flex flex-col sm:flex-row gap-2 pt-3 border-t border-border">
+                    <div className="sticky bottom-0 bg-card/95 backdrop-blur-md border-t border-border/60 px-6 py-3.5 flex flex-col sm:flex-row gap-2">
                       <Button
                         variant="outline"
-                        size="sm"
-                        className="flex-1 border-orange-300 text-orange-700 hover:bg-orange-50 hover:text-orange-800 dark:border-orange-500/40 dark:text-orange-300 dark:hover:bg-orange-500/10"
+                        size="default"
+                        className="flex-1 h-10 border-orange-200 text-orange-700 hover:bg-orange-50 hover:text-orange-800 hover:border-orange-300 dark:border-orange-500/30 dark:text-orange-300 dark:hover:bg-orange-500/10"
                         onClick={() => openAction("needs_changes")}
                       >
                         <MessageSquareWarning className="h-4 w-4 mr-1.5" /> Yêu cầu sửa
                       </Button>
                       <Button
                         variant="outline"
-                        size="sm"
-                        className="flex-1 border-red-300 text-red-700 hover:bg-red-50 hover:text-red-800 dark:border-red-500/40 dark:text-red-300 dark:hover:bg-red-500/10"
+                        size="default"
+                        className="flex-1 h-10 border-rose-200 text-rose-700 hover:bg-rose-50 hover:text-rose-800 hover:border-rose-300 dark:border-rose-500/30 dark:text-rose-300 dark:hover:bg-rose-500/10"
                         onClick={() => openAction("rejected")}
                       >
                         <XCircle className="h-4 w-4 mr-1.5" /> Từ chối
                       </Button>
                       <Button
-                        size="sm"
-                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+                        size="default"
+                        className="flex-1 h-10 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shadow-emerald-600/20"
                         onClick={() => openAction("approve")}
                       >
                         <CheckCircle2 className="h-4 w-4 mr-1.5" /> Duyệt và áp dụng
@@ -522,10 +541,15 @@ export default function AvailabilityDraftsPage() {
                 </CardContent>
               </Card>
             ) : (
-              <Card><CardContent className="py-20 text-center text-sm text-muted-foreground flex flex-col items-center gap-2">
-                <Inbox className="h-10 w-10 opacity-40" />
-                <p>Chọn một draft từ danh sách bên trái để xem chi tiết</p>
-              </CardContent></Card>
+              <Card className="border-dashed border-border/60 bg-card/50">
+                <CardContent className="py-24 text-center text-sm text-muted-foreground flex flex-col items-center gap-3">
+                  <div className="h-14 w-14 rounded-full bg-muted/40 flex items-center justify-center">
+                    <Inbox className="h-6 w-6 opacity-50" />
+                  </div>
+                  <p className="font-medium text-foreground">Chưa chọn draft nào</p>
+                  <p className="text-xs">Chọn một đăng ký từ danh sách bên trái để xem chi tiết</p>
+                </CardContent>
+              </Card>
             )}
           </div>
         </div>
