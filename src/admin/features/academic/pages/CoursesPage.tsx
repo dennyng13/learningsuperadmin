@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   GraduationCap, Plus, Pencil, Trash2, Loader2, EyeOff, CheckCircle2, Layers, LayoutGrid,
 } from "lucide-react";
@@ -11,7 +12,6 @@ import {
 } from "@shared/components/ui/alert-dialog";
 import { useCoursesAdmin, type CourseProgram } from "@admin/features/academic/hooks/useCoursesAdmin";
 import { useCourseLevels } from "@shared/hooks/useCourseLevels";
-import ProgramEditorDialog from "@admin/features/academic/components/ProgramEditorDialog";
 import CourseLevelManager from "@admin/features/settings/components/CourseLevelManager";
 import ProgramLevelsMatrix from "@admin/features/academic/components/ProgramLevelsMatrix";
 import { getProgramIcon, getProgramPalette } from "@shared/utils/programColors";
@@ -28,22 +28,14 @@ import { cn } from "@shared/lib/utils";
  * để thêm cột `programs.outcomes / long_description` và bảng `program_levels`.
  */
 export default function CoursesPage() {
-  const { programs, loading, refetch, create, update, remove, setProgramLevels } = useCoursesAdmin();
+  const { programs, loading, remove, setProgramLevels } = useCoursesAdmin();
   const { levels } = useCourseLevels();
+  const navigate = useNavigate();
 
-  const [editorOpen, setEditorOpen] = useState(false);
-  const [editing, setEditing] = useState<CourseProgram | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  const handleCreate = () => {
-    setEditing(null);
-    setEditorOpen(true);
-  };
-
-  const handleEdit = (p: CourseProgram) => {
-    setEditing(p);
-    setEditorOpen(true);
-  };
+  const handleCreate = () => navigate("/courses/new");
+  const handleEdit = (p: CourseProgram) => navigate(`/courses/${p.id}/edit`);
 
   const confirmDelete = async () => {
     if (!deleteId) return;
@@ -152,17 +144,6 @@ export default function CoursesPage() {
           </div>
         </TabsContent>
       </Tabs>
-
-      <ProgramEditorDialog
-        open={editorOpen}
-        onOpenChange={setEditorOpen}
-        initial={editing}
-        onSubmit={async (input) => {
-          if (editing) await update(editing.id, input);
-          else await create(input);
-          await refetch();
-        }}
-      />
 
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent>
