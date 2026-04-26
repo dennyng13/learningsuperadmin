@@ -102,63 +102,65 @@ const SectionCard = forwardRef<HTMLButtonElement, { section: LibrarySection }>(f
       ref={ref}
       onClick={() => navigate(section.route)}
       className={cn(
-        "group relative h-56 md:h-60 overflow-hidden rounded-2xl text-left bg-card text-card-foreground",
+        "group relative flex flex-col h-52 sm:h-56 md:h-60 overflow-hidden rounded-2xl text-left bg-card text-card-foreground",
         "border border-border/70 transition-all duration-300",
         "hover:-translate-y-0.5 hover:shadow-lg hover:border-primary/30",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
       )}
     >
-      {/* ─── Icon: top-right, mảnh, không có nền ─── */}
-      <div className="absolute top-5 right-5 z-10">
-        <Icon className={cn("h-6 w-6", ICON_TONE[section.palette])} strokeWidth={1.75} />
-      </div>
-
-      {/* ─── Title + blurb: top-left, padding nội dung 5 ─── */}
-      <div className="relative z-10 p-5 pr-14 max-w-[85%]">
-        <h3 className="font-display text-lg font-extrabold tracking-tight leading-tight text-foreground">
-          {section.title}
-        </h3>
-        <p className="text-[13px] text-muted-foreground mt-1.5 leading-snug line-clamp-2">
-          {section.blurb}
-        </p>
-      </div>
-
-      {/* ─── Brand shape: nhân vật chính, tràn sát góc dưới-phải ─── */}
+      {/* ─── Brand shape: layer nền, không chiếm chỗ trong flow ─── */}
       <BrandShapeFigure url={shapeUrl} palette={section.palette} />
 
-      {/* ─── Arrow: bottom-left, đứng riêng, mảnh ─── */}
-      <div className="absolute bottom-5 left-5 z-10">
-        <ArrowRight
-          className="h-5 w-5 text-foreground/80 transition-transform duration-300 group-hover:translate-x-1"
+      {/* ─── Top row: title + blurb (trái) | icon (phải) ─── */}
+      <div className="relative z-10 flex items-start justify-between gap-3 p-4 sm:p-5">
+        <div className="min-w-0 flex-1">
+          <h3 className="font-display text-base sm:text-lg font-extrabold tracking-tight leading-tight text-foreground">
+            {section.title}
+          </h3>
+          <p className="text-[12px] sm:text-[13px] text-muted-foreground mt-1 sm:mt-1.5 leading-snug line-clamp-2">
+            {section.blurb}
+          </p>
+        </div>
+        <Icon
+          className={cn("h-5 w-5 sm:h-6 sm:w-6 shrink-0", ICON_TONE[section.palette])}
           strokeWidth={1.75}
         />
       </div>
 
-      {/* ─── Extra links: nếu có, đặt cạnh arrow ở dưới-trái ─── */}
-      {section.extraLinks && section.extraLinks.length > 0 && (
-        <div className="absolute bottom-5 left-14 z-10 flex flex-wrap gap-1.5">
-          {section.extraLinks.map((l) => (
-            <span
-              key={l.route}
-              role="link"
-              tabIndex={0}
-              onClick={(e) => {
-                e.stopPropagation();
-                navigate(l.route);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
+      {/* ─── Spacer đẩy bottom row xuống đáy ─── */}
+      <div className="flex-1" />
+
+      {/* ─── Bottom row: arrow + extra links — pr lớn để chừa chỗ cho shape ─── */}
+      <div className="relative z-10 flex items-center gap-2 p-4 sm:p-5 pr-[45%]">
+        <ArrowRight
+          className="h-5 w-5 shrink-0 text-foreground/80 transition-transform duration-300 group-hover:translate-x-1"
+          strokeWidth={1.75}
+        />
+        {section.extraLinks && section.extraLinks.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 min-w-0">
+            {section.extraLinks.map((l) => (
+              <span
+                key={l.route}
+                role="link"
+                tabIndex={0}
+                onClick={(e) => {
                   e.stopPropagation();
                   navigate(l.route);
-                }
-              }}
-              className="cursor-pointer px-2 py-0.5 rounded-full text-[10px] font-medium border border-border/70 bg-background/80 text-foreground/70 hover:border-primary/40 hover:text-foreground transition-colors"
-            >
-              {l.label}
-            </span>
-          ))}
-        </div>
-      )}
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.stopPropagation();
+                    navigate(l.route);
+                  }
+                }}
+                className="cursor-pointer px-2 py-0.5 rounded-full text-[10px] font-medium border border-border/70 bg-background/80 text-foreground/70 hover:border-primary/40 hover:text-foreground transition-colors truncate"
+              >
+                {l.label}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
     </button>
   );
 });
