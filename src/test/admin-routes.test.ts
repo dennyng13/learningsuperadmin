@@ -50,6 +50,16 @@ const FORBIDDEN_LEGACY_NAMES = [
   "TeachngoClassesTab",
 ];
 
+const LEGACY_REDIRECTS: Array<{ from: string; to: string }> = [
+  { from: "teachngo-attendance",       to: "/attendance" },
+  { from: "teachngo-attendance/\\*",   to: "/attendance" },
+  { from: "teachngo-classes",          to: "/classes" },
+  { from: "teachngo-classes/list",     to: "/classes/list" },
+  { from: "teachngo-classes/new",      to: "/classes/new" },
+  { from: "teachngo-courses",          to: "/courses" },
+  { from: "teachngo-courses/\\*",      to: "/courses" },
+];
+
 describe("AdminRoutes — post-rename mapping", () => {
   const source = readFileSync(ROUTES_FILE, "utf8");
 
@@ -81,5 +91,21 @@ describe("AdminRoutes — post-rename mapping", () => {
     for (const legacy of FORBIDDEN_LEGACY_NAMES) {
       expect(source).not.toMatch(new RegExp(`\\b${legacy}\\b`));
     }
+  });
+
+  describe("legacy slug redirects", () => {
+    for (const r of LEGACY_REDIRECTS) {
+      it(`redirects "${r.from}" → "${r.to}"`, () => {
+        const re = new RegExp(
+          `path=["']${r.from}["'][^>]*element=\\{\\s*<Navigate\\s+to=["']${r.to}["']\\s+replace\\s*/>\\s*\\}`
+        );
+        expect(source).toMatch(re);
+      });
+    }
+
+    it("preserves :id on /teachngo-classes/:id redirect", () => {
+      expect(source).toMatch(/path=["']teachngo-classes\/:id["'][^>]*<TeachngoClassRedirect\b/);
+      expect(source).toMatch(/replace\(\/\^\\\/teachngo-classes\/, ["']\/classes["']\)/);
+    });
   });
 });
