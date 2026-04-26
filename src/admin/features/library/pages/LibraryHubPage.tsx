@@ -291,8 +291,9 @@ function BrandShapeFigure({ url, palette }: { url: string | null; palette: Shape
       <div
         aria-hidden
         className={cn(
-          "absolute -bottom-6 -right-6 h-[60%] w-[40%] pointer-events-none",
-          "bg-gradient-to-tl rounded-tl-[100%] opacity-70 transition-opacity duration-500 group-hover:opacity-100",
+          "absolute -bottom-8 -right-8 h-[110%] w-[55%] pointer-events-none",
+          "bg-gradient-to-tl rounded-tl-[100%] opacity-80 transition-all duration-500",
+          "group-hover:opacity-100 group-hover:scale-105 origin-bottom-right",
           FALLBACK_TONE[palette],
         )}
       />
@@ -306,13 +307,15 @@ function BrandShapeFigure({ url, palette }: { url: string | null; palette: Shape
       alt=""
       loading="lazy"
       decoding="async"
-      // Shape là decoration ở góc dưới-phải, kích thước vừa phải (~70% chiều cao)
-      // để cân bằng với content text. Hover phóng nhẹ + tăng opacity.
+      // Shape là decoration ở góc dưới-phải. Cards "nhỏ" (h-32→h-40), nên
+      // shape phải tràn vượt cả chiều cao card (h-[120%]) + lấn ra ngoài
+      // (-bottom/-right negative) để không trông như bị cắt vuông.
+      // Tailwind v3 dùng `object-right-bottom` (KHÔNG phải `object-bottom-right`).
       className={cn(
-        "pointer-events-none absolute -bottom-2 -right-2",
-        "h-[70%] w-auto max-w-[40%] object-contain object-bottom-right",
-        "opacity-70 saturate-100 transition-all duration-500 ease-out",
-        "group-hover:opacity-95 group-hover:scale-[1.06]",
+        "pointer-events-none absolute -bottom-4 -right-4",
+        "h-[120%] w-auto max-w-[55%] object-contain object-right-bottom",
+        "opacity-85 saturate-100 transition-all duration-500 ease-out",
+        "group-hover:opacity-100 group-hover:scale-[1.08]",
         "origin-bottom-right",
       )}
     />
