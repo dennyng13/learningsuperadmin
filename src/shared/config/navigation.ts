@@ -71,3 +71,21 @@ export const adminNavItems: NavItem[] = [
   { id: "schema-health", label: "Schema Health",    icon: Activity,        route: "/schema-health",  group: "system", superAdminOnly: true, order: 41.5 },
   { id: "settings",     label: "Cài đặt",           icon: Settings,        route: "/settings",       group: "system", superAdminOnly: true, order: 42 },
 ];
+
+/* ═══════════════════════════════════════════
+   TOP-LEVEL ROUTES — không hiển thị nút "Quay lại" trong PageHeader.
+   Bao gồm dashboard + tất cả route ở sidebar (kể cả aliasPaths) — vì
+   đây là entry-points chính, người dùng đến từ sidebar chứ không phải
+   từ một trang cha. Mọi route khác (vd /classes/list/:id, /tests/:id,
+   /tests/import, /contracts/templates/:id) sẽ TỰ ĐỘNG hiện nút back.
+   ═══════════════════════════════════════════ */
+export const TOP_LEVEL_ADMIN_ROUTES: ReadonlySet<string> = new Set(
+  adminNavItems.flatMap((item) => [item.route, ...(item.aliasPaths ?? [])]),
+);
+
+/** True nếu pathname trùng KHỚP CHÍNH XÁC một top-level route. */
+export function isTopLevelAdminRoute(pathname: string): boolean {
+  // Bỏ trailing slash (trừ root "/").
+  const p = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
+  return TOP_LEVEL_ADMIN_ROUTES.has(p);
+}
