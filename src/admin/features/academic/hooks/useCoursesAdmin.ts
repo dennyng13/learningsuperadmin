@@ -48,27 +48,53 @@ export function useCoursesAdmin() {
   const fetchAll = useCallback(async () => {
     setLoading(true);
 
-    const [{ data: progRows }, { data: linkRows }] = await Promise.all([
-      (supabase as any)
+    // Try the FULL select first (with outcomes/long_description from migration
+    // 2026-04-26-courses-module.sql). Fallback to base columns when migration
+    // chưa chạy — đảm bảo các program có sẵn vẫn hiển thị.
+    let progRows: any[] | null = null;
+    {
+      const full = await (supabase as any)
         .from("programs")
         .select(
           "id, key, name, description, long_description, outcomes, color_key, icon_key, sort_order, status",
         )
-        .order("sort_order", { ascending: true }),
-      (supabase as any)
+        .order("sort_order", { ascending: true });
+      if (!full.error) {
+        progRows = full.data ?? [];
+      } else {
+        const base = await (supabase as any)
+          .from("programs")
+          .select("id, key, name, description, color_key, icon_key, sort_order, status")
+          .order("sort_order", { ascending: true });
+        if (base.error) {
+          console.error("[useCoursesAdmin] programs select failed:", base.error);
+          progRows = [];
+        } else {
+          progRows = base.data ?? [];
+        }
+      }
+    }
+
+    // program_levels có thể chưa tồn tại nếu migration chưa chạy.
+    let linkRows: Array<{ program_id: string; level_id: string }> = [];
+    {
+      const res = await (supabase as any)
         .from("program_levels")
         .select("program_id, level_id, sort_order")
-        .order("sort_order", { ascending: true }),
-    ]);
+        .order("sort_order", { ascending: true });
+      if (!res.error && Array.isArray(res.data)) {
+        linkRows = res.data;
+      }
+    }
 
     const linksByProgram = new Map<string, string[]>();
-    for (const row of (linkRows ?? []) as Array<{ program_id: string; level_id: string }>) {
+    for (const row of linkRows) {
       const arr = linksByProgram.get(row.program_id) ?? [];
       arr.push(row.level_id);
       linksByProgram.set(row.program_id, arr);
     }
 
-    const merged: CourseProgram[] = ((progRows ?? []) as any[]).map((p) => ({
+    const merged: CourseProgram[] = (progRows ?? []).map((p) => ({
       id: p.id,
       key: p.key,
       name: p.name,
