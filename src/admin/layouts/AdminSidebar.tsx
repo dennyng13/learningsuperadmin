@@ -262,5 +262,5 @@ function BrandShortName({ name }: { name: string }) {
       </>
     );
   }
-  return <span className="text-primary">{trimmed}</span>;
+  return <span className="text-sidebar-foreground">{trimmed}</span>;
 }
