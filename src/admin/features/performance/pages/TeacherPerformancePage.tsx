@@ -61,14 +61,14 @@ export function TeacherPerformanceContent() {
       .not("teacher_id", "is", null);
 
     // Fetch all enrollments
-    const classIds = ((classes || []) as any[]).map(c => c.id);
+    const classIds: string[] = ((classes || []) as any[]).map(c => String(c.id));
     const { data: enrollments } = await (supabase as any)
       .from("class_students")
       .select("class_id, teachngo_student_id")
       .in("class_id", classIds.length > 0 ? classIds : ["__none__"]);
 
     // Fetch all students
-    const teachngoIds = [...new Set(((enrollments || []) as any[]).map(e => e.teachngo_student_id))] as string[];
+    const teachngoIds: string[] = [...new Set(((enrollments || []) as any[]).map(e => String(e.teachngo_student_id)))];
     const { data: students } = await (supabase as any)
       .from("synced_students")
       .select("teachngo_id, linked_user_id")
@@ -156,8 +156,8 @@ export function TeacherPerformanceContent() {
 
     setTeachers(teacherRows);
     setAllLinkedUserIds(linkedUserIds);
-    setAllTeachngoIds(teachngoIds as string[]);
-    setAllClassIds(classIds as string[]);
+    setAllTeachngoIds(teachngoIds);
+    setAllClassIds(classIds);
     setLoading(false);
   }
 
