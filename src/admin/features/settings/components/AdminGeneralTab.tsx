@@ -13,9 +13,11 @@ import {
   updatePartyASettings,
   type PartyAOrgSettings,
 } from "@admin/features/contracts/hooks/useContracts";
+import { refreshOrgShortName } from "@shared/hooks/useOrgShortName";
 
 const EMPTY: PartyAOrgSettings = {
   legal_name: "",
+  short_name: "",
   business_id: "",
   address: "",
   representative_name: "",
@@ -66,6 +68,7 @@ export default function AdminGeneralTab() {
     setSaving(true);
     try {
       await updatePartyASettings(data);
+      refreshOrgShortName(data.short_name ?? "");
       toast.success("Đã lưu cấu hình Bên A — hợp đồng mới sẽ dùng thông tin này");
       setDirty(false);
     } catch (err) {
@@ -121,6 +124,9 @@ export default function AdminGeneralTab() {
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Field label="Tên pháp lý *" hint="VD: Công ty TNHH Learning Plus">
                     <Input value={data.legal_name ?? ""} onChange={(e) => set("legal_name", e.target.value)} placeholder="Tên đầy đủ trên đăng ký kinh doanh" />
+                  </Field>
+                  <Field label="Tên viết tắt tổ chức" hint="Hiển thị ở sidebar, header, favicon. VD: Learn+ / Learning Plus">
+                    <Input value={data.short_name ?? ""} onChange={(e) => set("short_name", e.target.value)} placeholder="VD: Learn+" />
                   </Field>
                   <Field label="Mã số thuế / Business ID" hint="MST hoặc số ĐKKD">
                     <Input value={data.business_id ?? ""} onChange={(e) => set("business_id", e.target.value)} placeholder="VD: 0312345678" />

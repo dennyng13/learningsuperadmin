@@ -478,6 +478,11 @@ export async function getStorageSignedUrl(path: string, expiresInSeconds = 3600)
 }
 
 export interface PartyAOrgSettings extends PartyASnapshot {
+  /**
+   * Tên viết tắt của tổ chức — hiển thị ở sidebar, header, favicon tooltip…
+   * KHÔNG snapshot vào contracts (chỉ legal_name mới đi vào party_a_snapshot).
+   */
+  short_name?: string | null;
   signers?: Array<{
     user_id: string;
     name: string;
