@@ -18,6 +18,6 @@ Helpers (`src/admin/lib/brandAssets.ts`):
 - `suggestStoragePath(type, key, ext)` — convention: logos/{key}.png, favicons/, mascots/{name}.png (mascotHero→hero), shapes/{color}/{name}.png.
 - `createBrandAsset` / `updateBrandAssetMetadata` / `deleteBrandAsset`.
 
-UI: `BrandAssetsPage` with tabs Logo&Favicon / Mascots / Shapes (palette filter teal/coral/indigo/amber/slate) / Khác. Per-card: preview modal, copy URL, replace (drag&drop + confirm), edit metadata, toggle active, delete. Global upload dialog with auto-suggested storage_path.
+UI: `BrandAssetsPage` with tabs Logo&Favicon / Mascots / Shapes (palette filter teal/coral/indigo/amber/slate) / Khác. Each tile rendered by **`BrandAssetCard`** (`src/admin/features/brand-assets/components/BrandAssetCard.tsx`) — self-contained: thumbnail click→preview modal, dropdown menu (Xem/Copy URL/Mở tab mới/Sửa metadata/Replace/Xóa), Switch toggle active in footer, AlertDialog confirm before Replace+Delete, drag&drop, zod-validated edit form, MIME whitelist (png/jpg/webp/svg/ico) + 5MB cap, auto version bump for cache busting. Card calls helpers directly and emits `onChanged` so parent invalidates `["brand-assets"]` query. Global `UploadAssetDialog` with auto-suggested storage_path.
 
 Note: `src/integrations/supabase/types.ts` may not yet include `brand_assets` — helper uses `(supabase as any)` casts. Regenerate types when convenient.
