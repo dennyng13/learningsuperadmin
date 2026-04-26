@@ -178,20 +178,29 @@ const SectionCard = forwardRef<
       {/* ─── Brand shape: layer nền, không chiếm chỗ trong flow ─── */}
       <BrandShapeFigure url={shapeUrl} palette={section.palette} />
 
-      {/* ─── Top row: title + blurb (trái) | icon (phải) ─── */}
-      <div className="relative z-10 flex items-start justify-between gap-3 p-4 sm:p-5">
+      {/* ─── Top row: icon avatar + title/blurb ───
+         Icon đặt bên TRÁI (avatar) thay vì top-right để chừa góc dưới-phải
+         hoàn toàn cho geometric shape — tránh đụng decoration. */}
+      <div className="relative z-10 flex items-start gap-3 p-4 sm:p-5 pr-[42%] sm:pr-[44%] md:pr-[46%]">
+        <div
+          className={cn(
+            "shrink-0 flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl",
+            "bg-background/80 border border-border/60 shadow-sm",
+          )}
+        >
+          <Icon
+            className={cn("h-5 w-5 sm:h-5.5 sm:w-5.5", ICON_TONE[section.palette])}
+            strokeWidth={1.85}
+          />
+        </div>
         <div className="min-w-0 flex-1">
           <h3 className="font-display text-base sm:text-lg font-extrabold tracking-tight leading-tight text-foreground">
             {section.title}
           </h3>
-          <p className="text-[12px] sm:text-[13px] text-muted-foreground mt-1 sm:mt-1.5 leading-snug line-clamp-2">
+          <p className="text-[12px] sm:text-[13px] text-muted-foreground mt-0.5 sm:mt-1 leading-snug line-clamp-2">
             {section.blurb}
           </p>
         </div>
-        <Icon
-          className={cn("h-7 w-7 sm:h-8 sm:w-8 shrink-0", ICON_TONE[section.palette])}
-          strokeWidth={1.75}
-        />
       </div>
 
       {/* ─── Spacer đẩy bottom row xuống đáy ─── */}
