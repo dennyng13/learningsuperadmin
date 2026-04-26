@@ -245,6 +245,8 @@ function AdminDashboardPageInner() {
           supabase
             .from("prospects")
             .select("id, full_name, source, status, suggested_level, created_at, placement_test_id, token")
+            .gte("created_at", sinceIso)
+            .lte("created_at", untilIso)
             .order("created_at", { ascending: false }),
         ]);
 
