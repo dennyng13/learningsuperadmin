@@ -1,8 +1,6 @@
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Image as ImageIcon, Search, Plus, Loader2, Palette,
-} from "lucide-react";
+import { Image as ImageIcon, Search, Plus, Loader2, Palette } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@shared/components/ui/tabs";
 import { Input } from "@shared/components/ui/input";
 import { Button } from "@shared/components/ui/button";
@@ -23,6 +21,23 @@ import UploadAssetDialog from "../components/UploadAssetDialog";
 
 const QUERY_KEY = ["brand-assets"] as const;
 
+/** Tab config — one tab per asset_type enum value. */
+const TABS: {
+  key: BrandAssetType;
+  label: string;
+  emoji: string;
+  cardSize: "hero" | "default" | "compact";
+  cols: string;
+}[] = [
+  { key: "logo",         label: "Logo",         emoji: "🏷️", cardSize: "hero",    cols: "md:grid-cols-2" },
+  { key: "favicon",      label: "Favicon",      emoji: "🌐", cardSize: "hero",    cols: "md:grid-cols-2" },
+  { key: "mascot",       label: "Mascots",      emoji: "🐻", cardSize: "default", cols: "md:grid-cols-2 lg:grid-cols-3" },
+  { key: "shape",        label: "Shapes",       emoji: "🔷", cardSize: "compact", cols: "grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8" },
+  { key: "illustration", label: "Illustrations",emoji: "🎨", cardSize: "default", cols: "md:grid-cols-2 lg:grid-cols-3" },
+  { key: "icon",         label: "Icons",        emoji: "✨", cardSize: "default", cols: "md:grid-cols-3 lg:grid-cols-4" },
+  { key: "other",        label: "Other",        emoji: "📦", cardSize: "default", cols: "md:grid-cols-3 lg:grid-cols-4" },
+];
+
 export default function BrandAssetsPage() {
   const qc = useQueryClient();
   const { data: assets = [], isLoading, error } = useQuery({
@@ -31,15 +46,15 @@ export default function BrandAssetsPage() {
     staleTime: 30_000,
   });
 
-  const [tab, setTab] = useState<"logo-favicon" | "mascot" | "shape" | "other">("logo-favicon");
+  const [tab, setTab] = useState<BrandAssetType>("logo");
   const [search, setSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState<"all" | "active" | "hidden">("all");
   const [paletteFilter, setPaletteFilter] = useState<ShapePalette | "all">("all");
-
   const [uploadOpen, setUploadOpen] = useState(false);
 
   const invalidate = () => qc.invalidateQueries({ queryKey: QUERY_KEY });
 
+  /** Apply global search + active filter once. */
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return assets.filter((a) => {
@@ -50,26 +65,22 @@ export default function BrandAssetsPage() {
     });
   }, [assets, search, activeFilter]);
 
+  /** Bucket filtered assets by asset_type for tab counts. */
   const byType = useMemo(() => {
-    const map: Record<string, BrandAsset[]> = {
-      logo: [], favicon: [], mascot: [], icon: [], illustration: [], other: [], shape: [],
+    const map: Record<BrandAssetType, BrandAsset[]> = {
+      logo: [], favicon: [], mascot: [], icon: [], illustration: [], shape: [], other: [],
     };
     for (const a of filtered) {
-      const isShape = a.asset_type === "other" && a.asset_key.startsWith("shape-");
-      if (isShape) map.shape.push(a);
-      else map[a.asset_type]?.push(a);
+      if (map[a.asset_type]) map[a.asset_type].push(a);
     }
     return map;
   }, [filtered]);
 
+  /** Shapes filtered by palette sub-filter. */
   const shapesByPalette = useMemo(() => {
-    const list = paletteFilter === "all"
-      ? byType.shape
-      : byType.shape.filter((a) => extractShapePalette(a.asset_key) === paletteFilter);
-    return list;
+    if (paletteFilter === "all") return byType.shape;
+    return byType.shape.filter((a) => extractShapePalette(a.asset_key) === paletteFilter);
   }, [byType.shape, paletteFilter]);
-
-  /* ─── Render ─── */
 
   return (
     <div className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
@@ -123,89 +134,59 @@ export default function BrandAssetsPage() {
           Không tải được brand assets: {(error as Error).message}
         </div>
       ) : (
-        <Tabs value={tab} onValueChange={(v) => setTab(v as any)}>
+        <Tabs value={tab} onValueChange={(v) => setTab(v as BrandAssetType)}>
           <TabsList className="w-full justify-start flex-wrap h-auto">
-            <TabsTrigger value="logo-favicon">
-              Logo &amp; Favicon
-              <Badge variant="secondary" className="ml-1.5 text-[10px]">
-                {byType.logo.length + byType.favicon.length}
-              </Badge>
-            </TabsTrigger>
-            <TabsTrigger value="mascot">
-              Mascots
-              <Badge variant="secondary" className="ml-1.5 text-[10px]">{byType.mascot.length}</Badge>
-            </TabsTrigger>
-            <TabsTrigger value="shape">
-              Geometric Shapes
-              <Badge variant="secondary" className="ml-1.5 text-[10px]">{byType.shape.length}</Badge>
-            </TabsTrigger>
-            <TabsTrigger value="other">
-              Khác
-              <Badge variant="secondary" className="ml-1.5 text-[10px]">
-                {byType.icon.length + byType.illustration.length + byType.other.length - byType.shape.length}
-              </Badge>
-            </TabsTrigger>
+            {TABS.map((t) => (
+              <TabsTrigger key={t.key} value={t.key} className="gap-1.5">
+                <span aria-hidden>{t.emoji}</span> {t.label}
+                <Badge variant="secondary" className="ml-1 text-[10px]">
+                  {byType[t.key].length}
+                </Badge>
+              </TabsTrigger>
+            ))}
           </TabsList>
 
-          {/* Logo & Favicon */}
-          <TabsContent value="logo-favicon" className="mt-4 space-y-4">
-            <SectionGrid title="Logo" assets={byType.logo} size="hero" cols="md:grid-cols-2" onChanged={invalidate} />
-            <SectionGrid title="Favicon" assets={byType.favicon} size="hero" cols="md:grid-cols-2" onChanged={invalidate} />
-          </TabsContent>
+          {TABS.map((t) => (
+            <TabsContent key={t.key} value={t.key} className="mt-4 space-y-4">
+              {/* Sub-filter only for Shapes tab */}
+              {t.key === "shape" && (
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Palette className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-xs font-display font-semibold text-muted-foreground uppercase tracking-wider">
+                    Palette
+                  </span>
+                  <PaletteChip
+                    label={`Tất cả (${byType.shape.length})`}
+                    active={paletteFilter === "all"}
+                    onClick={() => setPaletteFilter("all")}
+                  />
+                  {SHAPE_PALETTES.map((p) => {
+                    const count = byType.shape.filter((a) => extractShapePalette(a.asset_key) === p).length;
+                    return (
+                      <PaletteChip
+                        key={p}
+                        label={`${p} (${count})`}
+                        active={paletteFilter === p}
+                        onClick={() => setPaletteFilter(p)}
+                      />
+                    );
+                  })}
+                </div>
+              )}
 
-          {/* Mascots */}
-          <TabsContent value="mascot" className="mt-4">
-            <SectionGrid title="" assets={byType.mascot} size="default" cols="md:grid-cols-2 lg:grid-cols-3" onChanged={invalidate} />
-          </TabsContent>
-
-          {/* Shapes */}
-          <TabsContent value="shape" className="mt-4 space-y-4">
-            <div className="flex items-center gap-2 flex-wrap">
-              <Palette className="h-4 w-4 text-muted-foreground" />
-              <span className="text-xs font-display font-semibold text-muted-foreground uppercase tracking-wider">
-                Palette
-              </span>
-              <button
-                onClick={() => setPaletteFilter("all")}
-                className={`px-2.5 py-1 text-xs rounded-full font-medium transition-colors ${
-                  paletteFilter === "all" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"
-                }`}
-              >
-                Tất cả
-              </button>
-              {SHAPE_PALETTES.map((p) => (
-                <button
-                  key={p}
-                  onClick={() => setPaletteFilter(p)}
-                  className={`px-2.5 py-1 text-xs rounded-full font-medium transition-colors capitalize ${
-                    paletteFilter === p ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"
-                  }`}
-                >
-                  {p}
-                </button>
-              ))}
-            </div>
-            <SectionGrid
-              title=""
-              assets={shapesByPalette}
-              size="compact"
-              cols="grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8"
-              onChanged={invalidate}
-            />
-          </TabsContent>
-
-          {/* Other */}
-          <TabsContent value="other" className="mt-4 space-y-4">
-            <SectionGrid title="Icon" assets={byType.icon} size="default" cols="md:grid-cols-3 lg:grid-cols-4" onChanged={invalidate} />
-            <SectionGrid title="Illustration" assets={byType.illustration} size="default" cols="md:grid-cols-2 lg:grid-cols-3" onChanged={invalidate} />
-            <SectionGrid
-              title="Other"
-              assets={byType.other.filter((a) => !a.asset_key.startsWith("shape-"))}
-              size="default"
-              cols="md:grid-cols-3 lg:grid-cols-4"
-              onChanged={invalidate}
-            />
-          </TabsContent>
+              <SectionGrid
+                assets={t.key === "shape" ? shapesByPalette : byType[t.key]}
+                size={t.cardSize}
+                cols={t.cols}
+                onChanged={invalidate}
+                emptyHint={
+                  t.key === "illustration"
+                    ? "Chưa có illustration nào — upload bằng nút trên cùng."
+                    : "Chưa có asset nào trong nhóm này."
+                }
+              />
+            </TabsContent>
+          ))}
         </Tabs>
       )}
 
@@ -214,45 +195,45 @@ export default function BrandAssetsPage() {
   );
 }
 
-/* ─────────── Section grid helper ─────────── */
+/* ─────────── Helpers ─────────── */
+
+function PaletteChip({
+  label, active, onClick,
+}: { label: string; active: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`px-2.5 py-1 text-xs rounded-full font-medium transition-colors capitalize ${
+        active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"
+      }`}
+    >
+      {label}
+    </button>
+  );
+}
 
 interface SectionProps {
-  title: string;
   assets: BrandAsset[];
   size: "hero" | "default" | "compact";
   cols: string;
   onChanged: () => void;
+  emptyHint: string;
 }
 
-function SectionGrid({ title, assets, size, cols, onChanged }: SectionProps) {
+function SectionGrid({ assets, size, cols, onChanged, emptyHint }: SectionProps) {
   if (assets.length === 0) {
-    return title ? (
-      <div>
-        <h2 className="font-display text-sm font-bold text-muted-foreground uppercase tracking-wider mb-3">
-          {title}
-        </h2>
-        <p className="text-sm text-muted-foreground rounded-xl border border-dashed bg-muted/20 px-4 py-8 text-center">
-          Chưa có asset
-        </p>
-      </div>
-    ) : (
+    return (
       <p className="text-sm text-muted-foreground rounded-xl border border-dashed bg-muted/20 px-4 py-8 text-center">
-        Chưa có asset
+        {emptyHint}
       </p>
     );
   }
   return (
-    <div className="space-y-3">
-      {title && (
-        <h2 className="font-display text-sm font-bold text-muted-foreground uppercase tracking-wider">
-          {title}
-        </h2>
-      )}
-      <div className={`grid grid-cols-1 ${cols} gap-3`}>
-        {assets.map((a) => (
-          <BrandAssetCard key={a.id} asset={a} size={size} onChanged={onChanged} />
-        ))}
-      </div>
+    <div className={`grid grid-cols-1 ${cols} gap-3`}>
+      {assets.map((a) => (
+        <BrandAssetCard key={a.id} asset={a} size={size} onChanged={onChanged} />
+      ))}
     </div>
   );
 }
