@@ -1,7 +1,8 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
-import { startOfDay, endOfDay, startOfMonth, subDays, format } from "date-fns";
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { startOfDay, endOfDay, startOfMonth, subDays, format, isValid, parseISO } from "date-fns";
 import { vi } from "date-fns/locale";
 import { CalendarRange, ChevronDown } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 import { cn } from "@shared/lib/utils";
 import { Button } from "@shared/components/ui/button";
 import { Calendar } from "@shared/components/ui/calendar";
@@ -64,6 +65,78 @@ export function formatRangeLabel(range: AnalyticsRange): string {
   return `${format(range.from, fmt, { locale: vi })} – ${format(range.to, fmt, { locale: vi })}`;
 }
 
+/* ─── Persistence: URL ↔ localStorage ─── */
+
+const STORAGE_KEY = "analytics-range";
+
+function isPreset(value: string | null | undefined): value is AnalyticsRangePreset {
+  return value === "today" || value === "7d" || value === "30d" ||
+    value === "this-month" || value === "custom";
+}
+
+function parseDateOnly(input: string | null): Date | null {
+  if (!input) return null;
+  const parsed = parseISO(input);
+  return isValid(parsed) ? parsed : null;
+}
+
+/** Build a range from URL params, returns null if missing/invalid. */
+function rangeFromParams(params: URLSearchParams): AnalyticsRange | null {
+  const preset = params.get("range");
+  if (preset && isPreset(preset) && preset !== "custom") {
+    return buildPresetRange(preset);
+  }
+  if (preset === "custom") {
+    const from = parseDateOnly(params.get("from"));
+    const to = parseDateOnly(params.get("to"));
+    if (from && to) {
+      return { preset: "custom", from: startOfDay(from), to: endOfDay(to) };
+    }
+  }
+  return null;
+}
+
+/** Build a range from localStorage, returns null if missing/invalid. */
+function rangeFromStorage(): AnalyticsRange | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { preset?: string; from?: string; to?: string };
+    if (parsed.preset && isPreset(parsed.preset) && parsed.preset !== "custom") {
+      return buildPresetRange(parsed.preset);
+    }
+    if (parsed.preset === "custom") {
+      const from = parseDateOnly(parsed.from ?? null);
+      const to = parseDateOnly(parsed.to ?? null);
+      if (from && to) {
+        return { preset: "custom", from: startOfDay(from), to: endOfDay(to) };
+      }
+    }
+  } catch {
+    /* ignore corrupted JSON */
+  }
+  return null;
+}
+
+function persistRangeToStorage(range: AnalyticsRange) {
+  if (typeof window === "undefined") return;
+  try {
+    const payload = range.preset === "custom"
+      ? { preset: "custom", from: format(range.from, "yyyy-MM-dd"), to: format(range.to, "yyyy-MM-dd") }
+      : { preset: range.preset };
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+  } catch {
+    /* storage unavailable */
+  }
+}
+
+function rangesEqual(a: AnalyticsRange, b: AnalyticsRange): boolean {
+  return a.preset === b.preset
+    && a.from.getTime() === b.from.getTime()
+    && a.to.getTime() === b.to.getTime();
+}
+
 /* ─── Context ─── */
 
 interface AnalyticsRangeContextValue {
@@ -80,7 +153,55 @@ export function AnalyticsRangeProvider({
   children: ReactNode;
   initialRange?: AnalyticsRange;
 }) {
-  const [range, setRange] = useState<AnalyticsRange>(initialRange);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Resolve initial range: URL > localStorage > caller default.
+  const [range, setRangeState] = useState<AnalyticsRange>(() => {
+    return rangeFromParams(searchParams) ?? rangeFromStorage() ?? initialRange;
+  });
+
+  const writeRangeToUrl = (next: AnalyticsRange, replace: boolean) => {
+    setSearchParams(
+      (prev) => {
+        const params = new URLSearchParams(prev);
+        params.set("range", next.preset);
+        if (next.preset === "custom") {
+          params.set("from", format(next.from, "yyyy-MM-dd"));
+          params.set("to", format(next.to, "yyyy-MM-dd"));
+        } else {
+          params.delete("from");
+          params.delete("to");
+        }
+        return params;
+      },
+      { replace },
+    );
+  };
+
+  const setRange = (next: AnalyticsRange) => {
+    setRangeState(next);
+    persistRangeToStorage(next);
+    writeRangeToUrl(next, true);
+  };
+
+  // Sync from URL when it changes externally (back/forward navigation).
+  useEffect(() => {
+    const fromUrl = rangeFromParams(searchParams);
+    if (!fromUrl || rangesEqual(fromUrl, range)) return;
+    setRangeState(fromUrl);
+    persistRangeToStorage(fromUrl);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  // On first mount, if URL has no range params, push the resolved range
+  // (from storage or default) into the URL so refresh produces the same view.
+  useEffect(() => {
+    if (!rangeFromParams(searchParams)) {
+      writeRangeToUrl(range, true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const value = useMemo(() => ({ range, setRange }), [range]);
   return (
     <AnalyticsRangeContext.Provider value={value}>{children}</AnalyticsRangeContext.Provider>
