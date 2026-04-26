@@ -158,5 +158,11 @@ export function useCoursesAdmin() {
     await fetchAll();
   };
 
-  return { programs, loading, refetch: fetchAll, create, update, remove };
+  /** Public alias để gán/ghi đè danh sách level cho 1 program từ UI matrix. */
+  const setProgramLevels = async (programId: string, levelIds: string[]) => {
+    await syncLevels(programId, levelIds);
+    await fetchAll();
+  };
+
+  return { programs, loading, refetch: fetchAll, create, update, remove, setProgramLevels };
 }
