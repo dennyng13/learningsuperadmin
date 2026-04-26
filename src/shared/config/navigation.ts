@@ -3,7 +3,7 @@ import {
   LayoutDashboard, FileText, Award, Users, School,
   CalendarDays, UserSearch, Settings, ShieldCheck, BarChart3,
   BookOpen, ClipboardList, Flag, GraduationCap, CalendarCheck,
-  FileSignature, FileBadge, Wallet, BookTemplate, Library,
+  FileSignature, FileBadge, Wallet, BookTemplate, Library, Activity,
 } from "lucide-react";
 
 export interface NavItem {
@@ -68,5 +68,6 @@ export const adminNavItems: NavItem[] = [
 
   // ─── Hệ thống (super_admin) ───
   { id: "feature-flags", label: "Feature Flags",    icon: Flag,            route: "/feature-flags",  group: "system", superAdminOnly: true, order: 41 },
+  { id: "schema-health", label: "Schema Health",    icon: Activity,        route: "/schema-health",  group: "system", superAdminOnly: true, order: 41.5 },
   { id: "settings",     label: "Cài đặt",           icon: Settings,        route: "/settings",       group: "system", superAdminOnly: true, order: 42 },
 ];

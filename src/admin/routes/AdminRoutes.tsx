@@ -56,6 +56,7 @@ import BandDescriptorsPage from "@admin/features/academic/pages/BandDescriptorsP
 import FeedbackTemplatesPage from "@admin/features/academic/pages/FeedbackTemplatesPage";
 import CoursesPage from "@admin/features/academic/pages/CoursesPage";
 import LibraryHubPage from "@admin/features/library/pages/LibraryHubPage";
+import SchemaHealthPage from "@admin/features/schema-health/pages/SchemaHealthPage";
 import { SuperAdminRoute } from "@admin/guards/SuperAdminRoute";
 import { ModuleAccessRoute } from "@admin/guards/ModuleAccessRoute";
 import { ADMIN_MODULE_KEYS } from "@shared/hooks/useUserModuleAccess";
@@ -171,6 +172,7 @@ export default function AppRoutes() {
           <Route path="settings" element={<AdminSettingsPage />} />
           <Route path="settings/email-preview" element={<EmailTemplatePreviewPage />} />
           <Route path="brand-assets" element={<SuperAdminRoute><BrandAssetsPage /></SuperAdminRoute>} />
+          <Route path="schema-health" element={<SuperAdminRoute><SchemaHealthPage /></SuperAdminRoute>} />
 
           {/* 404 */}
           <Route path="404" element={<NotFoundPage />} />
