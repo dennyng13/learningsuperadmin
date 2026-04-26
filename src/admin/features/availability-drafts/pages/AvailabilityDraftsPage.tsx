@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import {
   CalendarCheck, Search, Loader2, AlertCircle, CheckCircle2, XCircle,
-  MessageSquareWarning, Inbox, Clock, BookOpen, ChevronRight, Sparkles,
+  MessageSquareWarning, Inbox, Clock, BookOpen, Sparkles,
   Wifi, MapPin, ShieldCheck, Filter,
 } from "lucide-react";
 import { formatDistanceToNow, parseISO, format } from "date-fns";
