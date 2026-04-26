@@ -56,7 +56,12 @@ export default function BrandAssetsPage() {
   const [paletteFilter, setPaletteFilter] = useState<ShapePalette | "all">("all");
   const [uploadOpen, setUploadOpen] = useState(false);
 
-  const invalidate = () => qc.invalidateQueries({ queryKey: QUERY_KEY });
+  const invalidate = () => {
+    // List page cache.
+    qc.invalidateQueries({ queryKey: QUERY_KEY });
+    // Shared registry consumed by useBrandAsset (sidebar / login / favicon).
+    qc.invalidateQueries({ queryKey: ["brand-assets-registry"] });
+  };
 
   /** Apply global search + active filter once. */
   const filtered = useMemo(() => {
