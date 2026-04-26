@@ -7,15 +7,19 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@sha
 import { adminNavItems } from "@shared/config/navigation";
 
 // Primary 4 quick-access items on bottom bar (mobile).
-const PRIMARY_IDS = ["dashboard", "tests", "users", "classes"];
+const PRIMARY_IDS = ["dashboard", "tests", "classes", "users"];
 
 const primaryItems = PRIMARY_IDS
   .map(id => adminNavItems.find(i => i.id === id)!)
   .filter(Boolean);
 
-const moreMainItems = adminNavItems.filter(i => i.group === "main" && !PRIMARY_IDS.includes(i.id));
-const moreHrItems = adminNavItems.filter(i => i.group === "hr");
-const moreSystemItems = adminNavItems.filter(i => i.group === "system");
+// "Thêm" sheet: tất cả item còn lại, giữ thứ tự theo group + order.
+const NON_SYSTEM_GROUPS = ["academic", "classes", "users", "hr"] as const;
+const moreMainItems = adminNavItems
+  .filter(i => NON_SYSTEM_GROUPS.includes(i.group as typeof NON_SYSTEM_GROUPS[number]) && !PRIMARY_IDS.includes(i.id))
+  .sort((a, b) => a.order - b.order);
+const moreHrItems: typeof moreMainItems = []; // đã gộp vào moreMainItems theo order
+const moreSystemItems = adminNavItems.filter(i => i.group === "system").sort((a, b) => a.order - b.order);
 
 function triggerHaptic() {
   if (navigator.vibrate) navigator.vibrate(8);

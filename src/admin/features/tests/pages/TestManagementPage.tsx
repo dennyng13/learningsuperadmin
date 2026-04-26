@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@shared/components/ui/button";
 import { Input } from "@shared/components/ui/input";
 import {
-  Plus, Search, MoreVertical, FileText, Trash2, Eye, Pencil, Copy, Loader2, BookOpen, Cloud, ChevronDown, Tags, X, Layers,
+  Plus, Search, MoreVertical, FileText, Trash2, Eye, Pencil, Copy, Loader2, BookOpen, Cloud, ChevronDown, Tags, X, Layers, Upload,
 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
@@ -177,6 +177,9 @@ export default function TestManagementPage() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={() => navigate("/tests/import")} className="gap-2 rounded-xl">
+            <Upload className="h-4 w-4" /> Import
+          </Button>
           <Button onClick={() => navigate("/tests/new")} className="gap-2 rounded-xl">
             <Plus className="h-4 w-4" /> Tạo mới
           </Button>

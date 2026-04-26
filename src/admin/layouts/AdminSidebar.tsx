@@ -14,9 +14,12 @@ import { adminNavItems } from "@shared/config/navigation";
 import { usePendingDraftCount } from "@shared/hooks/useAvailabilityDrafts";
 import { useBrandAsset } from "@shared/hooks/useBrandAsset";
 
-const mainItems = adminNavItems.filter(i => i.group === "main").sort((a, b) => a.order - b.order);
-const hrItems = adminNavItems.filter(i => i.group === "hr").sort((a, b) => a.order - b.order);
-const superAdminItems = adminNavItems.filter(i => i.group === "system").sort((a, b) => a.order - b.order);
+const byOrder = (a: { order: number }, b: { order: number }) => a.order - b.order;
+const academicItems = adminNavItems.filter(i => i.group === "academic").sort(byOrder);
+const classesItems  = adminNavItems.filter(i => i.group === "classes").sort(byOrder);
+const usersItems    = adminNavItems.filter(i => i.group === "users").sort(byOrder);
+const hrItems       = adminNavItems.filter(i => i.group === "hr").sort(byOrder);
+const superAdminItems = adminNavItems.filter(i => i.group === "system").sort(byOrder);
 
 export function AdminSidebar() {
   const { state } = useSidebar();
@@ -46,7 +49,7 @@ export function AdminSidebar() {
     navigate("/login");
   };
 
-  const renderMenuItem = (item: typeof mainItems[0]) => {
+  const renderMenuItem = (item: typeof academicItems[0]) => {
     const active = isActive(item.route);
     const badgeCount = item.id === "availability-drafts" ? pendingDrafts : 0;
     return (
@@ -110,19 +113,53 @@ export function AdminSidebar() {
       <SidebarSeparator />
 
       <SidebarContent>
-        {/* Main nav */}
+        {/* Học thuật (kèm Dashboard ở đầu) */}
         <SidebarGroup className="py-1.5">
           <SidebarGroupLabel className="text-[9px] uppercase tracking-[0.1em] text-sidebar-foreground/40 font-semibold px-2 mb-0.5">
-            Quản lý
+            Học thuật
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu className="gap-px">
-              {mainItems.map(renderMenuItem)}
+              {academicItems.map(renderMenuItem)}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* HR */}
+        {/* Lớp & Lịch */}
+        {classesItems.length > 0 && (
+          <>
+            <SidebarSeparator className="mx-3" />
+            <SidebarGroup className="py-1.5">
+              <SidebarGroupLabel className="text-[9px] uppercase tracking-[0.1em] text-sidebar-foreground/40 font-semibold px-2 mb-0.5">
+                Lớp & Lịch
+              </SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu className="gap-px">
+                  {classesItems.map(renderMenuItem)}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </>
+        )}
+
+        {/* Người dùng */}
+        {usersItems.length > 0 && (
+          <>
+            <SidebarSeparator className="mx-3" />
+            <SidebarGroup className="py-1.5">
+              <SidebarGroupLabel className="text-[9px] uppercase tracking-[0.1em] text-sidebar-foreground/40 font-semibold px-2 mb-0.5">
+                Người dùng
+              </SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu className="gap-px">
+                  {usersItems.map(renderMenuItem)}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </>
+        )}
+
+        {/* Nhân sự */}
         {hrItems.length > 0 && (
           <>
             <SidebarSeparator className="mx-3" />
