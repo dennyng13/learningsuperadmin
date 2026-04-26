@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   GraduationCap, Plus, Pencil, Trash2, Loader2, EyeOff, CheckCircle2, Layers, LayoutGrid,
 } from "lucide-react";
@@ -30,20 +31,14 @@ import { cn } from "@shared/lib/utils";
 export default function CoursesPage() {
   const { programs, loading, refetch, create, update, remove, setProgramLevels } = useCoursesAdmin();
   const { levels } = useCourseLevels();
+  const navigate = useNavigate();
 
   const [editorOpen, setEditorOpen] = useState(false);
   const [editing, setEditing] = useState<CourseProgram | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  const handleCreate = () => {
-    setEditing(null);
-    setEditorOpen(true);
-  };
-
-  const handleEdit = (p: CourseProgram) => {
-    setEditing(p);
-    setEditorOpen(true);
-  };
+  const handleCreate = () => navigate("/courses/new");
+  const handleEdit = (p: CourseProgram) => navigate(`/courses/${p.id}/edit`);
 
   const confirmDelete = async () => {
     if (!deleteId) return;
