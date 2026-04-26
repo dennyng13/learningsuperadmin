@@ -6,6 +6,7 @@ import { Toaster } from "@shared/components/ui/toaster";
 import { TooltipProvider } from "@shared/components/ui/tooltip";
 import OfflineFallback from "@shared/components/misc/OfflineFallback";
 import ErrorBoundary from "@shared/components/misc/ErrorBoundary";
+import BrandFavicon from "@shared/components/misc/BrandFavicon";
 import { Loader2 } from "lucide-react";
 import AppRoutes from "@admin/routes/AdminRoutes";
 
@@ -28,6 +29,7 @@ const App = () => (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <OfflineFallback />
+        <BrandFavicon />
         <Toaster />
         <Sonner />
         <BrowserRouter>
