@@ -37,7 +37,7 @@ export default function CourseGradeView({ userId }: { userId: string }) {
       if (!ts?.teachngo_id) { setLoadingClasses(false); return; }
 
       const { data: enrolls } = await supabase
-        .from("class_students")
+        .from("class_students" as any)
         .select("class_id, class:classes(id, class_name, status, start_date, end_date)")
         .eq("teachngo_student_id", ts.teachngo_id) as any;
 

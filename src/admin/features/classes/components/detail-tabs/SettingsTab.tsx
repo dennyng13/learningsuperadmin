@@ -45,7 +45,7 @@ export function SettingsTab({ cls, onSaved }: { cls: ClassDetail; onSaved?: () =
         payload[k] = v === "" ? null : v;
       });
       const { error } = await (supabase as any)
-        .from("classes")
+        .from("classes" as any)
         .update(payload)
         .eq("id", cls.id);
       if (error) throw error;

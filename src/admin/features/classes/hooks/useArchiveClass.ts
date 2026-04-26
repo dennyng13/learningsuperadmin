@@ -26,7 +26,7 @@ export function useArchiveClass() {
       if (action === "archive" && reason?.trim()) payload.cancellation_reason = reason.trim();
 
       const { error } = await (supabase as any)
-        .from("classes")
+        .from("classes" as any)
         .update(payload)
         .eq("id", id);
       if (error) throw error;

@@ -189,13 +189,13 @@ export default function TeachngoTab({ roleCategory = "students" }: { roleCategor
     if (studentClassesMap[teachngoId]) return;
     setLoadingClasses(teachngoId);
     const { data: links } = await supabase
-      .from("class_students")
+      .from("class_students" as any)
       .select("class_id, status")
       .eq("teachngo_student_id", teachngoId);
     if (links && links.length > 0) {
       const classIds = (links as any[]).map((l: any) => l.class_id);
       const { data: classes } = await supabase
-        .from("classes")
+        .from("classes" as any)
         .select("id, class_name, status")
         .in("id", classIds);
       const classMap = new Map((classes || []).map((c: any) => [c.id, c]));

@@ -47,7 +47,7 @@ async function loadTeacherAvailabilityData(): Promise<TeacherAvailabilityData> {
   const today = new Date().toISOString().slice(0, 10);
   const [teachersRes, classesRes, draftsRes, rulesRes, exceptionsRes, capabilitiesRes, sessionsRes] = await Promise.all([
     supabase.from("teachers").select("id, full_name, email, phone, status, linked_user_id, subjects, classes").order("full_name"),
-    (supabase as any).from("classes").select("id, class_name, teacher_id, status, level, program, schedule, class_type, room, default_start_time, default_end_time").order("class_name"),
+    (supabase as any).from("classes" as any).select("id, class_name, teacher_id, status, level, program, schedule, class_type, room, default_start_time, default_end_time").order("class_name"),
     (supabase.from as any)("teacher_availability_drafts").select("*").order("created_at", { ascending: false }),
     (supabase.from as any)("teacher_availability_rules").select("*").order("effective_from", { ascending: false }),
     (supabase.from as any)("teacher_availability_exceptions").select("*").gte("exception_date", today).order("exception_date", { ascending: true }),

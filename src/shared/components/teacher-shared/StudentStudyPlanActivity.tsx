@@ -33,7 +33,7 @@ export default function StudentStudyPlanActivity({ userId }: Props) {
     queryKey: ["student-study-plan-activity", userId],
     queryFn: async () => {
       const { data: students } = await supabase
-        .from("synced_students")
+        .from("synced_students" as any)
         .select("teachngo_id, full_name")
         .eq("linked_user_id", userId);
 
@@ -42,7 +42,7 @@ export default function StudentStudyPlanActivity({ userId }: Props) {
       const teachngoId = students[0].teachngo_id;
 
       const { data: classLinks } = await supabase
-        .from("class_students")
+        .from("class_students" as any)
         .select("class_id")
         .eq("teachngo_student_id", teachngoId);
 

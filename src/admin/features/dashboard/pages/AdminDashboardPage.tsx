@@ -99,7 +99,7 @@ function AdminDashboardPageInner() {
     queryKey: ["admin-today-schedule", todayStr],
     queryFn: async () => {
       const { data: classes } = await supabase
-        .from("classes")
+        .from("classes" as any)
         .select("id, class_name, class_type, room, study_plan_id, default_start_time, default_end_time")
         .eq("status", "active");
       if (!classes || classes.length === 0) return { count: 0, conflicts: 0, firstTime: null as string | null };
@@ -160,10 +160,10 @@ function AdminDashboardPageInner() {
         ] = await Promise.all([
           supabase.from("assessments").select("id, name, book_name, status, created_at, section_type").order("created_at", { ascending: false }),
           supabase.from("practice_exercises").select("id, title, status, skill, created_at").order("created_at", { ascending: false }),
-          (supabase as any).from("synced_students").select("*", { count: "exact", head: true }),
-          (supabase as any).from("synced_students").select("*", { count: "exact", head: true }).not("linked_user_id", "is", null),
+          (supabase as any).from("synced_students" as any).select("*", { count: "exact", head: true }),
+          (supabase as any).from("synced_students" as any).select("*", { count: "exact", head: true }).not("linked_user_id", "is", null),
           supabase.from("teachers").select("*", { count: "exact", head: true }),
-          (supabase as any).from("classes").select("*", { count: "exact", head: true }),
+          (supabase as any).from("classes" as any).select("*", { count: "exact", head: true }),
           supabase.from("test_results").select("*", { count: "exact", head: true }).gte("created_at", sinceIso).lte("created_at", untilIso),
           supabase.from("practice_results").select("*", { count: "exact", head: true }).gte("created_at", sinceIso).lte("created_at", untilIso),
         ]);

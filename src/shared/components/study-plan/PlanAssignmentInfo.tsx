@@ -24,7 +24,7 @@ export function useAssignmentLookups(plans: { class_ids?: string[]; student_ids?
     enabled: allClassIds.length > 0,
     queryFn: async () => {
       const { data } = await supabase
-        .from("classes")
+        .from("classes" as any)
         .select("id, class_name")
         .in("id", allClassIds);
       return new Map((data || []).map(c => [c.id, c.class_name]));
@@ -37,7 +37,7 @@ export function useAssignmentLookups(plans: { class_ids?: string[]; student_ids?
     enabled: allStudentIds.length > 0,
     queryFn: async () => {
       const { data } = await supabase
-        .from("synced_students")
+        .from("synced_students" as any)
         .select("teachngo_id, full_name")
         .in("teachngo_id", allStudentIds);
       return new Map((data || []).map(s => [s.teachngo_id, s.full_name]));

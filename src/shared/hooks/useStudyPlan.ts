@@ -87,7 +87,7 @@ export function useMyStudyPlans() {
     queryFn: async () => {
       // Find which teachngo_student this user is linked to
       const { data: students, error: stuErr } = await supabase
-        .from("synced_students")
+        .from("synced_students" as any)
         .select("teachngo_id, full_name")
         .eq("linked_user_id", user!.id);
 
@@ -102,7 +102,7 @@ export function useMyStudyPlans() {
 
       // Find which classes this student belongs to
       const { data: classLinks } = await supabase
-        .from("class_students")
+        .from("class_students" as any)
         .select("class_id")
         .eq("teachngo_student_id", teachngoId);
 
@@ -175,7 +175,7 @@ export function useMyStudyPlan() {
     enabled: !!user,
     queryFn: async () => {
       const { data: students } = await supabase
-        .from("synced_students")
+        .from("synced_students" as any)
         .select("teachngo_id, full_name")
         .eq("linked_user_id", user!.id);
 
@@ -278,7 +278,7 @@ export function useTeacherStudyPlans() {
         let nameMap = new Map<string, string>();
         if (studentIds.length > 0) {
           const { data: students } = await supabase
-            .from("synced_students")
+            .from("synced_students" as any)
             .select("teachngo_id, full_name")
             .in("teachngo_id", studentIds);
           nameMap = new Map((students || []).map((s: any) => [s.teachngo_id, s.full_name]));
@@ -294,7 +294,7 @@ export function useTeacherStudyPlans() {
       if (!scope?.teacherId) return [];
 
       const { data: classes } = await supabase
-        .from("classes")
+        .from("classes" as any)
         .select("id")
         .eq("teacher_id", scope.teacherId);
 
@@ -302,7 +302,7 @@ export function useTeacherStudyPlans() {
 
       const classIds = classes.map(c => c.id);
       const { data: classStudents } = await supabase
-        .from("class_students")
+        .from("class_students" as any)
         .select("teachngo_student_id")
         .in("class_id", classIds);
 
@@ -326,7 +326,7 @@ export function useTeacherStudyPlans() {
 
       if (studentIds.length > 0) {
         const { data: students } = await supabase
-          .from("synced_students")
+          .from("synced_students" as any)
           .select("teachngo_id, full_name")
           .in("teachngo_id", studentIds);
 
@@ -369,7 +369,7 @@ export function useAllStudyPlans() {
       let nameMap = new Map<string, string>();
       if (studentIds.length > 0) {
         const { data: students } = await supabase
-          .from("synced_students")
+          .from("synced_students" as any)
           .select("teachngo_id, full_name")
           .in("teachngo_id", studentIds);
         nameMap = new Map((students || []).map((s: any) => [s.teachngo_id, s.full_name]));

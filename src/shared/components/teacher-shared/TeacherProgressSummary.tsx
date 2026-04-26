@@ -68,7 +68,7 @@ export default function TeacherProgressSummary() {
 
     const teacherId = scope?.teacherId || null;
 
-    let classQuery = (supabase as any).from("classes").select("id, class_name, level, program");
+    let classQuery = (supabase as any).from("classes" as any).select("id, class_name, level, program");
     if (!scope?.canViewAllClasses && teacherId) {
       classQuery = classQuery.eq("teacher_id", teacherId);
     }
@@ -84,7 +84,7 @@ export default function TeacherProgressSummary() {
     const classMap = new Map(classes.map(c => [c.id, c]));
 
     const { data: enrollments } = await supabase
-      .from("class_students")
+      .from("class_students" as any)
       .select("class_id, teachngo_student_id")
       .in("class_id", classIds);
 
@@ -105,7 +105,7 @@ export default function TeacherProgressSummary() {
     }
 
     const { data: studentsData } = await supabase
-      .from("synced_students")
+      .from("synced_students" as any)
       .select("teachngo_id, full_name, linked_user_id")
       .in("teachngo_id", teachngoIds);
 
