@@ -295,7 +295,12 @@ function BrandShapeFigure({ url, palette }: { url: string | null; palette: Shape
       <div
         aria-hidden
         className={cn(
-          "absolute -bottom-8 -right-8 h-[110%] w-[55%] pointer-events-none",
+          "pointer-events-none absolute",
+          // Vị trí lấn ra ngoài card: nhỏ hơn ở mobile, đậm hơn ở desktop.
+          "-bottom-6 -right-6 sm:-bottom-7 sm:-right-7 md:-bottom-8 md:-right-8",
+          // Kích thước scale theo breakpoint để shape luôn cân với card
+          // (card mobile h-32, desktop h-40). Tránh shape lùn, méo trên mobile.
+          "h-[95%] w-[45%] sm:h-[105%] sm:w-[50%] md:h-[110%] md:w-[55%]",
           "bg-gradient-to-tl rounded-tl-[100%] opacity-80 transition-all duration-500",
           "group-hover:opacity-100 group-hover:scale-105 origin-bottom-right",
           FALLBACK_TONE[palette],
@@ -311,13 +316,15 @@ function BrandShapeFigure({ url, palette }: { url: string | null; palette: Shape
       alt=""
       loading="lazy"
       decoding="async"
-      // Shape là decoration ở góc dưới-phải. Cards "nhỏ" (h-32→h-40), nên
-      // shape phải tràn vượt cả chiều cao card (h-[120%]) + lấn ra ngoài
-      // (-bottom/-right negative) để không trông như bị cắt vuông.
+      // Shape là decoration ở góc dưới-phải. Card scale theo breakpoint
+      // (h-32 mobile → h-40 desktop), nên shape cũng cần scale tương ứng để
+      // không bị méo, lùn ở mobile hay quá nhỏ ở desktop.
       // Tailwind v3 dùng `object-right-bottom` (KHÔNG phải `object-bottom-right`).
       className={cn(
-        "pointer-events-none absolute -bottom-4 -right-4",
-        "h-[120%] w-auto max-w-[55%] object-contain object-right-bottom",
+        "pointer-events-none absolute",
+        "-bottom-3 -right-3 sm:-bottom-3.5 sm:-right-3.5 md:-bottom-4 md:-right-4",
+        "h-[100%] w-auto max-w-[45%] sm:h-[110%] sm:max-w-[50%] md:h-[120%] md:max-w-[55%]",
+        "object-contain object-right-bottom",
         "opacity-85 saturate-100 transition-all duration-500 ease-out",
         "group-hover:opacity-100 group-hover:scale-[1.08]",
         "origin-bottom-right",
