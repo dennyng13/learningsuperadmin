@@ -48,6 +48,7 @@ import TimesheetPeriodDetailPage from "@admin/features/timesheet/pages/Timesheet
 import PayrollListPage from "@admin/features/payroll/pages/PayrollListPage";
 import PayrollBatchDetailPage from "@admin/features/payroll/pages/PayrollBatchDetailPage";
 import PayrollPayslipDetailPage from "@admin/features/payroll/pages/PayrollPayslipDetailPage";
+import CompensationPage from "@admin/features/compensation/pages/CompensationPage";
 import BrandAssetsPage from "@admin/features/brand-assets/pages/BrandAssetsPage";
 import { SuperAdminRoute } from "@admin/guards/SuperAdminRoute";
 
@@ -123,12 +124,9 @@ export default function AppRoutes() {
           <Route path="contracts/:contractId" element={<ContractDetailPage />} />
           <Route path="contracts/:contractId/addendums/:addendumId" element={<AddendumEditorPage />} />
 
-          {/* Timesheet (Stage 2) */}
-          <Route path="timesheet" element={<TimesheetPeriodsPage />} />
+          {/* Lương / Thưởng — gộp Bảng công + Bảng lương dưới 1 entry */}
+          <Route path="compensation" element={<CompensationPage />} />
           <Route path="timesheet/:periodId" element={<TimesheetPeriodDetailPage />} />
-
-          {/* Payroll (Stage 3) */}
-          <Route path="payroll" element={<PayrollListPage />} />
           <Route path="payroll/batches/:batchId" element={<PayrollBatchDetailPage />} />
           <Route path="payroll/payslips/:payslipId" element={<PayrollPayslipDetailPage />} />
 
