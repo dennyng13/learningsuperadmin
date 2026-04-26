@@ -11,6 +11,11 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@shared/com
 import { Badge } from "@shared/components/ui/badge";
 import { ALL_TYPE_LABELS_EN as ALL_QT_LABELS } from "@shared/utils/questionTypes";
 import WidgetRetryState from "./WidgetRetryState";
+import {
+  type AnalyticsRange,
+  DEFAULT_RANGE,
+  AnalyticsRangeBadge,
+} from "@shared/components/dashboard/analyticsRange";
 
 const ALL_QUESTION_TYPES = Object.keys(ALL_QT_LABELS);
 
@@ -40,7 +45,9 @@ interface UnusedExercise {
   attempts: number;
 }
 
-export default function ContentAnalytics() {
+export default function ContentAnalytics({
+  range = DEFAULT_RANGE,
+}: { range?: AnalyticsRange } = {}) {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -51,11 +58,16 @@ export default function ContentAnalytics() {
   const [missingTypes, setMissingTypes] = useState<string[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
 
+  const sinceIso = range.from.toISOString();
+  const untilIso = range.to.toISOString();
+
   const load = async () => {
     setLoadError(null);
     const { data: prData, error: prError } = await supabase
       .from("practice_results")
       .select("exercise_id, exercise_title, skill")
+      .gte("created_at", sinceIso)
+      .lte("created_at", untilIso)
       .order("created_at", { ascending: false })
       .limit(1000) as any;
 
@@ -116,12 +128,14 @@ export default function ContentAnalytics() {
   };
 
   useEffect(() => {
-    if (!open || loaded) return;
+    if (!open) return;
+    setLoaded(false);
     load().catch((error) => {
       console.error("[ContentAnalytics] Failed to load", error);
       setLoadError(error instanceof Error ? error.message : "Không tải được phân tích nội dung.");
     });
-  }, [open, loaded]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, sinceIso, untilIso]);
 
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
@@ -129,6 +143,7 @@ export default function ContentAnalytics() {
         <button className="w-full flex items-center justify-between rounded-xl border bg-card px-4 py-3 hover:bg-muted/30 transition-colors group">
           <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
             <BarChart3 className="h-3.5 w-3.5" /> Phân tích nội dung
+            <AnalyticsRangeBadge range={range} className="ml-1 normal-case tracking-normal" />
           </span>
           <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", open && "rotate-180")} />
         </button>
