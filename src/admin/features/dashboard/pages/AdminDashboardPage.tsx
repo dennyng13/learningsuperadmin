@@ -25,6 +25,7 @@ import AppsStatusWidget from "@admin/features/dashboard/components/AppsStatusWid
 import TeacherActivityFeed from "@admin/features/dashboard/components/TeacherActivityFeed";
 import ContractStatusWidget from "@admin/features/dashboard/components/ContractStatusWidget";
 import TimesheetStatusWidget from "@admin/features/dashboard/components/TimesheetStatusWidget";
+import PayrollStatusWidget from "@admin/features/dashboard/components/PayrollStatusWidget";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@shared/components/ui/button";
 
@@ -294,6 +295,9 @@ export default function AdminDashboardPage() {
 
       {/* ── Bảng công: kỳ chờ duyệt / chờ khoá / đã khoá ── */}
       <TimesheetStatusWidget />
+
+      {/* ── Bảng lương: payslip nháp / chờ TT / đã TT ── */}
+      <PayrollStatusWidget />
 
       {/* ── Stats Grid ── */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
