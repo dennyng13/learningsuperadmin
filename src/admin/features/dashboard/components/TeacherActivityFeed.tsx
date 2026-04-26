@@ -483,6 +483,7 @@ export default function TeacherActivityFeed({
         <h2 className="font-display text-sm font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2 min-w-0">
           <Activity className="h-3.5 w-3.5 shrink-0" />
           <span className="truncate">Hoạt động giáo viên</span>
+          <AnalyticsRangeBadge range={range} className="ml-1 normal-case tracking-normal" />
         </h2>
         <span className={cn(
           "text-[11px] flex items-center gap-1.5 transition-colors shrink-0",
