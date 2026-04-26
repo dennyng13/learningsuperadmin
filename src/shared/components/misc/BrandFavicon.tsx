@@ -10,7 +10,7 @@ import { useBrandAsset } from "@shared/hooks/useBrandAsset";
  * `index.html`) is left untouched.
  */
 export function BrandFavicon() {
-  const { url } = useBrandAsset(["favicon", "logoApp"]);
+  const { url } = useBrandAsset(["favicon", "logo-app", "logoApp"]);
 
   useEffect(() => {
     if (!url) return;

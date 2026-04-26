@@ -25,9 +25,10 @@ export function AdminSidebar() {
   const navigate = useNavigate();
   const { user, isSuperAdmin, signOut } = useAuth();
   const pendingDrafts = usePendingDraftCount();
-  // Resolve the app logo from the brand-assets registry. Try `logoApp` first,
-  // fall back to `logoMain` for transitional naming.
-  const { url: logoUrl } = useBrandAsset(["logoApp", "logoMain"]);
+  // Resolve the app logo from the brand-assets registry.
+  // DB convention is kebab-case (logo-app / logo-main); camelCase variants
+  // kept as fallback for any historic uploads.
+  const { url: logoUrl } = useBrandAsset(["logo-app", "logo-main", "logoApp", "logoMain"]);
 
   const allPaths = adminNavItems.map(i => i.route);
   const isActive = (path: string) => {
