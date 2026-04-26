@@ -91,7 +91,7 @@ async function fetchAllScheduleData(startDate: string, endDate: string) {
 
   if (!classes || classes.length === 0) return { sessions: [], classes: [] };
 
-  const teacherIds = [...new Set(classes.map((c) => c.teacher_id).filter(Boolean))];
+  const teacherIds = [...new Set((classes as any[]).map((c) => c.teacher_id).filter(Boolean))] as string[];
   const teacherMap = new Map<string, string>();
   if (teacherIds.length > 0) {
     const { data: teachers } = await supabase.from("teachers").select("id, full_name").in("id", teacherIds);

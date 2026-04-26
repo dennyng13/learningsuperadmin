@@ -204,7 +204,7 @@ export default function TeacherProgressSummary() {
     const delayed: DelayedClassInfo[] = [];
     for (const [cid, tracker] of Object.entries(classDelayTracker)) {
       if (tracker.delayedStudents > 0) {
-        const cls = classMap.get(cid);
+        const cls = classMap.get(cid) as any;
         if (cls) {
           delayed.push({
             classId: cid,

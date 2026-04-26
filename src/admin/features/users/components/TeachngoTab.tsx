@@ -198,7 +198,7 @@ export default function TeachngoTab({ roleCategory = "students" }: { roleCategor
         .from("classes")
         .select("id, class_name, status")
         .in("id", classIds) as any;
-      const classMap = new Map((classes || []).map((c: any) => [c.id, c]));
+      const classMap = new Map<string, any>(((classes || []) as any[]).map((c: any) => [c.id, c]));
       const result = (links as any[]).map((l: any) => ({
         class_name: classMap.get(l.class_id)?.class_name || "Unknown",
         status: l.status,
