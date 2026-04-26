@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import {
-  FileText, Loader2, Layers,
+  FileText, Layers,
   Upload, BarChart3, UserPlus, Award,
   ArrowRight, PenLine, ListChecks, UserSearch, ChevronRight, CalendarDays, AlertTriangle,
 } from "lucide-react";
@@ -26,6 +26,11 @@ import ContractStatusWidget from "@admin/features/dashboard/components/ContractS
 import TimesheetStatusWidget from "@admin/features/dashboard/components/TimesheetStatusWidget";
 import PayrollStatusWidget from "@admin/features/dashboard/components/PayrollStatusWidget";
 import DashboardHero from "@admin/features/dashboard/components/DashboardHero";
+import {
+  DashboardHeroSkeleton,
+  TodayScheduleSkeleton,
+  AnalyticsSectionSkeleton,
+} from "@admin/features/dashboard/components/DashboardSkeletons";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@shared/components/ui/button";
 import {
