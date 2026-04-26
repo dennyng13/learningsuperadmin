@@ -1,9 +1,10 @@
 // supabase/functions/send-class-invitations/index.ts
 // ---------------------------------------------------------------------------
 // STUB: Gửi email mời GV vào lớp.
-// FE gọi function này NGAY SAU `request_replacement_teacher` RPC. Khi
-// stub trả {ok:true} không kèm `sent` count → FE chỉ log, không rollback.
-// Logic gửi email thật (Lovable Email queue) sẽ implement ở bước sau.
+// FE gọi function này NGAY SAU `request_replacement_teacher` RPC.
+// Trả response chuẩn:
+//   { ok, stub?, queued, sent, failed, results: [{ teacher_id, ok, email?, error? }] }
+// FE dựa vào `results` để biết GV nào fail và cho admin retry.
 // ---------------------------------------------------------------------------
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
@@ -17,6 +18,14 @@ const corsHeaders = {
 interface InvitePayload {
   class_id: string;
   teacher_ids: string[];
+}
+
+interface DeliveryResult {
+  teacher_id: string;
+  ok: boolean;
+  email?: string | null;
+  full_name?: string | null;
+  error?: string;
 }
 
 function isUuid(s: unknown): s is string {
@@ -58,17 +67,50 @@ Deno.serve(async (req) => {
       return json({ error: "teacher_ids must all be uuids" }, 400);
     }
 
-    // ─── STUB: chỉ log + trả ok. Thay bằng enqueue_email khi hạ tầng email
-    //     của Lovable Cloud được bật cho project. ───
+    // ─── Lookup teacher emails để FE có thể hiển thị tên/email khi báo lỗi ───
+    const { data: teachers, error: teacherErr } = await supabase
+      .from("teachers")
+      .select("id, full_name, email")
+      .in("id", body.teacher_ids);
+    if (teacherErr) {
+      return json({ error: `Lookup teachers failed: ${teacherErr.message}` }, 500);
+    }
+
+    // ─── STUB delivery: per-teacher result. GV thiếu email = fail. ───
+    // Khi hạ tầng email Lovable Cloud bật → swap block này bằng
+    // `enqueue_email` cho từng GV và bắt error từng cái.
+    const results: DeliveryResult[] = body.teacher_ids.map((tid) => {
+      const t = teachers?.find((x) => x.id === tid);
+      if (!t) {
+        return { teacher_id: tid, ok: false, error: "Không tìm thấy giáo viên" };
+      }
+      if (!t.email) {
+        return {
+          teacher_id: tid,
+          ok: false,
+          full_name: t.full_name,
+          error: "Giáo viên chưa có email",
+        };
+      }
+      // STUB: coi như queued thành công.
+      return { teacher_id: tid, ok: true, full_name: t.full_name, email: t.email };
+    });
+
+    const sent = results.filter((r) => r.ok).length;
+    const failed = results.length - sent;
     console.log(
-      `[send-class-invitations] STUB: would email ${body.teacher_ids.length} teacher(s) for class ${body.class_id}`,
+      `[send-class-invitations] STUB class=${body.class_id} sent=${sent} failed=${failed}`,
     );
 
+    // 207-style multi-status: trả 200 luôn, FE đọc `failed` để xử lý UX.
     return json({
-      ok: true,
+      ok: failed === 0,
       stub: true,
       message: "Edge function stub — email gateway not wired yet.",
       queued: body.teacher_ids.length,
+      sent,
+      failed,
+      results,
     });
   } catch (e) {
     console.error("[send-class-invitations] error", e);
