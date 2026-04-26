@@ -76,12 +76,18 @@ export function AdminSidebar() {
       {/* Header */}
       <SidebarHeader className="px-3 py-3">
         <div className="flex items-center gap-2 overflow-hidden">
-          <div className="rounded-md bg-primary/10 flex items-center justify-center shrink-0 h-7 w-7">
-            <img src="/src/assets/learning-plus-logo.png" alt="Learning Plus" className="h-5 w-5 object-contain" />
+          <div className="rounded-xl bg-gradient-to-br from-primary/15 to-accent/15 flex items-center justify-center shrink-0 h-9 w-9 shadow-sm">
+            <span className="font-display font-extrabold text-base leading-none tracking-tight">
+              <span className="text-primary">L</span>
+              <span className="text-accent">+</span>
+            </span>
           </div>
           <div className="min-w-0 group-data-[collapsible=icon]:hidden">
-            <p className="text-xs font-bold text-sidebar-foreground leading-tight truncate">Admin Portal</p>
-            <p className="text-[10px] text-sidebar-foreground/50 leading-tight truncate">{user?.email}</p>
+            <p className="font-display text-sm font-extrabold text-sidebar-foreground leading-tight truncate tracking-tight">
+              <span className="text-primary">Learn</span><span className="text-accent">+</span>
+              <span className="text-sidebar-foreground/40 font-medium ml-1 text-[10px]">Admin</span>
+            </p>
+            <p className="text-[10px] text-sidebar-foreground/50 leading-tight truncate mt-0.5">{user?.email}</p>
           </div>
         </div>
       </SidebarHeader>

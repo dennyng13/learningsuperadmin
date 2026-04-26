@@ -6,25 +6,29 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 200 15% 15%;
+    /* App background — cool off-white #F4F7F8 so white cards stand out */
+    --background: 200 18% 97%;
+    --foreground: 217 33% 17%;     /* #1E293B Dark Slate */
 
     --card: 0 0% 100%;
-    --card-foreground: 200 15% 15%;
+    --card-foreground: 217 33% 17%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 200 15% 15%;
+    --popover-foreground: 217 33% 17%;
 
-    --primary: 174 52% 47%;
+    /* Teal #38B6AB */
+    --primary: 174 51% 47%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 186 100% 94%;
-    --secondary-foreground: 174 52% 30%;
+    /* Light Cyan #E1FAFF */
+    --secondary: 190 100% 94%;
+    --secondary-foreground: 174 51% 30%;
 
-    --muted: 186 60% 96%;
-    --muted-foreground: 200 10% 46%;
+    --muted: 200 30% 96%;
+    --muted-foreground: 215 16% 47%;  /* #64748B Soft Gray */
 
-    --accent: 10 93% 68%;
+    /* Coral #FA7D64 */
+    --accent: 10 93% 69%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
@@ -36,11 +40,12 @@
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
 
-    --border: 186 30% 88%;
-    --input: 186 30% 88%;
-    --ring: 174 52% 47%;
+    --border: 210 25% 92%;
+    --input: 210 25% 90%;
+    --ring: 174 51% 47%;
 
-    --radius: 0.5rem;
+    /* Soft UI: 16px rounded corners */
+    --radius: 1rem;
 
     --dark: 220 20% 10%;
     --dark-foreground: 0 0% 98%;
@@ -50,8 +55,8 @@
     --exam-header-foreground: 0 0% 100%;
     --exam-sidebar: 186 60% 96%;
     --exam-highlight: 45 100% 90%;
-    --exam-correct: 174 52% 47%;
-    --exam-incorrect: 10 93% 68%;
+    --exam-correct: 174 51% 47%;
+    --exam-incorrect: 10 93% 69%;
     --exam-unanswered: 38 92% 50%;
 
     /* Annotation colors */
@@ -60,14 +65,19 @@
     --annotation-good: 152 60% 42%;
     --annotation-comment: 210 100% 50%;
 
-    --sidebar-background: 186 60% 97%;
-    --sidebar-foreground: 200 15% 20%;
-    --sidebar-primary: 174 52% 35%;
+    /* Sidebar: pure white surface to match Soft UI */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 217 33% 25%;
+    --sidebar-primary: 174 51% 40%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 186 60% 94%;
-    --sidebar-accent-foreground: 174 52% 30%;
-    --sidebar-border: 186 30% 88%;
-    --sidebar-ring: 174 52% 47%;
+    --sidebar-accent: 190 100% 95%;       /* #E1FAFF light cyan hover */
+    --sidebar-accent-foreground: 174 51% 30%;
+    --sidebar-border: 210 25% 93%;
+    --sidebar-ring: 174 51% 47%;
+
+    /* Soft UI shadow tokens */
+    --shadow-soft: 0 4px 20px rgba(15, 23, 42, 0.04);
+    --shadow-soft-lg: 0 10px 40px rgba(15, 23, 42, 0.06);
   }
 }
 
