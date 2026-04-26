@@ -230,9 +230,9 @@ export default function AdminGeneralTab() {
                     </Link>
                   </div>
                 </div>
-                <div className="rounded-lg border border-warning/30 bg-warning/10 p-3 flex items-start gap-2 text-xs text-warning-foreground">
-                  <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-warning" />
-                  <span>
+                <div className="rounded-lg border border-amber-300/60 bg-amber-50 dark:border-amber-500/30 dark:bg-amber-500/10 p-3 flex items-start gap-2 text-xs text-amber-900 dark:text-amber-100">
+                  <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
+                  <span className="leading-relaxed">
                     Chữ ký số của người đại diện được upload riêng tại trang <strong>chi tiết hợp đồng</strong> khi ký từng bản — không lưu chung ở đây để đảm bảo audit trail.
                   </span>
                 </div>
