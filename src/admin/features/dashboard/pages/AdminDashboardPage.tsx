@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, lazy } from "react";
+import { useEffect, useState, useMemo } from "react";
 import {
   FileText, Loader2, Layers,
   Upload, BarChart3, UserPlus, Award,
@@ -15,23 +15,19 @@ import {
   ResponsiveContainer, Legend, BarChart, Bar, Cell,
 } from "recharts";
 import { Badge } from "@shared/components/ui/badge";
+import ClassQuestionTypeStats from "@shared/components/teacher-shared/ClassQuestionTypeStats";
+import PracticeErrorStats from "@admin/features/practice/components/PracticeErrorStats";
+import AdminActivityCalendar from "@admin/features/dashboard/components/AdminActivityCalendar";
+import TeacherProgressSummary from "@shared/components/teacher-shared/TeacherProgressSummary";
+import ContentAnalytics from "@admin/features/dashboard/components/ContentAnalytics";
+import AppsStatusWidget from "@admin/features/dashboard/components/AppsStatusWidget";
+import TeacherActivityFeed from "@admin/features/dashboard/components/TeacherActivityFeed";
+import ContractStatusWidget from "@admin/features/dashboard/components/ContractStatusWidget";
+import TimesheetStatusWidget from "@admin/features/dashboard/components/TimesheetStatusWidget";
+import PayrollStatusWidget from "@admin/features/dashboard/components/PayrollStatusWidget";
 import DashboardHero from "@admin/features/dashboard/components/DashboardHero";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@shared/components/ui/button";
-import { InfoBanner, LazyWidget } from "@shared/components/dashboard";
-import { useDashboardSections } from "@admin/features/dashboard/hooks/useDashboardSections";
-
-/* ── Lazy-loaded heavy widgets — code-split out of main bundle ── */
-const AppsStatusWidget       = lazy(() => import("@admin/features/dashboard/components/AppsStatusWidget"));
-const TeacherActivityFeed    = lazy(() => import("@admin/features/dashboard/components/TeacherActivityFeed"));
-const ContractStatusWidget   = lazy(() => import("@admin/features/dashboard/components/ContractStatusWidget"));
-const TimesheetStatusWidget  = lazy(() => import("@admin/features/dashboard/components/TimesheetStatusWidget"));
-const PayrollStatusWidget    = lazy(() => import("@admin/features/dashboard/components/PayrollStatusWidget"));
-const TeacherProgressSummary = lazy(() => import("@shared/components/teacher-shared/TeacherProgressSummary"));
-const AdminActivityCalendar  = lazy(() => import("@admin/features/dashboard/components/AdminActivityCalendar"));
-const ClassQuestionTypeStats = lazy(() => import("@shared/components/teacher-shared/ClassQuestionTypeStats"));
-const PracticeErrorStats     = lazy(() => import("@admin/features/practice/components/PracticeErrorStats"));
-const ContentAnalytics       = lazy(() => import("@admin/features/dashboard/components/ContentAnalytics"));
 
 interface DashboardStats {
   totalTests: number;
@@ -250,17 +246,6 @@ export default function AdminDashboardPage() {
     fetchData();
   }, [isSuperAdmin]);
 
-  // Compute visibility BEFORE any early return so the hook order stays stable.
-  const visible = useDashboardSections({
-    stats,
-    recentItems,
-    todaySchedule,
-    activityTrend,
-    testResultsForAnalysis,
-    practiceResultsForAnalysis,
-    prospects,
-  });
-
   if (loading) {
     return (
       <div className="p-6 flex items-center justify-center min-h-[400px]">
@@ -293,114 +278,159 @@ export default function AdminDashboardPage() {
   const s = stats;
 
   return (
-    <div className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto space-y-8 md:space-y-10">
-      <header>
+    <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
+      <div>
         <h1 className="font-display text-2xl md:text-3xl font-extrabold tracking-tight text-foreground">Dashboard</h1>
         <p className="text-sm text-muted-foreground mt-1">Tổng quan hệ thống Learning+ Admin Portal</p>
-      </header>
+      </div>
 
-      {/* ╔══════════ 1. HERO ══════════╗ */}
-      {visible.hero && (
-        <DashboardHero
-          totalStudents={s.totalStudents}
-          totalTeachers={s.totalTeachers}
-          totalClasses={s.totalClasses}
-          totalTests={s.totalTests}
-          recentResults7d={s.recentResults7d}
-          recentPractice7d={s.recentPractice7d}
-          recentItems={visible.heroRecent ? recentItems.slice(0, 6).map((it) => ({
-            id: it.id,
-            name: it.name,
-            meta: `${it.type === "test" ? "Đề thi" : "Bài tập"}${it.section_type ? ` · ${it.section_type}` : it.skill ? ` · ${it.skill}` : ""}`,
-            badge: { label: it.status, tone: it.status === "published" ? "teal" : "coral" },
-          })) : []}
-        />
-      )}
+      {/* ── Hero: KPI cards + Calendar + Performance chart + Recent ── */}
+      <DashboardHero
+        totalStudents={s.totalStudents}
+        totalTeachers={s.totalTeachers}
+        totalClasses={s.totalClasses}
+        totalTests={s.totalTests}
+        recentResults7d={s.recentResults7d}
+        recentPractice7d={s.recentPractice7d}
+        recentItems={recentItems.slice(0, 6).map((it) => ({
+          id: it.id,
+          name: it.name,
+          meta: `${it.type === "test" ? "Đề thi" : "Bài tập"}${it.section_type ? ` · ${it.section_type}` : it.skill ? ` · ${it.skill}` : ""}`,
+          badge: { label: it.status, tone: it.status === "published" ? "teal" : "coral" },
+        }))}
+      />
 
-      {/* ╔══════════ 2. LỊCH HÔM NAY ══════════╗ */}
-      {visible.todaySection && (
-        <section className="space-y-3 md:space-y-4">
-          <h2 className="font-display text-sm font-bold text-muted-foreground uppercase tracking-[0.12em] flex items-center gap-2">
-            <CalendarDays className="h-3.5 w-3.5" /> Lịch hôm nay
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 auto-rows-fr gap-4 md:gap-5">
-            {visible.scheduleBanner && todaySchedule && (
-              <InfoBanner
-                icon={CalendarDays}
-                iconTone="teal"
-                onClick={() => navigate("/schedule")}
-                className="h-full"
-                title={
-                  <>
-                    {todaySchedule.count} buổi học
-                    {todaySchedule.conflicts > 0 && (
-                      <span className="flex items-center gap-1 text-destructive text-xs font-medium">
-                        <AlertTriangle className="h-3 w-3" />
-                        {todaySchedule.conflicts} xung đột
-                      </span>
+      {/* ╔══════════ 2. LỊCH HÔM NAY ══════════╗
+         Tóm tắt buổi học hôm nay + KPI bài tập (chưa có trong Hero) */}
+      <section className="space-y-3">
+        <h2 className="font-display text-sm font-bold text-muted-foreground uppercase tracking-[0.12em] flex items-center gap-2">
+          <CalendarDays className="h-3.5 w-3.5" /> Lịch hôm nay
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 auto-rows-fr">
+          {/* Card 1: Today's schedule */}
+          {(() => {
+            const hasSchedule = !!todaySchedule && todaySchedule.count > 0;
+            const hasConflicts = hasSchedule && (todaySchedule?.conflicts ?? 0) > 0;
+            return (
+              <div className="h-full rounded-2xl bg-card p-4 shadow-[0_4px_20px_rgba(15,23,42,0.04)] flex flex-col">
+                <div className="flex items-start gap-3 flex-1">
+                  <div className={cn(
+                    "h-10 w-10 rounded-xl flex items-center justify-center shrink-0",
+                    hasSchedule ? "bg-primary/12 text-primary" : "bg-muted text-muted-foreground",
+                  )}>
+                    <CalendarDays className="h-5 w-5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-display font-bold text-sm text-foreground">
+                      {hasSchedule ? `${todaySchedule!.count} buổi học hôm nay` : "Không có buổi học hôm nay"}
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {hasSchedule
+                        ? (todaySchedule!.firstTime ? `Buổi đầu lúc ${todaySchedule!.firstTime}` : "Chưa có giờ cụ thể")
+                        : "Lịch trống — hãy nghỉ ngơi 🌿"}
+                    </p>
+                    {hasSchedule && (
+                      <div className="flex items-center flex-wrap gap-1.5 mt-2">
+                        <Badge variant="secondary" className="text-[10px] font-medium">
+                          {todaySchedule!.count} buổi
+                        </Badge>
+                        {todaySchedule!.firstTime && (
+                          <Badge variant="outline" className="text-[10px] font-medium">
+                            Bắt đầu {todaySchedule!.firstTime}
+                          </Badge>
+                        )}
+                        {hasConflicts && (
+                          <Badge variant="destructive" className="text-[10px] font-medium gap-1">
+                            <AlertTriangle className="h-2.5 w-2.5" />
+                            {todaySchedule!.conflicts} xung đột
+                          </Badge>
+                        )}
+                      </div>
                     )}
-                  </>
-                }
-                description={todaySchedule.firstTime ? `Buổi đầu lúc ${todaySchedule.firstTime}` : "Chưa có giờ cụ thể"}
-              />
-            )}
-            {visible.scheduleEmptyBanner && (
-              <InfoBanner
-                icon={CalendarDays}
-                iconTone="muted"
-                title="Không có buổi học hôm nay"
-                description="Lịch trống — hãy nghỉ ngơi 🌿"
-                className="h-full"
-              />
-            )}
-            {visible.exercisesBanner && (
-              <InfoBanner
-                icon={Layers}
-                iconTone="coral"
-                onClick={() => navigate("/tests?type=exercise")}
-                title={`${s.totalExercises} bài tập · ${s.publishedExercises} published`}
-                description="Quản lý bài luyện tập theo kỹ năng"
-                className="h-full"
-              />
-            )}
-          </div>
-        </section>
-      )}
+                  </div>
+                </div>
+                <div className="mt-3 pt-3 border-t border-border/50 flex items-center justify-end">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => navigate("/schedule")}
+                    className="h-8 text-xs gap-1 font-display font-semibold text-primary hover:text-primary hover:bg-primary/8"
+                  >
+                    Xem lịch
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+            );
+          })()}
 
-      {/* ╔══════════ 3. ANALYTICS ══════════╗ */}
-      <section className="space-y-4 md:space-y-5">
+          {/* Card 2: Exercises summary */}
+          {s.totalExercises > 0 && (
+            <div className="h-full rounded-2xl bg-card p-4 shadow-[0_4px_20px_rgba(15,23,42,0.04)] flex flex-col">
+              <div className="flex items-start gap-3 flex-1">
+                <div className="h-10 w-10 rounded-xl bg-accent/12 text-accent flex items-center justify-center shrink-0">
+                  <Layers className="h-5 w-5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-display font-bold text-sm text-foreground">
+                    {s.totalExercises} bài tập
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Quản lý bài luyện tập theo kỹ năng
+                  </p>
+                  <div className="flex items-center flex-wrap gap-1.5 mt-2">
+                    <Badge variant="secondary" className="text-[10px] font-medium">
+                      {s.publishedExercises} published
+                    </Badge>
+                    {s.totalExercises - s.publishedExercises > 0 && (
+                      <Badge variant="outline" className="text-[10px] font-medium">
+                        {s.totalExercises - s.publishedExercises} draft
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="mt-3 pt-3 border-t border-border/50 flex items-center justify-end">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => navigate("/tests?type=exercise")}
+                  className="h-8 text-xs gap-1 font-display font-semibold text-primary hover:text-primary hover:bg-primary/8"
+                >
+                  Xem bài tập
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ╔══════════ 3. ANALYTICS ══════════╗
+         Toàn bộ widget phân tích, vận hành & nội dung */}
+      <section className="space-y-4">
         <h2 className="font-display text-sm font-bold text-muted-foreground uppercase tracking-[0.12em] flex items-center gap-2">
           <BarChart3 className="h-3.5 w-3.5" /> Analytics & vận hành
         </h2>
 
         {/* Operations: 2 app + activity feed */}
-        <LazyWidget label="Trạng thái ứng dụng" minHeight={220}>
-          <AppsStatusWidget />
-        </LazyWidget>
-        <LazyWidget label="Hoạt động giáo viên" minHeight={260}>
-          <TeacherActivityFeed />
-        </LazyWidget>
+        <AppsStatusWidget />
+        <TeacherActivityFeed />
 
         {/* HR & Payroll */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 auto-rows-fr gap-4 md:gap-5">
-          <LazyWidget label="Hợp đồng" minHeight={220} className="h-full">
-            <ContractStatusWidget />
-          </LazyWidget>
-          <LazyWidget label="Bảng công" minHeight={220} className="h-full">
-            <TimesheetStatusWidget />
-          </LazyWidget>
-          <LazyWidget label="Bảng lương" minHeight={220} className="h-full">
-            <PayrollStatusWidget />
-          </LazyWidget>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <ContractStatusWidget />
+          <TimesheetStatusWidget />
+          <PayrollStatusWidget />
         </div>
 
         {/* Activity Trend Chart */}
-        {visible.activityTrendChart && (
-        <div className="rounded-2xl bg-card p-4 md:p-5 shadow-[0_4px_20px_rgba(15,23,42,0.04)]">
-          <h3 className="font-display text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+        {activityTrend.some(d => d.tests > 0 || d.practices > 0) && (
+        <div className="rounded-xl border bg-card p-4">
+          <h2 className="font-display text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
             <BarChart3 className="h-3.5 w-3.5" />
             Xu hướng hoạt động (14 ngày)
-          </h3>
+          </h2>
           <ResponsiveContainer width="100%" height={260}>
             <AreaChart data={activityTrend} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
               <defs>
@@ -460,49 +490,25 @@ export default function AdminDashboardPage() {
         </div>
         )}
 
-        {/* Progress & login streak — 2-up on desktop để rút khoảng trống dọc */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 auto-rows-fr gap-4 md:gap-5">
-          <LazyWidget label="Tổng quan tiến độ" minHeight={260} className="h-full">
-            <TeacherProgressSummary />
-          </LazyWidget>
-          <LazyWidget label="Lịch hoạt động" minHeight={260} className="h-full">
-            <AdminActivityCalendar />
-          </LazyWidget>
-        </div>
+        {/* Progress & login streak */}
+        <TeacherProgressSummary />
+        <AdminActivityCalendar />
 
-        {/* Error analysis — 2-up khi cả 2 đều có dữ liệu */}
-        {(visible.questionTypeStats || visible.practiceErrorStats) && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 auto-rows-fr gap-4 md:gap-5">
-            {visible.questionTypeStats && (
-              <LazyWidget label="Phân tích lỗi câu hỏi" minHeight={280} className="h-full">
-                <ClassQuestionTypeStats results={testResultsForAnalysis} />
-              </LazyWidget>
-            )}
-            {visible.practiceErrorStats && (
-              <LazyWidget label="Lỗi luyện tập" minHeight={280} className="h-full">
-                <PracticeErrorStats results={practiceResultsForAnalysis} />
-              </LazyWidget>
-            )}
-          </div>
-        )}
+        {/* Error analysis */}
+        <ClassQuestionTypeStats results={testResultsForAnalysis} />
+        <PracticeErrorStats results={practiceResultsForAnalysis} />
 
         {/* Prospects & content */}
-        {visible.prospectFunnel && (
-          <LazyWidget label="Phễu tuyển sinh" minHeight={280}>
-            <ProspectFunnel prospects={prospects} navigate={navigate} />
-          </LazyWidget>
-        )}
-        <LazyWidget label="Phân tích nội dung" minHeight={240}>
-          <ContentAnalytics />
-        </LazyWidget>
+        <ProspectFunnel prospects={prospects} navigate={navigate} />
+        <ContentAnalytics />
       </section>
 
       {/* ╔══════════ 4. QUICK ACTIONS ══════════╗ */}
-      <section className="space-y-3 md:space-y-4">
-        <h2 className="font-display text-sm font-bold text-muted-foreground uppercase tracking-[0.12em] flex items-center gap-2">
+      <section>
+        <h2 className="font-display text-sm font-bold text-muted-foreground uppercase tracking-[0.12em] mb-3 flex items-center gap-2">
           <ArrowRight className="h-3.5 w-3.5" /> Thao tác nhanh
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 auto-rows-fr gap-3 md:gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
           <QuickAction icon={PenLine} label="Tạo đề thi" desc="Tạo mới với câu hỏi IELTS" onClick={() => navigate("/tests/new")} />
           <QuickAction icon={Upload} label="Import đề" desc="Từ file Word/PDF" onClick={() => navigate("/tests/import")} />
           <QuickAction icon={ListChecks} label="Tạo bài tập" desc="Luyện tập theo kỹ năng" onClick={() => navigate("/tests?type=exercise")} />
@@ -518,18 +524,15 @@ function QuickAction({ icon: Icon, label, desc, onClick }: {
   icon: any; label: string; desc: string; onClick: () => void;
 }) {
   return (
-    <button
-      onClick={onClick}
-      className="h-full w-full flex items-center gap-3 bg-card rounded-2xl px-4 py-3.5 text-left shadow-[0_4px_20px_rgba(15,23,42,0.04)] hover:shadow-[0_10px_30px_rgba(15,23,42,0.08)] hover:-translate-y-0.5 transition-all group"
-    >
-      <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0 group-hover:bg-primary/15 transition-colors">
+    <button onClick={onClick} className="w-full flex items-center gap-3 bg-card rounded-xl border px-4 py-3 text-left hover:border-primary/30 hover:shadow-sm transition-all group">
+      <div className="w-9 h-9 rounded-lg bg-secondary flex items-center justify-center text-primary shrink-0 group-hover:bg-primary/10 transition-colors">
         <Icon className="h-4 w-4" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-foreground truncate">{label}</p>
-        <p className="text-[11px] text-muted-foreground truncate">{desc}</p>
+        <p className="text-sm font-semibold">{label}</p>
+        <p className="text-[11px] text-muted-foreground">{desc}</p>
       </div>
-      <ArrowRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0" />
+      <ArrowRight className="h-4 w-4 text-muted-foreground/30 group-hover:text-primary transition-colors shrink-0" />
     </button>
   );
 }
