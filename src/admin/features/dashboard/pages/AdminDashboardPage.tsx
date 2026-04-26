@@ -29,6 +29,7 @@ import DashboardHero from "@admin/features/dashboard/components/DashboardHero";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@shared/components/ui/button";
 import { InfoBanner } from "@shared/components/dashboard";
+import { useDashboardSections } from "@admin/features/dashboard/hooks/useDashboardSections";
 
 interface DashboardStats {
   totalTests: number;
@@ -247,6 +248,17 @@ export default function AdminDashboardPage() {
     fetchData();
   }, [isSuperAdmin]);
 
+  // Compute visibility BEFORE any early return so the hook order stays stable.
+  const visible = useDashboardSections({
+    stats,
+    recentItems,
+    todaySchedule,
+    activityTrend,
+    testResultsForAnalysis,
+    practiceResultsForAnalysis,
+    prospects,
+  });
+
   if (loading) {
     return (
       <div className="p-6 flex items-center justify-center min-h-[400px]">
@@ -285,70 +297,72 @@ export default function AdminDashboardPage() {
         <p className="text-sm text-muted-foreground mt-1">Tổng quan hệ thống Learning+ Admin Portal</p>
       </div>
 
-      {/* ── Hero: KPI cards + Calendar + Performance chart + Recent ── */}
-      <DashboardHero
-        totalStudents={s.totalStudents}
-        totalTeachers={s.totalTeachers}
-        totalClasses={s.totalClasses}
-        totalTests={s.totalTests}
-        recentResults7d={s.recentResults7d}
-        recentPractice7d={s.recentPractice7d}
-        recentItems={recentItems.slice(0, 6).map((it) => ({
-          id: it.id,
-          name: it.name,
-          meta: `${it.type === "test" ? "Đề thi" : "Bài tập"}${it.section_type ? ` · ${it.section_type}` : it.skill ? ` · ${it.skill}` : ""}`,
-          badge: { label: it.status, tone: it.status === "published" ? "teal" : "coral" },
-        }))}
-      />
+      {/* ╔══════════ 1. HERO ══════════╗ */}
+      {visible.hero && (
+        <DashboardHero
+          totalStudents={s.totalStudents}
+          totalTeachers={s.totalTeachers}
+          totalClasses={s.totalClasses}
+          totalTests={s.totalTests}
+          recentResults7d={s.recentResults7d}
+          recentPractice7d={s.recentPractice7d}
+          recentItems={visible.heroRecent ? recentItems.slice(0, 6).map((it) => ({
+            id: it.id,
+            name: it.name,
+            meta: `${it.type === "test" ? "Đề thi" : "Bài tập"}${it.section_type ? ` · ${it.section_type}` : it.skill ? ` · ${it.skill}` : ""}`,
+            badge: { label: it.status, tone: it.status === "published" ? "teal" : "coral" },
+          })) : []}
+        />
+      )}
 
-      {/* ╔══════════ 2. LỊCH HÔM NAY ══════════╗
-         Tóm tắt buổi học hôm nay + KPI bài tập (chưa có trong Hero) */}
-      <section className="space-y-3">
-        <h2 className="font-display text-sm font-bold text-muted-foreground uppercase tracking-[0.12em] flex items-center gap-2">
-          <CalendarDays className="h-3.5 w-3.5" /> Lịch hôm nay
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {todaySchedule && todaySchedule.count > 0 ? (
-            <InfoBanner
-              icon={CalendarDays}
-              iconTone="teal"
-              onClick={() => navigate("/schedule")}
-              title={
-                <>
-                  {todaySchedule.count} buổi học
-                  {todaySchedule.conflicts > 0 && (
-                    <span className="flex items-center gap-1 text-destructive text-xs font-medium">
-                      <AlertTriangle className="h-3 w-3" />
-                      {todaySchedule.conflicts} xung đột
-                    </span>
-                  )}
-                </>
-              }
-              description={todaySchedule.firstTime ? `Buổi đầu lúc ${todaySchedule.firstTime}` : "Chưa có giờ cụ thể"}
-            />
-          ) : (
-            <InfoBanner
-              icon={CalendarDays}
-              iconTone="muted"
-              title="Không có buổi học hôm nay"
-              description="Lịch trống — hãy nghỉ ngơi 🌿"
-            />
-          )}
+      {/* ╔══════════ 2. LỊCH HÔM NAY ══════════╗ */}
+      {visible.todaySection && (
+        <section className="space-y-3">
+          <h2 className="font-display text-sm font-bold text-muted-foreground uppercase tracking-[0.12em] flex items-center gap-2">
+            <CalendarDays className="h-3.5 w-3.5" /> Lịch hôm nay
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {visible.scheduleBanner && todaySchedule && (
+              <InfoBanner
+                icon={CalendarDays}
+                iconTone="teal"
+                onClick={() => navigate("/schedule")}
+                title={
+                  <>
+                    {todaySchedule.count} buổi học
+                    {todaySchedule.conflicts > 0 && (
+                      <span className="flex items-center gap-1 text-destructive text-xs font-medium">
+                        <AlertTriangle className="h-3 w-3" />
+                        {todaySchedule.conflicts} xung đột
+                      </span>
+                    )}
+                  </>
+                }
+                description={todaySchedule.firstTime ? `Buổi đầu lúc ${todaySchedule.firstTime}` : "Chưa có giờ cụ thể"}
+              />
+            )}
+            {visible.scheduleEmptyBanner && (
+              <InfoBanner
+                icon={CalendarDays}
+                iconTone="muted"
+                title="Không có buổi học hôm nay"
+                description="Lịch trống — hãy nghỉ ngơi 🌿"
+              />
+            )}
+            {visible.exercisesBanner && (
+              <InfoBanner
+                icon={Layers}
+                iconTone="coral"
+                onClick={() => navigate("/tests?type=exercise")}
+                title={`${s.totalExercises} bài tập · ${s.publishedExercises} published`}
+                description="Quản lý bài luyện tập theo kỹ năng"
+              />
+            )}
+          </div>
+        </section>
+      )}
 
-          {s.totalExercises > 0 && (
-            <InfoBanner
-              icon={Layers}
-              iconTone="coral"
-              onClick={() => navigate("/tests?type=exercise")}
-              title={`${s.totalExercises} bài tập · ${s.publishedExercises} published`}
-              description="Quản lý bài luyện tập theo kỹ năng"
-            />
-          )}
-        </div>
-      </section>
-
-      {/* ╔══════════ 3. ANALYTICS ══════════╗
-         Toàn bộ widget phân tích, vận hành & nội dung */}
+      {/* ╔══════════ 3. ANALYTICS ══════════╗ */}
       <section className="space-y-4">
         <h2 className="font-display text-sm font-bold text-muted-foreground uppercase tracking-[0.12em] flex items-center gap-2">
           <BarChart3 className="h-3.5 w-3.5" /> Analytics & vận hành
@@ -366,7 +380,7 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Activity Trend Chart */}
-        {activityTrend.some(d => d.tests > 0 || d.practices > 0) && (
+        {visible.activityTrendChart && (
         <div className="rounded-xl border bg-card p-4">
           <h2 className="font-display text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
             <BarChart3 className="h-3.5 w-3.5" />
@@ -435,12 +449,12 @@ export default function AdminDashboardPage() {
         <TeacherProgressSummary />
         <AdminActivityCalendar />
 
-        {/* Error analysis */}
-        <ClassQuestionTypeStats results={testResultsForAnalysis} />
-        <PracticeErrorStats results={practiceResultsForAnalysis} />
+        {/* Error analysis — only render when there is something to analyse. */}
+        {visible.questionTypeStats && <ClassQuestionTypeStats results={testResultsForAnalysis} />}
+        {visible.practiceErrorStats && <PracticeErrorStats results={practiceResultsForAnalysis} />}
 
         {/* Prospects & content */}
-        <ProspectFunnel prospects={prospects} navigate={navigate} />
+        {visible.prospectFunnel && <ProspectFunnel prospects={prospects} navigate={navigate} />}
         <ContentAnalytics />
       </section>
 
