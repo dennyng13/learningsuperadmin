@@ -6,7 +6,8 @@ import { Button } from "@shared/components/ui/button";
 import { Input } from "@shared/components/ui/input";
 import { Label } from "@shared/components/ui/label";
 import { LogIn, Mail, Lock, Loader2 } from "lucide-react";
-import logo from "@/assets/learning-plus-logo.png";
+import fallbackLogo from "@/assets/learning-plus-logo.png";
+import { useBrandAsset } from "@shared/hooks/useBrandAsset";
 import { toast } from "sonner";
 
 export default function AdminLoginPage() {
@@ -15,6 +16,10 @@ export default function AdminLoginPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<"login" | "forgot">("login");
+  // Pull the active logo from the brand-assets registry; degrade to the
+  // bundled PNG so login still renders if the registry is empty / loading.
+  const { url: brandLogoUrl } = useBrandAsset(["logoApp", "logoMain", "favicon"]);
+  const logoSrc = brandLogoUrl ?? fallbackLogo;
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,7 +72,7 @@ export default function AdminLoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-secondary/30 p-4">
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center space-y-2">
-          <img src={logo} alt="Learning Plus" className="h-10 mx-auto" />
+          <img src={logoSrc} alt="Learning Plus" className="h-10 mx-auto" />
           <h1 className="font-display text-2xl font-bold">Admin Portal</h1>
           <p className="text-sm text-muted-foreground">
             {mode === "login" ? "Sign in to manage your tests" : "Reset your password"}
