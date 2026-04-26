@@ -164,17 +164,26 @@ const SectionCard = forwardRef<HTMLButtonElement, { section: LibrarySection }>(f
 });
 
 /* ─────────── Stable shape picker ───────────
-   Hash section.id để chọn 1 url cố định trong danh sách urls — đảm bảo cùng
-   1 card luôn hiển thị cùng 1 shape, nhưng các card khác nhau ưu tiên các
-   shape khác nhau trong cùng palette.
+   Ưu tiên các shape "mềm" (blob, wave, curve, drop, circle, leaf, petal,
+   cloud) — tránh các shape góc cạnh (stairs, chevron, arrow, zigzag, grid)
+   vì chúng trông như icon thay vì decoration. Nếu không có shape nào trong
+   whitelist, fallback hash ổn định để vẫn deterministic.
 */
+const SOFT_SHAPE_KEYWORDS = ["blob", "wave", "curve", "drop", "circle", "oval", "leaf", "petal", "cloud", "moon", "pebble", "bean"];
+const HARSH_SHAPE_KEYWORDS = ["stair", "chevron", "arrow", "zigzag", "grid", "cross", "plus", "triangle", "square", "rect"];
+
 function pickStableShape(urls: string[], seed: string): string | null {
   if (urls.length === 0) return null;
+  const soft = urls.filter((u) => SOFT_SHAPE_KEYWORDS.some((k) => u.toLowerCase().includes(k)));
+  const safe = (soft.length > 0 ? soft : urls).filter(
+    (u) => !HARSH_SHAPE_KEYWORDS.some((k) => u.toLowerCase().includes(k)),
+  );
+  const pool = safe.length > 0 ? safe : urls;
   let h = 0;
   for (let i = 0; i < seed.length; i++) {
     h = (h * 31 + seed.charCodeAt(i)) >>> 0;
   }
-  return urls[h % urls.length];
+  return pool[h % pool.length];
 }
 
 /* ─────────── Brand shape figure ───────────
@@ -199,8 +208,8 @@ function BrandShapeFigure({ url, palette }: { url: string | null; palette: Shape
       <div
         aria-hidden
         className={cn(
-          "absolute -bottom-4 -right-4 h-[60%] w-[60%] pointer-events-none",
-          "bg-gradient-to-tl rounded-tl-[100%]",
+          "absolute -bottom-6 -right-6 h-[55%] w-[40%] pointer-events-none",
+          "bg-gradient-to-tl rounded-tl-[100%] opacity-40 transition-opacity duration-500 group-hover:opacity-70",
           FALLBACK_TONE[palette],
         )}
       />
@@ -214,14 +223,16 @@ function BrandShapeFigure({ url, palette }: { url: string | null; palette: Shape
       alt=""
       loading="lazy"
       decoding="async"
-      // Set kích thước cố định bằng % so với card (parent có aspect-square nên
-      // % chiều cao tính được). Một phần shape tràn ra ngoài góc bằng negative
-      // offset để gãy cảm giác "đóng khung". `object-contain` giữ tỉ lệ gốc
-      // của file PNG (vuông / ngang / dọc đều OK).
+      // Shape nhỏ hơn (~38% chiều cao card chữ nhật), neo góc dưới-phải, tràn
+      // 1 phần ra ngoài để không "đóng khung". Mặc định mờ (opacity 35%), khi
+      // hover lên card sẽ rõ dần (opacity 90%) + scale nhẹ. Filter saturate
+      // tăng nhẹ khi hover để màu thêm sống động.
       className={cn(
-        "pointer-events-none absolute -bottom-3 -right-3",
-        "h-[58%] w-[58%] object-contain object-bottom-right",
-        "transition-transform duration-500 group-hover:scale-[1.04] origin-bottom-right",
+        "pointer-events-none absolute -bottom-4 -right-4",
+        "h-[70%] w-auto max-w-[45%] object-contain object-bottom-right",
+        "opacity-35 saturate-75 transition-all duration-500 ease-out",
+        "group-hover:opacity-90 group-hover:saturate-100 group-hover:scale-[1.06]",
+        "origin-bottom-right",
       )}
     />
   );
