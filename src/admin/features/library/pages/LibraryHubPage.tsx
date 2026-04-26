@@ -1,3 +1,4 @@
+import { forwardRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { FileText, BookOpen, ClipboardList, ArrowRight, Sparkles } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -75,7 +76,10 @@ export default function LibraryHubPage() {
 
 /* ─────────── Card ─────────── */
 
-function SectionCard({ section }: { section: LibrarySection }) {
+const SectionCard = forwardRef<HTMLButtonElement, { section: LibrarySection }>(function SectionCard(
+  { section },
+  ref,
+) {
   const Icon = section.icon;
   const navigate = useNavigate();
   const { urls } = useBrandShapes(section.palette);
@@ -95,6 +99,7 @@ function SectionCard({ section }: { section: LibrarySection }) {
 
   return (
     <button
+      ref={ref}
       onClick={() => navigate(section.route)}
       className={cn(
         "group relative aspect-square overflow-hidden rounded-2xl text-left bg-card text-card-foreground",
@@ -156,7 +161,7 @@ function SectionCard({ section }: { section: LibrarySection }) {
       )}
     </button>
   );
-}
+});
 
 /* ─────────── Stable shape picker ───────────
    Hash section.id để chọn 1 url cố định trong danh sách urls — đảm bảo cùng
@@ -209,12 +214,13 @@ function BrandShapeFigure({ url, palette }: { url: string | null; palette: Shape
       alt=""
       loading="lazy"
       decoding="async"
-      // Một phần shape nằm ngoài card (negative -bottom/-right) để gãy "khung
-      // vuông" giả, đồng thời `max-h` + `max-w` cho phép shape tự co theo tỉ lệ.
-      style={{ maxHeight: "70%", maxWidth: "62%" }}
+      // Set kích thước cố định bằng % so với card (parent có aspect-square nên
+      // % chiều cao tính được). Một phần shape tràn ra ngoài góc bằng negative
+      // offset để gãy cảm giác "đóng khung". `object-contain` giữ tỉ lệ gốc
+      // của file PNG (vuông / ngang / dọc đều OK).
       className={cn(
-        "pointer-events-none absolute -bottom-3 -right-3 object-contain object-bottom-right",
-        "h-auto w-auto",
+        "pointer-events-none absolute -bottom-3 -right-3",
+        "h-[58%] w-[58%] object-contain object-bottom-right",
         "transition-transform duration-500 group-hover:scale-[1.04] origin-bottom-right",
       )}
     />
