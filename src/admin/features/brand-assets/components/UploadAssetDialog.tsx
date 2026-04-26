@@ -18,18 +18,40 @@ interface Props {
   open: boolean;
   onClose: () => void;
   onCreated: (asset: BrandAsset) => void;
+  /**
+   * Preset values applied when the dialog opens. Useful for "fast paths"
+   * like the Logo Slots panel where asset_type/asset_key are predetermined.
+   * Fields not provided keep their normal default behaviour.
+   */
+  preset?: {
+    asset_type?: BrandAssetType;
+    asset_key?: string;
+    display_name?: string;
+    /** When true, hide asset_type + asset_key inputs (locked by preset). */
+    lockIdentity?: boolean;
+  };
 }
 
-export default function UploadAssetDialog({ open, onClose, onCreated }: Props) {
-  const [type, setType] = useState<BrandAssetType>("mascot");
-  const [assetKey, setAssetKey] = useState("");
-  const [displayName, setDisplayName] = useState("");
+export default function UploadAssetDialog({ open, onClose, onCreated, preset }: Props) {
+  const [type, setType] = useState<BrandAssetType>(preset?.asset_type ?? "mascot");
+  const [assetKey, setAssetKey] = useState(preset?.asset_key ?? "");
+  const [displayName, setDisplayName] = useState(preset?.display_name ?? "");
   const [description, setDescription] = useState("");
   const [storagePath, setStoragePath] = useState("");
   const [storagePathTouched, setStoragePathTouched] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const locked = !!preset?.lockIdentity;
+
+  // Re-apply preset whenever the dialog opens (so reopening for a different
+  // slot shows the right defaults).
+  useEffect(() => {
+    if (!open) return;
+    if (preset?.asset_type) setType(preset.asset_type);
+    if (preset?.asset_key) setAssetKey(preset.asset_key);
+    if (preset?.display_name) setDisplayName(preset.display_name);
+  }, [open, preset?.asset_type, preset?.asset_key, preset?.display_name]);
 
   // Auto-suggest storage path when type/key/file changes (unless user edited it).
   const suggested = useMemo(() => {
@@ -43,9 +65,9 @@ export default function UploadAssetDialog({ open, onClose, onCreated }: Props) {
   }, [suggested, storagePathTouched]);
 
   const reset = () => {
-    setType("mascot");
-    setAssetKey("");
-    setDisplayName("");
+    setType(preset?.asset_type ?? "mascot");
+    setAssetKey(preset?.asset_key ?? "");
+    setDisplayName(preset?.display_name ?? "");
     setDescription("");
     setStoragePath("");
     setStoragePathTouched(false);
@@ -86,37 +108,49 @@ export default function UploadAssetDialog({ open, onClose, onCreated }: Props) {
         </DialogHeader>
 
         <div className="space-y-3">
-          <div className="space-y-1.5">
-            <Label className="text-xs">Loại asset</Label>
-            <Select value={type} onValueChange={(v) => setType(v as BrandAssetType)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {Object.entries(BRAND_ASSET_TYPE_LABELS).map(([k, v]) => (
-                  <SelectItem key={k} value={k}>{v}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
+          {!locked && (
             <div className="space-y-1.5">
-              <Label className="text-xs">asset_key</Label>
-              <Input
-                placeholder="vd: mascotHero"
-                value={assetKey}
-                onChange={(e) => setAssetKey(e.target.value)}
-                className="font-mono text-xs"
-              />
+              <Label className="text-xs">Loại asset</Label>
+              <Select value={type} onValueChange={(v) => setType(v as BrandAssetType)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {Object.entries(BRAND_ASSET_TYPE_LABELS).map(([k, v]) => (
+                    <SelectItem key={k} value={k}>{v}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
+          )}
+
+          <div className={locked ? "space-y-1.5" : "grid grid-cols-2 gap-3"}>
+            {!locked && (
+              <div className="space-y-1.5">
+                <Label className="text-xs">asset_key</Label>
+                <Input
+                  placeholder="vd: mascotHero"
+                  value={assetKey}
+                  onChange={(e) => setAssetKey(e.target.value)}
+                  className="font-mono text-xs"
+                />
+              </div>
+            )}
             <div className="space-y-1.5">
               <Label className="text-xs">Tên hiển thị</Label>
               <Input
-                placeholder="Mascot — Hero"
+                placeholder={locked ? assetKey : "Mascot — Hero"}
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
               />
             </div>
           </div>
+
+          {locked && (
+            <p className="text-[11px] text-muted-foreground -mt-1">
+              Đang upload vào slot cố định:{" "}
+              <code className="font-mono text-foreground">{assetKey}</code>
+              {" "}({BRAND_ASSET_TYPE_LABELS[type]})
+            </p>
+          )}
 
           <div className="space-y-1.5">
             <Label className="text-xs flex items-center justify-between">

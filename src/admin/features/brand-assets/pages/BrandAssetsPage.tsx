@@ -22,6 +22,7 @@ import {
 } from "@admin/features/brand-assets/types";
 import { BrandAssetCard } from "../components/BrandAssetCard";
 import UploadAssetDialog from "../components/UploadAssetDialog";
+import { LogoSlotsPanel } from "../components/LogoSlotsPanel";
 
 const QUERY_KEY = ["brand-assets"] as const;
 
@@ -108,6 +109,11 @@ export default function BrandAssetsPage() {
           <Plus className="h-4 w-4" /> Upload asset mới
         </Button>
       </div>
+
+      {/* Quick logo slots — surface logoMain & logoApp for one-click replace. */}
+      {!isLoading && !error && (
+        <LogoSlotsPanel assets={assets} onChanged={invalidate} />
+      )}
 
       {/* Filters */}
       <div className="rounded-2xl bg-card p-3 shadow-[0_4px_20px_rgba(15,23,42,0.04)] flex items-center gap-2 flex-wrap">
