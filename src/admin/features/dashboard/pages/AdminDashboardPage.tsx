@@ -518,15 +518,18 @@ function QuickAction({ icon: Icon, label, desc, onClick }: {
   icon: any; label: string; desc: string; onClick: () => void;
 }) {
   return (
-    <button onClick={onClick} className="w-full flex items-center gap-3 bg-card rounded-xl border px-4 py-3 text-left hover:border-primary/30 hover:shadow-sm transition-all group">
-      <div className="w-9 h-9 rounded-lg bg-secondary flex items-center justify-center text-primary shrink-0 group-hover:bg-primary/10 transition-colors">
+    <button
+      onClick={onClick}
+      className="h-full w-full flex items-center gap-3 bg-card rounded-2xl px-4 py-3.5 text-left shadow-[0_4px_20px_rgba(15,23,42,0.04)] hover:shadow-[0_10px_30px_rgba(15,23,42,0.08)] hover:-translate-y-0.5 transition-all group"
+    >
+      <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0 group-hover:bg-primary/15 transition-colors">
         <Icon className="h-4 w-4" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold">{label}</p>
-        <p className="text-[11px] text-muted-foreground">{desc}</p>
+        <p className="text-sm font-semibold text-foreground truncate">{label}</p>
+        <p className="text-[11px] text-muted-foreground truncate">{desc}</p>
       </div>
-      <ArrowRight className="h-4 w-4 text-muted-foreground/30 group-hover:text-primary transition-colors shrink-0" />
+      <ArrowRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0" />
     </button>
   );
 }
