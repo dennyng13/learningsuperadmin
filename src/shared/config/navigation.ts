@@ -3,7 +3,7 @@ import {
   LayoutDashboard, FileText, Upload, Award, Users, School,
   CalendarDays, UserSearch, Settings, ShieldCheck, BarChart3,
   BookOpen, ClipboardList, Flag, GraduationCap, CalendarCheck,
-  FileSignature,
+  FileSignature, CalendarClock,
 } from "lucide-react";
 
 export interface NavItem {
@@ -14,7 +14,7 @@ export interface NavItem {
   end?: boolean;
   order: number;
   /** Group label */
-  group: "main" | "system";
+  group: "main" | "hr" | "system";
   /** Only show for super_admin */
   superAdminOnly?: boolean;
 }
@@ -40,7 +40,8 @@ export const adminNavItems: NavItem[] = [
   { id: "study-plans",  label: "Study Plans",  icon: ClipboardList,   route: "/study-plans",                   group: "main",   order: 9 },
   { id: "placement",    label: "Sắp lớp",      icon: UserSearch,      route: "/placement",                     group: "main",   order: 10 },
   { id: "attendance",   label: "Điểm danh",    icon: CalendarDays,    route: "/attendance",                    group: "main",   order: 11 },
-  { id: "contracts",    label: "Hợp đồng",     icon: FileSignature,   route: "/contracts",                     group: "main",   order: 12 },
+  { id: "contracts",    label: "Hợp đồng",     icon: FileSignature,   route: "/contracts",                     group: "hr",     order: 12 },
+  { id: "timesheet",    label: "Bảng công",    icon: CalendarClock,   route: "/timesheet",                     group: "hr",     order: 13 },
 
   { id: "permissions",  label: "Phân quyền",    icon: ShieldCheck,    route: "/modules",        group: "system", superAdminOnly: true, order: 20 },
   { id: "feature-flags", label: "Feature Flags", icon: Flag,           route: "/feature-flags",  group: "system", superAdminOnly: true, order: 21 },
