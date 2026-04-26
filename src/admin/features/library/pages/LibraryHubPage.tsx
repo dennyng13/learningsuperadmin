@@ -16,8 +16,6 @@ import type { ShapePalette } from "@admin/features/brand-assets/types";
    asset_type=shape) ở góc dưới phải — đồng bộ visual với toàn bộ portal.
    ═══════════════════════════════════════════ */
 
-type Tone = "featured" | "soft";
-
 interface LibrarySection {
   id: string;
   title: string;
@@ -25,7 +23,8 @@ interface LibrarySection {
   icon: LucideIcon;
   route: string;
   palette: ShapePalette;  // dùng để lookup shapes trong DB
-  tone: Tone;
+  /** Hiển thị badge "Chính" — nhấn nhẹ thay vì đổ màu nền cả card. */
+  featured?: boolean;
   extraLinks?: { label: string; route: string }[];
 }
 
@@ -37,7 +36,7 @@ const SECTIONS: LibrarySection[] = [
     icon: FileText,
     route: "/tests",
     palette: "teal",
-    tone: "featured",
+    featured: true,
     extraLinks: [{ label: "Nhập đề từ file", route: "/tests/import" }],
   },
   {
@@ -47,7 +46,6 @@ const SECTIONS: LibrarySection[] = [
     icon: BookOpen,
     route: "/flashcards",
     palette: "amber",
-    tone: "soft",
   },
   {
     id: "study-plans",
@@ -56,7 +54,6 @@ const SECTIONS: LibrarySection[] = [
     icon: ClipboardList,
     route: "/study-plans",
     palette: "indigo",
-    tone: "soft",
     extraLinks: [{ label: "Mẫu lộ trình", route: "/study-plans/templates" }],
   },
 ];
@@ -70,7 +67,7 @@ export default function LibraryHubPage() {
         subtitle="Tất cả nội dung học thuật ở một nơi: đề thi, flashcard và lộ trình học."
       />
 
-      <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {SECTIONS.map((s) => (
           <SectionCard key={s.id} section={s} />
         ))}
@@ -85,144 +82,123 @@ function SectionCard({ section }: { section: LibrarySection }) {
   const Icon = section.icon;
   const navigate = useNavigate();
   const { urls } = useBrandShapes(section.palette);
-  const featured = section.tone === "featured";
+  const featured = !!section.featured;
 
   return (
     <button
       onClick={() => navigate(section.route)}
       className={cn(
-        "group relative aspect-[5/4] overflow-hidden rounded-3xl text-left",
+        "group relative h-44 overflow-hidden rounded-2xl text-left bg-card text-card-foreground",
         "border transition-all duration-300",
-        "hover:-translate-y-1 hover:shadow-xl",
+        "hover:-translate-y-0.5 hover:shadow-md",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
         featured
-          ? "bg-primary text-primary-foreground border-transparent shadow-lg shadow-primary/20"
-          : "bg-card text-card-foreground border-border/70 hover:border-primary/30",
+          ? "border-primary/30 ring-1 ring-primary/10 hover:border-primary/50"
+          : "border-border/70 hover:border-primary/30",
       )}
     >
-      {/* Brand geometric shapes — bottom-right corner. */}
-      <BrandShapeCluster urls={urls} featured={featured} />
+      {/* Single brand geometric shape — bottom-right accent (very subtle). */}
+      <BrandShapeAccent url={urls[0] ?? null} featured={featured} />
 
-      {/* Top: Icon */}
-      <div className="relative z-10 p-6 flex items-start justify-between">
-        <div
-          className={cn(
-            "h-11 w-11 rounded-xl flex items-center justify-center backdrop-blur-sm",
-            featured
-              ? "bg-primary-foreground/15 text-primary-foreground"
-              : "bg-muted text-foreground/80",
+      {/* Layout: 5 / icon-top, title+blurb, footer (arrow + links) */}
+      <div className="relative z-10 h-full p-5 flex flex-col">
+        {/* Top row: icon + featured badge */}
+        <div className="flex items-start justify-between">
+          <div
+            className={cn(
+              "h-10 w-10 rounded-lg flex items-center justify-center",
+              featured ? "bg-primary/10 text-primary" : "bg-muted text-foreground/70",
+            )}
+          >
+            <Icon className="h-[18px] w-[18px]" strokeWidth={2.25} />
+          </div>
+          {featured && (
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide bg-primary/10 text-primary">
+              Chính
+            </span>
           )}
-        >
-          <Icon className="h-5 w-5" strokeWidth={2.25} />
         </div>
-      </div>
 
-      {/* Middle: title + blurb */}
-      <div className="relative z-10 px-6">
-        <h3 className="font-display text-xl font-extrabold tracking-tight leading-tight">
-          {section.title}
-        </h3>
-        <p
-          className={cn(
-            "text-sm mt-1.5 leading-snug max-w-[18rem]",
-            featured ? "text-primary-foreground/85" : "text-muted-foreground",
-          )}
-        >
-          {section.blurb}
-        </p>
-      </div>
+        {/* Title + blurb */}
+        <div className="mt-3">
+          <h3 className="font-display text-base font-extrabold tracking-tight leading-tight">
+            {section.title}
+          </h3>
+          <p className="text-xs text-muted-foreground mt-1 leading-relaxed line-clamp-2 max-w-[22rem]">
+            {section.blurb}
+          </p>
+        </div>
 
-      {/* Bottom: arrow + extra links */}
-      <div className="absolute z-10 inset-x-0 bottom-0 p-6 flex items-end justify-between gap-3">
-        <ArrowRight
-          className={cn(
-            "h-5 w-5 transition-transform duration-300 group-hover:translate-x-1",
-            featured ? "text-primary-foreground" : "text-foreground/70",
-          )}
-          strokeWidth={2.25}
-        />
-        {section.extraLinks && section.extraLinks.length > 0 && (
-          <div className="flex flex-wrap justify-end gap-1.5">
-            {section.extraLinks.map((l) => (
-              <span
-                key={l.route}
-                role="link"
-                tabIndex={0}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  navigate(l.route);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
+        {/* Spacer */}
+        <div className="flex-1" />
+
+        {/* Footer: arrow + extra links */}
+        <div className="flex items-center justify-between gap-2">
+          <ArrowRight
+            className={cn(
+              "h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5",
+              featured ? "text-primary" : "text-foreground/60",
+            )}
+            strokeWidth={2.5}
+          />
+          {section.extraLinks && section.extraLinks.length > 0 && (
+            <div className="flex flex-wrap justify-end gap-1.5">
+              {section.extraLinks.map((l) => (
+                <span
+                  key={l.route}
+                  role="link"
+                  tabIndex={0}
+                  onClick={(e) => {
                     e.stopPropagation();
                     navigate(l.route);
-                  }
-                }}
-                className={cn(
-                  "cursor-pointer px-2.5 py-1 rounded-full text-[11px] font-medium border transition-colors",
-                  featured
-                    ? "bg-primary-foreground/15 border-primary-foreground/25 text-primary-foreground hover:bg-primary-foreground/25"
-                    : "bg-background/70 border-border/70 text-foreground/80 hover:border-primary/40",
-                )}
-              >
-                {l.label}
-              </span>
-            ))}
-          </div>
-        )}
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.stopPropagation();
+                      navigate(l.route);
+                    }
+                  }}
+                  className="cursor-pointer px-2 py-0.5 rounded-full text-[10px] font-medium border border-border/70 bg-background/70 text-foreground/70 hover:border-primary/40 hover:text-foreground transition-colors"
+                >
+                  {l.label}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </button>
   );
 }
 
-/* ─────────── Brand shape cluster ───────────
-   Lấy tối đa 3 shape từ palette của card và đặt ở góc dưới phải, mỗi shape
-   xoay/ kích thước hơi khác để tạo "cluster" giống ảnh tham chiếu. Nếu DB
-   chưa có shape thì fallback về vòng tròn CSS gradient để card không trống.
+/* ─────────── Brand shape accent ───────────
+   Chỉ DUY NHẤT 1 shape ở góc dưới phải, rất mờ — đóng vai trò hoa văn nền,
+   không phải đối tượng chính. Fallback: blob gradient mềm khi DB chưa có asset.
 */
-function BrandShapeCluster({ urls, featured }: { urls: string[]; featured: boolean }) {
-  // Chỉ lấy 1-2 shape để giảm rối; shape phụ (nếu có) nhỏ hơn nhiều và rất mờ.
-  const picks = urls.slice(0, 2);
-
-  if (picks.length === 0) {
+function BrandShapeAccent({ url, featured }: { url: string | null; featured: boolean }) {
+  if (!url) {
     return (
       <div
         aria-hidden
         className={cn(
-          "absolute -bottom-10 -right-10 h-40 w-40 rounded-full pointer-events-none",
-          featured
-            ? "bg-primary-foreground/8 blur-3xl"
-            : "bg-primary/8 blur-3xl",
+          "absolute -bottom-12 -right-12 h-36 w-36 rounded-full pointer-events-none",
+          featured ? "bg-primary/10 blur-3xl" : "bg-primary/5 blur-3xl",
         )}
       />
     );
   }
 
-  // Shape chính lớn ở góc, shape phụ rất nhỏ và mờ hơn nữa để chỉ là accent.
-  const positions = [
-    "bottom-4 right-4 h-24 w-24 rotate-[-6deg] opacity-30",
-    "bottom-12 right-24 h-10 w-10 rotate-[18deg] opacity-15",
-  ];
-
   return (
-    <div aria-hidden className="absolute inset-0 pointer-events-none overflow-hidden">
-      {picks.map((url, i) => (
-        <img
-          key={url}
-          src={url}
-          alt=""
-          loading="lazy"
-          decoding="async"
-          className={cn(
-            "absolute object-contain transition-all duration-500",
-            "group-hover:opacity-50 group-hover:scale-105",
-            positions[i],
-            // Featured card có nền tối — dùng mix-blend để shape hoà vào màu
-            // primary thay vì "nổi" lên như sticker.
-            featured && "mix-blend-overlay",
-          )}
-        />
-      ))}
-    </div>
+    <img
+      aria-hidden
+      src={url}
+      alt=""
+      loading="lazy"
+      decoding="async"
+      className={cn(
+        "pointer-events-none absolute -bottom-2 -right-2 h-20 w-20 object-contain",
+        "opacity-20 transition-opacity duration-500 group-hover:opacity-30",
+      )}
+    />
   );
 }
