@@ -1,5 +1,6 @@
-import { useState, useMemo, type ComponentType } from "react";
-import { Link } from "react-router-dom";
+import { useState, useMemo, useEffect, type ComponentType } from "react";
+import { Link, Navigate, useSearchParams } from "react-router-dom";
+import { toast } from "sonner";
 import {
   ChevronRight, Settings, Database, HardDrive, Globe, Bell, Mail,
   RefreshCw,
@@ -16,6 +17,17 @@ import AdminEmailTab from "@admin/features/settings/components/AdminEmailTab";
 import AdminSyncTypesTab from "@admin/features/settings/components/AdminSyncTypesTab";
 import AdminBrandAssetsTab from "@admin/features/settings/components/AdminBrandAssetsTab";
 import { useAuth } from "@shared/hooks/useAuth";
+
+/**
+ * Map các id tab cũ (đã chuyển ra trang riêng) → route mới + label hiển thị.
+ * Khi user truy cập `/settings?tab=<legacy-id>` (vd. từ bookmark, link cũ
+ * trong email, doc nội bộ), tự redirect sang trang mới + toast thông báo.
+ */
+const LEGACY_TAB_REDIRECTS: Record<string, { to: string; label: string }> = {
+  "ai-grading":       { to: "/permissions?tab=ai-grading", label: "AI Chấm bài" },
+  "band-descriptors": { to: "/band-descriptors",           label: "Band Descriptor" },
+  "templates":        { to: "/feedback-templates",         label: "Mẫu nhận xét" },
+};
 
 type SettingsItem = {
   id: string;
@@ -63,9 +75,21 @@ const GROUPS: SettingsGroup[] = [
 
 export default function AdminSettingsPage() {
   const { isAdmin } = useAuth();
+  const [params] = useSearchParams();
+  const legacyTab = params.get("tab");
+  const redirect = legacyTab ? LEGACY_TAB_REDIRECTS[legacyTab] : null;
+
   const [activeId, setActiveId] = useState("general");
   const [search, setSearch] = useState("");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  useEffect(() => {
+    if (redirect) {
+      toast.info(`"${redirect.label}" đã chuyển sang trang riêng`, {
+        description: "Đang chuyển hướng…",
+      });
+    }
+  }, [redirect]);
 
   const visibleGroups = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -100,6 +124,11 @@ export default function AdminSettingsPage() {
     setActiveId(id);
     setMobileNavOpen(false);
   };
+
+  // Early return SAU khi tất cả hooks đã chạy → giữ rules-of-hooks order.
+  if (redirect) {
+    return <Navigate to={redirect.to} replace />;
+  }
 
   return (
     <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-4 md:space-y-6">

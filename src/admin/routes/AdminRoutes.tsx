@@ -144,6 +144,10 @@ export default function AppRoutes() {
           {/* Academic — Band Descriptor & Mẫu nhận xét (chuyển từ Settings) */}
           <Route path="band-descriptors" element={<BandDescriptorsPage />} />
           <Route path="feedback-templates" element={<FeedbackTemplatesPage />} />
+          {/* Legacy redirects — bookmark cũ /settings/<id> → trang riêng */}
+          <Route path="settings/ai-grading"       element={<Navigate to="/permissions?tab=ai-grading" replace />} />
+          <Route path="settings/band-descriptors" element={<Navigate to="/band-descriptors" replace />} />
+          <Route path="settings/templates"        element={<Navigate to="/feedback-templates" replace />} />
 
           {/* Permissions — gộp Module access + Student field access */}
           <Route path="permissions" element={<PermissionsPage />} />
