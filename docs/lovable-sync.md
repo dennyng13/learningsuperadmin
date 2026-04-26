@@ -11,4 +11,5 @@ File này dùng để trigger Lovable webhook khi cần resync mirror với GitH
 - 2026-04-26: trigger resync to pull PR #13
 - 2026-04-26: trigger resync to pull PR #12
 - 2026-04-26: manual re-trigger resync — PR #12 (timesheet admin UI) and PR #13 (UX polish) not yet mirrored, head=3dd227c
+- 2026-04-26: re-trigger #2 — PR #12 + #13 still not mirrored locally (no timesheet files, nav unchanged), GitHub head=3dd227c
 
