@@ -47,6 +47,22 @@ const routeLabels: Record<string, string> = {
 
 interface Crumb { label: string; path: string }
 
+/* ─── "Quản lý học liệu" parent ───
+   Các route nằm trong hub /library cần chèn 1 crumb cha để user biết mình
+   đang ở đâu trong hub. `LIBRARY_CHILD_PREFIXES` liệt kê prefix các nhánh
+   con — bất kỳ pathname nào bắt đầu bằng các prefix này (trừ chính /library)
+   sẽ được prepend "Quản lý học liệu".
+*/
+const LIBRARY_CHILD_PREFIXES = ["/tests", "/flashcards", "/study-plans", "/practice"];
+const LIBRARY_PARENT_CRUMB: Crumb = { label: "Quản lý học liệu", path: "/library" };
+
+function libraryParentPrefix(pathname: string): Crumb[] {
+  const isChild = LIBRARY_CHILD_PREFIXES.some(
+    (p) => pathname === p || pathname.startsWith(p + "/"),
+  );
+  return isChild ? [LIBRARY_PARENT_CRUMB] : [];
+}
+
 const groupPrefix = (route: string): Crumb[] => {
   const g = routeGroup[route];
   if (!g) return [];
@@ -109,7 +125,7 @@ function resolveCrumbs(pathname: string): Crumb[] {
 
 export function AdminBreadcrumb() {
   const { pathname } = useLocation();
-  const crumbs = resolveCrumbs(pathname);
+  const crumbs = [...libraryParentPrefix(pathname), ...resolveCrumbs(pathname)];
 
   if (crumbs.length === 0) return null;
 
