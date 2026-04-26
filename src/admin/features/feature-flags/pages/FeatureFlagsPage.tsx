@@ -406,8 +406,8 @@ function OverridesDialog({ flag, onClose }: { flag: FeatureFlag; onClose: () => 
     if (!email.trim()) return;
     setAdding(true);
     // Lookup user bằng email qua teachngo_students.email (app đang dùng bảng này)
-    const { data: stu } = await supabase
-      .from("teachngo_students")
+    const { data: stu } = await (supabase as any)
+      .from("synced_students")
       .select("linked_user_id")
       .eq("email", email.trim())
       .not("linked_user_id", "is", null)

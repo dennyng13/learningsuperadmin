@@ -177,8 +177,8 @@ async function fetchFeed(limit: number, sinceIso: string, untilIso: string): Pro
   const sessionClassIds = [...new Set([...planClassMap.values()].flat())];
   const sessionClassMap = new Map<string, { teacherId: string | null; className: string }>();
   if (sessionClassIds.length > 0) {
-    const { data: cls, error: classesLookupError } = await supabase
-      .from("teachngo_classes")
+    const { data: cls, error: classesLookupError } = await (supabase as any)
+      .from("classes")
       .select("id, class_name, teacher_id")
       .in("id", sessionClassIds);
     if (classesLookupError) throw classesLookupError;
@@ -220,10 +220,10 @@ async function fetchFeed(limit: number, sinceIso: string, untilIso: string): Pro
       ? supabase.from("teachers").select("id, full_name").in("id", [...teacherIds])
       : Promise.resolve(emptyTeachersRes),
     studentIds.size
-      ? supabase.from("teachngo_students").select("id, full_name").in("id", [...studentIds])
+      ? (supabase as any).from("synced_students" as any).select("id, full_name").in("id", [...studentIds])
       : Promise.resolve(emptyStudentsRes),
     classIds.size
-      ? supabase.from("teachngo_classes").select("id, class_name").in("id", [...classIds])
+      ? (supabase as any).from("classes" as any).select("id, class_name").in("id", [...classIds])
       : Promise.resolve(emptyClassesRes),
   ]);
 
@@ -231,8 +231,8 @@ async function fetchFeed(limit: number, sinceIso: string, untilIso: string): Pro
   if (lookupError) throw lookupError;
 
   const teachers = teachersRes.data;
-  const students = studentsRes.data;
-  const classes = classesRes.data;
+  const students = studentsRes.data as Array<{ id: string; full_name: string }> | null;
+  const classes = classesRes.data as Array<{ id: string; class_name: string }> | null;
 
   const tMap = new Map((teachers || []).map(t => [t.id, t.full_name]));
   const sMap = new Map((students || []).map(s => [s.id, s.full_name]));

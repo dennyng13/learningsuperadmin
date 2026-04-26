@@ -65,7 +65,7 @@ function useAppsStatus() {
         entries7dRes,
         entriesPrev7dRes,
       ] = await Promise.all([
-        supabase.from("teachngo_students")
+        (supabase as any).from("synced_students" as any)
           .select("*", { count: "exact", head: true })
           .not("linked_user_id", "is", null),
         supabase.from("test_results")
@@ -94,7 +94,7 @@ function useAppsStatus() {
           .lt("created_at", since7d),
         supabase.from("teachers")
           .select("*", { count: "exact", head: true }),
-        supabase.from("teachngo_classes")
+        (supabase as any).from("classes" as any)
           .select("*", { count: "exact", head: true })
           .eq("status", "active"),
         supabase.from("study_plan_entries")
@@ -234,7 +234,7 @@ export default function AppsStatusWidget() {
       .channel("dashboard-apps-status-live")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "test_results" }, bumpRunning)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "practice_results" }, bumpRunning)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "teachngo_classes" }, bumpClasses)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "classes" }, bumpClasses)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "study_plan_entries" }, bumpSessions)
       .subscribe((status) => {
         setConnected(status === "SUBSCRIBED");

@@ -224,8 +224,8 @@ export default function TeachersTab() {
   };
 
   const fetchClasses = async () => {
-    const { data } = await supabase
-      .from("teachngo_classes")
+    const { data } = await (supabase as any)
+      .from("classes")
       .select("id, class_name, teacher_id, status")
       .order("class_name");
     setAllClasses(data || []);
@@ -331,12 +331,12 @@ export default function TeachersTab() {
       const toAdd = [...selectedClassIds].filter(id => !prevAssigned.includes(id));
 
       if (toRemove.length > 0) {
-        await supabase.from("teachngo_classes")
+        await (supabase as any).from("classes" as any)
           .update({ teacher_id: null, updated_at: new Date().toISOString() })
           .in("id", toRemove);
       }
       if (toAdd.length > 0) {
-        await supabase.from("teachngo_classes")
+        await (supabase as any).from("classes" as any)
           .update({ teacher_id: teacherId, updated_at: new Date().toISOString() })
           .in("id", toAdd);
       }

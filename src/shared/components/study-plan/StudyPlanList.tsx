@@ -352,8 +352,8 @@ export function StudyPlanList({ plans, isLoading, teacherMode = false, canCreate
                         classIds={plan.class_ids}
                         studentIds={plan.student_ids}
                         teachngoStudentId={plan.teachngo_student_id}
-                        classNames={classNames}
-                        studentNames={studentNames}
+                        classNames={classNames as Map<string, string>}
+                        studentNames={studentNames as Map<string, string>}
                       />
                     </div>
                   </div>

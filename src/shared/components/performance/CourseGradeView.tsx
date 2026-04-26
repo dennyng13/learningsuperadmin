@@ -29,16 +29,16 @@ export default function CourseGradeView({ userId }: { userId: string }) {
     (async () => {
       setLoadingClasses(true);
       // Find student's teachngo_id
-      const { data: ts } = await supabase
-        .from("teachngo_students" as any)
+      const { data: ts } = await (supabase as any)
+        .from("synced_students")
         .select("teachngo_id")
         .eq("linked_user_id", userId)
         .maybeSingle() as any;
       if (!ts?.teachngo_id) { setLoadingClasses(false); return; }
 
-      const { data: enrolls } = await supabase
-        .from("teachngo_class_students")
-        .select("class_id, class:teachngo_classes(id, class_name, status, start_date, end_date)")
+      const { data: enrolls } = await (supabase as any)
+        .from("class_students")
+        .select("class_id, class:classes(id, class_name, status, start_date, end_date)")
         .eq("teachngo_student_id", ts.teachngo_id) as any;
 
       const list: ClassOption[] = (enrolls || [])

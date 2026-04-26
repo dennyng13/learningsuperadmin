@@ -117,7 +117,7 @@ export default function ClassesListPage() {
   const { data: rows = [], isLoading, error } = useQuery({
     queryKey: ["admin-classes-list", { search, statuses, sortKey, sortDir }],
     queryFn: async (): Promise<ClassRow[]> => {
-      let q = (supabase as any).from("teachngo_classes").select("*");
+      let q = (supabase as any).from("classes" as any).select("*");
 
       if (statuses.length > 0 && statuses.length < CLASS_STATUS_OPTIONS.length) {
         q = q.in("lifecycle_status", statuses);
@@ -143,7 +143,7 @@ export default function ClassesListPage() {
     queryKey: ["admin-classes-counts"],
     queryFn: async () => {
       const { data, error } = await (supabase as any)
-        .from("teachngo_classes")
+        .from("classes" as any)
         .select("lifecycle_status");
       if (error) throw error;
       return (data ?? []) as { lifecycle_status: ClassLifecycleStatus | null }[];

@@ -91,8 +91,8 @@ export interface ExpectedTableSpec {
  */
 export const EXPECTED_SCHEMA: ExpectedTableSpec[] = [
   {
-    table: "teachngo_classes",
-    description: "Bảng trung tâm cho mọi class — đồng bộ từ Teach'n Go + chỉnh sửa tại admin.",
+    table: "classes",
+    description: "Bảng trung tâm cho mọi class — đồng bộ từ external sync + chỉnh sửa tại admin.",
     columns: [
       { name: "id", description: "Khóa chính", usedBy: ["mọi nơi"] },
       { name: "name", description: "Tên hiển thị mới (sau migration backbone)", migration: "2026-04-26-class-detail-backbone.sql", usedBy: ["ClassesListPage", "AdminClassDetailPage"] },
@@ -114,7 +114,7 @@ export const EXPECTED_SCHEMA: ExpectedTableSpec[] = [
     description: "Multi-teacher per class (lead/co-teacher/observer).",
     columns: [
       { name: "id", description: "Khóa chính" },
-      { name: "class_id", description: "FK teachngo_classes" },
+      { name: "class_id", description: "FK classes" },
       { name: "teacher_id", description: "FK auth.users" },
       { name: "role", description: "lead | co | observer", migration: "2026-04-26-class-detail-backbone.sql" },
     ],
@@ -124,7 +124,7 @@ export const EXPECTED_SCHEMA: ExpectedTableSpec[] = [
     description: "Buổi học cụ thể của 1 lớp (Stage B).",
     columns: [
       { name: "id", description: "Khóa chính" },
-      { name: "class_id", description: "FK teachngo_classes" },
+      { name: "class_id", description: "FK classes" },
       { name: "session_date", description: "Ngày dạy" },
       { name: "start_time", description: "Giờ bắt đầu" },
       { name: "end_time", description: "Giờ kết thúc" },
@@ -135,7 +135,7 @@ export const EXPECTED_SCHEMA: ExpectedTableSpec[] = [
     description: "Học viên ↔ lớp.",
     columns: [
       { name: "id", description: "Khóa chính", migration: "2026-04-26-class-detail-backbone.sql" },
-      { name: "class_id", description: "FK teachngo_classes", migration: "2026-04-26-class-detail-backbone.sql" },
+      { name: "class_id", description: "FK classes", migration: "2026-04-26-class-detail-backbone.sql" },
       { name: "student_id", description: "FK auth.users", migration: "2026-04-26-class-detail-backbone.sql" },
       { name: "status", description: "active | dropped | completed", migration: "2026-04-26-class-detail-backbone.sql" },
     ],

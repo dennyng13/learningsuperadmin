@@ -161,8 +161,8 @@ export default function StudentPerformancePage() {
       if (allPracticeRes.data) setAllPracticeResults(allPracticeRes.data);
 
       // Fetch teachngo student + payments + class enrollments
-      const { data: tsData } = await supabase
-        .from("teachngo_students" as any)
+      const { data: tsData } = await (supabase as any)
+        .from("synced_students")
         .select("id, teachngo_id")
         .eq("linked_user_id", userId)
         .maybeSingle();
@@ -173,7 +173,7 @@ export default function StudentPerformancePage() {
         const teachngoId = (tsData as any).teachngo_id;
         const [paymentsRes, enrollRes] = await Promise.all([
           supabase.from("student_payments").select("*").eq("student_id", tsId).order("payment_date", { ascending: false }),
-          supabase.from("teachngo_class_students" as any).select("*, class:teachngo_classes(id, class_name, level, program, status, teacher_name)").eq("teachngo_student_id", teachngoId),
+          (supabase as any).from("class_students").select("*, class:classes(id, class_name, level, program, status, teacher_name)").eq("teachngo_student_id", teachngoId),
         ]);
         if (paymentsRes.data) setPayments(paymentsRes.data);
         if (enrollRes.data) setClassEnrollments(enrollRes.data as any[]);

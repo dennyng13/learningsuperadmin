@@ -84,14 +84,14 @@ function fmtDuration(start: string | null, end: string | null) {
 }
 
 async function fetchAllScheduleData(startDate: string, endDate: string) {
-  const { data: classes } = await supabase
-    .from("teachngo_classes")
+  const { data: classes } = await (supabase as any)
+    .from("classes")
     .select("id, class_name, class_type, level, program, room, default_start_time, default_end_time, study_plan_id, teacher_id")
     .eq("status", "active");
 
   if (!classes || classes.length === 0) return { sessions: [], classes: [] };
 
-  const teacherIds = [...new Set(classes.map((c) => c.teacher_id).filter(Boolean))];
+  const teacherIds = [...new Set((classes as any[]).map((c) => c.teacher_id).filter(Boolean))] as string[];
   const teacherMap = new Map<string, string>();
   if (teacherIds.length > 0) {
     const { data: teachers } = await supabase.from("teachers").select("id, full_name").in("id", teacherIds);
@@ -980,7 +980,7 @@ function ClassOpeningTab() {
     const selectedProgram = program === "all" ? null : program;
     const selectedLevel = level === "all" ? null : level;
 
-    const { error } = await supabase.from("teachngo_classes").insert({
+    const { error } = await (supabase as any).from("classes" as any).insert({
       teachngo_class_id: `AUTO-${Date.now()}`,
       class_name: className.trim(),
       teacher_id: selectedCandidate.teacher.id,
