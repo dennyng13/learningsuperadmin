@@ -33,7 +33,12 @@ function bandLabel(b: string) {
   return b.replace("band_", "Band ").replace("-", "–");
 }
 
-export default function AdminFeedbackTemplatesTab() {
+interface AdminFeedbackTemplatesTabProps {
+  /** Optional: bubble template count up to parent header */
+  onCountChange?: (count: number) => void;
+}
+
+export default function AdminFeedbackTemplatesTab({ onCountChange }: AdminFeedbackTemplatesTabProps = {}) {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterSkill, setFilterSkill] = useState("all");
@@ -60,6 +65,10 @@ export default function AdminFeedbackTemplatesTab() {
   };
 
   useEffect(() => { fetchTemplates(); }, []);
+
+  useEffect(() => {
+    onCountChange?.(templates.length);
+  }, [templates.length, onCountChange]);
 
   const handleAdd = async () => {
     if (!newText.trim()) { toast.error("Vui lòng nhập nội dung mẫu"); return; }
@@ -104,11 +113,7 @@ export default function AdminFeedbackTemplatesTab() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="font-display text-lg font-bold flex items-center gap-2">
-          <BookTemplate className="h-5 w-5 text-primary" />
-          Mẫu nhận xét ({templates.length})
-        </h2>
+      <div className="flex items-center justify-end">
         <Button size="sm" onClick={() => setShowAdd(!showAdd)}>
           <Plus className="h-4 w-4 mr-1" /> Thêm mẫu
         </Button>
