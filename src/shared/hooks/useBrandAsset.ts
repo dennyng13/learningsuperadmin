@@ -4,11 +4,15 @@ import { cacheBustedUrl } from "@admin/lib/brandAssets";
 import type { BrandAsset } from "@admin/features/brand-assets/types";
 
 /**
- * Cache key for the entire brand-assets registry. We always fetch ALL active
- * assets in a single query so multiple `useBrandAsset()` calls on the same
- * page share one network round-trip — and stay in sync after a Replace.
+ * Cache key for the entire brand-assets registry. Exported so other modules
+ * (admin invalidate flows, prefetch helpers, devtools) reference the SAME
+ * key — preventing accidental drift between consumers.
+ *
+ * We always fetch ALL active assets in a single query so multiple
+ * `useBrandAsset()` calls share one network round-trip — and stay in sync
+ * after a Replace.
  */
-const REGISTRY_KEY = ["brand-assets-registry"] as const;
+export const BRAND_ASSETS_REGISTRY_QUERY_KEY = ["brand-assets-registry"] as const;
 
 async function fetchActiveAssets(): Promise<BrandAsset[]> {
   const { data, error } = await (supabase as any)
@@ -40,7 +44,7 @@ export function useBrandAsset(assetKey: string | string[]): UseBrandAssetResult 
   const keys = Array.isArray(assetKey) ? assetKey : [assetKey];
 
   const { data = [], isLoading, error } = useQuery({
-    queryKey: REGISTRY_KEY,
+    queryKey: BRAND_ASSETS_REGISTRY_QUERY_KEY,
     queryFn: fetchActiveAssets,
     staleTime: 5 * 60_000,    // 5 min — admins rarely change brand assets
     gcTime: 30 * 60_000,
