@@ -1175,17 +1175,22 @@ function ClassOpeningTab() {
 
 export default function AdminSchedulePage() {
   return (
-    <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-4">
-      <div>
-        <h1 className="font-display text-xl md:text-2xl font-bold tracking-tight">Lịch học & phân bổ giáo viên</h1>
-        <p className="text-sm text-muted-foreground mt-1">Quản lý lịch dạy hiện tại, duyệt draft lịch rảnh từ Teacher’s Hub và mở lớp mới theo slot mong muốn.</p>
+    <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-5">
+      <div className="flex items-start gap-3">
+        <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/20 flex items-center justify-center shrink-0">
+          <CalendarDays className="h-5 w-5 text-primary" />
+        </div>
+        <div>
+          <h1 className="font-display text-xl md:text-2xl font-bold tracking-tight">Lịch học & phân bổ giáo viên</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">Quản lý lịch dạy, duyệt draft lịch rảnh và mở lớp mới theo slot mong muốn</p>
+        </div>
       </div>
 
-      <Tabs defaultValue="calendar" className="space-y-4">
-        <TabsList className="h-auto w-full justify-start rounded-xl bg-muted/60 p-1 flex-wrap">
-          <TabsTrigger value="calendar" className="gap-1.5"><CalendarDays className="h-3.5 w-3.5" />Lịch học</TabsTrigger>
-          <TabsTrigger value="availability" className="gap-1.5"><Clock3 className="h-3.5 w-3.5" />Duyệt lịch rảnh</TabsTrigger>
-          <TabsTrigger value="opening" className="gap-1.5"><FilePlus2 className="h-3.5 w-3.5" />Mở lớp</TabsTrigger>
+      <Tabs defaultValue="calendar" className="space-y-5">
+        <TabsList className="h-auto w-full justify-start rounded-xl bg-muted/60 p-1 flex-wrap gap-1">
+          <TabsTrigger value="calendar" className="gap-1.5 px-4 py-2 rounded-lg text-xs md:text-sm font-semibold"><CalendarDays className="h-3.5 w-3.5" />Lịch học</TabsTrigger>
+          <TabsTrigger value="availability" className="gap-1.5 px-4 py-2 rounded-lg text-xs md:text-sm font-semibold"><Clock3 className="h-3.5 w-3.5" />Duyệt lịch rảnh</TabsTrigger>
+          <TabsTrigger value="opening" className="gap-1.5 px-4 py-2 rounded-lg text-xs md:text-sm font-semibold"><FilePlus2 className="h-3.5 w-3.5" />Mở lớp</TabsTrigger>
         </TabsList>
 
         <TabsContent value="calendar"><ScheduleCalendarTab /></TabsContent>
