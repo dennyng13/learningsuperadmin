@@ -2,7 +2,7 @@ import { useState, useMemo, type ComponentType } from "react";
 import { Link } from "react-router-dom";
 import {
   ChevronRight, Settings, Database, HardDrive, Globe, Bell, Mail,
-  BookTemplate, Sparkles, BookOpen, ShieldCheck, RefreshCw, FileText,
+  BookTemplate, Sparkles, BookOpen, ShieldCheck, RefreshCw,
   Image as ImageIcon, Search, Menu, X,
 } from "lucide-react";
 import { TabSkeleton } from "@shared/components/ui/tab-skeleton";
@@ -18,7 +18,6 @@ import AdminAIGradingTab from "@admin/features/settings/components/AdminAIGradin
 import AdminBandDescriptorsTab from "@admin/features/settings/components/AdminBandDescriptorsTab";
 import AdminFieldAccessTab from "@admin/features/settings/components/AdminFieldAccessTab";
 import AdminSyncTypesTab from "@admin/features/settings/components/AdminSyncTypesTab";
-import AdminContractsTab from "@admin/features/settings/components/AdminContractsTab";
 import AdminBrandAssetsTab from "@admin/features/settings/components/AdminBrandAssetsTab";
 import { useAuth } from "@shared/hooks/useAuth";
 
@@ -63,7 +62,6 @@ const GROUPS: SettingsGroup[] = [
     id: "operations",
     label: "Vận hành",
     items: [
-      { id: "contracts", label: "Hợp đồng", description: "Cấu hình mẫu hợp đồng, addendum", icon: FileText, component: AdminContractsTab, keywords: "contract addendum" },
       { id: "backup", label: "Sao lưu", description: "Backup database & exports", icon: Database, component: AdminBackupTab, keywords: "backup export" },
       { id: "storage", label: "Storage", description: "Quản lý dung lượng file & buckets", icon: HardDrive, component: AdminStorageTab, keywords: "storage bucket file" },
     ],

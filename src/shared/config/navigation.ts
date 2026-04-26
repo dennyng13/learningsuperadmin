@@ -3,7 +3,7 @@ import {
   LayoutDashboard, FileText, Award, Users, School,
   CalendarDays, UserSearch, Settings, ShieldCheck, BarChart3,
   BookOpen, ClipboardList, Flag, GraduationCap, CalendarCheck,
-  FileSignature, CalendarClock, Banknote,
+  FileSignature, CalendarClock, Banknote, FileBadge,
 } from "lucide-react";
 
 export interface NavItem {
@@ -56,8 +56,9 @@ export const adminNavItems: NavItem[] = [
   { id: "teachers",     label: "Giáo viên",         icon: GraduationCap,   route: "/teachers",                   group: "users",    order: 21 },
   { id: "permissions",  label: "Phân quyền",        icon: ShieldCheck,     route: "/modules",                    group: "users",    superAdminOnly: true, order: 22 },
 
-  // ─── Nhân sự ───
+  // ─── Hành chính ───
   { id: "contracts",    label: "Hợp đồng",          icon: FileSignature,   route: "/contracts",                  group: "hr",       order: 30 },
+  { id: "contract-templates", label: "Mẫu hợp đồng", icon: FileBadge,      route: "/contracts/templates",        group: "hr",       superAdminOnly: true, order: 30.5 },
   { id: "timesheet",    label: "Bảng công",         icon: CalendarClock,   route: "/timesheet",                  group: "hr",       order: 31 },
   { id: "payroll",      label: "Bảng lương",        icon: Banknote,        route: "/payroll",                    group: "hr",       order: 32 },
 

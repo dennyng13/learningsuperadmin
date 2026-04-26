@@ -163,13 +163,13 @@ export function AdminSidebar() {
           </>
         )}
 
-        {/* Nhân sự */}
+        {/* Hành chính */}
         {hrItems.length > 0 && (
           <>
             <SidebarSeparator className="mx-3" />
             <SidebarGroup className="py-1.5">
               <SidebarGroupLabel className="text-[9px] uppercase tracking-[0.1em] text-sidebar-foreground/40 font-semibold px-2 mb-0.5">
-                Nhân sự
+                Hành chính
               </SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu className="gap-px">
