@@ -10,7 +10,7 @@ const GROUP_LABELS: Record<string, string> = {
   academic: "Học thuật",
   classes: "Lớp & Lịch",
   users: "Người dùng",
-  hr: "Nhân sự",
+  hr: "Hành chính",
   system: "Hệ thống",
 };
 
