@@ -114,6 +114,16 @@ export default function AppRoutes() {
           <Route path="schedule" element={<AdminSchedulePage />} />
           <Route path="attendance" element={<AttendancePage />} />
 
+          {/* ─── Legacy Teachngo* slug redirects (bookmark compat) ─── */}
+          <Route path="teachngo-attendance"     element={<Navigate to="/attendance" replace />} />
+          <Route path="teachngo-attendance/*"   element={<Navigate to="/attendance" replace />} />
+          <Route path="teachngo-classes"        element={<Navigate to="/classes" replace />} />
+          <Route path="teachngo-classes/list"   element={<Navigate to="/classes/list" replace />} />
+          <Route path="teachngo-classes/new"    element={<Navigate to="/classes/new" replace />} />
+          <Route path="teachngo-classes/:id"    element={<TeachngoClassRedirect />} />
+          <Route path="teachngo-courses"        element={<Navigate to="/courses" replace />} />
+          <Route path="teachngo-courses/*"      element={<Navigate to="/courses" replace />} />
+
           {/* Availability review */}
           <Route path="availability-drafts" element={<AvailabilityDraftsPage />} />
 
@@ -188,4 +198,11 @@ function LegacyAdminRedirect() {
   const { pathname, search, hash } = window.location;
   const stripped = pathname.replace(/^\/admin/, "") || "/";
   return <Navigate to={`${stripped}${search}${hash}`} replace />;
+}
+
+/** Preserve :id when redirecting /teachngo-classes/:id → /classes/:id */
+function TeachngoClassRedirect() {
+  const { pathname, search, hash } = window.location;
+  const target = pathname.replace(/^\/teachngo-classes/, "/classes") || "/classes";
+  return <Navigate to={`${target}${search}${hash}`} replace />;
 }
