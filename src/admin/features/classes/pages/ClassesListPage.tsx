@@ -227,22 +227,22 @@ export default function ClassesListPage() {
         </Button>
       }
       filterBar={
-        <div className="space-y-3 pt-3">
+        <div className="space-y-2 pt-2">
           {/* Counter chips */}
-          <ScrollArea className="w-full whitespace-nowrap">
-            <div className="flex gap-1.5 pb-1.5">
+          <ScrollArea className="w-full whitespace-nowrap -mx-1 px-1">
+            <div className="flex gap-1 pb-1">
               <button
                 type="button"
                 onClick={() => setStatuses(DEFAULT_VISIBLE_STATUSES)}
                 className={cn(
-                  "shrink-0 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors",
+                  "shrink-0 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10.5px] font-medium transition-colors",
                   isDefaultStatuses
                     ? "bg-foreground text-background border-foreground"
                     : "bg-card hover:bg-muted/50",
                 )}
               >
                 Tất cả
-                <span className="font-bold">
+                <span className="font-bold tabular-nums">
                   {countRows.filter((r) => r.lifecycle_status !== "archived").length}
                 </span>
               </button>
@@ -254,37 +254,37 @@ export default function ClassesListPage() {
                     type="button"
                     onClick={() => setStatuses([s])}
                     className={cn(
-                      "shrink-0 inline-flex items-center gap-1.5 rounded-full border px-1 py-0.5 transition-shadow",
+                      "shrink-0 inline-flex items-center gap-1 rounded-full border pl-0.5 pr-1.5 py-0.5 transition-shadow",
                       active ? "ring-2 ring-primary ring-offset-1 ring-offset-background" : "hover:shadow-sm",
                     )}
                   >
                     <ClassStatusBadge status={s} size="sm" compact />
-                    <span className="text-[11px] font-bold pr-1.5">{counts[s] ?? 0}</span>
+                    <span className="text-[10.5px] font-bold tabular-nums">{counts[s] ?? 0}</span>
                   </button>
                 );
               })}
             </div>
           </ScrollArea>
 
-          {/* Toolbar: search + multi-status + view + reset */}
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="relative flex-1 min-w-[200px] max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          {/* Toolbar: search + multi-status + view + reset (compact 1 dòng) */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            <div className="relative flex-1 min-w-[180px] max-w-sm">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Tìm theo tên hoặc mã lớp…"
-                className="pl-9 h-9"
+                placeholder="Tìm tên / mã lớp…"
+                className="pl-7 h-8 text-xs"
               />
             </div>
 
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-1.5 h-9">
-                  <Filter className="h-4 w-4" />
+                <Button variant="outline" size="sm" className="gap-1 h-8 px-2 text-xs">
+                  <Filter className="h-3.5 w-3.5" />
                   Trạng thái
                   {!allSelected && (
-                    <span className="ml-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold px-1.5 leading-4">
+                    <span className="ml-0.5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold px-1.5 leading-4 tabular-nums">
                       {statuses.length}
                     </span>
                   )}
@@ -311,7 +311,7 @@ export default function ClassesListPage() {
                       >
                         <Checkbox checked={checked} onCheckedChange={() => toggleStatus(s)} />
                         <ClassStatusBadge status={s} size="sm" />
-                        <span className="ml-auto text-[10px] text-muted-foreground">
+                        <span className="ml-auto text-[10px] text-muted-foreground tabular-nums">
                           {counts[s] ?? 0}
                         </span>
                       </label>
@@ -323,8 +323,8 @@ export default function ClassesListPage() {
 
             <div className="ml-auto flex items-center gap-1">
               {filterActive && (
-                <Button variant="ghost" size="sm" onClick={resetFilters} className="gap-1.5 h-9 text-xs">
-                  <RotateCw className="h-3.5 w-3.5" /> Reset
+                <Button variant="ghost" size="sm" onClick={resetFilters} className="gap-1 h-8 px-2 text-xs">
+                  <RotateCw className="h-3 w-3" /> Reset
                 </Button>
               )}
               <div className="flex items-center rounded-md border bg-card overflow-hidden">
@@ -332,23 +332,23 @@ export default function ClassesListPage() {
                   type="button"
                   onClick={() => setView("table")}
                   className={cn(
-                    "px-2.5 py-1.5 transition-colors",
+                    "px-2 py-1.5 transition-colors",
                     view === "table" ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted/50",
                   )}
                   aria-label="Bảng"
                 >
-                  <ListIcon className="h-4 w-4" />
+                  <ListIcon className="h-3.5 w-3.5" />
                 </button>
                 <button
                   type="button"
                   onClick={() => setView("grid")}
                   className={cn(
-                    "px-2.5 py-1.5 transition-colors",
+                    "px-2 py-1.5 transition-colors",
                     view === "grid" ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted/50",
                   )}
                   aria-label="Lưới"
                 >
-                  <LayoutGrid className="h-4 w-4" />
+                  <LayoutGrid className="h-3.5 w-3.5" />
                 </button>
               </div>
             </div>
