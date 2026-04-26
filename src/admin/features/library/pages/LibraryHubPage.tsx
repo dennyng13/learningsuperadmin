@@ -169,8 +169,9 @@ const SectionCard = forwardRef<
       onClick={() => navigate(section.route)}
       className={cn(
         "group relative flex flex-col h-32 sm:h-36 md:h-40 overflow-hidden rounded-2xl text-left bg-card text-card-foreground",
-        "border border-border/60 shadow-sm transition-all duration-300",
-        "hover:-translate-y-1 hover:shadow-xl hover:border-primary/30",
+        "border border-border/60 shadow-[0_8px_24px_-12px_hsl(var(--foreground)/0.18),0_2px_6px_-2px_hsl(var(--foreground)/0.08)]",
+        "transition-all duration-300",
+        "hover:-translate-y-1 hover:shadow-[0_20px_40px_-16px_hsl(var(--primary)/0.35),0_8px_16px_-8px_hsl(var(--foreground)/0.18)] hover:border-primary/40",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
       )}
     >
