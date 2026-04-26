@@ -12,4 +12,5 @@ File này dùng để trigger Lovable webhook khi cần resync mirror với GitH
 - 2026-04-26: trigger resync to pull PR #12
 - 2026-04-26: manual re-trigger resync — PR #12 (timesheet admin UI) and PR #13 (UX polish) not yet mirrored, head=3dd227c
 - 2026-04-26: re-trigger #2 — PR #12 + #13 still not mirrored locally (no timesheet files, nav unchanged), GitHub head=3dd227c
+- 2026-04-26: verify sync sau khi user đổi tên repo `learningsuperadmin1` → `learningsuperadmin`. Local Lovable HEAD=45eff01, đã đồng bộ với origin (lovable.code.storage). Marker này dùng để check xem commit có xuất hiện trên GitHub repo mới hay không.
 
