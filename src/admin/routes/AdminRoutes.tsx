@@ -54,6 +54,8 @@ import BandDescriptorsPage from "@admin/features/academic/pages/BandDescriptorsP
 import FeedbackTemplatesPage from "@admin/features/academic/pages/FeedbackTemplatesPage";
 import LibraryHubPage from "@admin/features/library/pages/LibraryHubPage";
 import { SuperAdminRoute } from "@admin/guards/SuperAdminRoute";
+import { ModuleAccessRoute } from "@admin/guards/ModuleAccessRoute";
+import { ADMIN_MODULE_KEYS } from "@shared/hooks/useUserModuleAccess";
 
 function PageLoader() {
   return (
@@ -85,11 +87,11 @@ export default function AppRoutes() {
           <Route path="library" element={<LibraryHubPage />} />
 
           {/* Tests / Practice */}
-          <Route path="tests" element={<TestManagementPage />} />
-          <Route path="tests/import" element={<ImportPage />} />
-          <Route path="tests/:id" element={<TestEditorPage />} />
-          <Route path="tests/:id/preview" element={<TestPreviewPage />} />
-          <Route path="practice/:exerciseId/stats" element={<PracticeExerciseDetailPage />} />
+          <Route path="tests" element={<ModuleAccessRoute moduleKey={ADMIN_MODULE_KEYS.TESTS}><TestManagementPage /></ModuleAccessRoute>} />
+          <Route path="tests/import" element={<ModuleAccessRoute moduleKey={ADMIN_MODULE_KEYS.TESTS}><ImportPage /></ModuleAccessRoute>} />
+          <Route path="tests/:id" element={<ModuleAccessRoute moduleKey={ADMIN_MODULE_KEYS.TESTS}><TestEditorPage /></ModuleAccessRoute>} />
+          <Route path="tests/:id/preview" element={<ModuleAccessRoute moduleKey={ADMIN_MODULE_KEYS.TESTS}><TestPreviewPage /></ModuleAccessRoute>} />
+          <Route path="practice/:exerciseId/stats" element={<ModuleAccessRoute moduleKey={ADMIN_MODULE_KEYS.TESTS}><PracticeExerciseDetailPage /></ModuleAccessRoute>} />
 
           {/* Users (with nested performance) */}
           <Route path="users" element={<UserManagementPage />} />
@@ -110,8 +112,8 @@ export default function AppRoutes() {
           <Route path="availability-drafts" element={<AvailabilityDraftsPage />} />
 
           {/* Study plans (templates nested) */}
-          <Route path="study-plans" element={<StudyPlansPage />} />
-          <Route path="study-plans/templates" element={<StudyPlanTemplatesPage />} />
+          <Route path="study-plans" element={<ModuleAccessRoute moduleKey={ADMIN_MODULE_KEYS.STUDY_PLANS}><StudyPlansPage /></ModuleAccessRoute>} />
+          <Route path="study-plans/templates" element={<ModuleAccessRoute moduleKey={ADMIN_MODULE_KEYS.STUDY_PLANS}><StudyPlanTemplatesPage /></ModuleAccessRoute>} />
 
           {/* Placement */}
           <Route path="placement" element={<PlacementTestPage />} />
@@ -141,7 +143,7 @@ export default function AppRoutes() {
           <Route path="payroll/payslips/:payslipId" element={<PayrollPayslipDetailPage />} />
 
           {/* Misc */}
-          <Route path="flashcards" element={<FlashcardSetsPage />} />
+          <Route path="flashcards" element={<ModuleAccessRoute moduleKey={ADMIN_MODULE_KEYS.FLASHCARDS}><FlashcardSetsPage /></ModuleAccessRoute>} />
           <Route path="badges" element={<BadgeManagementPage />} />
           <Route path="profile" element={<AdminProfilePage />} />
 
