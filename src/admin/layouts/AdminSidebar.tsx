@@ -14,6 +14,7 @@ import { adminNavItems } from "@shared/config/navigation";
 import { usePendingDraftCount } from "@shared/hooks/useAvailabilityDrafts";
 
 const mainItems = adminNavItems.filter(i => i.group === "main").sort((a, b) => a.order - b.order);
+const hrItems = adminNavItems.filter(i => i.group === "hr").sort((a, b) => a.order - b.order);
 const superAdminItems = adminNavItems.filter(i => i.group === "system").sort((a, b) => a.order - b.order);
 
 export function AdminSidebar() {
@@ -99,6 +100,23 @@ export function AdminSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {/* HR */}
+        {hrItems.length > 0 && (
+          <>
+            <SidebarSeparator className="mx-3" />
+            <SidebarGroup className="py-1.5">
+              <SidebarGroupLabel className="text-[9px] uppercase tracking-[0.1em] text-sidebar-foreground/40 font-semibold px-2 mb-0.5">
+                Nhân sự
+              </SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu className="gap-px">
+                  {hrItems.map(renderMenuItem)}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </>
+        )}
 
         {/* Super Admin */}
         {isSuperAdmin && (

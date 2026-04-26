@@ -83,6 +83,7 @@ export interface ContractTemplateRow {
   description: string | null;
   body_md: string;
   default_fields: Record<string, unknown> | null;
+  default_addendum_template_id: string | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -219,3 +220,161 @@ export const PAY_RATE_UNIT_LABELS: Record<PayRateUnit, string> = {
   day: "ngày",
   month: "tháng",
 };
+
+// =============================================================================
+// Phase 1.3 — Pay-rate addendum types
+// =============================================================================
+// Mirror SQL definitions from
+//   ieltspractice/supabase/migrations/20260430_stage_f1_3_pay_rate_addendum.sql
+// Until `npm run sync:types` regenerates types after migrations apply.
+
+export type AddendumStatus =
+  | "draft"
+  | "awaiting_teacher"
+  | "revision_requested"
+  | "awaiting_admin"
+  | "active"
+  | "superseded"
+  | "terminated";
+
+export const ADDENDUM_STATUS_LABELS: Record<AddendumStatus, string> = {
+  draft: "Đang soạn",
+  awaiting_teacher: "Chờ giáo viên ký",
+  revision_requested: "Đang sửa",
+  awaiting_admin: "Chờ admin ký",
+  active: "Đang hiệu lực",
+  superseded: "Đã thay thế",
+  terminated: "Đã chấm dứt",
+};
+
+export interface AddendumPayRateRow {
+  id: string;
+  addendum_id: string;
+  program_id: string | null;
+  rate_unit: PayRateUnit;
+  rate_amount_vnd: number;
+  min_threshold: number | null;
+  max_threshold: number | null;
+  notes: string | null;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AddendumSignatureRow {
+  id: string;
+  addendum_id: string;
+  party: ContractParty;
+  signed_by: string | null;
+  signature_image_url: string;
+  signed_at: string;
+  ip_address: string | null;
+  user_agent: string | null;
+  archived_at: string | null;
+}
+
+export interface AddendumAuditLogRow {
+  id: number;
+  addendum_id: string;
+  actor_user_id: string | null;
+  actor_role: string | null;
+  action: string;
+  from_status: AddendumStatus | null;
+  to_status: AddendumStatus | null;
+  notes: string | null;
+  payload: Record<string, unknown> | null;
+  created_at: string;
+}
+
+export interface AddendumRow {
+  id: string;
+  contract_id: string;
+  addendum_number: string;
+  status: AddendumStatus;
+  effective_from: string;
+  effective_to: string | null;
+  auto_archive_on_activate: boolean;
+  superseded_by_id: string | null;
+  notes: string | null;
+  party_a_snapshot: PartyASnapshot;
+  party_b_snapshot: PartyBSnapshot;
+  party_a_signer_user_id: string | null;
+  teacher_signed_at: string | null;
+  admin_signed_at: string | null;
+  pdf_storage_path: string | null;
+  created_at: string;
+  updated_at: string;
+  created_by: string | null;
+}
+
+export interface AddendumListItem {
+  id: string;
+  addendum_number: string;
+  status: AddendumStatus;
+  effective_from: string;
+  effective_to: string | null;
+  auto_archive_on_activate: boolean;
+  notes: string | null;
+  pay_rate_count: number;
+  teacher_signed_at: string | null;
+  admin_signed_at: string | null;
+  pdf_storage_path: string | null;
+  superseded_by_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AddendumWithDetails extends AddendumRow {
+  template_id: string | null;
+  template_fields_snapshot: AddendumTemplateFieldRow[] | null;
+  body_md_snapshot: string;
+  custom_fields: Record<string, unknown> | null;
+  pay_rates: AddendumPayRateRow[];
+  signatures: AddendumSignatureRow[];
+  audit_log: AddendumAuditLogRow[];
+  contract: {
+    id: string;
+    contract_number: string;
+    effective_from: string | null;
+    effective_to: string | null;
+    teacher_full_name: string | null;
+    teacher_id: string;
+  };
+}
+
+// =============================================================================
+// Phase 1.4 — Addendum templates + custom fields
+// =============================================================================
+// Mirrors SQL from
+//   ieltspractice/supabase/migrations/20260501_stage_f1_4_addendum_templates.sql
+// Reuses `ContractFieldType` and `ContractTemplateFieldOption` from above
+// (the addendum field-type enum is the same `contract_field_type` as Phase 1.2).
+
+export interface AddendumTemplateRow {
+  id: string;
+  name: string;
+  description: string | null;
+  body_md: string;
+  default_auto_archive: boolean;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  field_count?: number;
+  fields?: AddendumTemplateFieldRow[];
+}
+
+export interface AddendumTemplateFieldRow {
+  id: string;
+  template_id: string;
+  field_key: string;
+  label: string;
+  field_type: ContractFieldType;
+  required: boolean;
+  default_value: unknown;
+  options: ContractTemplateFieldOption[] | null;
+  help_text: string | null;
+  field_group: string | null;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}

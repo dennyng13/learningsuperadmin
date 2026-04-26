@@ -23,6 +23,8 @@ import ContentAnalytics from "@admin/features/dashboard/components/ContentAnalyt
 import SchoolOverview from "@admin/features/dashboard/components/SchoolOverview";
 import AppsStatusWidget from "@admin/features/dashboard/components/AppsStatusWidget";
 import TeacherActivityFeed from "@admin/features/dashboard/components/TeacherActivityFeed";
+import ContractStatusWidget from "@admin/features/dashboard/components/ContractStatusWidget";
+import TimesheetStatusWidget from "@admin/features/dashboard/components/TimesheetStatusWidget";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@shared/components/ui/button";
 
@@ -286,6 +288,12 @@ export default function AdminDashboardPage() {
 
       {/* ── Hoạt động giáo viên (realtime feed) ── */}
       <TeacherActivityFeed />
+
+      {/* ── HR Contracts: trạng thái ký + sắp hết hạn ── */}
+      <ContractStatusWidget />
+
+      {/* ── Bảng công: kỳ chờ duyệt / chờ khoá / đã khoá ── */}
+      <TimesheetStatusWidget />
 
       {/* ── Stats Grid ── */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">

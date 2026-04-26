@@ -14,6 +14,7 @@ const primaryItems = PRIMARY_IDS
   .filter(Boolean);
 
 const moreMainItems = adminNavItems.filter(i => i.group === "main" && !PRIMARY_IDS.includes(i.id));
+const moreHrItems = adminNavItems.filter(i => i.group === "hr");
 const moreSystemItems = adminNavItems.filter(i => i.group === "system");
 
 function triggerHaptic() {
@@ -32,7 +33,7 @@ export function AdminBottomNav() {
     return location.pathname === path || location.pathname.startsWith(path + "/");
   };
 
-  const allMore = [...moreMainItems, ...(isSuperAdmin ? moreSystemItems : [])];
+  const allMore = [...moreMainItems, ...moreHrItems, ...(isSuperAdmin ? moreSystemItems : [])];
   const isMoreActive = allMore.some(i => isActive(i.route));
 
   const handleTap = useCallback((url: string) => {

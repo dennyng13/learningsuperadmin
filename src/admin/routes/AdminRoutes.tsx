@@ -40,6 +40,11 @@ import ContractCreatePage from "@admin/features/contracts/pages/ContractCreatePa
 import ContractDetailPage from "@admin/features/contracts/pages/ContractDetailPage";
 import ContractTemplatesListPage from "@admin/features/contracts/pages/ContractTemplatesListPage";
 import ContractTemplateEditorPage from "@admin/features/contracts/pages/ContractTemplateEditorPage";
+import AddendumEditorPage from "@admin/features/contracts/pages/AddendumEditorPage";
+import AddendumTemplatesListPage from "@admin/features/contracts/pages/AddendumTemplatesListPage";
+import AddendumTemplateEditorPage from "@admin/features/contracts/pages/AddendumTemplateEditorPage";
+import TimesheetPeriodsPage from "@admin/features/timesheet/pages/TimesheetPeriodsPage";
+import TimesheetPeriodDetailPage from "@admin/features/timesheet/pages/TimesheetPeriodDetailPage";
 
 function PageLoader() {
   return (
@@ -108,7 +113,14 @@ export default function AppRoutes() {
           <Route path="contracts/new" element={<ContractCreatePage />} />
           <Route path="contracts/templates" element={<ContractTemplatesListPage />} />
           <Route path="contracts/templates/:templateId" element={<ContractTemplateEditorPage />} />
+          <Route path="contracts/addendum-templates" element={<AddendumTemplatesListPage />} />
+          <Route path="contracts/addendum-templates/:templateId" element={<AddendumTemplateEditorPage />} />
           <Route path="contracts/:contractId" element={<ContractDetailPage />} />
+          <Route path="contracts/:contractId/addendums/:addendumId" element={<AddendumEditorPage />} />
+
+          {/* Timesheet (Stage 2) */}
+          <Route path="timesheet" element={<TimesheetPeriodsPage />} />
+          <Route path="timesheet/:periodId" element={<TimesheetPeriodDetailPage />} />
 
           {/* Misc */}
           <Route path="flashcards" element={<FlashcardSetsPage />} />
