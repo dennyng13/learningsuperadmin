@@ -38,7 +38,7 @@ export default function CourseGradeView({ userId }: { userId: string }) {
 
       const { data: enrolls } = await supabase
         .from("class_students")
-        .select("class_id, class:teachngo_classes(id, class_name, status, start_date, end_date)")
+        .select("class_id, class:classes(id, class_name, status, start_date, end_date)")
         .eq("teachngo_student_id", ts.teachngo_id) as any;
 
       const list: ClassOption[] = (enrolls || [])

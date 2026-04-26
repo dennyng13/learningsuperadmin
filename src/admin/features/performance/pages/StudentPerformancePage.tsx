@@ -173,7 +173,7 @@ export default function StudentPerformancePage() {
         const teachngoId = (tsData as any).teachngo_id;
         const [paymentsRes, enrollRes] = await Promise.all([
           supabase.from("student_payments").select("*").eq("student_id", tsId).order("payment_date", { ascending: false }),
-          supabase.from("class_students" as any).select("*, class:teachngo_classes(id, class_name, level, program, status, teacher_name)").eq("teachngo_student_id", teachngoId),
+          supabase.from("class_students" as any).select("*, class:classes(id, class_name, level, program, status, teacher_name)").eq("teachngo_student_id", teachngoId),
         ]);
         if (paymentsRes.data) setPayments(paymentsRes.data);
         if (enrollRes.data) setClassEnrollments(enrollRes.data as any[]);
