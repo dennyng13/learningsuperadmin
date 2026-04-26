@@ -6,6 +6,7 @@ import { PageHeader } from "@shared/components/layouts/PageHeader";
 import { cn } from "@shared/lib/utils";
 import { useBrandShapes } from "@shared/hooks/useBrandShapes";
 import type { ShapePalette } from "@admin/features/brand-assets/types";
+import { useMyModuleAccess, ADMIN_MODULE_KEYS, type AdminModuleKey } from "@shared/hooks/useUserModuleAccess";
 
 /* ═══════════════════════════════════════════
    LIBRARY HUB — "Quản lý học liệu"
@@ -25,6 +26,7 @@ interface LibrarySection {
   route: string;
   palette: ShapePalette;  // dùng để lookup shapes trong DB
   extraLinks?: { label: string; route: string }[];
+  moduleKey: AdminModuleKey;
 }
 
 const SECTIONS: LibrarySection[] = [
@@ -36,6 +38,7 @@ const SECTIONS: LibrarySection[] = [
     route: "/tests",
     palette: "teal",
     extraLinks: [{ label: "Nhập đề từ file", route: "/tests/import" }],
+    moduleKey: ADMIN_MODULE_KEYS.TESTS,
   },
   {
     id: "flashcards",
@@ -44,6 +47,7 @@ const SECTIONS: LibrarySection[] = [
     icon: BookOpen,
     route: "/flashcards",
     palette: "amber",
+    moduleKey: ADMIN_MODULE_KEYS.FLASHCARDS,
   },
   {
     id: "study-plans",
@@ -53,10 +57,14 @@ const SECTIONS: LibrarySection[] = [
     route: "/study-plans",
     palette: "coral",
     extraLinks: [{ label: "Mẫu lộ trình", route: "/study-plans/templates" }],
+    moduleKey: ADMIN_MODULE_KEYS.STUDY_PLANS,
   },
 ];
 
 export default function LibraryHubPage() {
+  const { canAccess } = useMyModuleAccess();
+  const visible = SECTIONS.filter((s) => canAccess(s.moduleKey));
+
   return (
     <div className="p-4 md:p-6 max-w-6xl mx-auto animate-page-in">
       <PageHeader
@@ -65,11 +73,19 @@ export default function LibraryHubPage() {
         subtitle="Tất cả nội dung học thuật ở một nơi: đề thi, flashcard và lộ trình học."
       />
 
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        {SECTIONS.map((s) => (
-          <SectionCard key={s.id} section={s} />
-        ))}
-      </div>
+      {visible.length === 0 ? (
+        <div className="rounded-xl border border-dashed bg-muted/30 p-10 text-center text-sm text-muted-foreground">
+          Bạn chưa được cấp quyền vào bất kỳ mục nào trong Quản lý học liệu.
+          <br />
+          Liên hệ super admin để được mở quyền.
+        </div>
+      ) : (
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {visible.map((s) => (
+            <SectionCard key={s.id} section={s} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
