@@ -2,6 +2,7 @@ import { SidebarProvider, SidebarTrigger } from "@shared/components/ui/sidebar";
 import { AdminSidebar } from "./AdminSidebar";
 import { AdminBottomNav } from "./AdminBottomNav";
 import { AdminBreadcrumb } from "./AdminBreadcrumb";
+import { GlobalBackButton } from "./GlobalBackButton";
 import { Outlet } from "react-router-dom";
 import { useIsMobile } from "@shared/hooks/use-mobile";
 import { Bell, Search } from "lucide-react";
@@ -56,7 +57,8 @@ export default function AdminLayout() {
             </div>
 
             {/* Spacer + breadcrumb on small/medium */}
-            <div className="lg:hidden flex-1 min-w-0">
+            <div className="lg:hidden flex-1 min-w-0 flex items-center">
+              <GlobalBackButton />
               <AdminBreadcrumb />
             </div>
             <div className="hidden lg:block ml-auto" />
@@ -83,6 +85,7 @@ export default function AdminLayout() {
 
           {/* Breadcrumb row (visible on lg+ where it's not in header) */}
           <div className="hidden lg:flex h-9 items-center px-6 border-b border-border/40 bg-card/40 backdrop-blur-sm">
+            <GlobalBackButton />
             <AdminBreadcrumb />
           </div>
 
