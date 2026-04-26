@@ -9,8 +9,8 @@ import { Button } from "@shared/components/ui/button";
 import type { CourseProgram } from "@admin/features/academic/hooks/useCoursesAdmin";
 import type { CourseLevel } from "@shared/hooks/useCourseLevels";
 import { getProgramIcon, getProgramPalette } from "@shared/utils/programColors";
-import { COLOR_PRESETS } from "@shared/utils/levelColors";
 import { cn } from "@shared/lib/utils";
+import ProgramLevelManager from "@admin/features/academic/components/ProgramLevelManager";
 
 /**
  * Tab nội dung cho 1 program (vd. IELTS / WRE / Customized).
@@ -28,6 +28,7 @@ interface Props {
   program: CourseProgram;
   levels: CourseLevel[];
   onEdit: () => void;
+  onChanged: () => void | Promise<void>;
 }
 
 interface ClassRow {
@@ -43,17 +44,11 @@ interface ClassRow {
   student_ids: any;
 }
 
-export default function ProgramDetailTab({ program, levels, onEdit }: Props) {
+export default function ProgramDetailTab({ program, levels, onEdit, onChanged }: Props) {
   const Icon = getProgramIcon(program.key);
   const palette = getProgramPalette(program.key);
   const isInactive = program.status === "inactive";
-
-  const linkedLevels = useMemo(
-    () => program.level_ids
-      .map((id) => levels.find((l) => l.id === id))
-      .filter((l): l is CourseLevel => !!l),
-    [program.level_ids, levels],
-  );
+  const linkedCount = program.level_ids.length;
 
   /* ─── Fetch classes & student count ─── */
   const [classes, setClasses] = useState<ClassRow[] | null>(null);
@@ -138,7 +133,7 @@ export default function ProgramDetailTab({ program, levels, onEdit }: Props) {
         <StatCard
           icon={<Layers className="h-4 w-4" />}
           label="Cấp độ"
-          value={linkedLevels.length}
+          value={linkedCount}
           tone={palette}
         />
         <StatCard
@@ -203,41 +198,12 @@ export default function ProgramDetailTab({ program, levels, onEdit }: Props) {
         </div>
       </section>
 
-      {/* ─── Levels of this program ─── */}
-      <section className="rounded-xl border bg-card p-5 space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Layers className={cn("h-4 w-4", palette.iconText)} />
-            <h3 className="font-display font-bold text-sm">
-              Cấp độ thuộc khóa ({linkedLevels.length})
-            </h3>
-          </div>
-          <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={onEdit}>
-            Gán lại <ArrowRight className="h-3 w-3 ml-1" />
-          </Button>
-        </div>
-        {linkedLevels.length === 0 ? (
-          <p className="text-xs text-muted-foreground italic py-2">
-            Chưa gán level nào. Bấm "Sửa khóa học" hoặc dùng tab "Gán cấp độ" để gán nhanh.
-          </p>
-        ) : (
-          <div className="flex flex-wrap gap-1.5">
-            {linkedLevels.map((l, idx) => (
-              <span
-                key={l.id}
-                className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md border bg-muted/40 text-xs font-medium"
-              >
-                <span className="text-[10px] font-mono text-muted-foreground">{idx + 1}</span>
-                <span
-                  className="h-2.5 w-2.5 rounded-full border shrink-0"
-                  style={{ backgroundColor: l.color_key ? COLOR_PRESETS[l.color_key]?.swatch : "#d1d5db" }}
-                />
-                {l.name}
-              </span>
-            ))}
-          </div>
-        )}
-      </section>
+      {/* ─── Levels of this program (CRUD inline, scope theo program) ─── */}
+      <ProgramLevelManager
+        program={program}
+        allLevels={levels}
+        onChanged={onChanged}
+      />
 
       {/* ─── Classes running this program ─── */}
       <section className="rounded-xl border bg-card p-5 space-y-3">

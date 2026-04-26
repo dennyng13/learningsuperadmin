@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
-  GraduationCap, Plus, Loader2, LayoutGrid, Layers, Trash2, EyeOff,
+  GraduationCap, Plus, Loader2, Trash2, EyeOff,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@shared/components/ui/button";
@@ -13,8 +13,6 @@ import {
 } from "@shared/components/ui/alert-dialog";
 import { useCoursesAdmin, type CourseProgram } from "@admin/features/academic/hooks/useCoursesAdmin";
 import { useCourseLevels } from "@shared/hooks/useCourseLevels";
-import CourseLevelManager from "@admin/features/settings/components/CourseLevelManager";
-import ProgramLevelsMatrix from "@admin/features/academic/components/ProgramLevelsMatrix";
 import ProgramDetailTab from "@admin/features/academic/components/ProgramDetailTab";
 import { getProgramIcon, getProgramPalette } from "@shared/utils/programColors";
 import { cn } from "@shared/lib/utils";
@@ -24,18 +22,17 @@ import { cn } from "@shared/lib/utils";
  *
  * Cấu trúc tab:
  *   • [program.key] — 1 tab động cho MỖI program (IELTS / WRE / Customized…).
- *     Trong tab: hero + stats + mô tả + outcomes + cấp độ + lớp đang chạy.
- *   • "matrix"     — gán nhanh program ↔ level dạng bảng (bulk edit).
- *   • "levels"     — CRUD `course_levels` (list global level).
+ *     Trong tab: hero + stats + mô tả + outcomes + CRUD cấp độ + lớp đang chạy.
  *
- * Tab active sync ?tab=<program.key|matrix|levels>.
+ * Cấp độ giờ được CRUD trực tiếp trong scope từng program (không còn tab chung
+ * hay matrix gán). Schema vẫn many-to-many — 1 level vẫn có thể link nhiều
+ * program nếu cần (qua import/migration), nhưng UI tập trung 1-program-1-tab.
+ *
+ * Tab active sync ?tab=<program.key>.
  */
-
-const SPECIAL_TABS = { matrix: "matrix", levels: "levels" } as const;
-
 export default function CoursesPage() {
-  const { programs, loading, remove, setProgramLevels } = useCoursesAdmin();
-  const { levels } = useCourseLevels();
+  const { programs, loading, remove, refetch: refetchPrograms } = useCoursesAdmin();
+  const { levels, refetch: refetchLevels } = useCourseLevels();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -45,19 +42,15 @@ export default function CoursesPage() {
   const tabFromUrl = searchParams.get("tab");
   const defaultTab = useMemo(() => {
     if (tabFromUrl) return tabFromUrl;
-    return programs[0]?.key ?? SPECIAL_TABS.matrix;
+    return programs[0]?.key ?? "";
   }, [tabFromUrl, programs]);
 
   const [tab, setTab] = useState(defaultTab);
 
-  // Khi programs load xong lần đầu mà chưa có tab nào hợp lệ → chọn tab đầu tiên
   useEffect(() => {
     if (loading) return;
-    const valid =
-      tab === SPECIAL_TABS.matrix ||
-      tab === SPECIAL_TABS.levels ||
-      programs.some((p) => p.key === tab);
-    if (!valid) setTab(programs[0]?.key ?? SPECIAL_TABS.matrix);
+    const valid = programs.some((p) => p.key === tab);
+    if (!valid) setTab(programs[0]?.key ?? "");
   }, [loading, programs, tab]);
 
   const handleTabChange = (next: string) => {
@@ -70,15 +63,19 @@ export default function CoursesPage() {
   const handleCreate = () => navigate("/courses/new");
   const handleEdit = (p: CourseProgram) => navigate(`/courses/${p.id}/edit`);
 
+  /** Refetch cả programs lẫn levels — gọi từ ProgramLevelManager sau CRUD. */
+  const handleProgramChanged = async () => {
+    await Promise.all([refetchPrograms(), refetchLevels()]);
+  };
+
   const confirmDelete = async () => {
     if (!deleteId) return;
     try {
       await remove(deleteId);
       toast.success("Đã xóa khóa học");
-      // Nếu tab đang xem là program vừa xóa → chuyển về tab đầu hoặc matrix
       if (programs.find((p) => p.id === deleteId)?.key === tab) {
         const remaining = programs.filter((p) => p.id !== deleteId);
-        handleTabChange(remaining[0]?.key ?? SPECIAL_TABS.matrix);
+        handleTabChange(remaining[0]?.key ?? "");
       }
     } catch (err: any) {
       toast.error(`Lỗi: ${err.message}`);
@@ -152,19 +149,6 @@ export default function CoursesPage() {
                   </TabsTrigger>
                 );
               })}
-
-              {/* Divider */}
-              <span className="self-stretch w-px bg-border/60 mx-1" aria-hidden />
-
-              <TabsTrigger value={SPECIAL_TABS.matrix} className="h-8 px-2.5 gap-1.5 text-xs">
-                <LayoutGrid className="h-3.5 w-3.5" /> Gán cấp độ
-              </TabsTrigger>
-              <TabsTrigger value={SPECIAL_TABS.levels} className="h-8 px-2.5 gap-1.5 text-xs">
-                <Layers className="h-3.5 w-3.5" /> Cấp độ
-                <span className="ml-1 px-1.5 rounded bg-muted text-[10px] font-mono">
-                  {levels.length}
-                </span>
-              </TabsTrigger>
             </TabsList>
             <ScrollBar orientation="horizontal" />
           </ScrollArea>
@@ -186,31 +170,10 @@ export default function CoursesPage() {
                 program={p}
                 levels={levels}
                 onEdit={() => handleEdit(p)}
+                onChanged={handleProgramChanged}
               />
             </TabsContent>
           ))}
-
-          {/* ─── Tab Gán cấp độ ─── */}
-          <TabsContent value={SPECIAL_TABS.matrix} className="mt-4">
-            <ProgramLevelsMatrix
-              programs={programs}
-              levels={levels}
-              onSave={setProgramLevels}
-            />
-          </TabsContent>
-
-          {/* ─── Tab Cấp độ ─── */}
-          <TabsContent value={SPECIAL_TABS.levels} className="mt-4">
-            <div className="rounded-xl border bg-card p-5 space-y-3">
-              <div>
-                <h2 className="font-display font-bold text-base">Danh sách cấp độ</h2>
-                <p className="text-xs text-muted-foreground">
-                  Thêm/sửa/xóa cấp độ. Đồng bộ với bộ lọc trong Lớp học, Kho bài tập và Khóa học.
-                </p>
-              </div>
-              <CourseLevelManager />
-            </div>
-          </TabsContent>
         </Tabs>
       )}
 
