@@ -10,6 +10,7 @@ import PayRatesTab from "../components/PayRatesTab";
 import SignaturesTab from "../components/SignaturesTab";
 import AuditLogTab from "../components/AuditLogTab";
 import ContractActionsPanel from "../components/ContractActionsPanel";
+import CustomFieldsTab from "../components/CustomFieldsTab";
 
 function formatDate(iso: string | null) {
   if (!iso) return "—";
@@ -64,8 +65,9 @@ export default function ContractDetailPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2 space-y-4">
           <Tabs defaultValue="overview">
-            <TabsList className="grid grid-cols-4 w-full">
+            <TabsList className="grid grid-cols-5 w-full">
               <TabsTrigger value="overview">Thông tin</TabsTrigger>
+              <TabsTrigger value="custom">Tùy chỉnh</TabsTrigger>
               <TabsTrigger value="rates">Phụ lục thù lao</TabsTrigger>
               <TabsTrigger value="signatures">Chữ ký</TabsTrigger>
               <TabsTrigger value="audit">Lịch sử</TabsTrigger>
@@ -74,6 +76,16 @@ export default function ContractDetailPage() {
             <TabsContent value="overview" className="space-y-4 mt-4">
               <PartyAView snapshot={contract.party_a_snapshot} />
               <PartyBView snapshot={contract.party_b_snapshot} />
+            </TabsContent>
+
+            <TabsContent value="custom" className="mt-4">
+              <CustomFieldsTab
+                contractId={contract.id}
+                status={contract.status}
+                fieldsSnapshot={contract.template_fields_snapshot}
+                values={contract.custom_fields}
+                onMutated={refresh}
+              />
             </TabsContent>
 
             <TabsContent value="rates" className="mt-4">

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { DetailPageLayout } from "@shared/components/layouts";
 import { Button } from "@shared/components/ui/button";
@@ -13,7 +13,10 @@ import { FilePlus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   createContract, useContractTemplates, useTeacherOptions,
+  useContractTemplateWithFields,
 } from "../hooks/useContracts";
+import CustomFieldsForm from "../components/CustomFieldsForm";
+import { validateCustomFields } from "../utils/customFields";
 
 export default function ContractCreatePage() {
   const navigate = useNavigate();
@@ -31,9 +34,33 @@ export default function ContractCreatePage() {
   const [effectiveTo, setEffectiveTo] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  const { data: templateWithFields } = useContractTemplateWithFields(templateId || undefined);
+  const fields = useMemo(() => templateWithFields?.fields ?? [], [templateWithFields]);
+  const [customValues, setCustomValues] = useState<Record<string, unknown>>({});
+
+  // Reset values + pre-fill defaults whenever fields change.
+  useEffect(() => {
+    if (!fields.length) {
+      setCustomValues({});
+      return;
+    }
+    const next: Record<string, unknown> = {};
+    for (const f of fields) {
+      if (f.default_value !== null && f.default_value !== undefined) {
+        next[f.field_key] = f.default_value;
+      }
+    }
+    setCustomValues(next);
+  }, [fields]);
+
   const submit = async () => {
     if (!templateId || !teacherId) {
       toast.error("Vui lòng chọn template và giáo viên");
+      return;
+    }
+    const missing = validateCustomFields(fields, customValues);
+    if (missing.length) {
+      toast.error(`Thiếu trường bắt buộc: ${missing.join(", ")}`);
       return;
     }
     setSubmitting(true);
@@ -46,6 +73,7 @@ export default function ContractCreatePage() {
         services_description: servicesDescription || null,
         effective_from: effectiveFrom || null,
         effective_to: effectiveTo || null,
+        custom_fields: fields.length ? customValues : null,
       });
       toast.success("Đã tạo hợp đồng (trạng thái: đang soạn)");
       navigate(`/contracts/${id}`);
@@ -153,6 +181,22 @@ export default function ContractCreatePage() {
               onChange={(e) => setServicesDescription(e.target.value)}
             />
           </div>
+
+          {fields.length > 0 && (
+            <div className="border-t pt-4 space-y-3">
+              <div>
+                <h3 className="text-sm font-semibold">Thông tin tùy chỉnh</h3>
+                <p className="text-xs text-muted-foreground">
+                  Các trường được định nghĩa trong template. Giá trị sẽ được lưu trong hợp đồng và hiển thị trong PDF.
+                </p>
+              </div>
+              <CustomFieldsForm
+                fields={fields}
+                values={customValues}
+                onChange={setCustomValues}
+              />
+            </div>
+          )}
 
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={() => navigate("/contracts")}>

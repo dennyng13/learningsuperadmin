@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type {
+  ContractFieldType,
   ContractRow,
   ContractStatus,
+  ContractTemplateFieldOption,
+  ContractTemplateFieldRow,
   ContractTemplateRow,
   ContractWithDetails,
   PartyASnapshot,
@@ -78,7 +81,34 @@ export function useContractDetail(contractId: string | undefined) {
       setError(error.message);
       setData(null);
     } else {
-      setData(data as unknown as ContractWithDetails);
+      // The RPC returns the contract row's columns merged with auxiliary
+      // collections at the top level. Normalise to ContractWithDetails so
+      // pages can rely on the typed shape.
+      const flat = (data ?? {}) as Record<string, unknown> & {
+        template?: unknown; teacher?: unknown;
+        pay_rates?: unknown; pay_rates_archived?: unknown;
+        signatures?: unknown; documents?: unknown; audit_log?: unknown;
+        party_a_settings?: unknown;
+      };
+      const {
+        template, teacher, pay_rates, pay_rates_archived,
+        signatures, documents, audit_log, party_a_settings,
+        ...contractRow
+      } = flat;
+      const wrapped: ContractWithDetails = {
+        contract: contractRow as unknown as ContractRow,
+        template: (template ?? null) as ContractWithDetails["template"],
+        teacher: (teacher ?? null) as ContractWithDetails["teacher"],
+        pay_rates: {
+          active: (pay_rates as ContractWithDetails["pay_rates"]["active"]) ?? [],
+          archived: (pay_rates_archived as ContractWithDetails["pay_rates"]["archived"]) ?? [],
+        },
+        signatures: (signatures as ContractWithDetails["signatures"]) ?? [],
+        documents: (documents as ContractWithDetails["documents"]) ?? [],
+        audit_log: (audit_log as ContractWithDetails["audit_log"]) ?? [],
+        party_a_settings: (party_a_settings ?? null) as ContractWithDetails["party_a_settings"],
+      };
+      setData(wrapped);
     }
     setLoading(false);
   }, [contractId]);
@@ -129,6 +159,7 @@ export interface CreateContractInput {
   party_a_signer_user_id?: string | null;
   supersedes_contract_id?: string | null;
   related_document_ids?: string[];
+  custom_fields?: Record<string, unknown> | null;
 }
 
 export async function createContract(input: CreateContractInput): Promise<string> {
@@ -143,10 +174,173 @@ export async function createContract(input: CreateContractInput): Promise<string
     p_party_a_signer_user_id: input.party_a_signer_user_id ?? null,
     p_supersedes_contract_id: input.supersedes_contract_id ?? null,
     p_related_document_ids: input.related_document_ids ?? null,
+    p_custom_fields: input.custom_fields ?? null,
   });
   if (error) throw error;
   return data as unknown as string;
 }
+
+export async function updateContractCustomFields(
+  contractId: string,
+  customFields: Record<string, unknown>,
+) {
+  const { error } = await rpc("contract_update_custom_fields", {
+    p_contract_id: contractId,
+    p_custom_fields: customFields,
+  });
+  if (error) throw error;
+}
+
+// ---------- Template editor hooks (Phase 1.2) ---------------------------
+
+export function useContractTemplatesList(includeArchived = false) {
+  const [data, setData] = useState<ContractTemplateRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    const { data, error } = await rpc("contract_templates_list", {
+      p_include_archived: includeArchived,
+    });
+    if (error) {
+      setError(error.message);
+      setData([]);
+    } else {
+      setData((data as ContractTemplateRow[]) ?? []);
+    }
+    setLoading(false);
+  }, [includeArchived]);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  return { data, loading, error, refresh };
+}
+
+export function useContractTemplateWithFields(templateId: string | undefined) {
+  const [data, setData] = useState<ContractTemplateRow | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const refresh = useCallback(async () => {
+    if (!templateId) {
+      setData(null);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    const { data, error } = await rpc("contract_template_get_with_fields", {
+      p_template_id: templateId,
+    });
+    if (error) {
+      setError(error.message);
+      setData(null);
+    } else {
+      setData(data as unknown as ContractTemplateRow);
+    }
+    setLoading(false);
+  }, [templateId]);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  return { data, loading, error, refresh };
+}
+
+export interface TemplateCreateInput {
+  name: string;
+  description?: string | null;
+  body_md?: string | null;
+}
+
+export async function createTemplate(input: TemplateCreateInput): Promise<string> {
+  const { data, error } = await rpc("contract_template_create", {
+    p_name: input.name,
+    p_description: input.description ?? null,
+    p_body_md: input.body_md ?? "",
+  });
+  if (error) throw error;
+  return data as unknown as string;
+}
+
+export interface TemplateUpdateInput {
+  name?: string | null;
+  description?: string | null;
+  body_md?: string | null;
+  is_active?: boolean | null;
+}
+
+export async function updateTemplate(templateId: string, input: TemplateUpdateInput) {
+  const { error } = await rpc("contract_template_update", {
+    p_template_id: templateId,
+    p_name: input.name ?? null,
+    p_description: input.description ?? null,
+    p_body_md: input.body_md ?? null,
+    p_is_active: input.is_active ?? null,
+  });
+  if (error) throw error;
+}
+
+export async function archiveTemplate(templateId: string) {
+  const { error } = await rpc("contract_template_archive", {
+    p_template_id: templateId,
+  });
+  if (error) throw error;
+}
+
+export interface TemplateFieldUpsertInput {
+  template_id: string;
+  field_key: string;
+  label: string;
+  field_type: ContractFieldType;
+  required?: boolean;
+  default_value?: unknown;
+  options?: ContractTemplateFieldOption[] | null;
+  help_text?: string | null;
+  field_group?: string | null;
+  sort_order?: number;
+  id?: string | null;
+}
+
+export async function upsertTemplateField(input: TemplateFieldUpsertInput): Promise<string> {
+  const { data, error } = await rpc("contract_template_field_upsert", {
+    p_template_id: input.template_id,
+    p_field_key: input.field_key,
+    p_label: input.label,
+    p_field_type: input.field_type,
+    p_required: input.required ?? false,
+    p_default_value: input.default_value === undefined ? null : input.default_value,
+    p_options: input.options ?? null,
+    p_help_text: input.help_text ?? null,
+    p_field_group: input.field_group ?? null,
+    p_sort_order: input.sort_order ?? 0,
+    p_id: input.id ?? null,
+  });
+  if (error) throw error;
+  return data as unknown as string;
+}
+
+export async function deleteTemplateField(fieldId: string) {
+  const { error } = await rpc("contract_template_field_delete", {
+    p_field_id: fieldId,
+  });
+  if (error) throw error;
+}
+
+export async function reorderTemplateFields(templateId: string, orderedIds: string[]) {
+  const { error } = await rpc("contract_template_field_reorder", {
+    p_template_id: templateId,
+    p_ordered_ids: orderedIds,
+  });
+  if (error) throw error;
+}
+
+export type { ContractTemplateFieldRow };
 
 export async function sendContractToTeacher(contractId: string, message?: string) {
   const { error } = await rpc("contract_send_to_teacher", {

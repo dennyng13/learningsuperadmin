@@ -63,6 +63,7 @@ export interface ContractRow {
   party_a_snapshot: PartyASnapshot;
   party_b_snapshot: PartyBSnapshot;
   custom_fields: Record<string, unknown> | null;
+  template_fields_snapshot: ContractTemplateFieldRow[] | null;
   pdf_storage_path: string | null;
   workdrive_file_id: string | null;
   workdrive_url: string | null;
@@ -86,7 +87,49 @@ export interface ContractTemplateRow {
   created_at: string;
   updated_at: string;
   created_by: string | null;
+  field_count?: number;
+  fields?: ContractTemplateFieldRow[];
 }
+
+export type ContractFieldType =
+  | "text"
+  | "textarea"
+  | "number"
+  | "date"
+  | "currency"
+  | "dropdown"
+  | "checkbox";
+
+export interface ContractTemplateFieldOption {
+  value: string;
+  label: string;
+}
+
+export interface ContractTemplateFieldRow {
+  id: string;
+  template_id: string;
+  field_key: string;
+  label: string;
+  field_type: ContractFieldType;
+  required: boolean;
+  default_value: unknown;
+  options: ContractTemplateFieldOption[] | null;
+  help_text: string | null;
+  field_group: string | null;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export const CONTRACT_FIELD_TYPE_LABELS: Record<ContractFieldType, string> = {
+  text: "Văn bản ngắn",
+  textarea: "Văn bản dài",
+  number: "Số",
+  date: "Ngày",
+  currency: "Tiền (VNĐ)",
+  dropdown: "Lựa chọn",
+  checkbox: "Có/Không",
+};
 
 export interface ContractPayRateRow {
   id: string;
