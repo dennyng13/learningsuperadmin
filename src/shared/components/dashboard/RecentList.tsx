@@ -1,20 +1,18 @@
 import SoftCard from "./SoftCard";
 import { cn } from "@shared/lib/utils";
+import { BADGE_TONE_CLASS, type DashboardCardBaseProps, type IconTone } from "./types";
 
 export interface RecentListItem {
   id: string;
   name: string;
   meta: string;
-  badge?: { label: string; tone: "teal" | "coral" | "muted" };
+  badge?: { label: string; tone: IconTone };
 }
 
-interface RecentListProps {
-  eyebrow?: string;
-  title?: string;
+interface RecentListProps extends Pick<DashboardCardBaseProps, "eyebrow" | "title" | "action" | "icon" | "className"> {
   items: RecentListItem[];
   emptyLabel?: string;
   onItemClick?: (item: RecentListItem) => void;
-  className?: string;
 }
 
 const AVATAR_GRADIENTS = [
@@ -24,12 +22,6 @@ const AVATAR_GRADIENTS = [
   "from-accent/60 to-accent/90",
 ];
 
-const TONE: Record<NonNullable<RecentListItem["badge"]>["tone"], string> = {
-  teal: "bg-primary/10 text-primary",
-  coral: "bg-accent/10 text-accent",
-  muted: "bg-muted text-muted-foreground",
-};
-
 /**
  * Generic "recent activity" / "top performers" list with circular avatar,
  * name, meta text and an optional status badge.
@@ -37,13 +29,15 @@ const TONE: Record<NonNullable<RecentListItem["badge"]>["tone"], string> = {
 export default function RecentList({
   eyebrow = "Hoạt động gần đây",
   title = "Nội dung mới",
+  action,
+  icon,
   items,
   emptyLabel = "Chưa có dữ liệu",
   onItemClick,
   className,
 }: RecentListProps) {
   return (
-    <SoftCard eyebrow={eyebrow} title={title} className={className}>
+    <SoftCard eyebrow={eyebrow} title={title} action={action} icon={icon} className={className}>
       <ul className="space-y-3">
         {items.length === 0 && (
           <li className="text-sm text-muted-foreground py-6 text-center">{emptyLabel}</li>
@@ -73,7 +67,7 @@ export default function RecentList({
                 {item.badge && (
                   <span className={cn(
                     "text-[10px] font-bold uppercase px-2 py-0.5 rounded-full",
-                    TONE[item.badge.tone],
+                    BADGE_TONE_CLASS[item.badge.tone],
                   )}>
                     {item.badge.label}
                   </span>
