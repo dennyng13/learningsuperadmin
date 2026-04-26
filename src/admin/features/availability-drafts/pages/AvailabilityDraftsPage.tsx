@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
 import {
   CalendarCheck, Search, Loader2, AlertCircle, CheckCircle2, XCircle,
-  MessageSquareWarning, Inbox, Clock, BookOpen, ChevronRight, Sparkles,
-  Wifi, MapPin, ShieldCheck,
+  MessageSquareWarning, Inbox, Clock, BookOpen, Sparkles,
+  Wifi, MapPin, ShieldCheck, Filter,
 } from "lucide-react";
 import { formatDistanceToNow, parseISO, format } from "date-fns";
 import { vi } from "date-fns/locale";
@@ -26,12 +26,12 @@ import { WEEKDAY_LABELS, normalizeRules, validateAvailabilityDraft } from "@shar
 import { cn } from "@shared/lib/utils";
 
 const STATUS_META: Record<string, { label: string; pill: string; dot: string }> = {
-  pending:        { label: "Chờ duyệt",     pill: "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-500/15 dark:text-amber-200 dark:border-amber-500/30", dot: "bg-amber-500" },
-  needs_changes:  { label: "Cần sửa",       pill: "bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-500/15 dark:text-orange-200 dark:border-orange-500/30", dot: "bg-orange-500" },
-  approved:       { label: "Đã duyệt",      pill: "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-200 dark:border-emerald-500/30", dot: "bg-emerald-500" },
-  applied:        { label: "Đã áp dụng",    pill: "bg-emerald-600 text-white border-emerald-600", dot: "bg-emerald-600" },
-  rejected:       { label: "Từ chối",       pill: "bg-red-100 text-red-700 border-red-200 dark:bg-red-500/15 dark:text-red-200 dark:border-red-500/30", dot: "bg-red-500" },
-  superseded:     { label: "Đã thay thế",   pill: "bg-muted text-muted-foreground border-border", dot: "bg-muted-foreground" },
+  pending:        { label: "Chờ duyệt",     pill: "bg-amber-50 text-amber-700 border-amber-200/70 dark:bg-amber-500/10 dark:text-amber-200 dark:border-amber-500/25", dot: "bg-amber-500" },
+  needs_changes:  { label: "Cần sửa",       pill: "bg-orange-50 text-orange-700 border-orange-200/70 dark:bg-orange-500/10 dark:text-orange-200 dark:border-orange-500/25", dot: "bg-orange-500" },
+  approved:       { label: "Đã duyệt",      pill: "bg-emerald-50 text-emerald-700 border-emerald-200/70 dark:bg-emerald-500/10 dark:text-emerald-200 dark:border-emerald-500/25", dot: "bg-emerald-500" },
+  applied:        { label: "Đã áp dụng",    pill: "bg-emerald-600 text-white border-emerald-600 shadow-sm shadow-emerald-600/20", dot: "bg-white" },
+  rejected:       { label: "Từ chối",       pill: "bg-rose-50 text-rose-700 border-rose-200/70 dark:bg-rose-500/10 dark:text-rose-200 dark:border-rose-500/25", dot: "bg-rose-500" },
+  superseded:     { label: "Đã thay thế",   pill: "bg-muted text-muted-foreground border-border/60", dot: "bg-muted-foreground" },
 };
 
 const STATUS_TABS: Array<{ value: string; label: string }> = [
@@ -89,32 +89,39 @@ function AvailabilityGrid({ rules }: { rules: ReturnType<typeof normalizeRules> 
   }, 0);
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between text-xs text-muted-foreground">
-        <span>Khung giờ rảnh đăng ký</span>
-        <span className="font-medium text-foreground">≈ {totalCells} ô / tuần</span>
+    <div className="space-y-2.5">
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+          <Clock className="h-3.5 w-3.5" />Khung giờ rảnh
+        </p>
+        <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+          <span className="flex items-center gap-1.5">
+            <span className="h-2 w-2 rounded-sm bg-emerald-500/80" />Có lịch
+          </span>
+          <span className="font-semibold text-foreground tabular-nums">{totalCells}h / tuần</span>
+        </div>
       </div>
-      <div className="border rounded-lg overflow-hidden bg-muted/10">
-        <div className="grid" style={{ gridTemplateColumns: "44px repeat(7, 1fr)" }}>
-          <div className="bg-muted/40 p-1 text-[10px] text-muted-foreground" />
+      <div className="border border-border/60 rounded-xl overflow-hidden bg-card">
+        <div className="grid" style={{ gridTemplateColumns: "40px repeat(7, 1fr)" }}>
+          <div className="bg-muted/30 p-1.5 text-[10px] text-muted-foreground" />
           {WEEKDAY_GRID.map((wd) => (
-            <div key={wd} className="bg-muted/40 p-1 text-center text-[10px] font-semibold text-muted-foreground border-l border-border/40">
+            <div key={wd} className="bg-muted/30 py-1.5 text-center text-[10px] font-semibold text-muted-foreground border-l border-border/40">
               {WEEKDAY_LABELS[wd]}
             </div>
           ))}
           {HOURS.map((h) => (
             <>
-              <div key={`l-${h}`} className="border-t bg-muted/20 p-1 text-[10px] text-muted-foreground/70 text-right pr-1.5">
-                {String(h).padStart(2, "0")}h
+              <div key={`l-${h}`} className="border-t border-border/30 bg-muted/10 py-0.5 text-[9px] tabular-nums text-muted-foreground/70 text-right pr-1.5 leading-6">
+                {String(h).padStart(2, "0")}
               </div>
               {WEEKDAY_GRID.map((wd) => (
                 <div
                   key={`c-${h}-${wd}`}
                   className={cn(
-                    "border-t border-l border-border/40 h-6",
+                    "border-t border-l border-border/30 h-6 transition-colors",
                     isActive(wd, h)
-                      ? "bg-emerald-500/85 dark:bg-emerald-500/70"
-                      : "bg-card",
+                      ? "bg-emerald-500/80 dark:bg-emerald-500/60 hover:bg-emerald-500/95"
+                      : "bg-card hover:bg-muted/30",
                   )}
                 />
               ))}
@@ -226,15 +233,16 @@ export default function AvailabilityDraftsPage() {
   const filterBar = (
     <div className="space-y-3">
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/70" />
         <Input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Tìm theo tên hoặc email giáo viên…"
-          className="pl-9 h-10"
+          placeholder="Tìm giáo viên theo tên hoặc email…"
+          className="pl-10 h-11 rounded-xl border-border/60 bg-card/80 focus-visible:ring-2 focus-visible:ring-primary/30"
         />
       </div>
-      <div className="flex flex-wrap gap-1.5">
+      <div className="flex items-center gap-2 overflow-x-auto -mx-1 px-1 scrollbar-none">
+        <Filter className="h-3.5 w-3.5 text-muted-foreground/60 shrink-0" />
         {STATUS_TABS.map((t) => {
           const active = statusFilter === t.value;
           const n = counts[t.value] ?? 0;
@@ -244,16 +252,16 @@ export default function AvailabilityDraftsPage() {
               type="button"
               onClick={() => setStatusFilter(t.value)}
               className={cn(
-                "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
+                "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-200 shrink-0",
                 active
-                  ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                  : "bg-card text-muted-foreground border-border hover:border-primary/40 hover:text-foreground",
+                  ? "bg-foreground text-background border-foreground shadow-sm"
+                  : "bg-transparent text-muted-foreground border-border/60 hover:border-foreground/30 hover:text-foreground",
               )}
             >
               {t.label}
               <span className={cn(
-                "px-1.5 py-0 rounded-full text-[10px] font-semibold tabular-nums",
-                active ? "bg-primary-foreground/20 text-primary-foreground" : "bg-muted text-muted-foreground",
+                "min-w-[18px] text-center px-1.5 py-0 rounded-full text-[10px] font-semibold tabular-nums",
+                active ? "bg-background/20 text-background" : "bg-muted/70 text-muted-foreground",
               )}>{n}</span>
             </button>
           );
@@ -277,15 +285,21 @@ export default function AvailabilityDraftsPage() {
           <p>{data?.errorMessage || String((error as any)?.message || "Không tải được drafts")}</p>
         </CardContent></Card>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,380px)_1fr] gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,360px)_1fr] gap-5">
           {/* LEFT: list */}
-          <div className="space-y-2 lg:max-h-[calc(100vh-240px)] lg:overflow-y-auto pr-1 -mr-1">
+          <div className="space-y-1.5 lg:max-h-[calc(100vh-240px)] lg:overflow-y-auto pr-1 -mr-1">
+            <div className="hidden lg:flex items-center justify-between px-1 pb-1.5 text-[11px] text-muted-foreground">
+              <span>{filtered.length} đăng ký</span>
+              {filtered.length > 0 && <span className="opacity-60">Click để xem chi tiết</span>}
+            </div>
             {filtered.length === 0 ? (
-              <Card><CardContent className="py-14 text-center text-muted-foreground flex flex-col items-center gap-2">
-                <Inbox className="h-10 w-10 opacity-40" />
-                <p className="text-sm font-medium">Không có draft nào</p>
+              <div className="rounded-2xl border border-dashed border-border/60 bg-card/50 py-16 text-center text-muted-foreground flex flex-col items-center gap-2.5">
+                <div className="h-12 w-12 rounded-full bg-muted/40 flex items-center justify-center">
+                  <Inbox className="h-5 w-5 opacity-50" />
+                </div>
+                <p className="text-sm font-medium text-foreground">Không có draft nào</p>
                 <p className="text-xs">Thử đổi filter trạng thái khác</p>
-              </CardContent></Card>
+              </div>
             ) : (
               filtered.map((d) => {
                 const isSelected = selected?.id === d.id;
@@ -294,44 +308,55 @@ export default function AvailabilityDraftsPage() {
                     key={d.id}
                     onClick={() => setSelectedId(d.id)}
                     className={cn(
-                      "w-full text-left rounded-xl border bg-card p-3 transition-all group",
+                      "w-full text-left rounded-xl border bg-card px-3.5 py-3 transition-all duration-200 group relative",
                       isSelected
-                        ? "ring-2 ring-primary border-primary shadow-sm"
-                        : "hover:border-primary/40 hover:bg-accent/40",
+                        ? "border-foreground/80 shadow-[0_2px_12px_-4px_hsl(var(--foreground)/0.15)] bg-card"
+                        : "border-border/50 hover:border-border hover:bg-muted/20 hover:translate-x-0.5",
                     )}
                   >
+                    {isSelected && (
+                      <span className="absolute left-0 top-3 bottom-3 w-0.5 rounded-r-full bg-foreground" />
+                    )}
                     <div className="flex items-start gap-3">
-                      <Avatar className="h-10 w-10 shrink-0">
-                        <AvatarFallback className="text-sm font-semibold bg-primary/10 text-primary">
+                      <Avatar className={cn(
+                        "h-9 w-9 shrink-0 ring-2 transition-all",
+                        isSelected ? "ring-foreground/15" : "ring-transparent",
+                      )}>
+                        <AvatarFallback className="text-xs font-bold bg-gradient-to-br from-primary/15 to-primary/5 text-primary">
                           {initialsOf(d.teacher?.full_name)}
                         </AvatarFallback>
                       </Avatar>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between gap-2">
-                          <p className="text-sm font-semibold truncate">{d.teacher?.full_name || "(Không rõ giáo viên)"}</p>
+                          <p className="text-sm font-semibold truncate leading-tight">{d.teacher?.full_name || "(Không rõ)"}</p>
                           <StatusBadge status={d.status} />
                         </div>
-                        <p className="text-xs text-muted-foreground truncate mt-0.5">{d.teacher?.email || "—"}</p>
-                        <div className="flex items-center justify-between gap-2 mt-2 text-[11px] text-muted-foreground">
-                          <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{formatRange(d.effective_from, d.effective_to)}</span>
+                        <p className="text-[11px] text-muted-foreground truncate mt-0.5">{d.teacher?.email || "—"}</p>
+                        <div className="flex items-center gap-2 mt-2 text-[11px] text-muted-foreground">
+                          <span className="flex items-center gap-1 font-medium tabular-nums">
+                            <Clock className="h-3 w-3 opacity-60" />
+                            {format(parseISO(d.effective_from), "dd/MM", { locale: vi })}
+                          </span>
                           {d.created_at && (
-                            <span className="opacity-80">{formatDistanceToNow(parseISO(d.created_at), { addSuffix: true, locale: vi })}</span>
+                            <>
+                              <span className="opacity-40">·</span>
+                              <span className="opacity-70 truncate">{formatDistanceToNow(parseISO(d.created_at), { addSuffix: true, locale: vi })}</span>
+                            </>
                           )}
                         </div>
                         {Array.isArray(d.desired_programs) && d.desired_programs.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-2">
                             {d.desired_programs.slice(0, 3).map((k) => (
-                              <span key={k} className="text-[10px] px-1.5 py-0 rounded-full bg-primary/10 text-primary border border-primary/20">
+                              <span key={k} className="text-[10px] px-1.5 py-0.5 rounded-md bg-muted/60 text-muted-foreground font-medium">
                                 {programs.find((p) => p.key === k)?.name ?? k}
                               </span>
                             ))}
                             {d.desired_programs.length > 3 && (
-                              <span className="text-[10px] text-muted-foreground">+{d.desired_programs.length - 3}</span>
+                              <span className="text-[10px] text-muted-foreground/70 self-center">+{d.desired_programs.length - 3}</span>
                             )}
                           </div>
                         )}
                       </div>
-                      <ChevronRight className={cn("h-4 w-4 mt-1 text-muted-foreground/50 transition-transform shrink-0", isSelected && "translate-x-0.5 text-primary")} />
                     </div>
                   </button>
                 );
@@ -342,48 +367,53 @@ export default function AvailabilityDraftsPage() {
           {/* RIGHT: detail */}
           <div>
             {selected ? (
-              <Card className="overflow-hidden">
-                <div className="h-1.5 bg-gradient-to-r from-primary via-primary/60 to-primary/30" />
-                <CardContent className="p-5 space-y-5">
+              <Card className="overflow-hidden border-border/60 shadow-sm">
+                <CardContent className="p-0">
                   {/* Teacher header */}
-                  <div className="flex items-start gap-4">
-                    <Avatar className="h-14 w-14 shrink-0 ring-2 ring-primary/20">
-                      <AvatarFallback className="bg-primary/10 text-primary text-lg font-bold">
-                        {initialsOf(selected.teacher?.full_name)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h2 className="text-lg font-bold truncate">{selected.teacher?.full_name || "—"}</h2>
-                        <StatusBadge status={selected.status} />
-                      </div>
-                      <p className="text-sm text-muted-foreground truncate mt-0.5">{selected.teacher?.email || "—"}</p>
-                      <div className="flex flex-wrap gap-1.5 mt-2.5">
-                        {(selected.capability?.level_keys || []).map((lvl) => (
-                          <Badge key={lvl} variant="secondary" className="text-[10px] px-1.5 py-0 gap-1">
-                            <ShieldCheck className="h-2.5 w-2.5" />{lvl}
-                          </Badge>
-                        ))}
-                        {selected.capability?.can_teach_online && (
-                          <Badge className="text-[10px] px-1.5 py-0 gap-1 bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-500/15 dark:text-blue-200 dark:border-blue-500/30" variant="outline">
-                            <Wifi className="h-2.5 w-2.5" />Online
-                          </Badge>
-                        )}
-                        {selected.capability?.can_teach_offline && (
-                          <Badge className="text-[10px] px-1.5 py-0 gap-1 bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-500/15 dark:text-purple-200 dark:border-purple-500/30" variant="outline">
-                            <MapPin className="h-2.5 w-2.5" />Offline
-                          </Badge>
-                        )}
+                  <div className="px-6 pt-6 pb-5 border-b border-border/50 bg-gradient-to-b from-muted/20 to-transparent">
+                    <div className="flex items-start gap-4">
+                      <Avatar className="h-14 w-14 shrink-0 ring-2 ring-background shadow-sm">
+                        <AvatarFallback className="bg-gradient-to-br from-primary/15 to-primary/5 text-primary text-base font-bold">
+                          {initialsOf(selected.teacher?.full_name)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h2 className="text-lg font-bold truncate tracking-tight">{selected.teacher?.full_name || "—"}</h2>
+                          <StatusBadge status={selected.status} />
+                        </div>
+                        <p className="text-sm text-muted-foreground truncate mt-0.5">{selected.teacher?.email || "—"}</p>
+                        <div className="flex flex-wrap gap-1.5 mt-3">
+                          {(selected.capability?.level_keys || []).map((lvl) => (
+                            <Badge key={lvl} variant="secondary" className="text-[10px] px-2 py-0.5 gap-1 font-medium">
+                              <ShieldCheck className="h-2.5 w-2.5" />{lvl}
+                            </Badge>
+                          ))}
+                          {selected.capability?.can_teach_online && (
+                            <Badge className="text-[10px] px-2 py-0.5 gap-1 bg-sky-50 text-sky-700 border-sky-200/70 dark:bg-sky-500/10 dark:text-sky-300 dark:border-sky-500/25" variant="outline">
+                              <Wifi className="h-2.5 w-2.5" />Online
+                            </Badge>
+                          )}
+                          {selected.capability?.can_teach_offline && (
+                            <Badge className="text-[10px] px-2 py-0.5 gap-1 bg-violet-50 text-violet-700 border-violet-200/70 dark:bg-violet-500/10 dark:text-violet-300 dark:border-violet-500/25" variant="outline">
+                              <MapPin className="h-2.5 w-2.5" />Offline
+                            </Badge>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
 
+                  <div className="p-6 space-y-5">
+
                   {/* Effective range */}
-                  <div className="rounded-lg bg-primary/5 border border-primary/15 px-3 py-2.5 flex items-center gap-2.5">
-                    <Clock className="h-4 w-4 text-primary shrink-0" />
-                    <div className="text-sm">
-                      <span className="text-muted-foreground">Hiệu lực:</span>{" "}
-                      <span className="font-semibold">{formatRange(selected.effective_from, selected.effective_to)}</span>
+                  <div className="rounded-xl border border-border/50 bg-muted/20 px-4 py-3 flex items-center gap-3">
+                    <div className="h-8 w-8 rounded-lg bg-background border border-border/60 flex items-center justify-center shrink-0">
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Khoảng hiệu lực</p>
+                      <p className="text-sm font-semibold tabular-nums mt-0.5">{formatRange(selected.effective_from, selected.effective_to)}</p>
                     </div>
                   </div>
 
@@ -403,41 +433,54 @@ export default function AvailabilityDraftsPage() {
                   )}
 
                   {/* Validation */}
-                  <div className={cn(
-                    "rounded-lg border p-3 space-y-2",
-                    !validation || validation.conflicts.length === 0
-                      ? "border-emerald-200 bg-emerald-50/50 dark:bg-emerald-500/10 dark:border-emerald-500/30"
-                      : "border-orange-200 bg-orange-50/50 dark:bg-orange-500/10 dark:border-orange-500/30",
-                  )}>
-                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Kiểm tra xung đột</p>
-                    {!validation || validation.conflicts.length === 0 ? (
-                      <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-300 text-sm">
-                        <CheckCircle2 className="h-4 w-4" />
-                        <span>Không có xung đột lịch</span>
-                      </div>
-                    ) : (
-                      <div className="space-y-1.5">
-                        <div className="flex items-center gap-2 text-orange-700 dark:text-orange-300 text-sm">
-                          <AlertCircle className="h-4 w-4" />
-                          <span className="font-medium">{validation.conflicts.length} xung đột với lớp đang dạy</span>
+                  {(() => {
+                    const ok = !validation || validation.conflicts.length === 0;
+                    return (
+                      <div className={cn(
+                        "rounded-xl border p-4 space-y-2.5",
+                        ok
+                          ? "border-emerald-200/60 bg-emerald-50/40 dark:bg-emerald-500/[0.06] dark:border-emerald-500/20"
+                          : "border-orange-200/70 bg-orange-50/50 dark:bg-orange-500/[0.06] dark:border-orange-500/25",
+                      )}>
+                        <div className="flex items-center justify-between">
+                          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Kiểm tra xung đột</p>
+                          {validation && (
+                            <span className={cn(
+                              "text-[10px] font-medium px-2 py-0.5 rounded-full",
+                              validation.lead_time_ok
+                                ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300"
+                                : "bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300",
+                            )}>
+                              Lead time {validation.lead_time_days}d
+                            </span>
+                          )}
                         </div>
-                        <ul className="text-xs space-y-1 pl-1">
-                          {validation.conflicts.map((c, i) => (
-                            <li key={i} className="flex items-center gap-2 text-muted-foreground">
-                              <span className="font-medium text-foreground">{c.class_name}</span>
-                              <span>·</span>
-                              <span>{c.weekday !== undefined ? WEEKDAY_LABELS[c.weekday] : c.date} {c.start_time}–{c.end_time}</span>
-                            </li>
-                          ))}
-                        </ul>
+                        {ok ? (
+                          <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-300 text-sm font-medium">
+                            <CheckCircle2 className="h-4 w-4" />
+                            <span>Không có xung đột lịch</span>
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2 text-orange-700 dark:text-orange-300 text-sm font-medium">
+                              <AlertCircle className="h-4 w-4" />
+                              <span>{validation.conflicts.length} xung đột với lớp đang dạy</span>
+                            </div>
+                            <ul className="text-xs space-y-1.5 pl-1 max-h-32 overflow-y-auto">
+                              {validation.conflicts.map((c, i) => (
+                                <li key={i} className="flex items-center gap-2 text-muted-foreground">
+                                  <span className="h-1 w-1 rounded-full bg-orange-500/70" />
+                                  <span className="font-medium text-foreground">{c.class_name}</span>
+                                  <span className="opacity-50">·</span>
+                                  <span className="tabular-nums">{c.weekday !== undefined ? WEEKDAY_LABELS[c.weekday] : c.date} {c.start_time}–{c.end_time}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
                       </div>
-                    )}
-                    {validation && !validation.lead_time_ok && (
-                      <p className="text-xs text-orange-700 dark:text-orange-300 flex items-center gap-1.5">
-                        <AlertCircle className="h-3 w-3" />Lead time chỉ {validation.lead_time_days} ngày (yêu cầu ≥ 14)
-                      </p>
-                    )}
-                  </div>
+                    );
+                  })()}
 
                   {/* Availability grid */}
                   <AvailabilityGrid rules={Array.isArray(selected.availability_rules) ? selected.availability_rules as any : []} />
@@ -456,38 +499,39 @@ export default function AvailabilityDraftsPage() {
 
                   {/* Review history */}
                   {selected.reviewed_at && (
-                    <div className="rounded-lg bg-muted/40 border border-border p-3 text-xs space-y-0.5">
-                      <p className="font-semibold uppercase tracking-wider text-muted-foreground">Lịch sử duyệt</p>
+                    <div className="rounded-xl bg-muted/30 border border-border/50 p-3.5 text-xs space-y-1">
+                      <p className="font-semibold uppercase tracking-wider text-muted-foreground text-[10px]">Lịch sử duyệt</p>
                       <p className="text-muted-foreground">
-                        Lúc {format(parseISO(selected.reviewed_at), "dd/MM/yyyy HH:mm", { locale: vi })}
-                        {selected.reviewed_by ? ` · bởi ${selected.reviewed_by.slice(0, 8)}…` : ""}
+                        {format(parseISO(selected.reviewed_at), "dd/MM/yyyy 'lúc' HH:mm", { locale: vi })}
+                        {selected.reviewed_by ? ` · ${selected.reviewed_by.slice(0, 8)}…` : ""}
                       </p>
-                      {selected.review_note && <p className="italic text-foreground/80 mt-1">"{selected.review_note}"</p>}
+                      {selected.review_note && <p className="italic text-foreground/80 mt-1.5 pl-2 border-l-2 border-border">"{selected.review_note}"</p>}
                     </div>
                   )}
+                  </div>
 
-                  {/* Actions */}
+                  {/* Sticky action footer */}
                   {canReview && (
-                    <div className="flex flex-col sm:flex-row gap-2 pt-3 border-t border-border">
+                    <div className="sticky bottom-0 bg-card/95 backdrop-blur-md border-t border-border/60 px-6 py-3.5 flex flex-col sm:flex-row gap-2">
                       <Button
                         variant="outline"
-                        size="sm"
-                        className="flex-1 border-orange-300 text-orange-700 hover:bg-orange-50 hover:text-orange-800 dark:border-orange-500/40 dark:text-orange-300 dark:hover:bg-orange-500/10"
+                        size="default"
+                        className="flex-1 h-10 border-orange-200 text-orange-700 hover:bg-orange-50 hover:text-orange-800 hover:border-orange-300 dark:border-orange-500/30 dark:text-orange-300 dark:hover:bg-orange-500/10"
                         onClick={() => openAction("needs_changes")}
                       >
                         <MessageSquareWarning className="h-4 w-4 mr-1.5" /> Yêu cầu sửa
                       </Button>
                       <Button
                         variant="outline"
-                        size="sm"
-                        className="flex-1 border-red-300 text-red-700 hover:bg-red-50 hover:text-red-800 dark:border-red-500/40 dark:text-red-300 dark:hover:bg-red-500/10"
+                        size="default"
+                        className="flex-1 h-10 border-rose-200 text-rose-700 hover:bg-rose-50 hover:text-rose-800 hover:border-rose-300 dark:border-rose-500/30 dark:text-rose-300 dark:hover:bg-rose-500/10"
                         onClick={() => openAction("rejected")}
                       >
                         <XCircle className="h-4 w-4 mr-1.5" /> Từ chối
                       </Button>
                       <Button
-                        size="sm"
-                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+                        size="default"
+                        className="flex-1 h-10 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shadow-emerald-600/20"
                         onClick={() => openAction("approve")}
                       >
                         <CheckCircle2 className="h-4 w-4 mr-1.5" /> Duyệt và áp dụng
@@ -497,10 +541,15 @@ export default function AvailabilityDraftsPage() {
                 </CardContent>
               </Card>
             ) : (
-              <Card><CardContent className="py-20 text-center text-sm text-muted-foreground flex flex-col items-center gap-2">
-                <Inbox className="h-10 w-10 opacity-40" />
-                <p>Chọn một draft từ danh sách bên trái để xem chi tiết</p>
-              </CardContent></Card>
+              <Card className="border-dashed border-border/60 bg-card/50">
+                <CardContent className="py-24 text-center text-sm text-muted-foreground flex flex-col items-center gap-3">
+                  <div className="h-14 w-14 rounded-full bg-muted/40 flex items-center justify-center">
+                    <Inbox className="h-6 w-6 opacity-50" />
+                  </div>
+                  <p className="font-medium text-foreground">Chưa chọn draft nào</p>
+                  <p className="text-xs">Chọn một đăng ký từ danh sách bên trái để xem chi tiết</p>
+                </CardContent>
+              </Card>
             )}
           </div>
         </div>

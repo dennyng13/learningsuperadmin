@@ -11,6 +11,7 @@ import {
   ChevronRight,
   Clock3,
   FilePlus2,
+  Filter,
   Layers,
   Loader2,
   Search,
@@ -442,91 +443,115 @@ function ScheduleCalendarTab() {
   const activeFilterCount = [filterTeacher, filterLevel, filterProgram, filterType, filterRoom].filter((f) => f !== "all").length;
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="font-display text-lg font-bold tracking-tight flex items-center gap-2">
-            <CalendarDays className="h-5 w-5 text-primary" />
-            Lịch học hiện tại
-          </h2>
-          <p className="text-xs text-muted-foreground mt-1">Giữ nguyên schedule view cũ, thêm filter và cảnh báo conflict phòng.</p>
-        </div>
-
-        <div className="flex items-center gap-2 flex-wrap">
-          <div className="flex rounded-lg border bg-muted p-0.5 gap-0.5">
-            {(["day", "week", "month"] as const).map((v) => (
-              <button
-                key={v}
-                onClick={() => setViewMode(v)}
-                className={cn("px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors", viewMode === v ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}
-              >
-                {v === "day" ? "Ngày" : v === "week" ? "Tuần" : "Tháng"}
-              </button>
-            ))}
+    <div className="space-y-5">
+      {/* Header bar */}
+      <div className="rounded-2xl border border-border/60 bg-gradient-to-b from-muted/30 to-transparent p-4 md:p-5">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <div className="h-10 w-10 rounded-xl bg-background border border-border/60 flex items-center justify-center shadow-sm shrink-0">
+              <CalendarDays className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <h2 className="font-display text-base md:text-lg font-bold tracking-tight">Lịch học hiện tại</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">Theo dõi tất cả buổi dạy, phát hiện xung đột phòng theo thời gian thực</p>
+            </div>
           </div>
 
-          <div className="flex items-center gap-0.5">
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={goPrev}><ChevronLeft className="h-4 w-4" /></Button>
-            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-              <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="h-7 px-2 text-xs gap-1.5">
-                  <CalendarDays className="h-3.5 w-3.5" />
-                  {viewMode === "week"
-                    ? `${format(weekStart, "dd/MM")} – ${format(weekEnd, "dd/MM")}`
-                    : viewMode === "month"
-                    ? format(selectedDate, "MMMM yyyy", { locale: vi })
-                    : isToday(selectedDate)
-                    ? "Hôm nay"
-                    : format(selectedDate, "dd/MM", { locale: vi })}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="center">
-                <Calendar mode="single" selected={selectedDate} onSelect={(d) => { if (d) { setSelectedDate(d); setCalendarOpen(false); } }} initialFocus className="p-3 pointer-events-auto" />
-              </PopoverContent>
-            </Popover>
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={goNext}><ChevronRight className="h-4 w-4" /></Button>
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="inline-flex rounded-xl border border-border/60 bg-background p-0.5 gap-0.5">
+              {(["day", "week", "month"] as const).map((v) => (
+                <button
+                  key={v}
+                  onClick={() => setViewMode(v)}
+                  className={cn(
+                    "px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200",
+                    viewMode === v
+                      ? "bg-foreground text-background shadow-sm"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
+                  )}
+                >
+                  {v === "day" ? "Ngày" : v === "week" ? "Tuần" : "Tháng"}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex items-center rounded-xl border border-border/60 bg-background overflow-hidden">
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-none hover:bg-muted/50" onClick={goPrev}><ChevronLeft className="h-4 w-4" /></Button>
+              <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+                <PopoverTrigger asChild>
+                  <button className="h-8 px-3 text-xs font-medium tabular-nums hover:bg-muted/50 transition-colors flex items-center gap-1.5 border-x border-border/60">
+                    <CalendarDays className="h-3.5 w-3.5 opacity-70" />
+                    {viewMode === "week"
+                      ? `${format(weekStart, "dd/MM")} – ${format(weekEnd, "dd/MM")}`
+                      : viewMode === "month"
+                      ? format(selectedDate, "MMMM yyyy", { locale: vi })
+                      : isToday(selectedDate)
+                      ? "Hôm nay"
+                      : format(selectedDate, "dd/MM", { locale: vi })}
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="center">
+                  <Calendar mode="single" selected={selectedDate} onSelect={(d) => { if (d) { setSelectedDate(d); setCalendarOpen(false); } }} initialFocus className="p-3 pointer-events-auto" />
+                </PopoverContent>
+              </Popover>
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-none hover:bg-muted/50" onClick={goNext}><ChevronRight className="h-4 w-4" /></Button>
+            </div>
+
+            {!isToday(selectedDate) && (
+              <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => setSelectedDate(new Date())}>
+                Hôm nay
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Filter row */}
+        <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-border/40">
+          <Filter className="h-3.5 w-3.5 text-muted-foreground/60 ml-1" />
+          <Select value={filterTeacher} onValueChange={setFilterTeacher}>
+            <SelectTrigger className="h-8 w-auto min-w-[140px] text-xs rounded-lg border-border/60 bg-background"><SelectValue placeholder="Giáo viên" /></SelectTrigger>
+            <SelectContent><SelectItem value="all">Tất cả GV</SelectItem>{filterOptions.teachers.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+          </Select>
+          <Select value={filterLevel} onValueChange={setFilterLevel}>
+            <SelectTrigger className="h-8 w-auto min-w-[100px] text-xs rounded-lg border-border/60 bg-background"><SelectValue placeholder="Level" /></SelectTrigger>
+            <SelectContent><SelectItem value="all">Tất cả Level</SelectItem>{filterOptions.levels.map((l) => <SelectItem key={l} value={l}>{l}</SelectItem>)}</SelectContent>
+          </Select>
+          <Select value={filterProgram} onValueChange={setFilterProgram}>
+            <SelectTrigger className="h-8 w-auto min-w-[120px] text-xs rounded-lg border-border/60 bg-background"><SelectValue placeholder="Chương trình" /></SelectTrigger>
+            <SelectContent><SelectItem value="all">Tất cả CT</SelectItem>{filterOptions.programs.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
+          </Select>
+          <Select value={filterType} onValueChange={setFilterType}>
+            <SelectTrigger className="h-8 w-auto min-w-[90px] text-xs rounded-lg border-border/60 bg-background"><SelectValue placeholder="Loại" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tất cả</SelectItem>
+              <SelectItem value="group">Nhóm</SelectItem>
+              <SelectItem value="private">1-1</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={filterRoom} onValueChange={setFilterRoom}>
+            <SelectTrigger className="h-8 w-auto min-w-[100px] text-xs rounded-lg border-border/60 bg-background"><SelectValue placeholder="Phòng" /></SelectTrigger>
+            <SelectContent><SelectItem value="all">Tất cả phòng</SelectItem>{filterOptions.rooms.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
+          </Select>
+          {activeFilterCount > 0 && (
+            <Button variant="ghost" size="sm" className="h-8 text-xs gap-1" onClick={() => { setFilterTeacher("all"); setFilterLevel("all"); setFilterProgram("all"); setFilterType("all"); setFilterRoom("all"); }}>
+              <XCircle className="h-3 w-3" />Xóa ({activeFilterCount})
+            </Button>
+          )}
+
+          <div className="ml-auto flex items-center gap-3 text-xs">
+            {!isLoading && (
+              <>
+                <span className="text-muted-foreground tabular-nums"><span className="font-semibold text-foreground">{filteredSessions.length}</span> buổi</span>
+                {conflictIds.size > 0 && (
+                  <span className="flex items-center gap-1.5 text-destructive font-semibold px-2 py-0.5 rounded-full bg-destructive/10 border border-destructive/20">
+                    <AlertTriangle className="h-3 w-3" />{Math.floor(conflictIds.size / 2)} xung đột
+                  </span>
+                )}
+              </>
+            )}
           </div>
         </div>
       </div>
-
-      <div className="flex flex-wrap gap-2">
-        <Select value={filterTeacher} onValueChange={setFilterTeacher}>
-          <SelectTrigger className="h-8 w-auto min-w-[140px] text-xs"><SelectValue placeholder="Giáo viên" /></SelectTrigger>
-          <SelectContent><SelectItem value="all">Tất cả GV</SelectItem>{filterOptions.teachers.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
-        </Select>
-        <Select value={filterLevel} onValueChange={setFilterLevel}>
-          <SelectTrigger className="h-8 w-auto min-w-[100px] text-xs"><SelectValue placeholder="Level" /></SelectTrigger>
-          <SelectContent><SelectItem value="all">Tất cả Level</SelectItem>{filterOptions.levels.map((l) => <SelectItem key={l} value={l}>{l}</SelectItem>)}</SelectContent>
-        </Select>
-        <Select value={filterProgram} onValueChange={setFilterProgram}>
-          <SelectTrigger className="h-8 w-auto min-w-[120px] text-xs"><SelectValue placeholder="Chương trình" /></SelectTrigger>
-          <SelectContent><SelectItem value="all">Tất cả CT</SelectItem>{filterOptions.programs.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
-        </Select>
-        <Select value={filterType} onValueChange={setFilterType}>
-          <SelectTrigger className="h-8 w-auto min-w-[90px] text-xs"><SelectValue placeholder="Loại" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tất cả</SelectItem>
-            <SelectItem value="group">Nhóm</SelectItem>
-            <SelectItem value="private">1-1</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={filterRoom} onValueChange={setFilterRoom}>
-          <SelectTrigger className="h-8 w-auto min-w-[100px] text-xs"><SelectValue placeholder="Phòng" /></SelectTrigger>
-          <SelectContent><SelectItem value="all">Tất cả phòng</SelectItem>{filterOptions.rooms.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
-        </Select>
-        {activeFilterCount > 0 && (
-          <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setFilterTeacher("all"); setFilterLevel("all"); setFilterProgram("all"); setFilterType("all"); setFilterRoom("all"); }}>
-            Xóa bộ lọc ({activeFilterCount})
-          </Button>
-        )}
-      </div>
-
-      {!isLoading && (
-        <div className="flex items-center gap-4 text-xs text-muted-foreground">
-          <span>{filteredSessions.length} buổi học</span>
-          {conflictIds.size > 0 && <span className="flex items-center gap-1 text-destructive font-medium"><AlertTriangle className="h-3 w-3" />{Math.floor(conflictIds.size / 2)} xung đột</span>}
-        </div>
-      )}
 
       {isLoading && <div className="flex items-center justify-center py-12"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>}
 
@@ -711,32 +736,45 @@ export function AvailabilityDraftsTab() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <div>
-          <h2 className="font-display text-lg font-bold flex items-center gap-2"><Clock3 className="h-5 w-5 text-primary" />Duyệt đăng ký lịch rảnh</h2>
-          <p className="text-xs text-muted-foreground mt-1">Draft chỉ được apply vào bảng gốc nếu không conflict lịch lớp và effective_from cách hôm nay ít nhất 14 ngày.</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Select value={teacherFilter} onValueChange={setTeacherFilter}>
-            <SelectTrigger className="h-9 min-w-[160px] text-xs"><SelectValue placeholder="Giáo viên" /></SelectTrigger>
-            <SelectContent><SelectItem value="all">Tất cả giáo viên</SelectItem>{teachers.map((t) => <SelectItem key={t.id} value={t.id}>{t.full_name}</SelectItem>)}</SelectContent>
-          </Select>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="h-9 min-w-[150px] text-xs"><SelectValue placeholder="Trạng thái" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tất cả trạng thái</SelectItem>
-              <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="needs_changes">Needs changes</SelectItem>
-              <SelectItem value="rejected">Rejected</SelectItem>
-              <SelectItem value="applied">Applied</SelectItem>
-            </SelectContent>
-          </Select>
+    <div className="space-y-5">
+      <div className="rounded-2xl border border-border/60 bg-gradient-to-b from-muted/30 to-transparent p-4 md:p-5">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <div className="h-10 w-10 rounded-xl bg-background border border-border/60 flex items-center justify-center shadow-sm shrink-0">
+              <Clock3 className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <h2 className="font-display text-base md:text-lg font-bold tracking-tight">Duyệt đăng ký lịch rảnh</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">Cần ≥ 14 ngày lead time và không xung đột với lớp đang dạy</p>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Select value={teacherFilter} onValueChange={setTeacherFilter}>
+              <SelectTrigger className="h-9 min-w-[160px] text-xs rounded-lg border-border/60 bg-background"><SelectValue placeholder="Giáo viên" /></SelectTrigger>
+              <SelectContent><SelectItem value="all">Tất cả giáo viên</SelectItem>{teachers.map((t) => <SelectItem key={t.id} value={t.id}>{t.full_name}</SelectItem>)}</SelectContent>
+            </Select>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="h-9 min-w-[150px] text-xs rounded-lg border-border/60 bg-background"><SelectValue placeholder="Trạng thái" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tất cả trạng thái</SelectItem>
+                <SelectItem value="pending">Chờ duyệt</SelectItem>
+                <SelectItem value="needs_changes">Cần sửa</SelectItem>
+                <SelectItem value="rejected">Từ chối</SelectItem>
+                <SelectItem value="applied">Đã áp dụng</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
 
       {isLoading ? <div className="flex items-center justify-center py-12"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div> : filteredDrafts.length === 0 ? (
-        <Card><CardContent className="py-10 text-center text-sm text-muted-foreground">Chưa có draft lịch rảnh nào theo bộ lọc hiện tại.</CardContent></Card>
+        <div className="rounded-2xl border border-dashed border-border/60 bg-card/50 py-16 text-center text-muted-foreground flex flex-col items-center gap-3">
+          <div className="h-12 w-12 rounded-full bg-muted/40 flex items-center justify-center">
+            <Clock3 className="h-5 w-5 opacity-50" />
+          </div>
+          <p className="text-sm font-medium text-foreground">Chưa có draft nào</p>
+          <p className="text-xs">Không có đăng ký lịch rảnh khớp với bộ lọc hiện tại</p>
+        </div>
       ) : (
         <div className="space-y-4">
           {filteredDrafts.map((draft) => {
@@ -747,64 +785,124 @@ export function AvailabilityDraftsTab() {
             const isBusy = actingId === draft.id;
 
             return (
-              <Card key={draft.id} className="overflow-hidden">
-                <CardHeader className="pb-4">
+              <Card key={draft.id} className="overflow-hidden border-border/60 shadow-sm hover:shadow-md transition-shadow">
+                <CardHeader className="pb-4 bg-gradient-to-b from-muted/20 to-transparent border-b border-border/40">
                   <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3">
-                    <div className="space-y-2">
+                    <div className="space-y-2 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <CardTitle className="text-base">{teacher?.full_name || draft.teacher_id}</CardTitle>
-                        <Badge variant="outline">Hiệu lực từ {draft.effective_from}</Badge>
-                        <Badge variant={draft.status === "applied" ? "default" : "secondary"}>{draft.status}</Badge>
+                        <CardTitle className="text-base tracking-tight truncate">{teacher?.full_name || draft.teacher_id}</CardTitle>
+                        <Badge variant={draft.status === "applied" ? "default" : "secondary"} className="text-[10px] uppercase tracking-wide">
+                          {draft.status === "pending" && "Chờ duyệt"}
+                          {draft.status === "needs_changes" && "Cần sửa"}
+                          {draft.status === "approved" && "Đã duyệt"}
+                          {draft.status === "applied" && "Đã áp dụng"}
+                          {draft.status === "rejected" && "Từ chối"}
+                          {!["pending", "needs_changes", "approved", "applied", "rejected"].includes(draft.status) && draft.status}
+                        </Badge>
                       </div>
-                      <CardDescription>
+                      <CardDescription className="text-xs">
+                        Hiệu lực từ <span className="font-semibold text-foreground tabular-nums">{draft.effective_from}</span>
+                        {" · "}
                         {draft.status === "approved"
-                          ? "Draft đã được duyệt, có thể apply vào bảng gốc khi sẵn sàng."
+                          ? "Đã được duyệt, sẵn sàng apply"
                           : validation.can_apply
-                            ? "Đủ điều kiện apply vào bảng gốc."
-                            : "Chưa đủ điều kiện apply, sẽ giữ ở draft/pending cho đến khi admin duyệt hoặc yêu cầu chỉnh sửa."}
+                            ? "Đủ điều kiện apply ngay"
+                            : "Chưa đủ điều kiện apply"}
                       </CardDescription>
                     </div>
-                    <div className="flex flex-wrap gap-2 text-xs">
-                      <Badge variant={validation.lead_time_ok ? "default" : "destructive"}>Lead time: {validation.lead_time_days} ngày</Badge>
-                      <Badge variant={validation.conflict_count === 0 ? "default" : "destructive"}>Conflict: {validation.conflict_count}</Badge>
+                    <div className="flex flex-wrap gap-1.5">
+                      <span className={cn(
+                        "inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-[11px] font-medium border",
+                        validation.lead_time_ok
+                          ? "bg-emerald-50 text-emerald-700 border-emerald-200/70 dark:bg-emerald-500/10 dark:text-emerald-300 dark:border-emerald-500/25"
+                          : "bg-orange-50 text-orange-700 border-orange-200/70 dark:bg-orange-500/10 dark:text-orange-300 dark:border-orange-500/25",
+                      )}>
+                        {validation.lead_time_ok ? <CheckCircle2 className="h-3 w-3" /> : <AlertTriangle className="h-3 w-3" />}
+                        Lead time {validation.lead_time_days}d
+                      </span>
+                      <span className={cn(
+                        "inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-[11px] font-medium border",
+                        validation.conflict_count === 0
+                          ? "bg-emerald-50 text-emerald-700 border-emerald-200/70 dark:bg-emerald-500/10 dark:text-emerald-300 dark:border-emerald-500/25"
+                          : "bg-rose-50 text-rose-700 border-rose-200/70 dark:bg-rose-500/10 dark:text-rose-300 dark:border-rose-500/25",
+                      )}>
+                        {validation.conflict_count === 0 ? <CheckCircle2 className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
+                        {validation.conflict_count} xung đột
+                      </span>
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-4 pt-5">
                   <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
                     <div className="space-y-3">
                       <div>
-                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Recurring slots</p>
-                        <div className="flex flex-wrap gap-2">{rules.length === 0 ? <span className="text-sm text-muted-foreground">Không có slot recurring</span> : rules.map((rule, idx) => <Badge key={`${draft.id}-rule-${idx}`} variant="outline">{describeRule(rule)}</Badge>)}</div>
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1.5">
+                          <Layers className="h-3 w-3" />Slot định kỳ
+                          <span className="text-muted-foreground/60 normal-case font-normal">({rules.length})</span>
+                        </p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {rules.length === 0
+                            ? <span className="text-xs text-muted-foreground italic">Không có slot recurring</span>
+                            : rules.map((rule, idx) => <Badge key={`${draft.id}-rule-${idx}`} variant="outline" className="text-[11px] font-normal bg-muted/40 border-border/50">{describeRule(rule)}</Badge>)}
+                        </div>
                       </div>
                       <div>
-                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Exceptions</p>
-                        <div className="flex flex-wrap gap-2">{exceptions.length === 0 ? <span className="text-sm text-muted-foreground">Không có exception</span> : exceptions.map((item, idx) => <Badge key={`${draft.id}-exception-${idx}`} variant="outline">{describeException(item)}</Badge>)}</div>
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1.5">
+                          <CalendarDays className="h-3 w-3" />Ngoại lệ
+                          <span className="text-muted-foreground/60 normal-case font-normal">({exceptions.length})</span>
+                        </p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {exceptions.length === 0
+                            ? <span className="text-xs text-muted-foreground italic">Không có ngoại lệ</span>
+                            : exceptions.map((item, idx) => <Badge key={`${draft.id}-exception-${idx}`} variant="outline" className="text-[11px] font-normal bg-muted/40 border-border/50">{describeException(item)}</Badge>)}
+                        </div>
                       </div>
                     </div>
-                    <div className="rounded-xl border bg-muted/30 p-3 space-y-2">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Validation summary</p>
+                    <div className="rounded-xl border border-border/50 bg-muted/20 p-3.5 space-y-2.5">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Tóm tắt kiểm tra</p>
                       <div className="space-y-2 text-sm">
-                        <div className="flex items-center gap-2">{validation.lead_time_ok ? <CheckCircle2 className="h-4 w-4 text-primary" /> : <XCircle className="h-4 w-4 text-destructive" />}<span>Cách ngày hiện tại ít nhất 2 tuần</span></div>
-                        <div className="flex items-center gap-2">{validation.conflict_count === 0 ? <CheckCircle2 className="h-4 w-4 text-primary" /> : <XCircle className="h-4 w-4 text-destructive" />}<span>Không conflict với lớp đang dạy</span></div>
+                        <div className="flex items-center gap-2">
+                          {validation.lead_time_ok
+                            ? <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                            : <XCircle className="h-4 w-4 text-destructive" />}
+                          <span>Lead time ≥ 2 tuần</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {validation.conflict_count === 0
+                            ? <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                            : <XCircle className="h-4 w-4 text-destructive" />}
+                          <span>Không xung đột lớp đang dạy</span>
+                        </div>
                       </div>
                       {validation.conflicts.length > 0 && (
-                        <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-xs text-muted-foreground space-y-1 max-h-36 overflow-auto">
-                          {validation.conflicts.map((conflict, idx) => <p key={`${draft.id}-conflict-${idx}`}>• {conflict.class_name} · {conflict.date || DAY_LABELS[conflict.weekday ?? 0]} · {fmtTime(conflict.start_time)}–{fmtTime(conflict.end_time)}</p>)}
+                        <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-2.5 text-xs space-y-1 max-h-36 overflow-auto">
+                          {validation.conflicts.map((conflict, idx) => (
+                            <p key={`${draft.id}-conflict-${idx}`} className="flex items-center gap-1.5 text-muted-foreground">
+                              <span className="h-1 w-1 rounded-full bg-destructive/70 shrink-0" />
+                              <span className="font-medium text-foreground">{conflict.class_name}</span>
+                              <span className="opacity-50">·</span>
+                              <span className="tabular-nums">{conflict.date || DAY_LABELS[conflict.weekday ?? 0]} {fmtTime(conflict.start_time)}–{fmtTime(conflict.end_time)}</span>
+                            </p>
+                          ))}
                         </div>
                       )}
                     </div>
                   </div>
 
-                  <Textarea placeholder="Ghi chú review cho giáo viên..." value={reviewNote[draft.id] || draft.review_note || ""} onChange={(e) => setReviewNote((prev) => ({ ...prev, [draft.id]: e.target.value }))} className="min-h-[88px]" />
+                  <Textarea
+                    placeholder="Ghi chú review cho giáo viên..."
+                    value={reviewNote[draft.id] || draft.review_note || ""}
+                    onChange={(e) => setReviewNote((prev) => ({ ...prev, [draft.id]: e.target.value }))}
+                    className="min-h-[80px] rounded-xl border-border/60 bg-card resize-none"
+                  />
 
-                  <div className="flex flex-wrap gap-2 justify-end">
-                    <Button variant="outline" disabled={isBusy} onClick={() => updateDraftStatus(draft.id, "needs_changes")}>Yêu cầu sửa</Button>
-                    <Button variant="outline" disabled={isBusy} onClick={() => updateDraftStatus(draft.id, "approved")}>Duyệt</Button>
-                    <Button variant="outline" disabled={isBusy} onClick={() => updateDraftStatus(draft.id, "rejected")}>Từ chối</Button>
-                    <Button disabled={isBusy || !validation.can_apply} onClick={() => approveAndApply(draft)}>
+                  <div className="flex flex-wrap gap-2 justify-end pt-1">
+                    <Button variant="outline" size="sm" disabled={isBusy} className="border-orange-200 text-orange-700 hover:bg-orange-50 hover:border-orange-300 dark:border-orange-500/30 dark:text-orange-300 dark:hover:bg-orange-500/10" onClick={() => updateDraftStatus(draft.id, "needs_changes")}>Yêu cầu sửa</Button>
+                    <Button variant="outline" size="sm" disabled={isBusy} className="border-rose-200 text-rose-700 hover:bg-rose-50 hover:border-rose-300 dark:border-rose-500/30 dark:text-rose-300 dark:hover:bg-rose-500/10" onClick={() => updateDraftStatus(draft.id, "rejected")}>Từ chối</Button>
+                    <Button variant="outline" size="sm" disabled={isBusy} onClick={() => updateDraftStatus(draft.id, "approved")}>Duyệt</Button>
+                    <Button size="sm" disabled={isBusy || !validation.can_apply} onClick={() => approveAndApply(draft)} className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shadow-emerald-600/20 gap-1.5">
                       {isBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                      Duyệt & Apply
+                      Duyệt & Áp dụng
                     </Button>
                   </div>
                 </CardContent>
@@ -1077,17 +1175,22 @@ function ClassOpeningTab() {
 
 export default function AdminSchedulePage() {
   return (
-    <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-4">
-      <div>
-        <h1 className="font-display text-xl md:text-2xl font-bold tracking-tight">Lịch học & phân bổ giáo viên</h1>
-        <p className="text-sm text-muted-foreground mt-1">Quản lý lịch dạy hiện tại, duyệt draft lịch rảnh từ Teacher’s Hub và mở lớp mới theo slot mong muốn.</p>
+    <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-5">
+      <div className="flex items-start gap-3">
+        <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/20 flex items-center justify-center shrink-0">
+          <CalendarDays className="h-5 w-5 text-primary" />
+        </div>
+        <div>
+          <h1 className="font-display text-xl md:text-2xl font-bold tracking-tight">Lịch học & phân bổ giáo viên</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">Quản lý lịch dạy, duyệt draft lịch rảnh và mở lớp mới theo slot mong muốn</p>
+        </div>
       </div>
 
-      <Tabs defaultValue="calendar" className="space-y-4">
-        <TabsList className="h-auto w-full justify-start rounded-xl bg-muted/60 p-1 flex-wrap">
-          <TabsTrigger value="calendar" className="gap-1.5"><CalendarDays className="h-3.5 w-3.5" />Lịch học</TabsTrigger>
-          <TabsTrigger value="availability" className="gap-1.5"><Clock3 className="h-3.5 w-3.5" />Duyệt lịch rảnh</TabsTrigger>
-          <TabsTrigger value="opening" className="gap-1.5"><FilePlus2 className="h-3.5 w-3.5" />Mở lớp</TabsTrigger>
+      <Tabs defaultValue="calendar" className="space-y-5">
+        <TabsList className="h-auto w-full justify-start rounded-xl bg-muted/60 p-1 flex-wrap gap-1">
+          <TabsTrigger value="calendar" className="gap-1.5 px-4 py-2 rounded-lg text-xs md:text-sm font-semibold"><CalendarDays className="h-3.5 w-3.5" />Lịch học</TabsTrigger>
+          <TabsTrigger value="availability" className="gap-1.5 px-4 py-2 rounded-lg text-xs md:text-sm font-semibold"><Clock3 className="h-3.5 w-3.5" />Duyệt lịch rảnh</TabsTrigger>
+          <TabsTrigger value="opening" className="gap-1.5 px-4 py-2 rounded-lg text-xs md:text-sm font-semibold"><FilePlus2 className="h-3.5 w-3.5" />Mở lớp</TabsTrigger>
         </TabsList>
 
         <TabsContent value="calendar"><ScheduleCalendarTab /></TabsContent>
