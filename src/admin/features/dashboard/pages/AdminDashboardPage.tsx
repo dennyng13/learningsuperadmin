@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import {
-  FileText, Loader2, Layers,
+  FileText, Layers,
   Upload, BarChart3, UserPlus, Award,
   ArrowRight, PenLine, ListChecks, UserSearch, ChevronRight, CalendarDays, AlertTriangle,
 } from "lucide-react";
@@ -26,6 +26,11 @@ import ContractStatusWidget from "@admin/features/dashboard/components/ContractS
 import TimesheetStatusWidget from "@admin/features/dashboard/components/TimesheetStatusWidget";
 import PayrollStatusWidget from "@admin/features/dashboard/components/PayrollStatusWidget";
 import DashboardHero from "@admin/features/dashboard/components/DashboardHero";
+import {
+  DashboardHeroSkeleton,
+  TodayScheduleSkeleton,
+  AnalyticsSectionSkeleton,
+} from "@admin/features/dashboard/components/DashboardSkeletons";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@shared/components/ui/button";
 import {
@@ -264,8 +269,18 @@ function AdminDashboardPageInner() {
 
   if (loading) {
     return (
-      <div className="p-6 flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
+        <div>
+          <h1 className="font-display text-2xl md:text-3xl font-extrabold tracking-tight text-foreground">
+            Dashboard
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Tổng quan hệ thống Learning+ Admin Portal
+          </p>
+        </div>
+        <DashboardHeroSkeleton />
+        <TodayScheduleSkeleton />
+        <AnalyticsSectionSkeleton />
       </div>
     );
   }
