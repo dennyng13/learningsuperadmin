@@ -48,6 +48,8 @@ import TimesheetPeriodDetailPage from "@admin/features/timesheet/pages/Timesheet
 import PayrollListPage from "@admin/features/payroll/pages/PayrollListPage";
 import PayrollBatchDetailPage from "@admin/features/payroll/pages/PayrollBatchDetailPage";
 import PayrollPayslipDetailPage from "@admin/features/payroll/pages/PayrollPayslipDetailPage";
+import BrandAssetsPage from "@admin/features/brand-assets/pages/BrandAssetsPage";
+import { SuperAdminRoute } from "@admin/guards/SuperAdminRoute";
 
 function PageLoader() {
   return (
@@ -140,6 +142,7 @@ export default function AppRoutes() {
           <Route path="feature-flags" element={<FeatureFlagsPage />} />
           <Route path="settings" element={<AdminSettingsPage />} />
           <Route path="settings/email-preview" element={<EmailTemplatePreviewPage />} />
+          <Route path="brand-assets" element={<SuperAdminRoute><BrandAssetsPage /></SuperAdminRoute>} />
 
           {/* 404 */}
           <Route path="404" element={<NotFoundPage />} />
