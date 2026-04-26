@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import React from "react";
+import { useState } from "react";
 import { FIELD_GROUP_LABELS, type StudentFieldGroup } from "@shared/types/student";
 import { Switch } from "@shared/components/ui/switch";
 import {
   Loader2, User, Phone, CreditCard, Users, GraduationCap, Wallet, StickyNote,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useStudentFieldAccess } from "@shared/hooks/useStudentFieldAccess";
 
 const ICON_MAP: Record<StudentFieldGroup, React.ElementType> = {
   basic: User, contact: Phone, personal: CreditCard, guardian: Users,
@@ -20,35 +21,13 @@ const EDITABLE_ROLES = [
   { key: "admin",   label: "Admin" },
 ];
 
-interface AccessRow {
-  id?: string;
-  role: string;
-  field_group: string;
-  can_view: boolean;
-  can_edit: boolean;
-}
-
 /**
- * Matrix Xem/Sửa cho mỗi (role × field_group) của hồ sơ học viên.
- * Tắt "Xem" sẽ tự tắt "Sửa". Super Admin luôn bật cả 2 (read-only).
+ * Matrix Xem/Sửa cho mỗi (role × field_group). Dùng `useStudentFieldAccess`
+ * — toàn bộ logic query/mutate/cache nằm trong hook, panel chỉ render.
  */
 export default function StudentFieldAccessPanel() {
-  const [rows, setRows] = useState<AccessRow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { rows, loading, canView, canEdit, toggleAccess } = useStudentFieldAccess();
   const [saving, setSaving] = useState<string | null>(null);
-
-  const fetchData = async () => {
-    const { data } = await supabase.from("student_field_access").select("*");
-    setRows((data || []) as AccessRow[]);
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const getAccess = (role: string, group: string) =>
-    rows.find((r) => r.role === role && r.field_group === group);
 
   const handleToggle = async (
     role: string,
@@ -58,26 +37,12 @@ export default function StudentFieldAccessPanel() {
   ) => {
     const key = `${role}-${group}-${field}`;
     setSaving(key);
-
-    const existing = getAccess(role, group);
-    const newVal = !current;
-    const updates: Partial<AccessRow> = { [field]: newVal };
-    if (field === "can_view" && !newVal) updates.can_edit = false;
-
-    if (existing?.id) {
-      await supabase.from("student_field_access").update(updates).eq("id", existing.id);
+    const { error } = await toggleAccess(role, group, field, !current);
+    if (error) {
+      toast.error("Không thể cập nhật quyền");
     } else {
-      await supabase.from("student_field_access").insert({
-        role,
-        field_group: group,
-        can_view: field === "can_view" ? newVal : false,
-        can_edit: field === "can_edit" ? newVal : false,
-        ...updates,
-      });
+      toast.success("Đã cập nhật quyền");
     }
-
-    toast.success("Đã cập nhật quyền");
-    await fetchData();
     setSaving(null);
   };
 
@@ -100,9 +65,7 @@ export default function StudentFieldAccessPanel() {
                 {r.label}
               </th>
             ))}
-            <th className="text-center px-4 py-3 font-medium" colSpan={2}>
-              Super Admin
-            </th>
+            <th className="text-center px-4 py-3 font-medium" colSpan={2}>Super Admin</th>
           </tr>
           <tr className="bg-muted/20 text-[10px] text-muted-foreground uppercase tracking-wider">
             <th />
@@ -130,9 +93,8 @@ export default function StudentFieldAccessPanel() {
                   </div>
                 </td>
                 {EDITABLE_ROLES.map((role) => {
-                  const access = getAccess(role.key, group);
-                  const canView = access?.can_view ?? false;
-                  const canEdit = access?.can_edit ?? false;
+                  const cv = canView(role.key as any, group);
+                  const ce = canEdit(role.key as any, group);
                   const viewSaving = saving === `${role.key}-${group}-can_view`;
                   const editSaving = saving === `${role.key}-${group}-can_edit`;
                   return (
@@ -142,8 +104,8 @@ export default function StudentFieldAccessPanel() {
                           <Loader2 className="h-4 w-4 animate-spin text-muted-foreground mx-auto" />
                         ) : (
                           <Switch
-                            checked={canView}
-                            onCheckedChange={() => handleToggle(role.key, group, "can_view", canView)}
+                            checked={cv}
+                            onCheckedChange={() => handleToggle(role.key, group, "can_view", cv)}
                           />
                         )}
                       </td>
@@ -152,9 +114,9 @@ export default function StudentFieldAccessPanel() {
                           <Loader2 className="h-4 w-4 animate-spin text-muted-foreground mx-auto" />
                         ) : (
                           <Switch
-                            checked={canEdit}
-                            disabled={!canView}
-                            onCheckedChange={() => handleToggle(role.key, group, "can_edit", canEdit)}
+                            checked={ce}
+                            disabled={!cv}
+                            onCheckedChange={() => handleToggle(role.key, group, "can_edit", ce)}
                           />
                         )}
                       </td>
@@ -172,6 +134,8 @@ export default function StudentFieldAccessPanel() {
           })}
         </tbody>
       </table>
+      {/* Suppress unused warning for rows (debug aid: matrix sẽ dùng count) */}
+      <span className="hidden">{rows.length}</span>
     </div>
   );
 }
