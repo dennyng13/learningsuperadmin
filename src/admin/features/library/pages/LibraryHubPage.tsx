@@ -113,7 +113,7 @@ const SectionCard = forwardRef<HTMLButtonElement, { section: LibrarySection }>(f
 ) {
   const Icon = section.icon;
   const navigate = useNavigate();
-  const { urls } = useBrandShapes(section.palette);
+  const { urls, isLoading } = useBrandShapes(section.palette);
 
   // Tone class theo palette — chỉ ảnh hưởng icon top-right (subtle).
   const ICON_TONE: Record<ShapePalette, string> = {
@@ -127,6 +127,16 @@ const SectionCard = forwardRef<HTMLButtonElement, { section: LibrarySection }>(f
   // Pick a stable shape from the palette using section.id as seed —
   // tránh render khác nhau giữa các lần re-mount (sẽ nhấp nháy).
   const shapeUrl = pickStableShape(urls, section.id, section.preferredShape, section.preferredShapeFallbacks);
+
+  // Debug helper — log một lần khi không tìm được shape, để dễ phát hiện
+  // palette nào chưa upload asset trong /brand-assets.
+  if (typeof window !== "undefined" && !isLoading && !shapeUrl) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      `[LibraryHub] Không có brand shape nào cho palette "${section.palette}" (card "${section.id}"). ` +
+        `Hãy upload shape vào /brand-assets với asset_key dạng "shape-${section.palette}-{name}".`,
+    );
+  }
 
   return (
     <button
