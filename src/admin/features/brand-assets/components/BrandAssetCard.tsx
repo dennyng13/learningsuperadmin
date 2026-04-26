@@ -290,11 +290,7 @@ export function BrandAssetCard({ asset, onChanged, size = "default" }: Props) {
           </div>
           <div className="space-y-1 text-xs text-muted-foreground">
             {asset.description && <p>{asset.description}</p>}
-            <p>
-              {asset.mime_type ?? "—"} ·{" "}
-              {asset.file_size ? `${(asset.file_size / 1024).toFixed(1)} KB` : "— KB"} ·{" "}
-              v{asset.version}
-            </p>
+            <p>{asset.mime_type ?? "—"} · v{asset.version}</p>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={copyUrl}>
