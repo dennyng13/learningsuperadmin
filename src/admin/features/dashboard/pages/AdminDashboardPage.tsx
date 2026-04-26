@@ -306,63 +306,102 @@ export default function AdminDashboardPage() {
         <h2 className="font-display text-sm font-bold text-muted-foreground uppercase tracking-[0.12em] flex items-center gap-2">
           <CalendarDays className="h-3.5 w-3.5" /> Lịch hôm nay
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {todaySchedule && todaySchedule.count > 0 ? (
-            <button
-              onClick={() => navigate("/schedule")}
-              className="rounded-2xl bg-card p-4 text-left shadow-[0_4px_20px_rgba(15,23,42,0.04)] hover:shadow-[0_10px_30px_rgba(15,23,42,0.08)] transition-all"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-primary/12 text-primary flex items-center justify-center">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 auto-rows-fr">
+          {/* Card 1: Today's schedule */}
+          {(() => {
+            const hasSchedule = !!todaySchedule && todaySchedule.count > 0;
+            const hasConflicts = hasSchedule && (todaySchedule?.conflicts ?? 0) > 0;
+            return (
+              <div className="h-full rounded-2xl bg-card p-4 shadow-[0_4px_20px_rgba(15,23,42,0.04)] flex flex-col">
+                <div className="flex items-start gap-3 flex-1">
+                  <div className={cn(
+                    "h-10 w-10 rounded-xl flex items-center justify-center shrink-0",
+                    hasSchedule ? "bg-primary/12 text-primary" : "bg-muted text-muted-foreground",
+                  )}>
                     <CalendarDays className="h-5 w-5" />
                   </div>
-                  <div>
-                    <h3 className="font-display font-bold text-sm flex items-center gap-2">
-                      {todaySchedule.count} buổi học
-                      {todaySchedule.conflicts > 0 && (
-                        <span className="flex items-center gap-1 text-destructive text-xs font-medium">
-                          <AlertTriangle className="h-3 w-3" />
-                          {todaySchedule.conflicts} xung đột
-                        </span>
-                      )}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-display font-bold text-sm text-foreground">
+                      {hasSchedule ? `${todaySchedule!.count} buổi học hôm nay` : "Không có buổi học hôm nay"}
                     </h3>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      {todaySchedule.firstTime ? `Buổi đầu lúc ${todaySchedule.firstTime}` : "Chưa có giờ cụ thể"}
+                      {hasSchedule
+                        ? (todaySchedule!.firstTime ? `Buổi đầu lúc ${todaySchedule!.firstTime}` : "Chưa có giờ cụ thể")
+                        : "Lịch trống — hãy nghỉ ngơi 🌿"}
                     </p>
+                    {hasSchedule && (
+                      <div className="flex items-center flex-wrap gap-1.5 mt-2">
+                        <Badge variant="secondary" className="text-[10px] font-medium">
+                          {todaySchedule!.count} buổi
+                        </Badge>
+                        {todaySchedule!.firstTime && (
+                          <Badge variant="outline" className="text-[10px] font-medium">
+                            Bắt đầu {todaySchedule!.firstTime}
+                          </Badge>
+                        )}
+                        {hasConflicts && (
+                          <Badge variant="destructive" className="text-[10px] font-medium gap-1">
+                            <AlertTriangle className="h-2.5 w-2.5" />
+                            {todaySchedule!.conflicts} xung đột
+                          </Badge>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
-                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                <div className="mt-3 pt-3 border-t border-border/50 flex items-center justify-end">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => navigate("/schedule")}
+                    className="h-8 text-xs gap-1 font-display font-semibold text-primary hover:text-primary hover:bg-primary/8"
+                  >
+                    Xem lịch
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
               </div>
-            </button>
-          ) : (
-            <div className="rounded-2xl bg-card p-4 shadow-[0_4px_20px_rgba(15,23,42,0.04)] flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-muted text-muted-foreground flex items-center justify-center">
-                <CalendarDays className="h-5 w-5" />
+            );
+          })()}
+
+          {/* Card 2: Exercises summary */}
+          {s.totalExercises > 0 && (
+            <div className="h-full rounded-2xl bg-card p-4 shadow-[0_4px_20px_rgba(15,23,42,0.04)] flex flex-col">
+              <div className="flex items-start gap-3 flex-1">
+                <div className="h-10 w-10 rounded-xl bg-accent/12 text-accent flex items-center justify-center shrink-0">
+                  <Layers className="h-5 w-5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-display font-bold text-sm text-foreground">
+                    {s.totalExercises} bài tập
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Quản lý bài luyện tập theo kỹ năng
+                  </p>
+                  <div className="flex items-center flex-wrap gap-1.5 mt-2">
+                    <Badge variant="secondary" className="text-[10px] font-medium">
+                      {s.publishedExercises} published
+                    </Badge>
+                    {s.totalExercises - s.publishedExercises > 0 && (
+                      <Badge variant="outline" className="text-[10px] font-medium">
+                        {s.totalExercises - s.publishedExercises} draft
+                      </Badge>
+                    )}
+                  </div>
+                </div>
               </div>
-              <div>
-                <h3 className="font-display font-bold text-sm">Không có buổi học hôm nay</h3>
-                <p className="text-xs text-muted-foreground mt-0.5">Lịch trống — hãy nghỉ ngơi 🌿</p>
+              <div className="mt-3 pt-3 border-t border-border/50 flex items-center justify-end">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => navigate("/tests?type=exercise")}
+                  className="h-8 text-xs gap-1 font-display font-semibold text-primary hover:text-primary hover:bg-primary/8"
+                >
+                  Xem bài tập
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </Button>
               </div>
             </div>
-          )}
-
-          {s.totalExercises > 0 && (
-            <button
-              onClick={() => navigate("/tests?type=exercise")}
-              className="flex items-center gap-3 rounded-2xl bg-card p-4 text-left shadow-[0_4px_20px_rgba(15,23,42,0.04)] hover:shadow-[0_10px_30px_rgba(15,23,42,0.08)] transition-all"
-            >
-              <div className="h-10 w-10 rounded-xl bg-accent/12 text-accent flex items-center justify-center">
-                <Layers className="h-5 w-5" />
-              </div>
-              <div className="flex-1">
-                <p className="font-display font-bold text-sm">
-                  {s.totalExercises} bài tập · {s.publishedExercises} published
-                </p>
-                <p className="text-xs text-muted-foreground mt-0.5">Quản lý bài luyện tập theo kỹ năng</p>
-              </div>
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
-            </button>
           )}
         </div>
       </section>
