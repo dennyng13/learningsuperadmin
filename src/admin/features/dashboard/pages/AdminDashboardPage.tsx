@@ -160,10 +160,10 @@ function AdminDashboardPageInner() {
         ] = await Promise.all([
           supabase.from("assessments").select("id, name, book_name, status, created_at, section_type").order("created_at", { ascending: false }),
           supabase.from("practice_exercises").select("id, title, status, skill, created_at").order("created_at", { ascending: false }),
-          // "Total Students" = số user có role='student' trong `user_roles`
-          // (single source of truth — `synced_students` chỉ là staging từ
-          // hệ thống ngoài, không phản ánh số học viên thực tế).
-          supabase.from("user_roles").select("*", { count: "exact", head: true }).eq("role", "student"),
+          // "Total Students" = số user có role='user' trong `user_roles`.
+          // Enum `app_role` không có 'student'; learners được lưu dưới role='user'
+          // (admin/super_admin/teacher là các role riêng — phần còn lại = học viên).
+          supabase.from("user_roles").select("*", { count: "exact", head: true }).eq("role", "user"),
           (supabase as any).from("synced_students" as any).select("*", { count: "exact", head: true }).not("linked_user_id", "is", null),
           supabase.from("teachers").select("*", { count: "exact", head: true }),
           (supabase as any).from("classes" as any).select("*", { count: "exact", head: true }),
