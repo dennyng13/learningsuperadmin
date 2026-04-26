@@ -195,7 +195,7 @@ const SectionCard = forwardRef<
       <div className="flex-1" />
 
       {/* ─── Bottom row: arrow + extra links — pr lớn để chừa chỗ cho shape ─── */}
-      <div className="relative z-10 flex items-center gap-2 p-4 sm:p-5 pr-[45%]">
+      <div className="relative z-10 flex items-center gap-2 p-4 sm:p-5 pr-[42%]">
         <ArrowRight
           className="h-5 w-5 shrink-0 text-foreground/80 transition-transform duration-300 group-hover:translate-x-1"
           strokeWidth={1.75}
