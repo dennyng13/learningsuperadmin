@@ -68,6 +68,7 @@ export default function CourseEditorPage() {
 
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmSave, setConfirmSave] = useState(false);
 
   // Hydrate khi vào edit mode
   useEffect(() => {
@@ -111,6 +112,14 @@ export default function CourseEditorPage() {
     setLevelIds(next);
   };
 
+  const requestSave = () => {
+    if (!key.trim() || !name.trim()) {
+      toast.error("Vui lòng nhập key và tên khóa học");
+      return;
+    }
+    setConfirmSave(true);
+  };
+
   const handleSubmit = async () => {
     if (!key.trim() || !name.trim()) {
       toast.error("Vui lòng nhập key và tên khóa học");
@@ -142,6 +151,7 @@ export default function CourseEditorPage() {
       toast.error(`Lỗi: ${err.message ?? "Không xác định"}`);
     } finally {
       setSaving(false);
+      setConfirmSave(false);
     }
   };
 
@@ -211,7 +221,7 @@ export default function CourseEditorPage() {
           <Button size="sm" variant="outline" onClick={() => navigate("/courses")} disabled={saving}>
             Hủy
           </Button>
-          <Button size="sm" onClick={handleSubmit} disabled={saving} className="gap-1.5">
+          <Button size="sm" onClick={requestSave} disabled={saving} className="gap-1.5">
             {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
             {isEdit ? "Lưu thay đổi" : "Tạo khóa học"}
           </Button>
@@ -524,6 +534,39 @@ export default function CourseEditorPage() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Xóa vĩnh viễn
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirm save dialog — chống lưu nhầm */}
+      <AlertDialog open={confirmSave} onOpenChange={(o) => !saving && setConfirmSave(o)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {isEdit ? "Lưu thay đổi cho khóa học?" : "Tạo khóa học mới?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p>Vui lòng xác nhận thông tin trước khi lưu:</p>
+                <ul className="space-y-1 rounded-md border bg-muted/30 p-3 text-xs">
+                  <li><span className="text-muted-foreground">Tên:</span> <span className="font-semibold">{name || "(trống)"}</span></li>
+                  <li><span className="text-muted-foreground">Key:</span> <code className="font-mono">{key || "(trống)"}</code></li>
+                  <li><span className="text-muted-foreground">Cấp độ:</span> {levelIds.length} level</li>
+                  <li><span className="text-muted-foreground">Đầu ra:</span> {outcomes.length} mục</li>
+                  <li><span className="text-muted-foreground">Trạng thái:</span> {active ? "Đang hoạt động" : "Ẩn"}</li>
+                </ul>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={saving}>Hủy</AlertDialogCancel>
+            <AlertDialogAction onClick={handleSubmit} disabled={saving}>
+              {saving ? (
+                <><Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> Đang lưu…</>
+              ) : (
+                <>{isEdit ? "Xác nhận lưu" : "Xác nhận tạo"}</>
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
