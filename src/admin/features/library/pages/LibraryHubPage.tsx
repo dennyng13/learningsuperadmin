@@ -317,10 +317,18 @@ function BrandShapeFigure({ url, palette }: { url: string | null; palette: Shape
       aria-hidden
       className={cn(
         "pointer-events-none absolute",
-        "-bottom-5 -right-5 sm:-bottom-6 sm:-right-6 md:-bottom-7 md:-right-7",
-        // Giảm chiều cao xuống ~70-80% để shape không trườn lên góc trên-phải
-        // (nơi đặt flat icon avatar). Width giữ nguyên để decoration vẫn đầy.
-        "h-[72%] w-[48%] sm:h-[78%] sm:w-[52%] md:h-[82%] md:w-[56%]",
+        // Offset từ góc dưới-phải (negative để shape tràn nhẹ ra ngoài card,
+        // tránh viền vuông giả). Đồng bộ với card-padding theo breakpoint.
+        "-bottom-4 -right-4 sm:-bottom-5 sm:-right-5 md:-bottom-6 md:-right-6",
+        // Chiều cao shape PHẢI dừng dưới đáy của icon avatar top-right để
+        // không bao giờ chạm. Card heights: 128 / 144 / 160 px.
+        // Icon avatar bbox (top + size + breathing): ~50 / 60 / 68 px.
+        // → Shape height tối đa = (card_h − bbox − 8px gap) / card_h:
+        //   mobile : (128−50−8)/128 ≈ 55%
+        //   sm     : (144−60−8)/144 ≈ 53%
+        //   md     : (160−68−8)/160 ≈ 53%
+        // Width có thể rộng hơn vì icon ở GÓC, không lan sang trái.
+        "h-[55%] w-[50%] sm:h-[55%] sm:w-[54%] md:h-[55%] md:w-[58%]",
         "opacity-95 transition-all duration-500 ease-out group-hover:scale-[1.06]",
         "origin-bottom-right",
       )}
