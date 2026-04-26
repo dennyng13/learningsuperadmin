@@ -35,7 +35,7 @@ function getStatusDisplay(status: string | null) {
   return statusConfig[key] || { icon: MinusCircle, className: "text-muted-foreground bg-muted", label: status };
 }
 
-export default function TeachngoAttendancePage() {
+export default function AttendancePage() {
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);

@@ -4,7 +4,7 @@ import { Button } from "@shared/components/ui/button";
 import { RefreshCw, Loader2, Settings2, Link2, Tags, Plus, ArrowRightLeft } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
-import TeachngoClassesTab from "@admin/features/users/components/TeachngoClassesTab";
+import SyncedClassesTab from "@admin/features/users/components/SyncedClassesTab";
 import CourseLevelManager from "@admin/features/settings/components/CourseLevelManager";
 import CreateClassDialog from "@admin/features/classes/components/CreateClassDialog";
 import MigrateCustomizedPlansDialog from "@admin/features/study-plans/components/MigrateCustomizedPlansDialog";
@@ -149,7 +149,7 @@ export default function ClassManagementPage() {
         </div>
       )}
 
-      <TeachngoClassesTab />
+      <SyncedClassesTab />
 
       <CreateClassDialog
         open={createOpen}

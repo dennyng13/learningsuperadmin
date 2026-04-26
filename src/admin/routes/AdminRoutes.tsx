@@ -23,7 +23,7 @@ import PermissionsPage from "@admin/features/permissions/pages/PermissionsPage";
 import FlashcardSetsPage from "@admin/features/flashcards/pages/FlashcardSetsPage";
 import PracticeExerciseDetailPage from "@admin/features/practice/pages/PracticeExerciseDetailPage";
 import BadgeManagementPage from "@admin/features/badges/pages/BadgeManagementPage";
-import TeachngoAttendancePage from "@admin/features/attendance/pages/TeachngoAttendancePage";
+import AttendancePage from "@admin/features/attendance/pages/AttendancePage";
 import StudentPerformancePage from "@admin/features/performance/pages/StudentPerformancePage";
 import TeacherPerformancePage from "@admin/features/performance/pages/TeacherPerformancePage";
 import AdminSettingsPage from "@admin/features/settings/pages/AdminSettingsPage";
@@ -112,7 +112,7 @@ export default function AppRoutes() {
           <Route path="classes/new" element={<CreateClassWizardPage />} />
           <Route path="classes/:id" element={<AdminClassDetailPage />} />
           <Route path="schedule" element={<AdminSchedulePage />} />
-          <Route path="attendance" element={<TeachngoAttendancePage />} />
+          <Route path="attendance" element={<AttendancePage />} />
 
           {/* Availability review */}
           <Route path="availability-drafts" element={<AvailabilityDraftsPage />} />

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@shared/components/ui/tabs";
 import { TabSkeleton } from "@shared/components/ui/tab-skeleton";
 import { Users, Shield } from "lucide-react";
-import TeachngoTab from "@admin/features/users/components/TeachngoTab";
+import SyncedUsersTab from "@admin/features/users/components/SyncedUsersTab";
 
 export default function UserManagementPage() {
   const [tab, setTab] = useState("students");
@@ -31,11 +31,11 @@ export default function UserManagementPage() {
         </div>
 
         <TabsContent value="students" className="mt-6">
-          <TabSkeleton><TeachngoTab roleCategory="students" /></TabSkeleton>
+          <TabSkeleton><SyncedUsersTab roleCategory="students" /></TabSkeleton>
         </TabsContent>
 
         <TabsContent value="admins" className="mt-6">
-          <TabSkeleton><TeachngoTab roleCategory="admins" /></TabSkeleton>
+          <TabSkeleton><SyncedUsersTab roleCategory="admins" /></TabSkeleton>
         </TabsContent>
       </Tabs>
     </div>
