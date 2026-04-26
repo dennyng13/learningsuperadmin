@@ -12,9 +12,10 @@ const CONTRACT_FLOW: Array<{ key: ContractStatus; label: string }> = [
 
 export function getContractTimeline(status: ContractStatus): TimelineStep[] {
   if (status === "terminated") {
-    return CONTRACT_FLOW.map((s) => ({ ...s, state: "skipped" as const })).concat([
-      { key: "terminated", label: "Đã chấm dứt", state: "active" },
-    ]);
+    return [
+      ...CONTRACT_FLOW.map((s) => ({ ...s, state: "skipped" as const })),
+      { key: "terminated", label: "Đã chấm dứt", state: "active" as const },
+    ];
   }
   if (status === "revision_requested") {
     return [
@@ -26,13 +27,16 @@ export function getContractTimeline(status: ContractStatus): TimelineStep[] {
     ];
   }
   if (status === "renewing") {
-    return CONTRACT_FLOW.map((s) =>
-      s.key === "active"
-        ? { ...s, state: "done" as const }
-        : s.key === "expired"
-          ? { ...s, state: "pending" as const }
-          : { ...s, state: "done" as const },
-    ).concat([{ key: "renewing", label: "Đang gia hạn", state: "active" }]);
+    return [
+      ...CONTRACT_FLOW.map((s) =>
+        s.key === "active"
+          ? { ...s, state: "done" as const }
+          : s.key === "expired"
+            ? { ...s, state: "pending" as const }
+            : { ...s, state: "done" as const },
+      ),
+      { key: "renewing", label: "Đang gia hạn", state: "active" as const },
+    ];
   }
   const idx = CONTRACT_FLOW.findIndex((s) => s.key === status);
   if (idx === -1) {
@@ -53,14 +57,18 @@ const ADDENDUM_FLOW: Array<{ key: AddendumStatus; label: string }> = [
 
 export function getAddendumTimeline(status: AddendumStatus): TimelineStep[] {
   if (status === "superseded") {
-    return ADDENDUM_FLOW.map((s) =>
-      s.key === "active" ? { ...s, state: "done" as const } : { ...s, state: "done" as const },
-    ).concat([{ key: "superseded", label: "Đã thay thế", state: "active" }]);
+    return [
+      ...ADDENDUM_FLOW.map((s) =>
+        s.key === "active" ? { ...s, state: "done" as const } : { ...s, state: "done" as const },
+      ),
+      { key: "superseded", label: "Đã thay thế", state: "active" as const },
+    ];
   }
   if (status === "terminated") {
-    return ADDENDUM_FLOW.map((s) => ({ ...s, state: "skipped" as const })).concat([
-      { key: "terminated", label: "Đã chấm dứt", state: "active" },
-    ]);
+    return [
+      ...ADDENDUM_FLOW.map((s) => ({ ...s, state: "skipped" as const })),
+      { key: "terminated", label: "Đã chấm dứt", state: "active" as const },
+    ];
   }
   if (status === "revision_requested") {
     return [
