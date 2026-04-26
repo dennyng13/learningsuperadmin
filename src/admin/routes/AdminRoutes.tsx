@@ -45,6 +45,9 @@ import AddendumTemplatesListPage from "@admin/features/contracts/pages/AddendumT
 import AddendumTemplateEditorPage from "@admin/features/contracts/pages/AddendumTemplateEditorPage";
 import TimesheetPeriodsPage from "@admin/features/timesheet/pages/TimesheetPeriodsPage";
 import TimesheetPeriodDetailPage from "@admin/features/timesheet/pages/TimesheetPeriodDetailPage";
+import PayrollListPage from "@admin/features/payroll/pages/PayrollListPage";
+import PayrollBatchDetailPage from "@admin/features/payroll/pages/PayrollBatchDetailPage";
+import PayrollPayslipDetailPage from "@admin/features/payroll/pages/PayrollPayslipDetailPage";
 
 function PageLoader() {
   return (
@@ -121,6 +124,11 @@ export default function AppRoutes() {
           {/* Timesheet (Stage 2) */}
           <Route path="timesheet" element={<TimesheetPeriodsPage />} />
           <Route path="timesheet/:periodId" element={<TimesheetPeriodDetailPage />} />
+
+          {/* Payroll (Stage 3) */}
+          <Route path="payroll" element={<PayrollListPage />} />
+          <Route path="payroll/batches/:batchId" element={<PayrollBatchDetailPage />} />
+          <Route path="payroll/payslips/:payslipId" element={<PayrollPayslipDetailPage />} />
 
           {/* Misc */}
           <Route path="flashcards" element={<FlashcardSetsPage />} />
