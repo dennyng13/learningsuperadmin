@@ -11,6 +11,7 @@ import { format, subDays } from "date-fns";
 import { cn } from "@shared/lib/utils";
 import DayDrillDownDialog, { type DrillDownKind } from "./DayDrillDownDialog";
 import WidgetRetryState from "./WidgetRetryState";
+import WidgetRefreshButton from "./WidgetRefreshButton";
 
 const IELTS_URL = "https://ielts.learningplus.vn";
 const TEACHER_URL = "https://teacher.learningplus.vn";
@@ -282,16 +283,23 @@ export default function AppsStatusWidget() {
           <Activity className="h-3.5 w-3.5" />
           Tổng quan toàn trung tâm
         </h2>
-        <span className={cn(
-          "text-[11px] flex items-center gap-1.5 transition-colors",
-          connected ? "text-emerald-600" : "text-muted-foreground",
-        )}>
-          <span className="relative flex h-2 w-2">
-            {connected && <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-60 animate-ping" />}
-            <span className={cn("relative inline-flex rounded-full h-2 w-2", connected ? "bg-emerald-500" : "bg-muted-foreground/40")} />
+        <div className="flex items-center gap-2">
+          <span className={cn(
+            "text-[11px] flex items-center gap-1.5 transition-colors",
+            connected ? "text-emerald-600" : "text-muted-foreground",
+          )}>
+            <span className="relative flex h-2 w-2">
+              {connected && <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-60 animate-ping" />}
+              <span className={cn("relative inline-flex rounded-full h-2 w-2", connected ? "bg-emerald-500" : "bg-muted-foreground/40")} />
+            </span>
+            {isFetching ? "Đang làm mới…" : connected ? "Realtime · live" : "Đang kết nối…"}
           </span>
-          {isFetching ? "Đang làm mới…" : connected ? "Realtime · live" : "Đang kết nối…"}
-        </span>
+          <WidgetRefreshButton
+            onClick={() => refetch()}
+            refreshing={isFetching}
+            title="Tải lại số liệu apps"
+          />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

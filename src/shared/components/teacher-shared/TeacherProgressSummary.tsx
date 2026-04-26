@@ -18,6 +18,7 @@ import {
 } from "@shared/components/ui/collapsible";
 import { ChevronDown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import WidgetRefreshButton from "@admin/features/dashboard/components/WidgetRefreshButton";
 
 interface DelayedClassInfo {
   classId: string;
@@ -45,6 +46,7 @@ export default function TeacherProgressSummary() {
   } | null>(null);
   const [delayedClasses, setDelayedClasses] = useState<DelayedClassInfo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isFetching, setIsFetching] = useState(false);
   const [open, setOpen] = useState(true);
 
   useEffect(() => {
@@ -53,6 +55,15 @@ export default function TeacherProgressSummary() {
   }, [user, scope?.teacherId, scope?.canViewAllClasses]);
 
   async function fetchData() {
+    setIsFetching(true);
+    try {
+      await fetchDataInner();
+    } finally {
+      setIsFetching(false);
+    }
+  }
+
+  async function fetchDataInner() {
     setLoading(true);
 
     const teacherId = scope?.teacherId || null;
@@ -255,6 +266,21 @@ export default function TeacherProgressSummary() {
               {stats.totalCompleted} xong
             </span>
           )}
+          <span
+            role="button"
+            tabIndex={0}
+            onClick={(e) => { e.stopPropagation(); void fetchData(); }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); void fetchData(); }
+            }}
+            className="inline-flex"
+          >
+            <WidgetRefreshButton
+              onClick={() => void fetchData()}
+              refreshing={isFetching}
+              title="Tải lại tiến độ"
+            />
+          </span>
           <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", open && "rotate-180")} />
         </div>
       </CollapsibleTrigger>

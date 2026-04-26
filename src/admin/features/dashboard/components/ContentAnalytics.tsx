@@ -11,6 +11,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@shared/com
 import { Badge } from "@shared/components/ui/badge";
 import { ALL_TYPE_LABELS_EN as ALL_QT_LABELS } from "@shared/utils/questionTypes";
 import WidgetRetryState from "./WidgetRetryState";
+import WidgetRefreshButton from "./WidgetRefreshButton";
 import {
   type AnalyticsRange,
   DEFAULT_RANGE,
@@ -145,7 +146,35 @@ export default function ContentAnalytics({
             <BarChart3 className="h-3.5 w-3.5" /> Phân tích nội dung
             <AnalyticsRangeBadge range={range} className="ml-1 normal-case tracking-normal" />
           </span>
-          <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", open && "rotate-180")} />
+          <span className="flex items-center gap-1">
+            <span
+              role="button"
+              tabIndex={0}
+              onClick={(e) => {
+                e.stopPropagation();
+                setLoaded(false);
+                load().catch((err) => setLoadError(err instanceof Error ? err.message : "Không tải được phân tích nội dung."));
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault(); e.stopPropagation();
+                  setLoaded(false);
+                  load().catch((err) => setLoadError(err instanceof Error ? err.message : "Không tải được phân tích nội dung."));
+                }
+              }}
+              className="inline-flex"
+            >
+              <WidgetRefreshButton
+                onClick={() => {
+                  setLoaded(false);
+                  load().catch((err) => setLoadError(err instanceof Error ? err.message : "Không tải được phân tích nội dung."));
+                }}
+                refreshing={!loaded && open}
+                title="Tải lại phân tích nội dung"
+              />
+            </span>
+            <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", open && "rotate-180")} />
+          </span>
         </button>
       </CollapsibleTrigger>
       <CollapsibleContent>
