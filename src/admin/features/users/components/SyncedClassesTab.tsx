@@ -79,7 +79,7 @@ interface ClassStudent {
 
 import { getLevelColor, getLevelColorConfig } from "@shared/utils/levelColors";
 
-export default function TeachngoClassesTab() {
+export default function SyncedClassesTab() {
   const { levels: courseLevels } = useCourseLevels();
   const [classes, setClasses] = useState<TnGClass[]>([]);
   const [loading, setLoading] = useState(true);

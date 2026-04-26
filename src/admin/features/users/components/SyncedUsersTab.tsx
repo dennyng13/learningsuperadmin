@@ -85,7 +85,7 @@ const ROLE_CATEGORY_ROLES: Record<RoleCategory, string[]> = {
   teachers: ["teacher"],
 };
 
-export default function TeachngoTab({ roleCategory = "students" }: { roleCategory?: RoleCategory }) {
+export default function SyncedUsersTab({ roleCategory = "students" }: { roleCategory?: RoleCategory }) {
   const navigate = useNavigate();
   const { isSuperAdmin } = useAuth();
   const isMobile = useIsMobile();
