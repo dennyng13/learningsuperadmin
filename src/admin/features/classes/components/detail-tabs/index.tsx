@@ -30,7 +30,7 @@ export function StudentsTab(_: { classId: string }) {
       description="Bảng học viên trong lớp với tiến độ kế hoạch, phút học, điểm 4 kỹ năng. Cần backend liên kết student ↔ class."
       checklist={[
         "Bảng class_enrollments (class_id, student_id, enrolled_at, status)",
-        "View class_student_summary (rollup từ teachngo_students + assessments)",
+        "View class_student_summary (rollup từ synced_students + assessments)",
       ]}
     />
   );
