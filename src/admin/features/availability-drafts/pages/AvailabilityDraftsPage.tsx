@@ -285,15 +285,21 @@ export default function AvailabilityDraftsPage() {
           <p>{data?.errorMessage || String((error as any)?.message || "Không tải được drafts")}</p>
         </CardContent></Card>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,380px)_1fr] gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,360px)_1fr] gap-5">
           {/* LEFT: list */}
-          <div className="space-y-2 lg:max-h-[calc(100vh-240px)] lg:overflow-y-auto pr-1 -mr-1">
+          <div className="space-y-1.5 lg:max-h-[calc(100vh-240px)] lg:overflow-y-auto pr-1 -mr-1">
+            <div className="hidden lg:flex items-center justify-between px-1 pb-1.5 text-[11px] text-muted-foreground">
+              <span>{filtered.length} đăng ký</span>
+              {filtered.length > 0 && <span className="opacity-60">Click để xem chi tiết</span>}
+            </div>
             {filtered.length === 0 ? (
-              <Card><CardContent className="py-14 text-center text-muted-foreground flex flex-col items-center gap-2">
-                <Inbox className="h-10 w-10 opacity-40" />
-                <p className="text-sm font-medium">Không có draft nào</p>
+              <div className="rounded-2xl border border-dashed border-border/60 bg-card/50 py-16 text-center text-muted-foreground flex flex-col items-center gap-2.5">
+                <div className="h-12 w-12 rounded-full bg-muted/40 flex items-center justify-center">
+                  <Inbox className="h-5 w-5 opacity-50" />
+                </div>
+                <p className="text-sm font-medium text-foreground">Không có draft nào</p>
                 <p className="text-xs">Thử đổi filter trạng thái khác</p>
-              </CardContent></Card>
+              </div>
             ) : (
               filtered.map((d) => {
                 const isSelected = selected?.id === d.id;
@@ -302,44 +308,55 @@ export default function AvailabilityDraftsPage() {
                     key={d.id}
                     onClick={() => setSelectedId(d.id)}
                     className={cn(
-                      "w-full text-left rounded-xl border bg-card p-3 transition-all group",
+                      "w-full text-left rounded-xl border bg-card px-3.5 py-3 transition-all duration-200 group relative",
                       isSelected
-                        ? "ring-2 ring-primary border-primary shadow-sm"
-                        : "hover:border-primary/40 hover:bg-accent/40",
+                        ? "border-foreground/80 shadow-[0_2px_12px_-4px_hsl(var(--foreground)/0.15)] bg-card"
+                        : "border-border/50 hover:border-border hover:bg-muted/20 hover:translate-x-0.5",
                     )}
                   >
+                    {isSelected && (
+                      <span className="absolute left-0 top-3 bottom-3 w-0.5 rounded-r-full bg-foreground" />
+                    )}
                     <div className="flex items-start gap-3">
-                      <Avatar className="h-10 w-10 shrink-0">
-                        <AvatarFallback className="text-sm font-semibold bg-primary/10 text-primary">
+                      <Avatar className={cn(
+                        "h-9 w-9 shrink-0 ring-2 transition-all",
+                        isSelected ? "ring-foreground/15" : "ring-transparent",
+                      )}>
+                        <AvatarFallback className="text-xs font-bold bg-gradient-to-br from-primary/15 to-primary/5 text-primary">
                           {initialsOf(d.teacher?.full_name)}
                         </AvatarFallback>
                       </Avatar>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between gap-2">
-                          <p className="text-sm font-semibold truncate">{d.teacher?.full_name || "(Không rõ giáo viên)"}</p>
+                          <p className="text-sm font-semibold truncate leading-tight">{d.teacher?.full_name || "(Không rõ)"}</p>
                           <StatusBadge status={d.status} />
                         </div>
-                        <p className="text-xs text-muted-foreground truncate mt-0.5">{d.teacher?.email || "—"}</p>
-                        <div className="flex items-center justify-between gap-2 mt-2 text-[11px] text-muted-foreground">
-                          <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{formatRange(d.effective_from, d.effective_to)}</span>
+                        <p className="text-[11px] text-muted-foreground truncate mt-0.5">{d.teacher?.email || "—"}</p>
+                        <div className="flex items-center gap-2 mt-2 text-[11px] text-muted-foreground">
+                          <span className="flex items-center gap-1 font-medium tabular-nums">
+                            <Clock className="h-3 w-3 opacity-60" />
+                            {format(parseISO(d.effective_from), "dd/MM", { locale: vi })}
+                          </span>
                           {d.created_at && (
-                            <span className="opacity-80">{formatDistanceToNow(parseISO(d.created_at), { addSuffix: true, locale: vi })}</span>
+                            <>
+                              <span className="opacity-40">·</span>
+                              <span className="opacity-70 truncate">{formatDistanceToNow(parseISO(d.created_at), { addSuffix: true, locale: vi })}</span>
+                            </>
                           )}
                         </div>
                         {Array.isArray(d.desired_programs) && d.desired_programs.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-2">
                             {d.desired_programs.slice(0, 3).map((k) => (
-                              <span key={k} className="text-[10px] px-1.5 py-0 rounded-full bg-primary/10 text-primary border border-primary/20">
+                              <span key={k} className="text-[10px] px-1.5 py-0.5 rounded-md bg-muted/60 text-muted-foreground font-medium">
                                 {programs.find((p) => p.key === k)?.name ?? k}
                               </span>
                             ))}
                             {d.desired_programs.length > 3 && (
-                              <span className="text-[10px] text-muted-foreground">+{d.desired_programs.length - 3}</span>
+                              <span className="text-[10px] text-muted-foreground/70 self-center">+{d.desired_programs.length - 3}</span>
                             )}
                           </div>
                         )}
                       </div>
-                      <ChevronRight className={cn("h-4 w-4 mt-1 text-muted-foreground/50 transition-transform shrink-0", isSelected && "translate-x-0.5 text-primary")} />
                     </div>
                   </button>
                 );
