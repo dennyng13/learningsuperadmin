@@ -208,9 +208,9 @@ export default function TeacherProgressSummary() {
         if (cls) {
           delayed.push({
             classId: cid,
-            className: cls.class_name,
-            level: cls.level,
-            program: cls.program,
+            className: (cls as any).class_name,
+            level: (cls as any).level,
+            program: (cls as any).program,
             delayedStudents: tracker.delayedStudents,
             totalStudents: tracker.totalStudents,
             delayedSessions: tracker.delayedSessions,

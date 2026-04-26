@@ -156,8 +156,8 @@ export function TeacherPerformanceContent() {
 
     setTeachers(teacherRows);
     setAllLinkedUserIds(linkedUserIds);
-    setAllTeachngoIds(teachngoIds);
-    setAllClassIds(classIds);
+    setAllTeachngoIds(teachngoIds as string[]);
+    setAllClassIds(classIds as string[]);
     setLoading(false);
   }
 
