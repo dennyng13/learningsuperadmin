@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Image as ImageIcon, Search, Plus, Loader2, Palette,
-  Tag, Globe, Sparkles, Shapes, Brush, Star, Package,
+  Tag, Globe, Sparkles, Shapes, Brush, Star, Package, Quote, ArrowRight,
   type LucideIcon,
 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@shared/components/ui/tabs";
@@ -115,6 +116,28 @@ export default function BrandAssetsPage() {
       {!isLoading && !error && (
         <LogoSlotsPanel assets={assets} onChanged={invalidate} />
       )}
+
+      {/* Sub-modules */}
+      <Link
+        to="/brand-assets/quotes"
+        className="group flex items-center justify-between gap-3 rounded-2xl border bg-gradient-to-br from-primary/5 via-card to-card p-4 hover:border-primary/40 hover:shadow-[0_8px_24px_rgba(15,23,42,0.06)] transition-all"
+      >
+        <div className="flex items-start gap-3">
+          <div className="rounded-xl bg-primary/10 text-primary p-2.5">
+            <Quote className="h-5 w-5" />
+          </div>
+          <div>
+            <h3 className="font-display font-semibold flex items-center gap-1.5">
+              Max Quotes
+              <Badge variant="secondary" className="text-[9px]">Student Portal</Badge>
+            </h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Quản lý câu truyền động lực mascot Max nói với học viên (loading, dashboard, celebration…).
+            </p>
+          </div>
+        </div>
+        <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
+      </Link>
 
       {/* Filters */}
       <div className="rounded-2xl bg-card p-3 shadow-[0_4px_20px_rgba(15,23,42,0.04)] flex items-center gap-2 flex-wrap">
