@@ -491,17 +491,18 @@ function TableView({
       <Table>
         <TableHeader>
           <TableRow className="bg-muted/40 hover:bg-muted/40">
-            <TableHead className="w-[120px]">Mã lớp</TableHead>
-            <TableHead>
+            <TableHead className="w-[110px] text-[11px]">Mã lớp</TableHead>
+            <TableHead className="text-[11px]">
               <SortableHead label="Tên lớp" sortKey="name" currentKey={sortKey} currentDir={sortDir} onClick={onSort} />
             </TableHead>
-            <TableHead>Program / Level</TableHead>
-            <TableHead>Giáo viên</TableHead>
-            <TableHead>
+            <TableHead className="text-[11px]">Chương trình / Level</TableHead>
+            <TableHead className="text-[11px]">Cơ sở · Hình thức</TableHead>
+            <TableHead className="text-[11px]">Giáo viên</TableHead>
+            <TableHead className="text-[11px]">
               <SortableHead label="Lịch học" sortKey="start_date" currentKey={sortKey} currentDir={sortDir} onClick={onSort} />
             </TableHead>
-            <TableHead className="text-center">HV</TableHead>
-            <TableHead>
+            <TableHead className="text-center text-[11px]">HV</TableHead>
+            <TableHead className="text-[11px]">
               <SortableHead label="Trạng thái" sortKey="status_changed_at" currentKey={sortKey} currentDir={sortDir} onClick={onSort} />
             </TableHead>
             <TableHead className="w-[40px]" />
@@ -514,19 +515,29 @@ function TableView({
               className="cursor-pointer"
               onClick={() => onOpen(cls.id)}
             >
-              <TableCell className="font-mono text-xs text-muted-foreground">
+              <TableCell className="font-mono text-[11px] text-muted-foreground py-2">
                 {cls.class_code ?? "—"}
               </TableCell>
-              <TableCell className="font-semibold">{cls.name ?? "(không tên)"}</TableCell>
-              <TableCell className="text-xs">
-                {cls.program ?? "—"}
-                {cls.level && <span className="text-muted-foreground"> · {cls.level}</span>}
+              <TableCell className="font-semibold text-[13px] py-2">{displayName(cls)}</TableCell>
+              <TableCell className="text-xs py-2">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span>{cls.program ?? "—"}</span>
+                  {cls.level && <LevelChip level={cls.level} />}
+                </div>
               </TableCell>
-              <TableCell className="text-xs">{cls.teacher_name ?? "—"}</TableCell>
-              <TableCell className="text-xs text-muted-foreground">
+              <TableCell className="text-[11px] text-muted-foreground py-2">
+                {[cls.branch, cls.mode, cls.room].filter(Boolean).join(" · ") || "—"}
+              </TableCell>
+              <TableCell className="text-xs py-2">{cls.teacher_name ?? "—"}</TableCell>
+              <TableCell className="text-[11px] text-muted-foreground py-2 whitespace-nowrap">
                 {formatRange(cls.start_date, cls.end_date)}
+                {cls.schedule && (
+                  <div className="text-[10px] text-muted-foreground/70 truncate max-w-[140px]">
+                    {cls.schedule}
+                  </div>
+                )}
               </TableCell>
-              <TableCell className="text-center text-xs">{cls.student_count ?? 0}</TableCell>
+              <TableCell className="text-center text-xs tabular-nums py-2">{cls.student_count ?? 0}</TableCell>
               <TableCell>
                 <ClassStatusBadge
                   status={cls.lifecycle_status}
@@ -554,19 +565,19 @@ function GridView({
   onRestore: (cls: ClassRow) => void;
 }) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5">
       {rows.map((cls) => (
         <div
           key={cls.id}
-          className="group relative rounded-xl border bg-card text-left p-4 hover:border-primary/40 hover:shadow-md transition-all space-y-2.5"
+          className="group relative rounded-lg border bg-card text-left p-3 hover:border-primary/40 hover:shadow-md transition-all space-y-2"
         >
           <button
             type="button"
             onClick={() => onOpen(cls.id)}
-            aria-label={`Mở lớp ${cls.name ?? ""}`}
-            className="absolute inset-0 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            aria-label={`Mở lớp ${displayName(cls)}`}
+            className="absolute inset-0 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           />
-          <div className="absolute top-3 right-3 flex items-center gap-1 z-10">
+          <div className="absolute top-2 right-2 flex items-center gap-1 z-10">
             <ClassStatusBadge
               status={cls.lifecycle_status}
               reason={cls.cancellation_reason}
@@ -576,27 +587,35 @@ function GridView({
               <RowActions cls={cls} onArchive={onArchive} onRestore={onRestore} />
             </div>
           </div>
-          <div className="relative pr-32 pointer-events-none">
-            <p className="font-mono text-[10px] text-muted-foreground">{cls.class_code ?? "—"}</p>
-            <h3 className="font-display font-bold text-base leading-tight mt-0.5">
-              {cls.name ?? "(không tên)"}
+          <div className="relative pr-28 pointer-events-none">
+            <p className="font-mono text-[10px] text-muted-foreground/80 truncate">{cls.class_code ?? "—"}</p>
+            <h3 className="font-display font-bold text-sm leading-tight mt-0.5 line-clamp-2">
+              {displayName(cls)}
             </h3>
-            {(cls.program || cls.level) && (
-              <p className="text-xs text-muted-foreground mt-1">
-                {cls.program ?? ""}{cls.program && cls.level ? " · " : ""}{cls.level ?? ""}
-              </p>
-            )}
+            <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
+              {cls.program && (
+                <span className="text-[10px] font-medium text-muted-foreground">{cls.program}</span>
+              )}
+              {cls.level && <LevelChip level={cls.level} />}
+            </div>
           </div>
-          <div className="relative flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground pointer-events-none">
+          {(cls.branch || cls.mode || cls.room) && (
+            <div className="relative flex flex-wrap gap-1 pointer-events-none">
+              {cls.branch && <MetaTag>{cls.branch}</MetaTag>}
+              {cls.mode && <MetaTag>{cls.mode}</MetaTag>}
+              {cls.room && <MetaTag>P. {cls.room}</MetaTag>}
+            </div>
+          )}
+          <div className="relative flex flex-wrap gap-x-2.5 gap-y-1 text-[10.5px] text-muted-foreground pointer-events-none pt-0.5 border-t border-border/40">
             {cls.teacher_name && (
-              <span className="inline-flex items-center gap-1">
+              <span className="inline-flex items-center gap-1 truncate max-w-[140px]">
                 <User className="h-3 w-3" />
-                {cls.teacher_name}
+                <span className="truncate">{cls.teacher_name}</span>
               </span>
             )}
             <span className="inline-flex items-center gap-1">
               <Users className="h-3 w-3" />
-              {cls.student_count ?? 0} HV
+              <span className="tabular-nums">{cls.student_count ?? 0}</span> HV
             </span>
             {cls.start_date && (
               <span className="inline-flex items-center gap-1">
@@ -608,6 +627,31 @@ function GridView({
         </div>
       ))}
     </div>
+  );
+}
+
+/* ─────────── Small chips ─────────── */
+
+/** Level chip dùng `getLevelColor` — đồng bộ với CourseLevelManager. */
+function LevelChip({ level }: { level: string }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center px-1.5 py-0 rounded text-[10px] font-semibold leading-4",
+        getLevelColor(level),
+      )}
+    >
+      {level}
+    </span>
+  );
+}
+
+/** Meta tag (branch / mode / room) — neutral, dense. */
+function MetaTag({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="inline-flex items-center px-1.5 py-0 rounded border border-border/60 bg-muted/30 text-[10px] text-muted-foreground leading-4">
+      {children}
+    </span>
   );
 }
 
