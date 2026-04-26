@@ -3,6 +3,7 @@ import { Calendar, Flame, ChevronLeft, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@shared/lib/utils";
 import { DayTooltip, type DaySkillData } from "@shared/components/misc/DayTooltip";
+import WidgetRefreshButton from "./WidgetRefreshButton";
 
 const WEEKDAYS = ["T2","T3","T4","T5","T6","T7","CN"];
 const MONTH_NAMES = ["01","02","03","04","05","06","07","08","09","10","11","12"];
@@ -38,6 +39,7 @@ export default function AdminActivityCalendar() {
   const [calMonth, setCalMonth] = useState(now.getMonth());
   const [activityMap, setActivityMap] = useState<Map<string, DaySkillData>>(new Map());
   const [slideDir, setSlideDir] = useState<"left"|"right"|null>(null);
+  const [isFetching, setIsFetching] = useState(false);
   const touchStartX = useRef<number|null>(null);
   const touchStartY = useRef<number|null>(null);
 
@@ -46,8 +48,9 @@ export default function AdminActivityCalendar() {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   }, []);
 
-  useEffect(() => {
-    (async () => {
+  const loadActivity = useCallback(async () => {
+    setIsFetching(true);
+    try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       const { data } = await supabase
@@ -62,8 +65,14 @@ export default function AdminActivityCalendar() {
         });
         setActivityMap(m);
       }
-    })();
+    } finally {
+      setIsFetching(false);
+    }
   }, []);
+
+  useEffect(() => {
+    void loadActivity();
+  }, [loadActivity]);
 
   const streak = useMemo(() => getStreak(activityMap), [activityMap]);
 
@@ -123,6 +132,11 @@ export default function AdminActivityCalendar() {
           <span className="text-muted-foreground">
             {activeDaysThisMonth}/{totalDaysInMonth} ngày
           </span>
+          <WidgetRefreshButton
+            onClick={() => void loadActivity()}
+            refreshing={isFetching}
+            title="Tải lại lịch hoạt động"
+          />
         </div>
       </div>
 
