@@ -42,6 +42,7 @@ import {
   SessionsTab, StudentsTab, PlanProgressTab, ActivityTab,
   AnnouncementsTab, LeaderboardTab, HistoryTab, SettingsTab,
 } from "@admin/features/classes/components/detail-tabs";
+import { useAuth } from "@shared/hooks/useAuth";
 
 /* ═══════════════════════════════════════════
    Trang chi tiết lớp /classes/:id (admin).
@@ -217,8 +218,11 @@ export default function AdminClassDetailPage() {
 
   const headerActions = (
     <div className="flex items-center gap-1.5">
-      {/* Tìm GV thay thế: hiện khi lớp đang vận hành/chuẩn bị và đã có GV. */}
-      {["recruiting", "ready", "in_progress"].includes(cls.lifecycle_status ?? "") &&
+      {/* Tìm GV thay thế: chỉ admin/super_admin, lớp đang vận hành/chuẩn bị và đã có GV.
+          RPC `request_replacement_teacher` ở DB cũng từ chối non-admin (insufficient_privilege),
+          nên đây chỉ là gating UX để giấu nút khỏi role không hợp lệ. */}
+      {isAdmin &&
+        ["recruiting", "ready", "in_progress"].includes(cls.lifecycle_status ?? "") &&
         (cls.teacher_id || cls.teacher_name) && (
           <RequestReplacementTeacherButton
             classId={cls.id}
