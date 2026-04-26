@@ -15,11 +15,21 @@ import {
 import { ScrollArea } from "@shared/components/ui/scroll-area";
 import {
   GraduationCap, Search, Filter, RotateCw, LayoutGrid, List as ListIcon,
-  Plus, ArrowUpDown, Inbox, User, Users, Calendar, Loader2,
+  Plus, ArrowUpDown, Inbox, User, Users, Calendar, Loader2, MoreHorizontal,
+  Archive, ArchiveRestore,
 } from "lucide-react";
 import ClassStatusBadge, {
   CLASS_STATUS_META, CLASS_STATUS_OPTIONS, type ClassLifecycleStatus,
 } from "@shared/components/admin/ClassStatusBadge";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from "@shared/components/ui/dropdown-menu";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@shared/components/ui/alert-dialog";
+import { Textarea } from "@shared/components/ui/textarea";
+import { useArchiveClass } from "@admin/features/classes/hooks/useArchiveClass";
 import { cn } from "@shared/lib/utils";
 
 /* ─────────── Types ─────────── */
@@ -46,16 +56,21 @@ type SortKey = "start_date" | "name" | "status_changed_at";
 type SortDir = "asc" | "desc";
 type ViewMode = "table" | "grid";
 
+/** Status hiển thị mặc định khi filter "Tất cả". `archived` tách riêng để
+ *  tránh làm rối list — admin phải chủ động click chip để xem lớp đã lưu trữ. */
+const DEFAULT_VISIBLE_STATUSES: ClassLifecycleStatus[] =
+  CLASS_STATUS_OPTIONS.filter((s) => s !== "archived");
+
 /* ─────────── URL state helpers ─────────── */
 
 function parseStatuses(raw: string | null): ClassLifecycleStatus[] {
-  if (!raw) return CLASS_STATUS_OPTIONS;
+  if (!raw) return DEFAULT_VISIBLE_STATUSES;
   const set = new Set<ClassLifecycleStatus>();
   raw.split(",").forEach((s) => {
     const v = s.trim() as ClassLifecycleStatus;
     if (v in CLASS_STATUS_META) set.add(v);
   });
-  return set.size === 0 ? CLASS_STATUS_OPTIONS : Array.from(set);
+  return set.size === 0 ? DEFAULT_VISIBLE_STATUSES : Array.from(set);
 }
 
 /* ─────────── Page ─────────── */
@@ -74,7 +89,12 @@ export default function ClassesListPage() {
   useEffect(() => {
     const next = new URLSearchParams();
     if (search.trim()) next.set("q", search.trim());
-    if (statuses.length !== CLASS_STATUS_OPTIONS.length) next.set("status", statuses.join(","));
+    if (
+      statuses.length !== DEFAULT_VISIBLE_STATUSES.length ||
+      statuses.some((s) => !DEFAULT_VISIBLE_STATUSES.includes(s))
+    ) {
+      next.set("status", statuses.join(","));
+    }
     if (sortKey !== "start_date") next.set("sort", sortKey);
     if (sortDir !== "desc") next.set("dir", sortDir);
     if (view !== "table") next.set("view", view);
@@ -129,9 +149,12 @@ export default function ClassesListPage() {
     return c;
   }, [countRows]);
 
+  /** "Tất cả" = đang hiện đúng default (mọi status trừ archived). */
+  const isDefaultStatuses =
+    statuses.length === DEFAULT_VISIBLE_STATUSES.length &&
+    DEFAULT_VISIBLE_STATUSES.every((s) => statuses.includes(s));
   const allSelected = statuses.length === CLASS_STATUS_OPTIONS.length;
-  const noneSelected = statuses.length === 0;
-  const filterActive = !allSelected || search.trim().length > 0;
+  const filterActive = !isDefaultStatuses || search.trim().length > 0;
 
   const toggleStatus = (s: ClassLifecycleStatus) => {
     setStatuses((prev) =>
@@ -141,7 +164,7 @@ export default function ClassesListPage() {
 
   const resetFilters = useCallback(() => {
     setSearch("");
-    setStatuses(CLASS_STATUS_OPTIONS);
+    setStatuses(DEFAULT_VISIBLE_STATUSES);
   }, []);
 
   const toggleSort = (key: SortKey) => {
@@ -151,6 +174,33 @@ export default function ClassesListPage() {
       setSortKey(key);
       setSortDir(key === "name" ? "asc" : "desc");
     }
+  };
+
+  /* ─── Archive dialog state ─── */
+  const archiveMut = useArchiveClass();
+  const [archiveTarget, setArchiveTarget] = useState<ClassRow | null>(null);
+  const [restoreTarget, setRestoreTarget] = useState<ClassRow | null>(null);
+  const [archiveReason, setArchiveReason] = useState("");
+
+  const openArchive = (cls: ClassRow) => {
+    setArchiveTarget(cls);
+    setArchiveReason("");
+  };
+
+  const confirmArchive = () => {
+    if (!archiveTarget) return;
+    archiveMut.mutate(
+      { id: archiveTarget.id, action: "archive", reason: archiveReason },
+      { onSettled: () => setArchiveTarget(null) },
+    );
+  };
+
+  const confirmRestore = () => {
+    if (!restoreTarget) return;
+    archiveMut.mutate(
+      { id: restoreTarget.id, action: "restore" },
+      { onSettled: () => setRestoreTarget(null) },
+    );
   };
 
   /* ─────────── Render ─────────── */
@@ -172,16 +222,18 @@ export default function ClassesListPage() {
             <div className="flex gap-1.5 pb-1.5">
               <button
                 type="button"
-                onClick={() => setStatuses(CLASS_STATUS_OPTIONS)}
+                onClick={() => setStatuses(DEFAULT_VISIBLE_STATUSES)}
                 className={cn(
                   "shrink-0 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors",
-                  allSelected
+                  isDefaultStatuses
                     ? "bg-foreground text-background border-foreground"
                     : "bg-card hover:bg-muted/50",
                 )}
               >
                 Tất cả
-                <span className="font-bold">{countRows.length}</span>
+                <span className="font-bold">
+                  {countRows.filter((r) => r.lifecycle_status !== "archived").length}
+                </span>
               </button>
               {CLASS_STATUS_OPTIONS.map((s) => {
                 const active = statuses.length === 1 && statuses[0] === s;
@@ -305,10 +357,72 @@ export default function ClassesListPage() {
       ) : rows.length === 0 ? (
         <EmptyState onReset={resetFilters} hasFilter={filterActive} />
       ) : view === "table" ? (
-        <TableView rows={rows} sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} onOpen={(id) => navigate(`/classes/${id}`)} />
+        <TableView
+          rows={rows}
+          sortKey={sortKey}
+          sortDir={sortDir}
+          onSort={toggleSort}
+          onOpen={(id) => navigate(`/classes/${id}`)}
+          onArchive={openArchive}
+          onRestore={setRestoreTarget}
+        />
       ) : (
-        <GridView rows={rows} onOpen={(id) => navigate(`/classes/${id}`)} />
+        <GridView
+          rows={rows}
+          onOpen={(id) => navigate(`/classes/${id}`)}
+          onArchive={openArchive}
+          onRestore={setRestoreTarget}
+        />
       )}
+
+      {/* ─── Archive confirmation dialog ─── */}
+      <AlertDialog open={!!archiveTarget} onOpenChange={(o) => !o && setArchiveTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Lưu trữ lớp học?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Lớp <span className="font-semibold text-foreground">{archiveTarget?.name ?? "—"}</span>{" "}
+              sẽ bị ẩn khỏi danh sách thường nhưng giữ lại toàn bộ thông tin và lịch sử.
+              Bạn có thể khôi phục bất kỳ lúc nào trong filter "Đã lưu trữ".
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-foreground">Lý do lưu trữ (tuỳ chọn)</label>
+            <Textarea
+              value={archiveReason}
+              onChange={(e) => setArchiveReason(e.target.value)}
+              placeholder="VD: Lớp đã kết thúc chu kỳ, lưu trữ để tham khảo về sau…"
+              rows={3}
+              className="text-sm"
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={archiveMut.isPending}>Huỷ</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmArchive} disabled={archiveMut.isPending}>
+              {archiveMut.isPending ? "Đang lưu trữ…" : "Lưu trữ"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* ─── Restore confirmation dialog ─── */}
+      <AlertDialog open={!!restoreTarget} onOpenChange={(o) => !o && setRestoreTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Khôi phục lớp học?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Lớp <span className="font-semibold text-foreground">{restoreTarget?.name ?? "—"}</span>{" "}
+              sẽ chuyển về trạng thái "Lên kế hoạch". Bạn có thể chỉnh lại trạng thái phù hợp sau.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={archiveMut.isPending}>Huỷ</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmRestore} disabled={archiveMut.isPending}>
+              {archiveMut.isPending ? "Đang khôi phục…" : "Khôi phục"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </ListPageLayout>
   );
 }
@@ -351,13 +465,15 @@ function SortableHead({
 }
 
 function TableView({
-  rows, sortKey, sortDir, onSort, onOpen,
+  rows, sortKey, sortDir, onSort, onOpen, onArchive, onRestore,
 }: {
   rows: ClassRow[];
   sortKey: SortKey;
   sortDir: SortDir;
   onSort: (k: SortKey) => void;
   onOpen: (id: string) => void;
+  onArchive: (cls: ClassRow) => void;
+  onRestore: (cls: ClassRow) => void;
 }) {
   return (
     <div className="rounded-xl border overflow-hidden bg-card">
@@ -377,6 +493,7 @@ function TableView({
             <TableHead>
               <SortableHead label="Trạng thái" sortKey="status_changed_at" currentKey={sortKey} currentDir={sortDir} onClick={onSort} />
             </TableHead>
+            <TableHead className="w-[40px]" />
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -406,6 +523,9 @@ function TableView({
                   size="sm"
                 />
               </TableCell>
+              <TableCell onClick={(e) => e.stopPropagation()} className="w-[40px]">
+                <RowActions cls={cls} onArchive={onArchive} onRestore={onRestore} />
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -414,24 +534,38 @@ function TableView({
   );
 }
 
-function GridView({ rows, onOpen }: { rows: ClassRow[]; onOpen: (id: string) => void }) {
+function GridView({
+  rows, onOpen, onArchive, onRestore,
+}: {
+  rows: ClassRow[];
+  onOpen: (id: string) => void;
+  onArchive: (cls: ClassRow) => void;
+  onRestore: (cls: ClassRow) => void;
+}) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
       {rows.map((cls) => (
-        <button
+        <div
           key={cls.id}
-          type="button"
-          onClick={() => onOpen(cls.id)}
           className="group relative rounded-xl border bg-card text-left p-4 hover:border-primary/40 hover:shadow-md transition-all space-y-2.5"
         >
-          <div className="absolute top-3 right-3">
+          <button
+            type="button"
+            onClick={() => onOpen(cls.id)}
+            aria-label={`Mở lớp ${cls.name ?? ""}`}
+            className="absolute inset-0 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          />
+          <div className="absolute top-3 right-3 flex items-center gap-1 z-10">
             <ClassStatusBadge
               status={cls.lifecycle_status}
               reason={cls.cancellation_reason}
               size="sm"
             />
+            <div onClick={(e) => e.stopPropagation()}>
+              <RowActions cls={cls} onArchive={onArchive} onRestore={onRestore} />
+            </div>
           </div>
-          <div className="pr-24">
+          <div className="relative pr-32 pointer-events-none">
             <p className="font-mono text-[10px] text-muted-foreground">{cls.class_code ?? "—"}</p>
             <h3 className="font-display font-bold text-base leading-tight mt-0.5">
               {cls.name ?? "(không tên)"}
@@ -442,7 +576,7 @@ function GridView({ rows, onOpen }: { rows: ClassRow[]; onOpen: (id: string) => 
               </p>
             )}
           </div>
-          <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+          <div className="relative flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground pointer-events-none">
             {cls.teacher_name && (
               <span className="inline-flex items-center gap-1">
                 <User className="h-3 w-3" />
@@ -460,9 +594,46 @@ function GridView({ rows, onOpen }: { rows: ClassRow[]; onOpen: (id: string) => 
               </span>
             )}
           </div>
-        </button>
+        </div>
       ))}
     </div>
+  );
+}
+
+/* ─────────── Row actions (archive / restore) ─────────── */
+
+function RowActions({
+  cls, onArchive, onRestore,
+}: {
+  cls: ClassRow;
+  onArchive: (cls: ClassRow) => void;
+  onRestore: (cls: ClassRow) => void;
+}) {
+  const isArchived = cls.lifecycle_status === "archived";
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+          aria-label="Thao tác"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <MoreHorizontal className="h-4 w-4" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-44">
+        {isArchived ? (
+          <DropdownMenuItem onClick={() => onRestore(cls)} className="gap-2 text-xs">
+            <ArchiveRestore className="h-3.5 w-3.5" /> Khôi phục lớp
+          </DropdownMenuItem>
+        ) : (
+          <DropdownMenuItem onClick={() => onArchive(cls)} className="gap-2 text-xs">
+            <Archive className="h-3.5 w-3.5" /> Lưu trữ lớp
+          </DropdownMenuItem>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
