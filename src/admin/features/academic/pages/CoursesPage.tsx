@@ -1,6 +1,6 @@
 import { useState } from "react";
 import {
-  GraduationCap, Plus, Pencil, Trash2, Loader2, EyeOff, CheckCircle2, Layers,
+  GraduationCap, Plus, Pencil, Trash2, Loader2, EyeOff, CheckCircle2, Layers, LayoutGrid,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@shared/components/ui/button";
@@ -13,6 +13,7 @@ import { useCoursesAdmin, type CourseProgram } from "@admin/features/academic/ho
 import { useCourseLevels } from "@shared/hooks/useCourseLevels";
 import ProgramEditorDialog from "@admin/features/academic/components/ProgramEditorDialog";
 import CourseLevelManager from "@admin/features/settings/components/CourseLevelManager";
+import ProgramLevelsMatrix from "@admin/features/academic/components/ProgramLevelsMatrix";
 import { getProgramIcon, getProgramPalette } from "@shared/utils/programColors";
 import { COLOR_PRESETS } from "@shared/utils/levelColors";
 import { cn } from "@shared/lib/utils";
@@ -27,7 +28,7 @@ import { cn } from "@shared/lib/utils";
  * để thêm cột `programs.outcomes / long_description` và bảng `program_levels`.
  */
 export default function CoursesPage() {
-  const { programs, loading, refetch, create, update, remove } = useCoursesAdmin();
+  const { programs, loading, refetch, create, update, remove, setProgramLevels } = useCoursesAdmin();
   const { levels } = useCourseLevels();
 
   const [editorOpen, setEditorOpen] = useState(false);
@@ -79,6 +80,9 @@ export default function CoursesPage() {
             <GraduationCap className="h-3.5 w-3.5" /> Khóa học
             <span className="ml-1 px-1.5 rounded bg-muted text-[10px] font-mono">{programs.length}</span>
           </TabsTrigger>
+          <TabsTrigger value="matrix" className="text-xs gap-1.5">
+            <LayoutGrid className="h-3.5 w-3.5" /> Gán cấp độ
+          </TabsTrigger>
           <TabsTrigger value="levels" className="text-xs gap-1.5">
             <Layers className="h-3.5 w-3.5" /> Cấp độ
             <span className="ml-1 px-1.5 rounded bg-muted text-[10px] font-mono">{levels.length}</span>
@@ -117,6 +121,21 @@ export default function CoursesPage() {
                 />
               ))}
             </div>
+          )}
+        </TabsContent>
+
+        {/* ─── Tab Gán cấp độ (Matrix) ─── */}
+        <TabsContent value="matrix" className="mt-4 space-y-3">
+          {loading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            </div>
+          ) : (
+            <ProgramLevelsMatrix
+              programs={programs}
+              levels={levels}
+              onSave={setProgramLevels}
+            />
           )}
         </TabsContent>
 
