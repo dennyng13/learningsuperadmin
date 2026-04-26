@@ -155,7 +155,7 @@ export function SharedPlanEditor({ plan, onClose, teacherMode = false }: SharedP
     queryKey: ["classes-for-plan", program, selectedLevel, teacherMode, scope?.teacherId, scope?.canViewAllClasses],
     enabled: !!program,
     queryFn: async () => {
-      let q = supabase.from("classes").select("id, class_name, level, program, teacher_name, schedule").order("class_name");
+      let q = (supabase as any).from("classes").select("id, class_name, level, program, teacher_name, schedule").order("class_name");
       if (program) q = q.eq("program", program === "customized" ? "Customized" : program === "wre" ? "WRE" : "IELTS");
       if (selectedLevel) q = q.eq("level", selectedLevel);
       if (teacherMode && !scope?.canViewAllClasses && scope?.teacherId) q = q.eq("teacher_id", scope.teacherId);
@@ -187,15 +187,15 @@ export function SharedPlanEditor({ plan, onClose, teacherMode = false }: SharedP
     queryKey: ["all-students-for-plan", teacherMode, scope?.teacherId, scope?.canViewAllClasses],
     queryFn: async () => {
       if (teacherMode && !scope?.canViewAllClasses && scope?.teacherId) {
-        const { data: tc } = await supabase.from("classes").select("id").eq("teacher_id", scope.teacherId);
+        const { data: tc } = await (supabase as any).from("classes").select("id").eq("teacher_id", scope.teacherId);
         if (!tc || tc.length === 0) return [];
-        const { data: cs } = await supabase.from("class_students").select("teachngo_student_id").in("class_id", tc.map(c => c.id));
+        const { data: cs } = await (supabase as any).from("class_students").select("teachngo_student_id").in("class_id", tc.map(c => c.id));
         if (!cs || cs.length === 0) return [];
         const ids = [...new Set(cs.map(c => c.teachngo_student_id))];
-        const { data } = await supabase.from("synced_students").select("teachngo_id, full_name").in("teachngo_id", ids).order("full_name");
+        const { data } = await (supabase as any).from("synced_students").select("teachngo_id, full_name").in("teachngo_id", ids).order("full_name");
         return data || [];
       }
-      const { data } = await supabase.from("synced_students").select("teachngo_id, full_name").order("full_name");
+      const { data } = await (supabase as any).from("synced_students").select("teachngo_id, full_name").order("full_name");
       return data || [];
     },
   });
@@ -245,7 +245,7 @@ export function SharedPlanEditor({ plan, onClose, teacherMode = false }: SharedP
       const studentIds = plans.map(p => p.teachngo_student_id).filter(Boolean) as string[];
       let nameMap = new Map<string, string>();
       if (studentIds.length > 0) {
-        const { data: students } = await supabase.from("synced_students").select("teachngo_id, full_name").in("teachngo_id", studentIds);
+        const { data: students } = await (supabase as any).from("synced_students").select("teachngo_id, full_name").in("teachngo_id", studentIds);
         nameMap = new Map((students || []).map(s => [s.teachngo_id, s.full_name]));
       }
 
@@ -253,7 +253,7 @@ export function SharedPlanEditor({ plan, onClose, teacherMode = false }: SharedP
       const allClassIds = plans.flatMap(p => Array.isArray(p.class_ids) ? p.class_ids as string[] : []);
       let classNameMap = new Map<string, string>();
       if (allClassIds.length > 0) {
-        const { data: classes } = await supabase.from("classes").select("id, class_name").in("id", [...new Set(allClassIds)]);
+        const { data: classes } = await (supabase as any).from("classes").select("id, class_name").in("id", [...new Set(allClassIds)]);
         classNameMap = new Map((classes || []).map(c => [c.id, c.class_name]));
       }
 

@@ -220,10 +220,10 @@ async function fetchFeed(limit: number, sinceIso: string, untilIso: string): Pro
       ? supabase.from("teachers").select("id, full_name").in("id", [...teacherIds])
       : Promise.resolve(emptyTeachersRes),
     studentIds.size
-      ? supabase.from("synced_students").select("id, full_name").in("id", [...studentIds])
+      ? (supabase as any).from("synced_students").select("id, full_name").in("id", [...studentIds])
       : Promise.resolve(emptyStudentsRes),
     classIds.size
-      ? supabase.from("classes").select("id, class_name").in("id", [...classIds])
+      ? (supabase as any).from("classes").select("id, class_name").in("id", [...classIds])
       : Promise.resolve(emptyClassesRes),
   ]);
 

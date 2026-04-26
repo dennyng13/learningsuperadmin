@@ -160,10 +160,10 @@ function AdminDashboardPageInner() {
         ] = await Promise.all([
           supabase.from("assessments").select("id, name, book_name, status, created_at, section_type").order("created_at", { ascending: false }),
           supabase.from("practice_exercises").select("id, title, status, skill, created_at").order("created_at", { ascending: false }),
-          supabase.from("synced_students").select("*", { count: "exact", head: true }),
-          supabase.from("synced_students").select("*", { count: "exact", head: true }).not("linked_user_id", "is", null),
+          (supabase as any).from("synced_students").select("*", { count: "exact", head: true }),
+          (supabase as any).from("synced_students").select("*", { count: "exact", head: true }).not("linked_user_id", "is", null),
           supabase.from("teachers").select("*", { count: "exact", head: true }),
-          supabase.from("classes").select("*", { count: "exact", head: true }),
+          (supabase as any).from("classes").select("*", { count: "exact", head: true }),
           supabase.from("test_results").select("*", { count: "exact", head: true }).gte("created_at", sinceIso).lte("created_at", untilIso),
           supabase.from("practice_results").select("*", { count: "exact", head: true }).gte("created_at", sinceIso).lte("created_at", untilIso),
         ]);

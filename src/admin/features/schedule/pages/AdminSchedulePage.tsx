@@ -980,7 +980,7 @@ function ClassOpeningTab() {
     const selectedProgram = program === "all" ? null : program;
     const selectedLevel = level === "all" ? null : level;
 
-    const { error } = await supabase.from("classes").insert({
+    const { error } = await (supabase as any).from("classes").insert({
       teachngo_class_id: `AUTO-${Date.now()}`,
       class_name: className.trim(),
       teacher_id: selectedCandidate.teacher.id,

@@ -68,7 +68,7 @@ export default function TeacherProgressSummary() {
 
     const teacherId = scope?.teacherId || null;
 
-    let classQuery = supabase.from("classes").select("id, class_name, level, program");
+    let classQuery = (supabase as any).from("classes").select("id, class_name, level, program");
     if (!scope?.canViewAllClasses && teacherId) {
       classQuery = classQuery.eq("teacher_id", teacherId);
     }

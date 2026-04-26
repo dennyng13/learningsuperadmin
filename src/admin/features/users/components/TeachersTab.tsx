@@ -331,12 +331,12 @@ export default function TeachersTab() {
       const toAdd = [...selectedClassIds].filter(id => !prevAssigned.includes(id));
 
       if (toRemove.length > 0) {
-        await supabase.from("classes")
+        await (supabase as any).from("classes")
           .update({ teacher_id: null, updated_at: new Date().toISOString() })
           .in("id", toRemove);
       }
       if (toAdd.length > 0) {
-        await supabase.from("classes")
+        await (supabase as any).from("classes")
           .update({ teacher_id: teacherId, updated_at: new Date().toISOString() })
           .in("id", toAdd);
       }

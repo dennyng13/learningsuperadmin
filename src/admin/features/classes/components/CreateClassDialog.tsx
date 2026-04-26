@@ -114,7 +114,7 @@ export default function CreateClassDialog({ open, onOpenChange, onCreated }: Pro
     (async () => {
       const [tRes, sRes] = await Promise.all([
         supabase.from("teachers").select("id, full_name").order("full_name"),
-        supabase.from("synced_students").select("id, teachngo_id, full_name").eq("is_active", true).order("full_name"),
+        (supabase as any).from("synced_students").select("id, teachngo_id, full_name").eq("is_active", true).order("full_name"),
       ]);
       if (tRes.data) setTeachers((tRes.data as any[]).filter(t => t.full_name && !t.full_name.startsWith("Teacher #")));
       if (sRes.data) setAllStudents(sRes.data as StudentOpt[]);
@@ -219,7 +219,7 @@ export default function CreateClassDialog({ open, onOpenChange, onCreated }: Pro
           status: "enrolled",
           enrollment_date: startDate || new Date().toISOString().slice(0, 10),
         }));
-        await supabase.from("class_students").insert(rows);
+        await (supabase as any).from("class_students").insert(rows);
       }
 
       // 3. Auto-create study plan

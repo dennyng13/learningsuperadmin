@@ -65,7 +65,7 @@ function useAppsStatus() {
         entries7dRes,
         entriesPrev7dRes,
       ] = await Promise.all([
-        supabase.from("synced_students")
+        (supabase as any).from("synced_students")
           .select("*", { count: "exact", head: true })
           .not("linked_user_id", "is", null),
         supabase.from("test_results")
@@ -94,7 +94,7 @@ function useAppsStatus() {
           .lt("created_at", since7d),
         supabase.from("teachers")
           .select("*", { count: "exact", head: true }),
-        supabase.from("classes")
+        (supabase as any).from("classes")
           .select("*", { count: "exact", head: true })
           .eq("status", "active"),
         supabase.from("study_plan_entries")

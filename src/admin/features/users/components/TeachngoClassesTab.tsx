@@ -256,7 +256,7 @@ export default function TeachngoClassesTab() {
       const matched = (data as any)?.matched || 0;
       toast.success(`Đã liên kết ${matched} lớp với giáo viên`);
       // Refresh classes
-      const { data: refreshed } = await supabase.from("classes").select("*").order("class_name", { ascending: true });
+      const { data: refreshed } = await (supabase as any).from("classes").select("*").order("class_name", { ascending: true });
       if (refreshed) setClasses(refreshed as unknown as TnGClass[]);
     }
     setBulkSaving(false);
@@ -332,8 +332,8 @@ export default function TeachngoClassesTab() {
     (async () => {
       setLoading(true);
       const [classRes, countRes, teacherRes, plansRes] = await Promise.all([
-        supabase.from("classes").select("*").order("class_name", { ascending: true }),
-        supabase.from("class_students").select("class_id, status"),
+        (supabase as any).from("classes").select("*").order("class_name", { ascending: true }),
+        (supabase as any).from("class_students").select("class_id, status"),
         supabase.from("teachers").select("id, full_name, classes, teachngo_staff_id"),
         supabase.from("study_plans").select("id, plan_name, class_ids, teachngo_student_id, program"),
       ]);
@@ -1082,7 +1082,7 @@ export default function TeachngoClassesTab() {
                               <Switch
                                 checked={c.leaderboard_enabled !== false}
                                 onCheckedChange={async (checked) => {
-                                  await supabase.from("classes").update({ leaderboard_enabled: checked, updated_at: new Date().toISOString() }).eq("id", c.id);
+                                  await (supabase as any).from("classes").update({ leaderboard_enabled: checked, updated_at: new Date().toISOString() }).eq("id", c.id);
                                   setClasses(prev => prev.map(cl => cl.id === c.id ? { ...cl, leaderboard_enabled: checked } : cl));
                                 }}
                               />
@@ -1100,7 +1100,7 @@ export default function TeachngoClassesTab() {
                                 checked={c.allow_self_checkin === true}
                                 onCheckedChange={async (checked) => {
                                   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                  await (supabase.from("classes") as any)
+                                  await ((supabase as any).from("classes") as any)
                                     .update({ allow_self_checkin: checked, updated_at: new Date().toISOString() })
                                     .eq("id", c.id);
                                   setClasses(prev => prev.map(cl => cl.id === c.id ? { ...cl, allow_self_checkin: checked } : cl));
