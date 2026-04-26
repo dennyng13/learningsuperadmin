@@ -22,13 +22,13 @@ interface SlotDef {
 
 const SLOTS: SlotDef[] = [
   {
-    asset_key: "logoMain",
+    asset_key: "logo-main",
     asset_type: "logo",
     display_name: "Logo — Main",
     hint: "Logo chính trên login, footer, share images. Khuyến nghị PNG ngang, nền trong suốt.",
   },
   {
-    asset_key: "logoApp",
+    asset_key: "logo-app",
     asset_type: "logo",
     display_name: "Logo — App (sidebar)",
     hint: "Icon vuông hiển thị ở header sidebar admin/teacher/student. Khuyến nghị 64×64 hoặc SVG.",
@@ -42,7 +42,7 @@ interface Props {
 }
 
 /**
- * Two-slot panel that surfaces `logoMain` and `logoApp` at the top of the
+ * Two-slot panel that surfaces `logo-main` and `logo-app` at the top of the
  * Brand Assets page. Each slot has a fast-path upload (preset asset_key) when
  * empty, and a one-click Replace when filled.
  */
