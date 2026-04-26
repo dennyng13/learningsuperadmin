@@ -40,6 +40,7 @@ const EXTRA_LABELS: Record<string, string> = {
   "/feedback-templates": "Mẫu nhận xét",
   "/classes": "Vận hành lớp",
   "/classes/list": "Danh sách lớp",
+  "/classes/:id": "Chi tiết lớp",
 };
 
 const routeLabels: Record<string, string> = {

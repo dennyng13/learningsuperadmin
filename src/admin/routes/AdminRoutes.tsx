@@ -18,6 +18,7 @@ import TeacherProfilePage from "@admin/features/users/pages/TeacherProfilePage";
 import ClassManagementPage from "@admin/features/classes/pages/ClassManagementPage";
 import CreateClassWizardPage from "@admin/features/classes/pages/CreateClassWizardPage";
 import ClassesListPage from "@admin/features/classes/pages/ClassesListPage";
+import AdminClassDetailPage from "@admin/features/classes/pages/AdminClassDetailPage";
 import PermissionsPage from "@admin/features/permissions/pages/PermissionsPage";
 import FlashcardSetsPage from "@admin/features/flashcards/pages/FlashcardSetsPage";
 import PracticeExerciseDetailPage from "@admin/features/practice/pages/PracticeExerciseDetailPage";
@@ -107,6 +108,7 @@ export default function AppRoutes() {
           <Route path="classes" element={<ClassManagementPage />} />
           <Route path="classes/list" element={<ClassesListPage />} />
           <Route path="classes/new" element={<CreateClassWizardPage />} />
+          <Route path="classes/:id" element={<AdminClassDetailPage />} />
           <Route path="schedule" element={<AdminSchedulePage />} />
           <Route path="attendance" element={<TeachngoAttendancePage />} />
 
