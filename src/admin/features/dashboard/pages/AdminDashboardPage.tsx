@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, lazy } from "react";
 import {
   FileText, Loader2, Layers,
   Upload, BarChart3, UserPlus, Award,
@@ -15,21 +15,23 @@ import {
   ResponsiveContainer, Legend, BarChart, Bar, Cell,
 } from "recharts";
 import { Badge } from "@shared/components/ui/badge";
-import ClassQuestionTypeStats from "@shared/components/teacher-shared/ClassQuestionTypeStats";
-import PracticeErrorStats from "@admin/features/practice/components/PracticeErrorStats";
-import AdminActivityCalendar from "@admin/features/dashboard/components/AdminActivityCalendar";
-import TeacherProgressSummary from "@shared/components/teacher-shared/TeacherProgressSummary";
-import ContentAnalytics from "@admin/features/dashboard/components/ContentAnalytics";
-import AppsStatusWidget from "@admin/features/dashboard/components/AppsStatusWidget";
-import TeacherActivityFeed from "@admin/features/dashboard/components/TeacherActivityFeed";
-import ContractStatusWidget from "@admin/features/dashboard/components/ContractStatusWidget";
-import TimesheetStatusWidget from "@admin/features/dashboard/components/TimesheetStatusWidget";
-import PayrollStatusWidget from "@admin/features/dashboard/components/PayrollStatusWidget";
 import DashboardHero from "@admin/features/dashboard/components/DashboardHero";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@shared/components/ui/button";
-import { InfoBanner } from "@shared/components/dashboard";
+import { InfoBanner, LazyWidget } from "@shared/components/dashboard";
 import { useDashboardSections } from "@admin/features/dashboard/hooks/useDashboardSections";
+
+/* ── Lazy-loaded heavy widgets — code-split out of main bundle ── */
+const AppsStatusWidget       = lazy(() => import("@admin/features/dashboard/components/AppsStatusWidget"));
+const TeacherActivityFeed    = lazy(() => import("@admin/features/dashboard/components/TeacherActivityFeed"));
+const ContractStatusWidget   = lazy(() => import("@admin/features/dashboard/components/ContractStatusWidget"));
+const TimesheetStatusWidget  = lazy(() => import("@admin/features/dashboard/components/TimesheetStatusWidget"));
+const PayrollStatusWidget    = lazy(() => import("@admin/features/dashboard/components/PayrollStatusWidget"));
+const TeacherProgressSummary = lazy(() => import("@shared/components/teacher-shared/TeacherProgressSummary"));
+const AdminActivityCalendar  = lazy(() => import("@admin/features/dashboard/components/AdminActivityCalendar"));
+const ClassQuestionTypeStats = lazy(() => import("@shared/components/teacher-shared/ClassQuestionTypeStats"));
+const PracticeErrorStats     = lazy(() => import("@admin/features/practice/components/PracticeErrorStats"));
+const ContentAnalytics       = lazy(() => import("@admin/features/dashboard/components/ContentAnalytics"));
 
 interface DashboardStats {
   totalTests: number;
