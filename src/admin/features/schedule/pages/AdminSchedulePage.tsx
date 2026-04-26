@@ -11,6 +11,7 @@ import {
   ChevronRight,
   Clock3,
   FilePlus2,
+  Filter,
   Layers,
   Loader2,
   Search,
