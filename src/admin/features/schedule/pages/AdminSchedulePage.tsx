@@ -442,91 +442,115 @@ function ScheduleCalendarTab() {
   const activeFilterCount = [filterTeacher, filterLevel, filterProgram, filterType, filterRoom].filter((f) => f !== "all").length;
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="font-display text-lg font-bold tracking-tight flex items-center gap-2">
-            <CalendarDays className="h-5 w-5 text-primary" />
-            Lịch học hiện tại
-          </h2>
-          <p className="text-xs text-muted-foreground mt-1">Giữ nguyên schedule view cũ, thêm filter và cảnh báo conflict phòng.</p>
-        </div>
-
-        <div className="flex items-center gap-2 flex-wrap">
-          <div className="flex rounded-lg border bg-muted p-0.5 gap-0.5">
-            {(["day", "week", "month"] as const).map((v) => (
-              <button
-                key={v}
-                onClick={() => setViewMode(v)}
-                className={cn("px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors", viewMode === v ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}
-              >
-                {v === "day" ? "Ngày" : v === "week" ? "Tuần" : "Tháng"}
-              </button>
-            ))}
+    <div className="space-y-5">
+      {/* Header bar */}
+      <div className="rounded-2xl border border-border/60 bg-gradient-to-b from-muted/30 to-transparent p-4 md:p-5">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <div className="h-10 w-10 rounded-xl bg-background border border-border/60 flex items-center justify-center shadow-sm shrink-0">
+              <CalendarDays className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <h2 className="font-display text-base md:text-lg font-bold tracking-tight">Lịch học hiện tại</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">Theo dõi tất cả buổi dạy, phát hiện xung đột phòng theo thời gian thực</p>
+            </div>
           </div>
 
-          <div className="flex items-center gap-0.5">
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={goPrev}><ChevronLeft className="h-4 w-4" /></Button>
-            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-              <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="h-7 px-2 text-xs gap-1.5">
-                  <CalendarDays className="h-3.5 w-3.5" />
-                  {viewMode === "week"
-                    ? `${format(weekStart, "dd/MM")} – ${format(weekEnd, "dd/MM")}`
-                    : viewMode === "month"
-                    ? format(selectedDate, "MMMM yyyy", { locale: vi })
-                    : isToday(selectedDate)
-                    ? "Hôm nay"
-                    : format(selectedDate, "dd/MM", { locale: vi })}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="center">
-                <Calendar mode="single" selected={selectedDate} onSelect={(d) => { if (d) { setSelectedDate(d); setCalendarOpen(false); } }} initialFocus className="p-3 pointer-events-auto" />
-              </PopoverContent>
-            </Popover>
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={goNext}><ChevronRight className="h-4 w-4" /></Button>
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="inline-flex rounded-xl border border-border/60 bg-background p-0.5 gap-0.5">
+              {(["day", "week", "month"] as const).map((v) => (
+                <button
+                  key={v}
+                  onClick={() => setViewMode(v)}
+                  className={cn(
+                    "px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200",
+                    viewMode === v
+                      ? "bg-foreground text-background shadow-sm"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
+                  )}
+                >
+                  {v === "day" ? "Ngày" : v === "week" ? "Tuần" : "Tháng"}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex items-center rounded-xl border border-border/60 bg-background overflow-hidden">
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-none hover:bg-muted/50" onClick={goPrev}><ChevronLeft className="h-4 w-4" /></Button>
+              <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+                <PopoverTrigger asChild>
+                  <button className="h-8 px-3 text-xs font-medium tabular-nums hover:bg-muted/50 transition-colors flex items-center gap-1.5 border-x border-border/60">
+                    <CalendarDays className="h-3.5 w-3.5 opacity-70" />
+                    {viewMode === "week"
+                      ? `${format(weekStart, "dd/MM")} – ${format(weekEnd, "dd/MM")}`
+                      : viewMode === "month"
+                      ? format(selectedDate, "MMMM yyyy", { locale: vi })
+                      : isToday(selectedDate)
+                      ? "Hôm nay"
+                      : format(selectedDate, "dd/MM", { locale: vi })}
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="center">
+                  <Calendar mode="single" selected={selectedDate} onSelect={(d) => { if (d) { setSelectedDate(d); setCalendarOpen(false); } }} initialFocus className="p-3 pointer-events-auto" />
+                </PopoverContent>
+              </Popover>
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-none hover:bg-muted/50" onClick={goNext}><ChevronRight className="h-4 w-4" /></Button>
+            </div>
+
+            {!isToday(selectedDate) && (
+              <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => setSelectedDate(new Date())}>
+                Hôm nay
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Filter row */}
+        <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-border/40">
+          <Filter className="h-3.5 w-3.5 text-muted-foreground/60 ml-1" />
+          <Select value={filterTeacher} onValueChange={setFilterTeacher}>
+            <SelectTrigger className="h-8 w-auto min-w-[140px] text-xs rounded-lg border-border/60 bg-background"><SelectValue placeholder="Giáo viên" /></SelectTrigger>
+            <SelectContent><SelectItem value="all">Tất cả GV</SelectItem>{filterOptions.teachers.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+          </Select>
+          <Select value={filterLevel} onValueChange={setFilterLevel}>
+            <SelectTrigger className="h-8 w-auto min-w-[100px] text-xs rounded-lg border-border/60 bg-background"><SelectValue placeholder="Level" /></SelectTrigger>
+            <SelectContent><SelectItem value="all">Tất cả Level</SelectItem>{filterOptions.levels.map((l) => <SelectItem key={l} value={l}>{l}</SelectItem>)}</SelectContent>
+          </Select>
+          <Select value={filterProgram} onValueChange={setFilterProgram}>
+            <SelectTrigger className="h-8 w-auto min-w-[120px] text-xs rounded-lg border-border/60 bg-background"><SelectValue placeholder="Chương trình" /></SelectTrigger>
+            <SelectContent><SelectItem value="all">Tất cả CT</SelectItem>{filterOptions.programs.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
+          </Select>
+          <Select value={filterType} onValueChange={setFilterType}>
+            <SelectTrigger className="h-8 w-auto min-w-[90px] text-xs rounded-lg border-border/60 bg-background"><SelectValue placeholder="Loại" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tất cả</SelectItem>
+              <SelectItem value="group">Nhóm</SelectItem>
+              <SelectItem value="private">1-1</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={filterRoom} onValueChange={setFilterRoom}>
+            <SelectTrigger className="h-8 w-auto min-w-[100px] text-xs rounded-lg border-border/60 bg-background"><SelectValue placeholder="Phòng" /></SelectTrigger>
+            <SelectContent><SelectItem value="all">Tất cả phòng</SelectItem>{filterOptions.rooms.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
+          </Select>
+          {activeFilterCount > 0 && (
+            <Button variant="ghost" size="sm" className="h-8 text-xs gap-1" onClick={() => { setFilterTeacher("all"); setFilterLevel("all"); setFilterProgram("all"); setFilterType("all"); setFilterRoom("all"); }}>
+              <XCircle className="h-3 w-3" />Xóa ({activeFilterCount})
+            </Button>
+          )}
+
+          <div className="ml-auto flex items-center gap-3 text-xs">
+            {!isLoading && (
+              <>
+                <span className="text-muted-foreground tabular-nums"><span className="font-semibold text-foreground">{filteredSessions.length}</span> buổi</span>
+                {conflictIds.size > 0 && (
+                  <span className="flex items-center gap-1.5 text-destructive font-semibold px-2 py-0.5 rounded-full bg-destructive/10 border border-destructive/20">
+                    <AlertTriangle className="h-3 w-3" />{Math.floor(conflictIds.size / 2)} xung đột
+                  </span>
+                )}
+              </>
+            )}
           </div>
         </div>
       </div>
-
-      <div className="flex flex-wrap gap-2">
-        <Select value={filterTeacher} onValueChange={setFilterTeacher}>
-          <SelectTrigger className="h-8 w-auto min-w-[140px] text-xs"><SelectValue placeholder="Giáo viên" /></SelectTrigger>
-          <SelectContent><SelectItem value="all">Tất cả GV</SelectItem>{filterOptions.teachers.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
-        </Select>
-        <Select value={filterLevel} onValueChange={setFilterLevel}>
-          <SelectTrigger className="h-8 w-auto min-w-[100px] text-xs"><SelectValue placeholder="Level" /></SelectTrigger>
-          <SelectContent><SelectItem value="all">Tất cả Level</SelectItem>{filterOptions.levels.map((l) => <SelectItem key={l} value={l}>{l}</SelectItem>)}</SelectContent>
-        </Select>
-        <Select value={filterProgram} onValueChange={setFilterProgram}>
-          <SelectTrigger className="h-8 w-auto min-w-[120px] text-xs"><SelectValue placeholder="Chương trình" /></SelectTrigger>
-          <SelectContent><SelectItem value="all">Tất cả CT</SelectItem>{filterOptions.programs.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
-        </Select>
-        <Select value={filterType} onValueChange={setFilterType}>
-          <SelectTrigger className="h-8 w-auto min-w-[90px] text-xs"><SelectValue placeholder="Loại" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tất cả</SelectItem>
-            <SelectItem value="group">Nhóm</SelectItem>
-            <SelectItem value="private">1-1</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={filterRoom} onValueChange={setFilterRoom}>
-          <SelectTrigger className="h-8 w-auto min-w-[100px] text-xs"><SelectValue placeholder="Phòng" /></SelectTrigger>
-          <SelectContent><SelectItem value="all">Tất cả phòng</SelectItem>{filterOptions.rooms.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
-        </Select>
-        {activeFilterCount > 0 && (
-          <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setFilterTeacher("all"); setFilterLevel("all"); setFilterProgram("all"); setFilterType("all"); setFilterRoom("all"); }}>
-            Xóa bộ lọc ({activeFilterCount})
-          </Button>
-        )}
-      </div>
-
-      {!isLoading && (
-        <div className="flex items-center gap-4 text-xs text-muted-foreground">
-          <span>{filteredSessions.length} buổi học</span>
-          {conflictIds.size > 0 && <span className="flex items-center gap-1 text-destructive font-medium"><AlertTriangle className="h-3 w-3" />{Math.floor(conflictIds.size / 2)} xung đột</span>}
-        </div>
-      )}
 
       {isLoading && <div className="flex items-center justify-center py-12"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>}
 
