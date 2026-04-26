@@ -126,6 +126,10 @@ export default function AppRoutes() {
 
           {/* Lương / Thưởng — gộp Bảng công + Bảng lương dưới 1 entry */}
           <Route path="compensation" element={<CompensationPage />} />
+          {/* Legacy redirects — internal "Quay lại" buttons trong các trang
+              detail vẫn navigate("/timesheet") / navigate("/payroll"). */}
+          <Route path="timesheet" element={<Navigate to="/compensation?tab=timesheet" replace />} />
+          <Route path="payroll" element={<Navigate to="/compensation?tab=payroll" replace />} />
           <Route path="timesheet/:periodId" element={<TimesheetPeriodDetailPage />} />
           <Route path="payroll/batches/:batchId" element={<PayrollBatchDetailPage />} />
           <Route path="payroll/payslips/:payslipId" element={<PayrollPayslipDetailPage />} />
