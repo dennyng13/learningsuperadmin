@@ -231,8 +231,8 @@ async function fetchFeed(limit: number, sinceIso: string, untilIso: string): Pro
   if (lookupError) throw lookupError;
 
   const teachers = teachersRes.data;
-  const students = studentsRes.data;
-  const classes = classesRes.data;
+  const students = studentsRes.data as Array<{ id: string; full_name: string }> | null;
+  const classes = classesRes.data as Array<{ id: string; class_name: string }> | null;
 
   const tMap = new Map((teachers || []).map(t => [t.id, t.full_name]));
   const sMap = new Map((students || []).map(s => [s.id, s.full_name]));
