@@ -55,17 +55,16 @@ export default function TeacherProgressSummary() {
   }, [user, scope?.teacherId, scope?.canViewAllClasses]);
 
   async function fetchData() {
-    if (!stats) setLoading(true);
     setIsFetching(true);
     try {
       await fetchDataInner();
     } finally {
-      setLoading(false);
       setIsFetching(false);
     }
   }
 
   async function fetchDataInner() {
+    setLoading(true);
 
     const teacherId = scope?.teacherId || null;
 
