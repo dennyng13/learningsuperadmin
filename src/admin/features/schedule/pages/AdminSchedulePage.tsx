@@ -94,7 +94,7 @@ async function fetchAllScheduleData(startDate: string, endDate: string) {
   const teacherIds = [...new Set((classes as any[]).map((c) => c.teacher_id).filter(Boolean))] as string[];
   const teacherMap = new Map<string, string>();
   if (teacherIds.length > 0) {
-    const { data: teachers } = await supabase.from("teachers").select("id, full_name").in("id", teacherIds);
+    const { data: teachers } = await supabase.from("teachers").select("id, full_name").in("id", teacherIds as string[]);
     for (const t of teachers || []) teacherMap.set(t.id, t.full_name || "—");
   }
 
