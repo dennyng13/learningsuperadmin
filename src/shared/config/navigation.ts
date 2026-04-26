@@ -54,7 +54,7 @@ export const adminNavItems: NavItem[] = [
   // ─── Người dùng ───
   { id: "users",        label: "Học viên",          icon: Users,           route: "/users",                      group: "users",    order: 20 },
   { id: "teachers",     label: "Giáo viên",         icon: GraduationCap,   route: "/teachers",                   group: "users",    order: 21 },
-  { id: "permissions",  label: "Phân quyền",        icon: ShieldCheck,     route: "/modules",                    group: "users",    superAdminOnly: true, order: 22 },
+  { id: "permissions",  label: "Phân quyền",        icon: ShieldCheck,     route: "/permissions",                group: "users",    superAdminOnly: true, order: 22 },
 
   // ─── Hành chính ───
   { id: "contracts",    label: "Hợp đồng",          icon: FileSignature,   route: "/contracts",                  group: "hr",       order: 30 },
