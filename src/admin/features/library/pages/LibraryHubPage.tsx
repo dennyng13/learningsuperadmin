@@ -315,27 +315,26 @@ function BrandShapeFigure({ url, palette }: { url: string | null; palette: Shape
   return (
     <div
       aria-hidden
+      // `pointer-events-none` ở root + `select-none` đảm bảo decoration KHÔNG
+      // bao giờ bắt click/hover/drag — toàn bộ tương tác thuộc về card button.
+      // `overflow-hidden` cắt mọi tràn của ảnh/gradient con để shape KHÔNG
+      // lén leo qua vùng icon hoặc text dù asset SVG có viewBox sai.
+      // Chiều cao chốt 55% (xem comment cũ về phép tính bbox icon).
       className={cn(
-        "pointer-events-none absolute",
-        // Offset từ góc dưới-phải (negative để shape tràn nhẹ ra ngoài card,
-        // tránh viền vuông giả). Đồng bộ với card-padding theo breakpoint.
+        "pointer-events-none select-none absolute z-0 overflow-hidden",
         "-bottom-4 -right-4 sm:-bottom-5 sm:-right-5 md:-bottom-6 md:-right-6",
-        // Chiều cao shape PHẢI dừng dưới đáy của icon avatar top-right để
-        // không bao giờ chạm. Card heights: 128 / 144 / 160 px.
-        // Icon avatar bbox (top + size + breathing): ~50 / 60 / 68 px.
-        // → Shape height tối đa = (card_h − bbox − 8px gap) / card_h:
-        //   mobile : (128−50−8)/128 ≈ 55%
-        //   sm     : (144−60−8)/144 ≈ 53%
-        //   md     : (160−68−8)/160 ≈ 53%
-        // Width có thể rộng hơn vì icon ở GÓC, không lan sang trái.
         "h-[55%] w-[50%] sm:h-[55%] sm:w-[54%] md:h-[55%] md:w-[58%]",
-        "opacity-95 transition-all duration-500 ease-out group-hover:scale-[1.06]",
+        "opacity-95 transition-transform duration-500 ease-out group-hover:scale-[1.06]",
         "origin-bottom-right",
       )}
     >
+      {/* Fallback gradient — luôn render, ngồi dưới ảnh. Bo `rounded-tl` để
+         vẫn có cảm giác "blob" mềm khi ảnh thật chưa load. */}
       <div
+        aria-hidden
         className={cn(
-          "absolute inset-0 rounded-tl-[999px] bg-gradient-to-tl shadow-[inset_0_1px_0_hsl(var(--background)/0.45)]",
+          "pointer-events-none absolute inset-0 rounded-tl-[999px] bg-gradient-to-tl",
+          "shadow-[inset_0_1px_0_hsl(var(--background)/0.45)]",
           FALLBACK_TONE[palette],
         )}
       />
@@ -343,9 +342,20 @@ function BrandShapeFigure({ url, palette }: { url: string | null; palette: Shape
         <img
           src={url}
           alt=""
+          aria-hidden
           loading="lazy"
           decoding="async"
-          className="absolute inset-0 h-full w-full object-contain object-right-bottom opacity-100 saturate-125 drop-shadow-[0_10px_18px_hsl(var(--foreground)/0.16)]"
+          draggable={false}
+          // `pointer-events-none` lặp lại trên img để chắc chắn ngay cả khi
+          // browser CSS reset bất thường vẫn không bắt event.
+          // `object-contain object-right-bottom` neo shape vào góc; ảnh
+          // KHÔNG vượt quá bbox của container vì parent đã `overflow-hidden`.
+          className={cn(
+            "pointer-events-none select-none absolute inset-0 h-full w-full",
+            "object-contain object-right-bottom",
+            "opacity-100 saturate-125",
+            "drop-shadow-[0_10px_18px_hsl(var(--foreground)/0.16)]",
+          )}
         />
       )}
     </div>
