@@ -226,15 +226,16 @@ export default function AvailabilityDraftsPage() {
   const filterBar = (
     <div className="space-y-3">
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/70" />
         <Input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Tìm theo tên hoặc email giáo viên…"
-          className="pl-9 h-10"
+          placeholder="Tìm giáo viên theo tên hoặc email…"
+          className="pl-10 h-11 rounded-xl border-border/60 bg-card/80 focus-visible:ring-2 focus-visible:ring-primary/30"
         />
       </div>
-      <div className="flex flex-wrap gap-1.5">
+      <div className="flex items-center gap-2 overflow-x-auto -mx-1 px-1 scrollbar-none">
+        <Filter className="h-3.5 w-3.5 text-muted-foreground/60 shrink-0" />
         {STATUS_TABS.map((t) => {
           const active = statusFilter === t.value;
           const n = counts[t.value] ?? 0;
@@ -244,16 +245,16 @@ export default function AvailabilityDraftsPage() {
               type="button"
               onClick={() => setStatusFilter(t.value)}
               className={cn(
-                "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
+                "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-200 shrink-0",
                 active
-                  ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                  : "bg-card text-muted-foreground border-border hover:border-primary/40 hover:text-foreground",
+                  ? "bg-foreground text-background border-foreground shadow-sm"
+                  : "bg-transparent text-muted-foreground border-border/60 hover:border-foreground/30 hover:text-foreground",
               )}
             >
               {t.label}
               <span className={cn(
-                "px-1.5 py-0 rounded-full text-[10px] font-semibold tabular-nums",
-                active ? "bg-primary-foreground/20 text-primary-foreground" : "bg-muted text-muted-foreground",
+                "min-w-[18px] text-center px-1.5 py-0 rounded-full text-[10px] font-semibold tabular-nums",
+                active ? "bg-background/20 text-background" : "bg-muted/70 text-muted-foreground",
               )}>{n}</span>
             </button>
           );
