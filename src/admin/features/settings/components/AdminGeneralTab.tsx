@@ -6,7 +6,8 @@ import { Label } from "@shared/components/ui/label";
 import { Button } from "@shared/components/ui/button";
 import { Textarea } from "@shared/components/ui/textarea";
 import { Separator } from "@shared/components/ui/separator";
-import { Globe, Clock, Building2, FileSignature, Loader2, Save, Image as ImageIcon, AlertTriangle } from "lucide-react";
+import { Globe, Clock, Building2, FileSignature, Loader2, Save, Image as ImageIcon, AlertTriangle, HelpCircle } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@shared/components/ui/tooltip";
 import { toast } from "sonner";
 import {
   getPartyASettings,
@@ -103,9 +104,10 @@ export default function AdminGeneralTab() {
               <FileSignature className="h-4 w-4 text-primary" />
               Bên A — Thông tin pháp lý của trung tâm
             </CardTitle>
-            <p className="text-xs text-muted-foreground mt-1">
-              Các trường này sẽ được snapshot vào mọi hợp đồng tạo mới (ô "Bên A" trong template).
-              Sửa ở đây không ảnh hưởng các hợp đồng đã ký trước đó.
+            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+              Thông tin định danh trung tâm — dùng làm Bên A khi tạo hợp đồng mới.
+              Mỗi hợp đồng sẽ <strong>snapshot</strong> dữ liệu tại thời điểm tạo, nên sửa ở đây
+              <em> không </em>ảnh hưởng các hợp đồng đã ký.
             </p>
           </div>
           <Button onClick={handleSave} disabled={saving || !dirty || loading} size="sm" className="shrink-0">
@@ -119,19 +121,35 @@ export default function AdminGeneralTab() {
               <Loader2 className="h-4 w-4 animate-spin mr-2" /> Đang tải…
             </div>
           ) : (
-            <>
+            <TooltipProvider delayDuration={200}>
               <Section title="Pháp nhân">
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <Field label="Tên pháp lý *" hint="VD: Công ty TNHH Learning Plus">
+                  <Field
+                    label="Tên pháp lý *"
+                    hint="VD: Công ty TNHH Learning Plus"
+                    tooltip="Tên đầy đủ trên Giấy đăng ký kinh doanh. Sẽ in nguyên văn trên hợp đồng — phải khớp với hồ sơ pháp lý."
+                  >
                     <Input value={data.legal_name ?? ""} onChange={(e) => set("legal_name", e.target.value)} placeholder="Tên đầy đủ trên đăng ký kinh doanh" />
                   </Field>
-                  <Field label="Tên viết tắt tổ chức" hint="Hiển thị ở sidebar, header, favicon. VD: Learn+ / Learning Plus">
+                  <Field
+                    label="Tên viết tắt tổ chức"
+                    hint="VD: Learn+ / Learning Plus"
+                    tooltip="Tên thương hiệu hiển thị ở sidebar, header và favicon của Admin Portal. Không dùng trong hợp đồng. Nếu kết thúc bằng dấu '+' sẽ tự được tô màu nhấn."
+                  >
                     <Input value={data.short_name ?? ""} onChange={(e) => set("short_name", e.target.value)} placeholder="VD: Learn+" />
                   </Field>
-                  <Field label="Mã số thuế / Business ID" hint="MST hoặc số ĐKKD">
+                  <Field
+                    label="Mã số thuế / Business ID"
+                    hint="MST hoặc số ĐKKD"
+                    tooltip="Mã số thuế 10–13 chữ số. Bắt buộc với hợp đồng có chi trả lương để xuất hoá đơn / khấu trừ TNCN."
+                  >
                     <Input value={data.business_id ?? ""} onChange={(e) => set("business_id", e.target.value)} placeholder="VD: 0312345678" />
                   </Field>
-                  <Field label="Địa chỉ trụ sở" className="sm:col-span-2">
+                  <Field
+                    label="Địa chỉ trụ sở"
+                    className="sm:col-span-2"
+                    tooltip="Địa chỉ ghi trên hợp đồng. Nên ghi đầy đủ: số nhà → phường → quận/huyện → tỉnh/thành phố."
+                  >
                     <Textarea value={data.address ?? ""} onChange={(e) => set("address", e.target.value)} rows={2} placeholder="Số nhà, đường, phường, quận, tỉnh/thành phố" />
                   </Field>
                 </div>
@@ -141,10 +159,16 @@ export default function AdminGeneralTab() {
 
               <Section title="Người đại diện ký hợp đồng">
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <Field label="Họ và tên người đại diện">
+                  <Field
+                    label="Họ và tên người đại diện"
+                    tooltip="Người ký Bên A trên hợp đồng. Có thể khác nhau theo từng hợp đồng — đây chỉ là giá trị mặc định."
+                  >
                     <Input value={data.representative_name ?? ""} onChange={(e) => set("representative_name", e.target.value)} placeholder="VD: Nguyễn Văn A" />
                   </Field>
-                  <Field label="Chức danh">
+                  <Field
+                    label="Chức danh"
+                    tooltip="Chức danh in dưới chữ ký. VD: Giám đốc, Tổng giám đốc, Trưởng phòng Đào tạo…"
+                  >
                     <Input value={data.representative_title ?? ""} onChange={(e) => set("representative_title", e.target.value)} placeholder="VD: Giám đốc / Tổng giám đốc" />
                   </Field>
                 </div>
@@ -154,10 +178,16 @@ export default function AdminGeneralTab() {
 
               <Section title="Liên hệ">
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <Field label="Số điện thoại">
+                  <Field
+                    label="Số điện thoại"
+                    tooltip="Hotline trung tâm — hiển thị trong hợp đồng và email tự động gửi cho giáo viên/học viên."
+                  >
                     <Input value={data.phone ?? ""} onChange={(e) => set("phone", e.target.value)} placeholder="VD: 0901 234 567" />
                   </Field>
-                  <Field label="Email liên hệ">
+                  <Field
+                    label="Email liên hệ"
+                    tooltip="Email công khai của trung tâm. Khác với email gửi đi (cấu hình tại tab Email)."
+                  >
                     <Input type="email" value={data.email ?? ""} onChange={(e) => set("email", e.target.value)} placeholder="contact@learningplus.vn" />
                   </Field>
                 </div>
@@ -167,10 +197,16 @@ export default function AdminGeneralTab() {
 
               <Section title="Tài khoản ngân hàng (cho thanh toán & bảng lương)">
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <Field label="Tên ngân hàng">
+                  <Field
+                    label="Tên ngân hàng"
+                    tooltip="Ghi rõ ngân hàng + chi nhánh để giáo viên dễ chuyển khoản hoàn phí (nếu có)."
+                  >
                     <Input value={data.bank_name ?? ""} onChange={(e) => set("bank_name", e.target.value)} placeholder="VD: Vietcombank — CN Sài Gòn" />
                   </Field>
-                  <Field label="Số tài khoản">
+                  <Field
+                    label="Số tài khoản"
+                    tooltip="Số tài khoản trung tâm dùng nhận học phí. Sẽ in trên hợp đồng và email xác nhận thanh toán."
+                  >
                     <Input value={data.bank_account_number ?? ""} onChange={(e) => set("bank_account_number", e.target.value)} placeholder="VD: 0123 4567 8910" />
                   </Field>
                 </div>
@@ -201,7 +237,7 @@ export default function AdminGeneralTab() {
                   </span>
                 </div>
               </Section>
-            </>
+            </TooltipProvider>
           )}
         </CardContent>
       </Card>
@@ -235,11 +271,30 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 function Field({
-  label, hint, className, children,
-}: { label: string; hint?: string; className?: string; children: React.ReactNode }) {
+  label, hint, tooltip, className, children,
+}: { label: string; hint?: string; tooltip?: string; className?: string; children: React.ReactNode }) {
   return (
     <div className={`space-y-1.5 ${className ?? ""}`}>
-      <Label className="text-xs">{label}</Label>
+      <div className="flex items-center gap-1">
+        <Label className="text-xs">{label}</Label>
+        {tooltip && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                tabIndex={-1}
+                aria-label={`Hướng dẫn: ${label}`}
+                className="text-muted-foreground/60 hover:text-primary transition-colors"
+              >
+                <HelpCircle className="h-3 w-3" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-[260px] text-xs leading-relaxed">
+              {tooltip}
+            </TooltipContent>
+          </Tooltip>
+        )}
+      </div>
       {children}
       {hint && <p className="text-[11px] text-muted-foreground">{hint}</p>}
     </div>
