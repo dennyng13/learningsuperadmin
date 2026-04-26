@@ -465,13 +465,15 @@ function SortableHead({
 }
 
 function TableView({
-  rows, sortKey, sortDir, onSort, onOpen,
+  rows, sortKey, sortDir, onSort, onOpen, onArchive, onRestore,
 }: {
   rows: ClassRow[];
   sortKey: SortKey;
   sortDir: SortDir;
   onSort: (k: SortKey) => void;
   onOpen: (id: string) => void;
+  onArchive: (cls: ClassRow) => void;
+  onRestore: (cls: ClassRow) => void;
 }) {
   return (
     <div className="rounded-xl border overflow-hidden bg-card">
@@ -491,6 +493,7 @@ function TableView({
             <TableHead>
               <SortableHead label="Trạng thái" sortKey="status_changed_at" currentKey={sortKey} currentDir={sortDir} onClick={onSort} />
             </TableHead>
+            <TableHead className="w-[40px]" />
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -520,6 +523,9 @@ function TableView({
                   size="sm"
                 />
               </TableCell>
+              <TableCell onClick={(e) => e.stopPropagation()} className="w-[40px]">
+                <RowActions cls={cls} onArchive={onArchive} onRestore={onRestore} />
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -528,24 +534,38 @@ function TableView({
   );
 }
 
-function GridView({ rows, onOpen }: { rows: ClassRow[]; onOpen: (id: string) => void }) {
+function GridView({
+  rows, onOpen, onArchive, onRestore,
+}: {
+  rows: ClassRow[];
+  onOpen: (id: string) => void;
+  onArchive: (cls: ClassRow) => void;
+  onRestore: (cls: ClassRow) => void;
+}) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
       {rows.map((cls) => (
-        <button
+        <div
           key={cls.id}
-          type="button"
-          onClick={() => onOpen(cls.id)}
           className="group relative rounded-xl border bg-card text-left p-4 hover:border-primary/40 hover:shadow-md transition-all space-y-2.5"
         >
-          <div className="absolute top-3 right-3">
+          <button
+            type="button"
+            onClick={() => onOpen(cls.id)}
+            aria-label={`Mở lớp ${cls.name ?? ""}`}
+            className="absolute inset-0 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          />
+          <div className="absolute top-3 right-3 flex items-center gap-1 z-10">
             <ClassStatusBadge
               status={cls.lifecycle_status}
               reason={cls.cancellation_reason}
               size="sm"
             />
+            <div onClick={(e) => e.stopPropagation()}>
+              <RowActions cls={cls} onArchive={onArchive} onRestore={onRestore} />
+            </div>
           </div>
-          <div className="pr-24">
+          <div className="relative pr-32 pointer-events-none">
             <p className="font-mono text-[10px] text-muted-foreground">{cls.class_code ?? "—"}</p>
             <h3 className="font-display font-bold text-base leading-tight mt-0.5">
               {cls.name ?? "(không tên)"}
@@ -556,7 +576,7 @@ function GridView({ rows, onOpen }: { rows: ClassRow[]; onOpen: (id: string) => 
               </p>
             )}
           </div>
-          <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+          <div className="relative flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground pointer-events-none">
             {cls.teacher_name && (
               <span className="inline-flex items-center gap-1">
                 <User className="h-3 w-3" />
@@ -574,9 +594,46 @@ function GridView({ rows, onOpen }: { rows: ClassRow[]; onOpen: (id: string) => 
               </span>
             )}
           </div>
-        </button>
+        </div>
       ))}
     </div>
+  );
+}
+
+/* ─────────── Row actions (archive / restore) ─────────── */
+
+function RowActions({
+  cls, onArchive, onRestore,
+}: {
+  cls: ClassRow;
+  onArchive: (cls: ClassRow) => void;
+  onRestore: (cls: ClassRow) => void;
+}) {
+  const isArchived = cls.lifecycle_status === "archived";
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+          aria-label="Thao tác"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <MoreHorizontal className="h-4 w-4" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-44">
+        {isArchived ? (
+          <DropdownMenuItem onClick={() => onRestore(cls)} className="gap-2 text-xs">
+            <ArchiveRestore className="h-3.5 w-3.5" /> Khôi phục lớp
+          </DropdownMenuItem>
+        ) : (
+          <DropdownMenuItem onClick={() => onArchive(cls)} className="gap-2 text-xs">
+            <Archive className="h-3.5 w-3.5" /> Lưu trữ lớp
+          </DropdownMenuItem>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
