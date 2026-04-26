@@ -56,6 +56,7 @@ import MaxQuotesPage from "@admin/features/max-quotes/pages/MaxQuotesPage";
 import BandDescriptorsPage from "@admin/features/academic/pages/BandDescriptorsPage";
 import FeedbackTemplatesPage from "@admin/features/academic/pages/FeedbackTemplatesPage";
 import CoursesPage from "@admin/features/academic/pages/CoursesPage";
+import CourseEditorPage from "@admin/features/academic/pages/CourseEditorPage";
 import LibraryHubPage from "@admin/features/library/pages/LibraryHubPage";
 import SchemaHealthPage from "@admin/features/schema-health/pages/SchemaHealthPage";
 import { SuperAdminRoute } from "@admin/guards/SuperAdminRoute";
@@ -169,6 +170,8 @@ export default function AppRoutes() {
           <Route path="feedback-templates" element={<FeedbackTemplatesPage />} />
           {/* Academic — Module Quản lý Khóa học (programs + cấp độ) */}
           <Route path="courses" element={<CoursesPage />} />
+          <Route path="courses/new" element={<CourseEditorPage />} />
+          <Route path="courses/:id/edit" element={<CourseEditorPage />} />
           {/* Legacy redirects — bookmark cũ /settings/<id> → trang riêng */}
           <Route path="settings/ai-grading"       element={<Navigate to="/permissions?tab=ai-grading" replace />} />
           <Route path="settings/band-descriptors" element={<Navigate to="/band-descriptors" replace />} />
