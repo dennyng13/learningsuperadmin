@@ -23,6 +23,7 @@ import {
 import { BrandAssetCard } from "../components/BrandAssetCard";
 import UploadAssetDialog from "../components/UploadAssetDialog";
 import { LogoSlotsPanel } from "../components/LogoSlotsPanel";
+import { BRAND_ASSETS_REGISTRY_QUERY_KEY } from "@shared/hooks/useBrandAsset";
 
 const QUERY_KEY = ["brand-assets"] as const;
 
@@ -61,7 +62,7 @@ export default function BrandAssetsPage() {
     // List page cache.
     qc.invalidateQueries({ queryKey: QUERY_KEY });
     // Shared registry consumed by useBrandAsset (sidebar / login / favicon).
-    qc.invalidateQueries({ queryKey: ["brand-assets-registry"] });
+    qc.invalidateQueries({ queryKey: BRAND_ASSETS_REGISTRY_QUERY_KEY });
   };
 
   /** Apply global search + active filter once. */
