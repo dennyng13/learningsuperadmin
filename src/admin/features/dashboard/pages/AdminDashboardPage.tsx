@@ -26,6 +26,7 @@ import TeacherActivityFeed from "@admin/features/dashboard/components/TeacherAct
 import ContractStatusWidget from "@admin/features/dashboard/components/ContractStatusWidget";
 import TimesheetStatusWidget from "@admin/features/dashboard/components/TimesheetStatusWidget";
 import PayrollStatusWidget from "@admin/features/dashboard/components/PayrollStatusWidget";
+import DashboardHero from "@admin/features/dashboard/components/DashboardHero";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@shared/components/ui/button";
 
@@ -280,9 +281,25 @@ export default function AdminDashboardPage() {
   return (
     <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
       <div>
-        <h1 className="font-display text-xl md:text-2xl font-extrabold">Dashboard</h1>
-        <p className="text-xs md:text-sm text-muted-foreground mt-1">Tổng quan hệ thống</p>
+        <h1 className="font-display text-2xl md:text-3xl font-extrabold tracking-tight text-foreground">Dashboard</h1>
+        <p className="text-sm text-muted-foreground mt-1">Tổng quan hệ thống Learning+ Admin Portal</p>
       </div>
+
+      {/* ── Hero: KPI cards + Calendar + Performance chart + Recent ── */}
+      <DashboardHero
+        totalStudents={s.totalStudents}
+        totalTeachers={s.totalTeachers}
+        totalClasses={s.totalClasses}
+        totalTests={s.totalTests}
+        recentResults7d={s.recentResults7d}
+        recentPractice7d={s.recentPractice7d}
+        recentItems={recentItems.slice(0, 6).map((it) => ({
+          id: it.id,
+          name: it.name,
+          meta: `${it.type === "test" ? "Đề thi" : "Bài tập"}${it.section_type ? ` · ${it.section_type}` : it.skill ? ` · ${it.skill}` : ""}`,
+          badge: { label: it.status, tone: it.status === "published" ? "teal" : "coral" },
+        }))}
+      />
 
       {/* ── Trạng thái 2 app (IELTS Practice + Teacher's Hub) ── */}
       <AppsStatusWidget />
