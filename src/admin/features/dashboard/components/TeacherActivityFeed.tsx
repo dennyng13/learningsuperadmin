@@ -177,8 +177,8 @@ async function fetchFeed(limit: number, sinceIso: string, untilIso: string): Pro
   const sessionClassIds = [...new Set([...planClassMap.values()].flat())];
   const sessionClassMap = new Map<string, { teacherId: string | null; className: string }>();
   if (sessionClassIds.length > 0) {
-    const { data: cls, error: classesLookupError } = await supabase
-      .from("classes" as any)
+    const { data: cls, error: classesLookupError } = await (supabase as any)
+      .from("classes")
       .select("id, class_name, teacher_id")
       .in("id", sessionClassIds);
     if (classesLookupError) throw classesLookupError;

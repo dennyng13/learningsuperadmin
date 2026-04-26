@@ -45,8 +45,8 @@ export default function TeachngoAttendancePage() {
 
   const fetchRecords = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("attendance" as any)
+    const { data, error } = await (supabase as any)
+      .from("attendance")
       .select("id, teachngo_student_id, student_name, course_name, lesson_date, attendance_status, notes, synced_at")
       .order("lesson_date", { ascending: false });
 

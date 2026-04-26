@@ -23,8 +23,8 @@ export function useAssignmentLookups(plans: { class_ids?: string[]; student_ids?
     queryKey: ["assignment-classes", allClassIds],
     enabled: allClassIds.length > 0,
     queryFn: async () => {
-      const { data } = await supabase
-        .from("classes" as any)
+      const { data } = await (supabase as any)
+        .from("classes")
         .select("id, class_name")
         .in("id", allClassIds);
       return new Map((data || []).map(c => [c.id, c.class_name]));
@@ -36,8 +36,8 @@ export function useAssignmentLookups(plans: { class_ids?: string[]; student_ids?
     queryKey: ["assignment-students", allStudentIds],
     enabled: allStudentIds.length > 0,
     queryFn: async () => {
-      const { data } = await supabase
-        .from("synced_students" as any)
+      const { data } = await (supabase as any)
+        .from("synced_students")
         .select("teachngo_id, full_name")
         .in("teachngo_id", allStudentIds);
       return new Map((data || []).map(s => [s.teachngo_id, s.full_name]));

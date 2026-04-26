@@ -55,22 +55,22 @@ export function TeacherPerformanceContent() {
     }
 
     // Fetch all classes with teacher assignment
-    const { data: classes } = await supabase
-      .from("classes" as any)
+    const { data: classes } = await (supabase as any)
+      .from("classes")
       .select("id, class_name, teacher_id")
       .not("teacher_id", "is", null);
 
     // Fetch all enrollments
     const classIds = (classes || []).map(c => c.id);
-    const { data: enrollments } = await supabase
-      .from("class_students" as any)
+    const { data: enrollments } = await (supabase as any)
+      .from("class_students")
       .select("class_id, teachngo_student_id")
       .in("class_id", classIds.length > 0 ? classIds : ["__none__"]);
 
     // Fetch all students
     const teachngoIds = [...new Set((enrollments || []).map(e => e.teachngo_student_id))];
-    const { data: students } = await supabase
-      .from("synced_students" as any)
+    const { data: students } = await (supabase as any)
+      .from("synced_students")
       .select("teachngo_id, linked_user_id")
       .in("teachngo_id", teachngoIds.length > 0 ? teachngoIds : ["__none__"]);
 

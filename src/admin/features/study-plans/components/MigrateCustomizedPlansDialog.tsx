@@ -62,8 +62,8 @@ export default function MigrateCustomizedPlansDialog({ open, onOpenChange, onMig
       
       let studentMap: Record<string, string> = {};
       if (studentIds.length > 0) {
-        const { data: students } = await supabase
-          .from("synced_students" as any)
+        const { data: students } = await (supabase as any)
+          .from("synced_students")
           .select("teachngo_id, full_name")
           .in("teachngo_id", studentIds);
         if (students) {
@@ -95,8 +95,8 @@ export default function MigrateCustomizedPlansDialog({ open, onOpenChange, onMig
           : plan.plan_name || `Private class`;
 
         // Create private class
-        const { data: newClass, error } = await supabase
-          .from("classes" as any)
+        const { data: newClass, error } = await (supabase as any)
+          .from("classes")
           .insert({
             teachngo_class_id: `LP-MIG-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
             class_name: className,

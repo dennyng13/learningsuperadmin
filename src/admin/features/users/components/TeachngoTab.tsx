@@ -188,14 +188,14 @@ export default function TeachngoTab({ roleCategory = "students" }: { roleCategor
   const fetchStudentClasses = async (teachngoId: string) => {
     if (studentClassesMap[teachngoId]) return;
     setLoadingClasses(teachngoId);
-    const { data: links } = await supabase
-      .from("class_students" as any)
+    const { data: links } = await (supabase as any)
+      .from("class_students")
       .select("class_id, status")
       .eq("teachngo_student_id", teachngoId);
     if (links && links.length > 0) {
       const classIds = (links as any[]).map((l: any) => l.class_id);
-      const { data: classes } = await supabase
-        .from("classes" as any)
+      const { data: classes } = await (supabase as any)
+        .from("classes")
         .select("id, class_name, status")
         .in("id", classIds);
       const classMap = new Map((classes || []).map((c: any) => [c.id, c]));
@@ -223,8 +223,8 @@ export default function TeachngoTab({ roleCategory = "students" }: { roleCategor
     setLoading(true);
 
     // Fetch TnG students
-    const { data: tngData, error: tngError } = await supabase
-      .from("synced_students" as any)
+    const { data: tngData, error: tngError } = await (supabase as any)
+      .from("synced_students")
       .select("id, teachngo_id, full_name, email, phone, status, course_names, synced_at, linked_user_id, date_of_birth, city, guardian_name, guardian_phone, current_level, enrollment_date")
       .order("full_name", { ascending: true });
 

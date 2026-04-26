@@ -98,8 +98,8 @@ function AdminDashboardPageInner() {
   const { data: todaySchedule } = useQuery({
     queryKey: ["admin-today-schedule", todayStr],
     queryFn: async () => {
-      const { data: classes } = await supabase
-        .from("classes" as any)
+      const { data: classes } = await (supabase as any)
+        .from("classes")
         .select("id, class_name, class_type, room, study_plan_id, default_start_time, default_end_time")
         .eq("status", "active");
       if (!classes || classes.length === 0) return { count: 0, conflicts: 0, firstTime: null as string | null };

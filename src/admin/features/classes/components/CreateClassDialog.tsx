@@ -187,8 +187,8 @@ export default function CreateClassDialog({ open, onOpenChange, onCreated }: Pro
       const effectiveProgram = program && program !== "__none__" ? program : null;
 
       // 1. Create class
-      const { data: newClass, error } = await supabase
-        .from("classes" as any)
+      const { data: newClass, error } = await (supabase as any)
+        .from("classes")
         .insert({
           teachngo_class_id: `LP-${Date.now()}`,
           class_name: className.trim(),
@@ -263,8 +263,8 @@ export default function CreateClassDialog({ open, onOpenChange, onCreated }: Pro
           }
 
           // 5. Link class → plan
-          await supabase
-            .from("classes" as any)
+          await (supabase as any)
+            .from("classes")
             .update({ study_plan_id: plan.id } as any)
             .eq("id", newClass.id);
         }

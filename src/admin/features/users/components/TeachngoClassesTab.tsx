@@ -147,8 +147,8 @@ export default function TeachngoClassesTab() {
     setBulkSaving(true);
     const val = bulkLevel === "__none__" ? null : bulkLevel;
     const ids = Array.from(selectedIds);
-    const { error } = await supabase
-      .from("classes" as any)
+    const { error } = await (supabase as any)
+      .from("classes")
       .update({ level: val, updated_at: new Date().toISOString() })
       .in("id", ids);
     if (error) {
@@ -167,8 +167,8 @@ export default function TeachngoClassesTab() {
     setBulkSaving(true);
     const val = bulkProgram === "__none__" ? null : bulkProgram;
     const ids = Array.from(selectedIds);
-    const { error } = await supabase
-      .from("classes" as any)
+    const { error } = await (supabase as any)
+      .from("classes")
       .update({ program: val, updated_at: new Date().toISOString() })
       .in("id", ids);
     if (error) {
@@ -184,8 +184,8 @@ export default function TeachngoClassesTab() {
 
   const handleTeacherChange = async (classId: string, teacherId: string) => {
     const val = teacherId === "__none__" ? null : teacherId;
-    const { error } = await supabase
-      .from("classes" as any)
+    const { error } = await (supabase as any)
+      .from("classes")
       .update({ teacher_id: val, updated_at: new Date().toISOString() } as any)
       .eq("id", classId);
     if (!error) {
@@ -199,8 +199,8 @@ export default function TeachngoClassesTab() {
     setBulkSaving(true);
     const val = bulkTeacher === "__none__" ? null : bulkTeacher;
     const ids = Array.from(selectedIds);
-    const { error } = await supabase
-      .from("classes" as any)
+    const { error } = await (supabase as any)
+      .from("classes")
       .update({ teacher_id: val, updated_at: new Date().toISOString() } as any)
       .in("id", ids);
     if (error) {
@@ -264,8 +264,8 @@ export default function TeachngoClassesTab() {
 
   const handleProgramSave = async (classId: string) => {
     const val = editingProgramValue.trim() || null;
-    const { error } = await supabase
-      .from("classes" as any)
+    const { error } = await (supabase as any)
+      .from("classes")
       .update({ program: val, updated_at: new Date().toISOString() })
       .eq("id", classId);
     if (!error) {
@@ -276,8 +276,8 @@ export default function TeachngoClassesTab() {
 
   const handleLevelChange = async (classId: string, level: string) => {
     const val = level === "__none__" ? null : level;
-    const { error } = await supabase
-      .from("classes" as any)
+    const { error } = await (supabase as any)
+      .from("classes")
       .update({ level: val, updated_at: new Date().toISOString() })
       .eq("id", classId);
     if (!error) {
@@ -386,8 +386,8 @@ export default function TeachngoClassesTab() {
         const studentIds = rawPlans.map(p => p.teachngo_student_id).filter(Boolean);
         let nameMap = new Map<string, string>();
         if (studentIds.length > 0) {
-          const { data: students } = await supabase
-            .from("synced_students" as any)
+          const { data: students } = await (supabase as any)
+            .from("synced_students")
             .select("teachngo_id, full_name")
             .in("teachngo_id", studentIds);
           nameMap = new Map((students || []).map((s: any) => [s.teachngo_id, s.full_name]));
@@ -425,15 +425,15 @@ export default function TeachngoClassesTab() {
   const fetchStudents = async (classId: string) => {
     if (studentsMap[classId]) return;
     setLoadingStudents(classId);
-    const { data: links } = await supabase
-      .from("class_students" as any)
+    const { data: links } = await (supabase as any)
+      .from("class_students")
       .select("id, teachngo_student_id, enrollment_date, unenrollment_date, status")
       .eq("class_id", classId);
 
     if (links && links.length > 0) {
       const studentIds = (links as any[]).map((l: any) => l.teachngo_student_id);
-      const { data: students } = await supabase
-        .from("synced_students" as any)
+      const { data: students } = await (supabase as any)
+        .from("synced_students")
         .select("teachngo_id, full_name")
         .in("teachngo_id", studentIds);
 

@@ -83,8 +83,8 @@ export default function TeacherProgressSummary() {
     const classIds = classes.map(c => c.id);
     const classMap = new Map(classes.map(c => [c.id, c]));
 
-    const { data: enrollments } = await supabase
-      .from("class_students" as any)
+    const { data: enrollments } = await (supabase as any)
+      .from("class_students")
       .select("class_id, teachngo_student_id")
       .in("class_id", classIds);
 
@@ -104,8 +104,8 @@ export default function TeacherProgressSummary() {
       }
     }
 
-    const { data: studentsData } = await supabase
-      .from("synced_students" as any)
+    const { data: studentsData } = await (supabase as any)
+      .from("synced_students")
       .select("teachngo_id, full_name, linked_user_id")
       .in("teachngo_id", teachngoIds);
 

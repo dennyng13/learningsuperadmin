@@ -224,8 +224,8 @@ export default function TeachersTab() {
   };
 
   const fetchClasses = async () => {
-    const { data } = await supabase
-      .from("classes" as any)
+    const { data } = await (supabase as any)
+      .from("classes")
       .select("id, class_name, teacher_id, status")
       .order("class_name");
     setAllClasses(data || []);

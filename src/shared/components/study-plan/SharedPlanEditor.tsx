@@ -168,14 +168,14 @@ export function SharedPlanEditor({ plan, onClose, teacherMode = false }: SharedP
     queryKey: ["students-for-plan", selectedClassIds],
     enabled: selectedClassIds.length > 0,
     queryFn: async () => {
-      const { data: cs } = await supabase
-        .from("class_students" as any)
+      const { data: cs } = await (supabase as any)
+        .from("class_students")
         .select("teachngo_student_id, class_id")
         .in("class_id", selectedClassIds);
       if (!cs || cs.length === 0) return [];
       const ids = [...new Set(cs.map(c => c.teachngo_student_id))];
-      const { data: students } = await supabase
-        .from("synced_students" as any)
+      const { data: students } = await (supabase as any)
+        .from("synced_students")
         .select("teachngo_id, full_name")
         .in("teachngo_id", ids)
         .order("full_name");
@@ -626,8 +626,8 @@ export function SharedPlanEditor({ plan, onClose, teacherMode = false }: SharedP
         // Validate class_ids belong to this teacher
         const classIdsToCheck = isCustomized ? selectedClassIds : selectedClassIds;
         if (classIdsToCheck.length > 0) {
-          const { data: ownClasses } = await supabase
-            .from("classes" as any)
+          const { data: ownClasses } = await (supabase as any)
+            .from("classes")
             .select("id")
             .eq("teacher_id", scope.teacherId)
             .in("id", classIdsToCheck);
@@ -641,14 +641,14 @@ export function SharedPlanEditor({ plan, onClose, teacherMode = false }: SharedP
         }
         // Validate selected students belong to teacher's classes
         if (selectedStudentIds.length > 0) {
-          const { data: tc } = await supabase
-            .from("classes" as any)
+          const { data: tc } = await (supabase as any)
+            .from("classes")
             .select("id")
             .eq("teacher_id", scope.teacherId);
           const teacherClassIds = (tc || []).map((c: any) => c.id);
           if (teacherClassIds.length > 0) {
-            const { data: cs } = await supabase
-              .from("class_students" as any)
+            const { data: cs } = await (supabase as any)
+              .from("class_students")
               .select("teachngo_student_id")
               .in("class_id", teacherClassIds);
             const ownStudentIds = new Set((cs || []).map((r: any) => r.teachngo_student_id));
@@ -674,8 +674,8 @@ export function SharedPlanEditor({ plan, onClose, teacherMode = false }: SharedP
 
         // Auto-link classes: union (manually selected) ∪ (classes the chosen students are in)
         let mergedClassIds = [...selectedClassIds];
-        const { data: enrollments } = await supabase
-          .from("class_students" as any)
+        const { data: enrollments } = await (supabase as any)
+          .from("class_students")
           .select("class_id")
           .in("teachngo_student_id", studentIds);
         if (enrollments?.length) {
