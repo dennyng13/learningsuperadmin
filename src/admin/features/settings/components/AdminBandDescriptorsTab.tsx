@@ -299,26 +299,15 @@ export default function AdminBandDescriptorsTab() {
 
   return (
     <div className="space-y-5">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div className="space-y-1">
-          <h3 className="font-display text-lg font-bold flex items-center gap-2">
-            <BookOpen className="h-5 w-5 text-primary" />
-            Band Descriptor & Khung điểm
-          </h3>
-          <p className="text-xs text-muted-foreground">
-            {isScoreConversion
-              ? "Quy đổi số câu đúng (marks/40) sang band score IELTS."
-              : "Mô tả chi tiết từng band (1-9) cho mỗi tiêu chí. Giáo viên sẽ thấy mô tả này khi chấm bài."}
-          </p>
-        </div>
-        {!isScoreConversion && (
+      {/* Save action only — header trùng với Header chính nên đã bỏ */}
+      {!isScoreConversion && (
+        <div className="flex justify-end">
           <Button onClick={handleSave} disabled={saving || !dirty} size="sm" className="gap-1.5 shrink-0">
             {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
             Lưu
           </Button>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Skill + Task Type selectors */}
       <div className="flex flex-wrap items-center gap-3">
