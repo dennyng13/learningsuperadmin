@@ -68,6 +68,7 @@ export default function CourseEditorPage() {
 
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmSave, setConfirmSave] = useState(false);
 
   // Hydrate khi vào edit mode
   useEffect(() => {
@@ -111,6 +112,14 @@ export default function CourseEditorPage() {
     setLevelIds(next);
   };
 
+  const requestSave = () => {
+    if (!key.trim() || !name.trim()) {
+      toast.error("Vui lòng nhập key và tên khóa học");
+      return;
+    }
+    setConfirmSave(true);
+  };
+
   const handleSubmit = async () => {
     if (!key.trim() || !name.trim()) {
       toast.error("Vui lòng nhập key và tên khóa học");
@@ -142,6 +151,7 @@ export default function CourseEditorPage() {
       toast.error(`Lỗi: ${err.message ?? "Không xác định"}`);
     } finally {
       setSaving(false);
+      setConfirmSave(false);
     }
   };
 
@@ -211,7 +221,7 @@ export default function CourseEditorPage() {
           <Button size="sm" variant="outline" onClick={() => navigate("/courses")} disabled={saving}>
             Hủy
           </Button>
-          <Button size="sm" onClick={handleSubmit} disabled={saving} className="gap-1.5">
+          <Button size="sm" onClick={requestSave} disabled={saving} className="gap-1.5">
             {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
             {isEdit ? "Lưu thay đổi" : "Tạo khóa học"}
           </Button>
