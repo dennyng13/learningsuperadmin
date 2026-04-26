@@ -50,6 +50,8 @@ import PayrollBatchDetailPage from "@admin/features/payroll/pages/PayrollBatchDe
 import PayrollPayslipDetailPage from "@admin/features/payroll/pages/PayrollPayslipDetailPage";
 import CompensationPage from "@admin/features/compensation/pages/CompensationPage";
 import BrandAssetsPage from "@admin/features/brand-assets/pages/BrandAssetsPage";
+import BandDescriptorsPage from "@admin/features/academic/pages/BandDescriptorsPage";
+import FeedbackTemplatesPage from "@admin/features/academic/pages/FeedbackTemplatesPage";
 import { SuperAdminRoute } from "@admin/guards/SuperAdminRoute";
 
 function PageLoader() {
@@ -138,6 +140,10 @@ export default function AppRoutes() {
           <Route path="flashcards" element={<FlashcardSetsPage />} />
           <Route path="badges" element={<BadgeManagementPage />} />
           <Route path="profile" element={<AdminProfilePage />} />
+
+          {/* Academic — Band Descriptor & Mẫu nhận xét (chuyển từ Settings) */}
+          <Route path="band-descriptors" element={<BandDescriptorsPage />} />
+          <Route path="feedback-templates" element={<FeedbackTemplatesPage />} />
 
           {/* Permissions — gộp Module access + Student field access */}
           <Route path="permissions" element={<PermissionsPage />} />

@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@shared/components/ui/tabs";
-import { ShieldCheck, LayoutGrid, UserCog } from "lucide-react";
+import { ShieldCheck, LayoutGrid, UserCog, Sparkles } from "lucide-react";
 import ModuleAccessPanel from "../components/ModuleAccessPanel";
 import StudentFieldAccessPanel from "../components/StudentFieldAccessPanel";
+import AdminAIGradingTab from "@admin/features/settings/components/AdminAIGradingTab";
 
-type TabKey = "modules" | "student-fields";
-const VALID: TabKey[] = ["modules", "student-fields"];
+type TabKey = "modules" | "student-fields" | "ai-grading";
+const VALID: TabKey[] = ["modules", "student-fields", "ai-grading"];
 
 /**
  * Trang phân quyền tập trung — gộp 2 hệ phân quyền độc lập:
@@ -59,6 +60,12 @@ export default function PermissionsPage() {
           >
             <UserCog className="h-4 w-4" /> Dữ liệu học viên
           </TabsTrigger>
+          <TabsTrigger
+            value="ai-grading"
+            className="gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all"
+          >
+            <Sparkles className="h-4 w-4" /> AI Chấm bài
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="modules" className="mt-4 space-y-3">
@@ -73,6 +80,13 @@ export default function PermissionsPage() {
             Cấu hình quyền xem / sửa từng nhóm thông tin học viên cho mỗi vai trò. Tắt "Xem" sẽ tự tắt "Sửa".
           </p>
           <StudentFieldAccessPanel />
+        </TabsContent>
+
+        <TabsContent value="ai-grading" className="mt-4 space-y-3">
+          <p className="text-xs text-muted-foreground">
+            Cấp quyền sử dụng tính năng "Chấm bằng AI" cho từng giáo viên. Super Admin luôn có quyền truy cập.
+          </p>
+          <AdminAIGradingTab />
         </TabsContent>
       </Tabs>
     </div>

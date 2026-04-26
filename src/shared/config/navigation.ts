@@ -3,7 +3,7 @@ import {
   LayoutDashboard, FileText, Award, Users, School,
   CalendarDays, UserSearch, Settings, ShieldCheck, BarChart3,
   BookOpen, ClipboardList, Flag, GraduationCap, CalendarCheck,
-  FileSignature, FileBadge, Wallet,
+  FileSignature, FileBadge, Wallet, BookTemplate,
 } from "lucide-react";
 
 export interface NavItem {
@@ -43,6 +43,8 @@ export const adminNavItems: NavItem[] = [
   { id: "flashcards",   label: "Flashcard",         icon: BookOpen,        route: "/flashcards",                 group: "academic", order: 2 },
   { id: "study-plans",  label: "Study Plans",       icon: ClipboardList,   route: "/study-plans",                group: "academic", order: 3 },
   { id: "badges",       label: "Huy hiệu",          icon: Award,           route: "/badges",                     group: "academic", order: 4 },
+  { id: "band-descriptors", label: "Band Descriptor", icon: BookOpen,      route: "/band-descriptors",           group: "academic", order: 5 },
+  { id: "feedback-templates", label: "Mẫu nhận xét", icon: BookTemplate,   route: "/feedback-templates",         group: "academic", order: 6 },
 
   // ─── Lớp & Lịch ───
   { id: "schedule",     label: "Lịch học",          icon: CalendarDays,    route: "/schedule",                   group: "classes",  order: 10 },
