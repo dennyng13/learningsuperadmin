@@ -113,7 +113,7 @@ const SectionCard = forwardRef<HTMLButtonElement, { section: LibrarySection }>(f
 ) {
   const Icon = section.icon;
   const navigate = useNavigate();
-  const { urls } = useBrandShapes(section.palette);
+  const { urls, isLoading } = useBrandShapes(section.palette);
 
   // Tone class theo palette — chỉ ảnh hưởng icon top-right (subtle).
   const ICON_TONE: Record<ShapePalette, string> = {
@@ -127,6 +127,16 @@ const SectionCard = forwardRef<HTMLButtonElement, { section: LibrarySection }>(f
   // Pick a stable shape from the palette using section.id as seed —
   // tránh render khác nhau giữa các lần re-mount (sẽ nhấp nháy).
   const shapeUrl = pickStableShape(urls, section.id, section.preferredShape, section.preferredShapeFallbacks);
+
+  // Debug helper — log một lần khi không tìm được shape, để dễ phát hiện
+  // palette nào chưa upload asset trong /brand-assets.
+  if (typeof window !== "undefined" && !isLoading && !shapeUrl) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      `[LibraryHub] Không có brand shape nào cho palette "${section.palette}" (card "${section.id}"). ` +
+        `Hãy upload shape vào /brand-assets với asset_key dạng "shape-${section.palette}-{name}".`,
+    );
+  }
 
   return (
     <button
@@ -252,8 +262,8 @@ function BrandShapeFigure({ url, palette }: { url: string | null; palette: Shape
       <div
         aria-hidden
         className={cn(
-          "absolute -bottom-6 -right-6 h-[55%] w-[40%] pointer-events-none",
-          "bg-gradient-to-tl rounded-tl-[100%] opacity-40 transition-opacity duration-500 group-hover:opacity-70",
+          "absolute -bottom-8 -right-8 h-[80%] w-[55%] pointer-events-none",
+          "bg-gradient-to-tl rounded-tl-[100%] opacity-70 transition-opacity duration-500 group-hover:opacity-100",
           FALLBACK_TONE[palette],
         )}
       />
@@ -267,15 +277,15 @@ function BrandShapeFigure({ url, palette }: { url: string | null; palette: Shape
       alt=""
       loading="lazy"
       decoding="async"
-      // Shape nhỏ hơn (~38% chiều cao card chữ nhật), neo góc dưới-phải, tràn
-      // 1 phần ra ngoài để không "đóng khung". Mặc định mờ (opacity 35%), khi
-      // hover lên card sẽ rõ dần (opacity 90%) + scale nhẹ. Filter saturate
-      // tăng nhẹ khi hover để màu thêm sống động.
+      // Shape là nhân vật chính ở góc dưới-phải. Card khá thấp (h-32→h-40)
+      // nên cần kích thước lớn (≈90% chiều cao) và offset tràn ra ngoài để
+      // không bị "đóng khung". Opacity mặc định cao (75%) để luôn nhìn thấy
+      // ngay cả khi không hover; hover rõ hơn + scale nhẹ.
       className={cn(
-        "pointer-events-none absolute -bottom-4 -right-4",
-        "h-[60%] w-auto max-w-[40%] object-contain object-bottom-right",
-        "opacity-35 saturate-75 transition-all duration-500 ease-out",
-        "group-hover:opacity-90 group-hover:saturate-100 group-hover:scale-[1.06]",
+        "pointer-events-none absolute -bottom-3 -right-3",
+        "h-[95%] w-auto max-w-[55%] object-contain object-bottom-right",
+        "opacity-75 saturate-100 transition-all duration-500 ease-out",
+        "group-hover:opacity-100 group-hover:scale-[1.08]",
         "origin-bottom-right",
       )}
     />
