@@ -102,7 +102,7 @@ export function useMyStudyPlans() {
 
       // Find which classes this student belongs to
       const { data: classLinks } = await supabase
-        .from("teachngo_class_students")
+        .from("class_students")
         .select("class_id")
         .eq("teachngo_student_id", teachngoId);
 
@@ -302,7 +302,7 @@ export function useTeacherStudyPlans() {
 
       const classIds = classes.map(c => c.id);
       const { data: classStudents } = await supabase
-        .from("teachngo_class_students")
+        .from("class_students")
         .select("teachngo_student_id")
         .in("class_id", classIds);
 

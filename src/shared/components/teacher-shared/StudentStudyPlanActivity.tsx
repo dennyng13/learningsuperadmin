@@ -42,7 +42,7 @@ export default function StudentStudyPlanActivity({ userId }: Props) {
       const teachngoId = students[0].teachngo_id;
 
       const { data: classLinks } = await supabase
-        .from("teachngo_class_students")
+        .from("class_students")
         .select("class_id")
         .eq("teachngo_student_id", teachngoId);
 

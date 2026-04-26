@@ -333,7 +333,7 @@ export default function TeachngoClassesTab() {
       setLoading(true);
       const [classRes, countRes, teacherRes, plansRes] = await Promise.all([
         supabase.from("classes").select("*").order("class_name", { ascending: true }),
-        supabase.from("teachngo_class_students").select("class_id, status"),
+        supabase.from("class_students").select("class_id, status"),
         supabase.from("teachers").select("id, full_name, classes, teachngo_staff_id"),
         supabase.from("study_plans").select("id, plan_name, class_ids, teachngo_student_id, program"),
       ]);
@@ -426,7 +426,7 @@ export default function TeachngoClassesTab() {
     if (studentsMap[classId]) return;
     setLoadingStudents(classId);
     const { data: links } = await supabase
-      .from("teachngo_class_students")
+      .from("class_students")
       .select("id, teachngo_student_id, enrollment_date, unenrollment_date, status")
       .eq("class_id", classId);
 

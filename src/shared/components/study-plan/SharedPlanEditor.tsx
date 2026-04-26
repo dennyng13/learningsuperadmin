@@ -169,7 +169,7 @@ export function SharedPlanEditor({ plan, onClose, teacherMode = false }: SharedP
     enabled: selectedClassIds.length > 0,
     queryFn: async () => {
       const { data: cs } = await supabase
-        .from("teachngo_class_students")
+        .from("class_students")
         .select("teachngo_student_id, class_id")
         .in("class_id", selectedClassIds);
       if (!cs || cs.length === 0) return [];
@@ -189,7 +189,7 @@ export function SharedPlanEditor({ plan, onClose, teacherMode = false }: SharedP
       if (teacherMode && !scope?.canViewAllClasses && scope?.teacherId) {
         const { data: tc } = await supabase.from("classes").select("id").eq("teacher_id", scope.teacherId);
         if (!tc || tc.length === 0) return [];
-        const { data: cs } = await supabase.from("teachngo_class_students").select("teachngo_student_id").in("class_id", tc.map(c => c.id));
+        const { data: cs } = await supabase.from("class_students").select("teachngo_student_id").in("class_id", tc.map(c => c.id));
         if (!cs || cs.length === 0) return [];
         const ids = [...new Set(cs.map(c => c.teachngo_student_id))];
         const { data } = await supabase.from("synced_students").select("teachngo_id, full_name").in("teachngo_id", ids).order("full_name");
@@ -648,7 +648,7 @@ export function SharedPlanEditor({ plan, onClose, teacherMode = false }: SharedP
           const teacherClassIds = (tc || []).map((c: any) => c.id);
           if (teacherClassIds.length > 0) {
             const { data: cs } = await supabase
-              .from("teachngo_class_students")
+              .from("class_students")
               .select("teachngo_student_id")
               .in("class_id", teacherClassIds);
             const ownStudentIds = new Set((cs || []).map((r: any) => r.teachngo_student_id));
@@ -675,7 +675,7 @@ export function SharedPlanEditor({ plan, onClose, teacherMode = false }: SharedP
         // Auto-link classes: union (manually selected) ∪ (classes the chosen students are in)
         let mergedClassIds = [...selectedClassIds];
         const { data: enrollments } = await supabase
-          .from("teachngo_class_students")
+          .from("class_students")
           .select("class_id")
           .in("teachngo_student_id", studentIds);
         if (enrollments?.length) {

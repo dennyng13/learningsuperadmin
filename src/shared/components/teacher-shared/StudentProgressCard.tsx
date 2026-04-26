@@ -51,7 +51,7 @@ export default function StudentProgressCard({ userId }: Props) {
 
     // Also find plans via class enrollment
     const { data: classEnrollments } = await supabase
-      .from("teachngo_class_students")
+      .from("class_students")
       .select("class_id, teachngo_student_id")
       .in("teachngo_student_id", teachngoIds.length > 0 ? teachngoIds : ["__none__"]);
 

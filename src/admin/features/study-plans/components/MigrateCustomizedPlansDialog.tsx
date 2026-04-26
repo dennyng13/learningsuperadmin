@@ -117,7 +117,7 @@ export default function MigrateCustomizedPlansDialog({ open, onOpenChange, onMig
 
         // Enroll student
         if (plan.teachngo_student_id && newClass) {
-          await supabase.from("teachngo_class_students").insert({
+          await supabase.from("class_students").insert({
             class_id: newClass.id,
             teachngo_student_id: plan.teachngo_student_id,
             status: "enrolled",

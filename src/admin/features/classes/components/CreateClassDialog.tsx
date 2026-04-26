@@ -219,7 +219,7 @@ export default function CreateClassDialog({ open, onOpenChange, onCreated }: Pro
           status: "enrolled",
           enrollment_date: startDate || new Date().toISOString().slice(0, 10),
         }));
-        await supabase.from("teachngo_class_students").insert(rows);
+        await supabase.from("class_students").insert(rows);
       }
 
       // 3. Auto-create study plan

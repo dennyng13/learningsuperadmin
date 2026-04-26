@@ -63,7 +63,7 @@ export function TeacherPerformanceContent() {
     // Fetch all enrollments
     const classIds = (classes || []).map(c => c.id);
     const { data: enrollments } = await supabase
-      .from("teachngo_class_students")
+      .from("class_students")
       .select("class_id, teachngo_student_id")
       .in("class_id", classIds.length > 0 ? classIds : ["__none__"]);
 

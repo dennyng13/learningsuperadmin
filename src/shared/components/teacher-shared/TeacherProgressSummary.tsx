@@ -84,7 +84,7 @@ export default function TeacherProgressSummary() {
     const classMap = new Map(classes.map(c => [c.id, c]));
 
     const { data: enrollments } = await supabase
-      .from("teachngo_class_students")
+      .from("class_students")
       .select("class_id, teachngo_student_id")
       .in("class_id", classIds);
 
