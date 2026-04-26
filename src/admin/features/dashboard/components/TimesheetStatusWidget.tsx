@@ -1,7 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { CalendarClock, CheckCircle2, Lock, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
+import WidgetRefreshButton from "./WidgetRefreshButton";
 
 // Lightweight widgets for timesheet period lifecycle counts (Stage 2).
 // Uses timesheet_period_list RPC; counts computed client-side via array length.
@@ -9,9 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const rpc = (name: string, args?: Record<string, unknown>) => supabase.rpc(name as any, args as any);
 
-interface CountState {
-  loading: boolean;
-  error: string | null;
+interface TimesheetCounts {
   pendingApproval: number;
   approvedReadyToLock: number;
   lockedThisMonth: number;
@@ -24,52 +24,28 @@ function currentMonthStart(): string {
 
 export default function TimesheetStatusWidget() {
   const navigate = useNavigate();
-  const [state, setState] = useState<CountState>({
-    loading: true,
-    error: null,
-    pendingApproval: 0,
-    approvedReadyToLock: 0,
-    lockedThisMonth: 0,
+  const { data: state, isLoading, isFetching, error, refetch } = useQuery({
+    queryKey: ["dashboard-timesheet-status"],
+    queryFn: async (): Promise<TimesheetCounts> => {
+      const [allPeriods, lockedThisMonthRes] = await Promise.all([
+        rpc("timesheet_period_list", { p_teacher_id: null, p_month_start: null, p_status: null }),
+        rpc("timesheet_period_list", {
+          p_teacher_id: null,
+          p_month_start: currentMonthStart(),
+          p_status: "locked",
+        }),
+      ]);
+      const firstErr = allPeriods.error || lockedThisMonthRes.error;
+      if (firstErr) throw firstErr;
+      const periods = (allPeriods.data ?? []) as Array<{ status: string }>;
+      return {
+        pendingApproval: periods.filter((p) => p.status === "submitted").length,
+        approvedReadyToLock: periods.filter((p) => p.status === "approved").length,
+        lockedThisMonth: ((lockedThisMonthRes.data ?? []) as unknown[]).length,
+      };
+    },
+    staleTime: 60_000,
   });
-
-  useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      try {
-        const [allPeriods, lockedThisMonthRes] = await Promise.all([
-          rpc("timesheet_period_list", { p_teacher_id: null, p_month_start: null, p_status: null }),
-          rpc("timesheet_period_list", {
-            p_teacher_id: null,
-            p_month_start: currentMonthStart(),
-            p_status: "locked",
-          }),
-        ]);
-        if (cancelled) return;
-
-        const periods = (allPeriods.data ?? []) as Array<{ status: string }>;
-        const lockedThisMonth = ((lockedThisMonthRes.data ?? []) as unknown[]).length;
-        const pendingApproval = periods.filter((p) => p.status === "submitted").length;
-        const approvedReadyToLock = periods.filter((p) => p.status === "approved").length;
-
-        setState({
-          loading: false,
-          error: allPeriods.error?.message ?? lockedThisMonthRes.error?.message ?? null,
-          pendingApproval,
-          approvedReadyToLock,
-          lockedThisMonth,
-        });
-      } catch (err) {
-        if (cancelled) return;
-        setState((prev) => ({
-          ...prev,
-          loading: false,
-          error: err instanceof Error ? err.message : "Lỗi không xác định",
-        }));
-      }
-    };
-    void load();
-    return () => { cancelled = true; };
-  }, []);
 
   const cards = useMemo(() => [
     {
@@ -77,7 +53,7 @@ export default function TimesheetStatusWidget() {
       icon: CalendarClock,
       label: "Bảng công chờ duyệt",
       hint: "Giáo viên đã gửi tháng",
-      value: state.pendingApproval,
+      value: state?.pendingApproval ?? 0,
       tone: "amber",
       onClick: () => navigate("/timesheet?status=submitted"),
     },
@@ -86,7 +62,7 @@ export default function TimesheetStatusWidget() {
       icon: CheckCircle2,
       label: "Đã duyệt, chờ khoá",
       hint: "Sẵn sàng chuyển sang Payroll",
-      value: state.approvedReadyToLock,
+      value: state?.approvedReadyToLock ?? 0,
       tone: "blue",
       onClick: () => navigate("/timesheet?status=approved"),
     },
@@ -95,25 +71,36 @@ export default function TimesheetStatusWidget() {
       icon: Lock,
       label: "Đã khoá tháng này",
       hint: "Kỳ chốt cho lương",
-      value: state.lockedThisMonth,
+      value: state?.lockedThisMonth ?? 0,
       tone: "emerald",
       onClick: () => navigate("/timesheet?status=locked"),
     },
   ] as const, [state, navigate]);
 
-  if (state.loading) {
+  if (isLoading) {
     return (
       <div className="rounded-xl border bg-card p-4 flex items-center text-xs text-muted-foreground">
         <Loader2 className="h-3.5 w-3.5 animate-spin mr-2" /> Đang tải số liệu bảng công…
       </div>
     );
   }
-  if (state.error) {
+  if (error) {
     return null;
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+    <section className="space-y-2">
+      <div className="flex items-center justify-between">
+        <h3 className="text-[11px] font-display font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+          Bảng công
+        </h3>
+        <WidgetRefreshButton
+          onClick={() => refetch()}
+          refreshing={isFetching}
+          title="Tải lại số liệu bảng công"
+        />
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
       {cards.map(({ key, icon: Icon, label, hint, value, tone, onClick }) => (
         <button
           key={key}
@@ -142,6 +129,7 @@ export default function TimesheetStatusWidget() {
           </div>
         </button>
       ))}
-    </div>
+      </div>
+    </section>
   );
 }
