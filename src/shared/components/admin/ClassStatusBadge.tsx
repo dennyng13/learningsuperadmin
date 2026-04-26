@@ -2,7 +2,7 @@ import { cn } from "@shared/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@shared/components/ui/tooltip";
 import {
   Pencil, UserPlus, Repeat, CheckCircle2, PlayCircle,
-  Trophy, PauseCircle, XCircle, type LucideIcon,
+  Trophy, PauseCircle, XCircle, Archive, type LucideIcon,
 } from "lucide-react";
 
 /* ─────────── Types ─────────── */
@@ -15,7 +15,8 @@ export type ClassLifecycleStatus =
   | "in_progress"
   | "completed"
   | "postponed"
-  | "cancelled";
+  | "cancelled"
+  | "archived";
 
 interface StatusMeta {
   label: string;
@@ -34,13 +35,13 @@ export const CLASS_STATUS_META: Record<ClassLifecycleStatus, StatusMeta> = {
     dotClass: "bg-muted-foreground/60",
   },
   recruiting: {
-    label: "Đang tuyển",
+    label: "Đợi giáo viên",
     icon: UserPlus,
     classes: "bg-blue-500/10 text-blue-700 border-blue-500/30 dark:text-blue-300",
     dotClass: "bg-blue-500",
   },
   recruiting_replacement: {
-    label: "Tuyển thay thế",
+    label: "Giáo viên thay thế",
     icon: Repeat,
     classes: "bg-amber-500/10 text-amber-700 border-amber-500/30 dark:text-amber-300",
     dotClass: "bg-amber-500",
@@ -58,7 +59,7 @@ export const CLASS_STATUS_META: Record<ClassLifecycleStatus, StatusMeta> = {
     dotClass: "bg-primary",
   },
   completed: {
-    label: "Hoàn thành",
+    label: "Kết thúc",
     icon: Trophy,
     classes: "bg-violet-500/10 text-violet-700 border-violet-500/30 dark:text-violet-300",
     dotClass: "bg-violet-500",
@@ -75,6 +76,12 @@ export const CLASS_STATUS_META: Record<ClassLifecycleStatus, StatusMeta> = {
     classes: "bg-destructive/10 text-destructive border-destructive/30",
     dotClass: "bg-destructive",
   },
+  archived: {
+    label: "Đã lưu trữ",
+    icon: Archive,
+    classes: "bg-slate-500/10 text-slate-700 border-slate-500/30 dark:text-slate-300",
+    dotClass: "bg-slate-500",
+  },
 };
 
 /** Thứ tự hiển thị mặc định trong dropdown / counter row. */
@@ -87,6 +94,7 @@ export const CLASS_STATUS_OPTIONS: ClassLifecycleStatus[] = [
   "completed",
   "postponed",
   "cancelled",
+  "archived",
 ];
 
 /* ─────────── Badge ─────────── */
