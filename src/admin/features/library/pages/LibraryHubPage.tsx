@@ -118,9 +118,9 @@ const SectionCard = forwardRef<HTMLButtonElement, { section: LibrarySection }>(f
       ref={ref}
       onClick={() => navigate(section.route)}
       className={cn(
-        "group relative flex flex-col h-40 sm:h-44 md:h-48 overflow-hidden rounded-2xl text-left bg-card text-card-foreground",
-        "border border-border/70 transition-all duration-300",
-        "hover:-translate-y-0.5 hover:shadow-lg hover:border-primary/30",
+        "group relative flex flex-col h-32 sm:h-36 md:h-40 overflow-hidden rounded-2xl text-left bg-card text-card-foreground",
+        "border border-border/60 shadow-sm transition-all duration-300",
+        "hover:-translate-y-1 hover:shadow-xl hover:border-primary/30",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
       )}
     >
@@ -138,7 +138,7 @@ const SectionCard = forwardRef<HTMLButtonElement, { section: LibrarySection }>(f
           </p>
         </div>
         <Icon
-          className={cn("h-5 w-5 sm:h-6 sm:w-6 shrink-0", ICON_TONE[section.palette])}
+          className={cn("h-7 w-7 sm:h-8 sm:w-8 shrink-0", ICON_TONE[section.palette])}
           strokeWidth={1.75}
         />
       </div>
