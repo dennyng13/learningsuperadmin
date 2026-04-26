@@ -96,10 +96,9 @@ interface TeacherLite { id: string; full_name: string }
 interface StudentLite { id: string; full_name: string }
 interface ClassLite { id: string; class_name: string }
 
-async function fetchFeed(limit: number): Promise<FeedItem[]> {
-  // Pull recent rows from each source (last ~7 days). Per-source limit scales
-  // with overall page size so we have enough candidates to merge & sort.
-  const sinceIso = new Date(Date.now() - 7 * 24 * 3600_000).toISOString();
+async function fetchFeed(limit: number, sinceIso: string, untilIso: string): Promise<FeedItem[]> {
+  // Pull recent rows from each source within the supplied range.
+  // Per-source limit scales with overall page size so we have enough candidates to merge & sort.
   const perSource = Math.max(10, Math.ceil(limit / 2));
 
   const [writingRes, speakingRes, announcementsRes, answersRes, sessionsRes] = await Promise.all([
@@ -108,18 +107,21 @@ async function fetchFeed(limit: number): Promise<FeedItem[]> {
       .select("id, teacher_id, student_id, task_key, overall_band, result_id, created_at")
       .not("teacher_id", "is", null)
       .gte("created_at", sinceIso)
+      .lte("created_at", untilIso)
       .order("created_at", { ascending: false })
       .limit(perSource),
     supabase
       .from("speaking_feedback")
       .select("id, teacher_id, student_id, part_key, overall_band, result_id, created_at")
       .gte("created_at", sinceIso)
+      .lte("created_at", untilIso)
       .order("created_at", { ascending: false })
       .limit(perSource),
     supabase
       .from("class_announcements")
       .select("id, teacher_id, class_id, title, created_at")
       .gte("created_at", sinceIso)
+      .lte("created_at", untilIso)
       .order("created_at", { ascending: false })
       .limit(perSource),
     supabase
@@ -128,6 +130,7 @@ async function fetchFeed(limit: number): Promise<FeedItem[]> {
       .not("teacher_id", "is", null)
       .not("response_at", "is", null)
       .gte("response_at", sinceIso)
+      .lte("response_at", untilIso)
       .order("response_at", { ascending: false })
       .limit(perSource),
     // Sessions: only "completed" entries — that's when a teacher actively updated the session.
@@ -136,6 +139,7 @@ async function fetchFeed(limit: number): Promise<FeedItem[]> {
       .select("id, plan_id, session_number, session_title, entry_date, completed_at")
       .not("completed_at", "is", null)
       .gte("completed_at", sinceIso)
+      .lte("completed_at", untilIso)
       .order("completed_at", { ascending: false })
       .limit(Math.max(15, perSource)),
   ]);
