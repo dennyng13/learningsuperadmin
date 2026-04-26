@@ -50,7 +50,7 @@ const SECTIONS: LibrarySection[] = [
     blurb: "Lộ trình học chuẩn và template gán cho lớp hoặc học viên.",
     icon: ClipboardList,
     route: "/study-plans",
-    palette: "indigo",
+    palette: "coral",
     extraLinks: [{ label: "Mẫu lộ trình", route: "/study-plans/templates" }],
   },
 ];
@@ -89,11 +89,15 @@ function SectionCard({ section }: { section: LibrarySection }) {
     slate:  "text-slate-600",
   };
 
+  // Pick a stable shape from the palette using section.id as seed —
+  // tránh render khác nhau giữa các lần re-mount (sẽ nhấp nháy).
+  const shapeUrl = pickStableShape(urls, section.id);
+
   return (
     <button
       onClick={() => navigate(section.route)}
       className={cn(
-        "group relative aspect-[4/3.6] overflow-hidden rounded-2xl text-left bg-card text-card-foreground",
+        "group relative aspect-square overflow-hidden rounded-2xl text-left bg-card text-card-foreground",
         "border border-border/70 transition-all duration-300",
         "hover:-translate-y-0.5 hover:shadow-lg hover:border-primary/30",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
@@ -115,7 +119,7 @@ function SectionCard({ section }: { section: LibrarySection }) {
       </div>
 
       {/* ─── Brand shape: nhân vật chính, tràn sát góc dưới-phải ─── */}
-      <BrandShapeFigure url={urls[0] ?? null} palette={section.palette} />
+      <BrandShapeFigure url={shapeUrl} palette={section.palette} />
 
       {/* ─── Arrow: bottom-left, đứng riêng, mảnh ─── */}
       <div className="absolute bottom-5 left-5 z-10">
@@ -154,10 +158,26 @@ function SectionCard({ section }: { section: LibrarySection }) {
   );
 }
 
+/* ─────────── Stable shape picker ───────────
+   Hash section.id để chọn 1 url cố định trong danh sách urls — đảm bảo cùng
+   1 card luôn hiển thị cùng 1 shape, nhưng các card khác nhau ưu tiên các
+   shape khác nhau trong cùng palette.
+*/
+function pickStableShape(urls: string[], seed: string): string | null {
+  if (urls.length === 0) return null;
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) {
+    h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+  }
+  return urls[h % urls.length];
+}
+
 /* ─────────── Brand shape figure ───────────
-   Theo cách trình bày trong ảnh ref: shape là NHÂN VẬT CHÍNH ở góc dưới-phải,
-   kích thước lớn (~45% chiều cao card), tràn sát mép phải+dưới (không margin),
-   opacity gần như đầy đủ — giống "logo cluster" định danh card.
+   Shape là NHÂN VẬT CHÍNH ở góc dưới-phải. Để tránh cảm giác "đóng khung":
+   - Không giới hạn bởi bbox vuông cứng — cho phép tràn 1 phần ra ngoài card
+     (negative offset) để shape không có viền vuông giả.
+   - Bỏ scale max-w cứng — dùng `min(60% chiều rộng, 70% chiều cao)`.
+   - Giữ object-bottom-right để shape "neo" vào góc tự nhiên.
    Fallback: blob gradient theo palette nếu DB chưa upload asset.
 */
 function BrandShapeFigure({ url, palette }: { url: string | null; palette: ShapePalette }) {
@@ -174,7 +194,7 @@ function BrandShapeFigure({ url, palette }: { url: string | null; palette: Shape
       <div
         aria-hidden
         className={cn(
-          "absolute bottom-0 right-0 h-[55%] w-[55%] pointer-events-none",
+          "absolute -bottom-4 -right-4 h-[60%] w-[60%] pointer-events-none",
           "bg-gradient-to-tl rounded-tl-[100%]",
           FALLBACK_TONE[palette],
         )}
@@ -189,10 +209,13 @@ function BrandShapeFigure({ url, palette }: { url: string | null; palette: Shape
       alt=""
       loading="lazy"
       decoding="async"
+      // Một phần shape nằm ngoài card (negative -bottom/-right) để gãy "khung
+      // vuông" giả, đồng thời `max-h` + `max-w` cho phép shape tự co theo tỉ lệ.
+      style={{ maxHeight: "70%", maxWidth: "62%" }}
       className={cn(
-        "pointer-events-none absolute bottom-0 right-0 object-contain object-bottom-right",
-        "h-[55%] w-auto max-w-[60%]",
-        "transition-transform duration-500 group-hover:scale-105 origin-bottom-right",
+        "pointer-events-none absolute -bottom-3 -right-3 object-contain object-bottom-right",
+        "h-auto w-auto",
+        "transition-transform duration-500 group-hover:scale-[1.04] origin-bottom-right",
       )}
     />
   );
