@@ -293,11 +293,11 @@ export default function AdminDashboardPage() {
   const s = stats;
 
   return (
-    <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
-      <div>
+    <div className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto space-y-8 md:space-y-10">
+      <header>
         <h1 className="font-display text-2xl md:text-3xl font-extrabold tracking-tight text-foreground">Dashboard</h1>
         <p className="text-sm text-muted-foreground mt-1">Tổng quan hệ thống Learning+ Admin Portal</p>
-      </div>
+      </header>
 
       {/* ╔══════════ 1. HERO ══════════╗ */}
       {visible.hero && (
@@ -319,16 +319,17 @@ export default function AdminDashboardPage() {
 
       {/* ╔══════════ 2. LỊCH HÔM NAY ══════════╗ */}
       {visible.todaySection && (
-        <section className="space-y-3">
+        <section className="space-y-3 md:space-y-4">
           <h2 className="font-display text-sm font-bold text-muted-foreground uppercase tracking-[0.12em] flex items-center gap-2">
             <CalendarDays className="h-3.5 w-3.5" /> Lịch hôm nay
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 auto-rows-fr gap-4 md:gap-5">
             {visible.scheduleBanner && todaySchedule && (
               <InfoBanner
                 icon={CalendarDays}
                 iconTone="teal"
                 onClick={() => navigate("/schedule")}
+                className="h-full"
                 title={
                   <>
                     {todaySchedule.count} buổi học
@@ -349,6 +350,7 @@ export default function AdminDashboardPage() {
                 iconTone="muted"
                 title="Không có buổi học hôm nay"
                 description="Lịch trống — hãy nghỉ ngơi 🌿"
+                className="h-full"
               />
             )}
             {visible.exercisesBanner && (
@@ -358,6 +360,7 @@ export default function AdminDashboardPage() {
                 onClick={() => navigate("/tests?type=exercise")}
                 title={`${s.totalExercises} bài tập · ${s.publishedExercises} published`}
                 description="Quản lý bài luyện tập theo kỹ năng"
+                className="h-full"
               />
             )}
           </div>
@@ -365,7 +368,7 @@ export default function AdminDashboardPage() {
       )}
 
       {/* ╔══════════ 3. ANALYTICS ══════════╗ */}
-      <section className="space-y-4">
+      <section className="space-y-4 md:space-y-5">
         <h2 className="font-display text-sm font-bold text-muted-foreground uppercase tracking-[0.12em] flex items-center gap-2">
           <BarChart3 className="h-3.5 w-3.5" /> Analytics & vận hành
         </h2>
@@ -379,25 +382,25 @@ export default function AdminDashboardPage() {
         </LazyWidget>
 
         {/* HR & Payroll */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <LazyWidget label="Hợp đồng" minHeight={200}>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 auto-rows-fr gap-4 md:gap-5">
+          <LazyWidget label="Hợp đồng" minHeight={220} className="h-full">
             <ContractStatusWidget />
           </LazyWidget>
-          <LazyWidget label="Bảng công" minHeight={200}>
+          <LazyWidget label="Bảng công" minHeight={220} className="h-full">
             <TimesheetStatusWidget />
           </LazyWidget>
-          <LazyWidget label="Bảng lương" minHeight={200}>
+          <LazyWidget label="Bảng lương" minHeight={220} className="h-full">
             <PayrollStatusWidget />
           </LazyWidget>
         </div>
 
         {/* Activity Trend Chart */}
         {visible.activityTrendChart && (
-        <div className="rounded-xl border bg-card p-4">
-          <h2 className="font-display text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+        <div className="rounded-2xl bg-card p-4 md:p-5 shadow-[0_4px_20px_rgba(15,23,42,0.04)]">
+          <h3 className="font-display text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
             <BarChart3 className="h-3.5 w-3.5" />
             Xu hướng hoạt động (14 ngày)
-          </h2>
+          </h3>
           <ResponsiveContainer width="100%" height={260}>
             <AreaChart data={activityTrend} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
               <defs>
@@ -457,24 +460,30 @@ export default function AdminDashboardPage() {
         </div>
         )}
 
-        {/* Progress & login streak */}
-        <LazyWidget label="Tổng quan tiến độ" minHeight={240}>
-          <TeacherProgressSummary />
-        </LazyWidget>
-        <LazyWidget label="Lịch hoạt động" minHeight={220}>
-          <AdminActivityCalendar />
-        </LazyWidget>
+        {/* Progress & login streak — 2-up on desktop để rút khoảng trống dọc */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 auto-rows-fr gap-4 md:gap-5">
+          <LazyWidget label="Tổng quan tiến độ" minHeight={260} className="h-full">
+            <TeacherProgressSummary />
+          </LazyWidget>
+          <LazyWidget label="Lịch hoạt động" minHeight={260} className="h-full">
+            <AdminActivityCalendar />
+          </LazyWidget>
+        </div>
 
-        {/* Error analysis — only render when there is something to analyse. */}
-        {visible.questionTypeStats && (
-          <LazyWidget label="Phân tích lỗi câu hỏi" minHeight={260}>
-            <ClassQuestionTypeStats results={testResultsForAnalysis} />
-          </LazyWidget>
-        )}
-        {visible.practiceErrorStats && (
-          <LazyWidget label="Lỗi luyện tập" minHeight={260}>
-            <PracticeErrorStats results={practiceResultsForAnalysis} />
-          </LazyWidget>
+        {/* Error analysis — 2-up khi cả 2 đều có dữ liệu */}
+        {(visible.questionTypeStats || visible.practiceErrorStats) && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 auto-rows-fr gap-4 md:gap-5">
+            {visible.questionTypeStats && (
+              <LazyWidget label="Phân tích lỗi câu hỏi" minHeight={280} className="h-full">
+                <ClassQuestionTypeStats results={testResultsForAnalysis} />
+              </LazyWidget>
+            )}
+            {visible.practiceErrorStats && (
+              <LazyWidget label="Lỗi luyện tập" minHeight={280} className="h-full">
+                <PracticeErrorStats results={practiceResultsForAnalysis} />
+              </LazyWidget>
+            )}
+          </div>
         )}
 
         {/* Prospects & content */}
@@ -489,11 +498,11 @@ export default function AdminDashboardPage() {
       </section>
 
       {/* ╔══════════ 4. QUICK ACTIONS ══════════╗ */}
-      <section>
-        <h2 className="font-display text-sm font-bold text-muted-foreground uppercase tracking-[0.12em] mb-3 flex items-center gap-2">
+      <section className="space-y-3 md:space-y-4">
+        <h2 className="font-display text-sm font-bold text-muted-foreground uppercase tracking-[0.12em] flex items-center gap-2">
           <ArrowRight className="h-3.5 w-3.5" /> Thao tác nhanh
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 auto-rows-fr gap-3 md:gap-4">
           <QuickAction icon={PenLine} label="Tạo đề thi" desc="Tạo mới với câu hỏi IELTS" onClick={() => navigate("/tests/new")} />
           <QuickAction icon={Upload} label="Import đề" desc="Từ file Word/PDF" onClick={() => navigate("/tests/import")} />
           <QuickAction icon={ListChecks} label="Tạo bài tập" desc="Luyện tập theo kỹ năng" onClick={() => navigate("/tests?type=exercise")} />
