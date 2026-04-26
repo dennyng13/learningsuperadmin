@@ -181,7 +181,8 @@ function SectionCard({ section }: { section: LibrarySection }) {
    chưa có shape thì fallback về vòng tròn CSS gradient để card không trống.
 */
 function BrandShapeCluster({ urls, featured }: { urls: string[]; featured: boolean }) {
-  const picks = urls.slice(0, 3);
+  // Chỉ lấy 1-2 shape để giảm rối; shape phụ (nếu có) nhỏ hơn nhiều và rất mờ.
+  const picks = urls.slice(0, 2);
 
   if (picks.length === 0) {
     return (
@@ -190,18 +191,17 @@ function BrandShapeCluster({ urls, featured }: { urls: string[]; featured: boole
         className={cn(
           "absolute -bottom-10 -right-10 h-40 w-40 rounded-full pointer-events-none",
           featured
-            ? "bg-primary-foreground/10 blur-2xl"
-            : "bg-primary/10 blur-2xl",
+            ? "bg-primary-foreground/8 blur-3xl"
+            : "bg-primary/8 blur-3xl",
         )}
       />
     );
   }
 
-  // Vị trí tương đối cho tối đa 3 shape — sắp tạo cảm giác "rơi vào góc".
+  // Shape chính lớn ở góc, shape phụ rất nhỏ và mờ hơn nữa để chỉ là accent.
   const positions = [
-    "bottom-3 right-3 h-28 w-28 rotate-[-6deg]",
-    "bottom-10 right-20 h-16 w-16 rotate-[18deg] opacity-90",
-    "bottom-20 right-2 h-12 w-12 -rotate-12 opacity-80",
+    "bottom-4 right-4 h-24 w-24 rotate-[-6deg] opacity-30",
+    "bottom-12 right-24 h-10 w-10 rotate-[18deg] opacity-15",
   ];
 
   return (
@@ -214,12 +214,12 @@ function BrandShapeCluster({ urls, featured }: { urls: string[]; featured: boole
           loading="lazy"
           decoding="async"
           className={cn(
-            "absolute object-contain drop-shadow-sm transition-transform duration-500",
-            "group-hover:scale-105",
+            "absolute object-contain transition-all duration-500",
+            "group-hover:opacity-50 group-hover:scale-105",
             positions[i],
-            // Featured card có nền tối — shape sáng có thể "biến mất"; thêm
-            // contrast nhẹ bằng mix-blend khi cần.
-            featured && "mix-blend-screen",
+            // Featured card có nền tối — dùng mix-blend để shape hoà vào màu
+            // primary thay vì "nổi" lên như sticker.
+            featured && "mix-blend-overlay",
           )}
         />
       ))}
