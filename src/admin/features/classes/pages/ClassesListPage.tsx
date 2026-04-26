@@ -31,12 +31,15 @@ import {
 import { Textarea } from "@shared/components/ui/textarea";
 import { useArchiveClass } from "@admin/features/classes/hooks/useArchiveClass";
 import { cn } from "@shared/lib/utils";
+import { getLevelColor } from "@shared/utils/levelColors";
 
 /* ─────────── Types ─────────── */
 
 interface ClassRow {
   id: string;
   name: string | null;
+  /** Hệ thống cũ: trước khi migration backbone backfill `name`, vẫn còn `class_name`. */
+  class_name?: string | null;
   class_code: string | null;
   program: string | null;
   level: string | null;
@@ -44,12 +47,20 @@ interface ClassRow {
   mode: string | null;
   start_date: string | null;
   end_date: string | null;
+  schedule: string | null;
+  room: string | null;
   teacher_name: string | null;
   student_count: number | null;
   data_source: string | null;
   lifecycle_status: ClassLifecycleStatus | null;
   cancellation_reason: string | null;
   status_changed_at: string | null;
+}
+
+/** Lấy tên hiển thị an toàn — fallback sang cột cũ để UI không trắng
+ *  khi migration backbone chưa backfill xong. */
+function displayName(cls: ClassRow): string {
+  return cls.name ?? cls.class_name ?? "(không tên)";
 }
 
 type SortKey = "start_date" | "name" | "status_changed_at";
@@ -216,22 +227,22 @@ export default function ClassesListPage() {
         </Button>
       }
       filterBar={
-        <div className="space-y-3 pt-3">
+        <div className="space-y-2 pt-2">
           {/* Counter chips */}
-          <ScrollArea className="w-full whitespace-nowrap">
-            <div className="flex gap-1.5 pb-1.5">
+          <ScrollArea className="w-full whitespace-nowrap -mx-1 px-1">
+            <div className="flex gap-1 pb-1">
               <button
                 type="button"
                 onClick={() => setStatuses(DEFAULT_VISIBLE_STATUSES)}
                 className={cn(
-                  "shrink-0 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors",
+                  "shrink-0 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10.5px] font-medium transition-colors",
                   isDefaultStatuses
                     ? "bg-foreground text-background border-foreground"
                     : "bg-card hover:bg-muted/50",
                 )}
               >
                 Tất cả
-                <span className="font-bold">
+                <span className="font-bold tabular-nums">
                   {countRows.filter((r) => r.lifecycle_status !== "archived").length}
                 </span>
               </button>
@@ -243,37 +254,37 @@ export default function ClassesListPage() {
                     type="button"
                     onClick={() => setStatuses([s])}
                     className={cn(
-                      "shrink-0 inline-flex items-center gap-1.5 rounded-full border px-1 py-0.5 transition-shadow",
+                      "shrink-0 inline-flex items-center gap-1 rounded-full border pl-0.5 pr-1.5 py-0.5 transition-shadow",
                       active ? "ring-2 ring-primary ring-offset-1 ring-offset-background" : "hover:shadow-sm",
                     )}
                   >
                     <ClassStatusBadge status={s} size="sm" compact />
-                    <span className="text-[11px] font-bold pr-1.5">{counts[s] ?? 0}</span>
+                    <span className="text-[10.5px] font-bold tabular-nums">{counts[s] ?? 0}</span>
                   </button>
                 );
               })}
             </div>
           </ScrollArea>
 
-          {/* Toolbar: search + multi-status + view + reset */}
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="relative flex-1 min-w-[200px] max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          {/* Toolbar: search + multi-status + view + reset (compact 1 dòng) */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            <div className="relative flex-1 min-w-[180px] max-w-sm">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Tìm theo tên hoặc mã lớp…"
-                className="pl-9 h-9"
+                placeholder="Tìm tên / mã lớp…"
+                className="pl-7 h-8 text-xs"
               />
             </div>
 
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-1.5 h-9">
-                  <Filter className="h-4 w-4" />
+                <Button variant="outline" size="sm" className="gap-1 h-8 px-2 text-xs">
+                  <Filter className="h-3.5 w-3.5" />
                   Trạng thái
                   {!allSelected && (
-                    <span className="ml-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold px-1.5 leading-4">
+                    <span className="ml-0.5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold px-1.5 leading-4 tabular-nums">
                       {statuses.length}
                     </span>
                   )}
@@ -300,7 +311,7 @@ export default function ClassesListPage() {
                       >
                         <Checkbox checked={checked} onCheckedChange={() => toggleStatus(s)} />
                         <ClassStatusBadge status={s} size="sm" />
-                        <span className="ml-auto text-[10px] text-muted-foreground">
+                        <span className="ml-auto text-[10px] text-muted-foreground tabular-nums">
                           {counts[s] ?? 0}
                         </span>
                       </label>
@@ -312,8 +323,8 @@ export default function ClassesListPage() {
 
             <div className="ml-auto flex items-center gap-1">
               {filterActive && (
-                <Button variant="ghost" size="sm" onClick={resetFilters} className="gap-1.5 h-9 text-xs">
-                  <RotateCw className="h-3.5 w-3.5" /> Reset
+                <Button variant="ghost" size="sm" onClick={resetFilters} className="gap-1 h-8 px-2 text-xs">
+                  <RotateCw className="h-3 w-3" /> Reset
                 </Button>
               )}
               <div className="flex items-center rounded-md border bg-card overflow-hidden">
@@ -321,23 +332,23 @@ export default function ClassesListPage() {
                   type="button"
                   onClick={() => setView("table")}
                   className={cn(
-                    "px-2.5 py-1.5 transition-colors",
+                    "px-2 py-1.5 transition-colors",
                     view === "table" ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted/50",
                   )}
                   aria-label="Bảng"
                 >
-                  <ListIcon className="h-4 w-4" />
+                  <ListIcon className="h-3.5 w-3.5" />
                 </button>
                 <button
                   type="button"
                   onClick={() => setView("grid")}
                   className={cn(
-                    "px-2.5 py-1.5 transition-colors",
+                    "px-2 py-1.5 transition-colors",
                     view === "grid" ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted/50",
                   )}
                   aria-label="Lưới"
                 >
-                  <LayoutGrid className="h-4 w-4" />
+                  <LayoutGrid className="h-3.5 w-3.5" />
                 </button>
               </div>
             </div>
@@ -480,17 +491,18 @@ function TableView({
       <Table>
         <TableHeader>
           <TableRow className="bg-muted/40 hover:bg-muted/40">
-            <TableHead className="w-[120px]">Mã lớp</TableHead>
-            <TableHead>
+            <TableHead className="w-[110px] text-[11px]">Mã lớp</TableHead>
+            <TableHead className="text-[11px]">
               <SortableHead label="Tên lớp" sortKey="name" currentKey={sortKey} currentDir={sortDir} onClick={onSort} />
             </TableHead>
-            <TableHead>Program / Level</TableHead>
-            <TableHead>Giáo viên</TableHead>
-            <TableHead>
+            <TableHead className="text-[11px]">Chương trình / Level</TableHead>
+            <TableHead className="text-[11px]">Cơ sở · Hình thức</TableHead>
+            <TableHead className="text-[11px]">Giáo viên</TableHead>
+            <TableHead className="text-[11px]">
               <SortableHead label="Lịch học" sortKey="start_date" currentKey={sortKey} currentDir={sortDir} onClick={onSort} />
             </TableHead>
-            <TableHead className="text-center">HV</TableHead>
-            <TableHead>
+            <TableHead className="text-center text-[11px]">HV</TableHead>
+            <TableHead className="text-[11px]">
               <SortableHead label="Trạng thái" sortKey="status_changed_at" currentKey={sortKey} currentDir={sortDir} onClick={onSort} />
             </TableHead>
             <TableHead className="w-[40px]" />
@@ -503,19 +515,29 @@ function TableView({
               className="cursor-pointer"
               onClick={() => onOpen(cls.id)}
             >
-              <TableCell className="font-mono text-xs text-muted-foreground">
+              <TableCell className="font-mono text-[11px] text-muted-foreground py-2">
                 {cls.class_code ?? "—"}
               </TableCell>
-              <TableCell className="font-semibold">{cls.name ?? "(không tên)"}</TableCell>
-              <TableCell className="text-xs">
-                {cls.program ?? "—"}
-                {cls.level && <span className="text-muted-foreground"> · {cls.level}</span>}
+              <TableCell className="font-semibold text-[13px] py-2">{displayName(cls)}</TableCell>
+              <TableCell className="text-xs py-2">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span>{cls.program ?? "—"}</span>
+                  {cls.level && <LevelChip level={cls.level} />}
+                </div>
               </TableCell>
-              <TableCell className="text-xs">{cls.teacher_name ?? "—"}</TableCell>
-              <TableCell className="text-xs text-muted-foreground">
+              <TableCell className="text-[11px] text-muted-foreground py-2">
+                {[cls.branch, cls.mode, cls.room].filter(Boolean).join(" · ") || "—"}
+              </TableCell>
+              <TableCell className="text-xs py-2">{cls.teacher_name ?? "—"}</TableCell>
+              <TableCell className="text-[11px] text-muted-foreground py-2 whitespace-nowrap">
                 {formatRange(cls.start_date, cls.end_date)}
+                {cls.schedule && (
+                  <div className="text-[10px] text-muted-foreground/70 truncate max-w-[140px]">
+                    {cls.schedule}
+                  </div>
+                )}
               </TableCell>
-              <TableCell className="text-center text-xs">{cls.student_count ?? 0}</TableCell>
+              <TableCell className="text-center text-xs tabular-nums py-2">{cls.student_count ?? 0}</TableCell>
               <TableCell>
                 <ClassStatusBadge
                   status={cls.lifecycle_status}
@@ -543,19 +565,19 @@ function GridView({
   onRestore: (cls: ClassRow) => void;
 }) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5">
       {rows.map((cls) => (
         <div
           key={cls.id}
-          className="group relative rounded-xl border bg-card text-left p-4 hover:border-primary/40 hover:shadow-md transition-all space-y-2.5"
+          className="group relative rounded-lg border bg-card text-left p-3 hover:border-primary/40 hover:shadow-md transition-all space-y-2"
         >
           <button
             type="button"
             onClick={() => onOpen(cls.id)}
-            aria-label={`Mở lớp ${cls.name ?? ""}`}
-            className="absolute inset-0 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            aria-label={`Mở lớp ${displayName(cls)}`}
+            className="absolute inset-0 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           />
-          <div className="absolute top-3 right-3 flex items-center gap-1 z-10">
+          <div className="absolute top-2 right-2 flex items-center gap-1 z-10">
             <ClassStatusBadge
               status={cls.lifecycle_status}
               reason={cls.cancellation_reason}
@@ -565,27 +587,35 @@ function GridView({
               <RowActions cls={cls} onArchive={onArchive} onRestore={onRestore} />
             </div>
           </div>
-          <div className="relative pr-32 pointer-events-none">
-            <p className="font-mono text-[10px] text-muted-foreground">{cls.class_code ?? "—"}</p>
-            <h3 className="font-display font-bold text-base leading-tight mt-0.5">
-              {cls.name ?? "(không tên)"}
+          <div className="relative pr-28 pointer-events-none">
+            <p className="font-mono text-[10px] text-muted-foreground/80 truncate">{cls.class_code ?? "—"}</p>
+            <h3 className="font-display font-bold text-sm leading-tight mt-0.5 line-clamp-2">
+              {displayName(cls)}
             </h3>
-            {(cls.program || cls.level) && (
-              <p className="text-xs text-muted-foreground mt-1">
-                {cls.program ?? ""}{cls.program && cls.level ? " · " : ""}{cls.level ?? ""}
-              </p>
-            )}
+            <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
+              {cls.program && (
+                <span className="text-[10px] font-medium text-muted-foreground">{cls.program}</span>
+              )}
+              {cls.level && <LevelChip level={cls.level} />}
+            </div>
           </div>
-          <div className="relative flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground pointer-events-none">
+          {(cls.branch || cls.mode || cls.room) && (
+            <div className="relative flex flex-wrap gap-1 pointer-events-none">
+              {cls.branch && <MetaTag>{cls.branch}</MetaTag>}
+              {cls.mode && <MetaTag>{cls.mode}</MetaTag>}
+              {cls.room && <MetaTag>P. {cls.room}</MetaTag>}
+            </div>
+          )}
+          <div className="relative flex flex-wrap gap-x-2.5 gap-y-1 text-[10.5px] text-muted-foreground pointer-events-none pt-0.5 border-t border-border/40">
             {cls.teacher_name && (
-              <span className="inline-flex items-center gap-1">
+              <span className="inline-flex items-center gap-1 truncate max-w-[140px]">
                 <User className="h-3 w-3" />
-                {cls.teacher_name}
+                <span className="truncate">{cls.teacher_name}</span>
               </span>
             )}
             <span className="inline-flex items-center gap-1">
               <Users className="h-3 w-3" />
-              {cls.student_count ?? 0} HV
+              <span className="tabular-nums">{cls.student_count ?? 0}</span> HV
             </span>
             {cls.start_date && (
               <span className="inline-flex items-center gap-1">
@@ -597,6 +627,31 @@ function GridView({
         </div>
       ))}
     </div>
+  );
+}
+
+/* ─────────── Small chips ─────────── */
+
+/** Level chip dùng `getLevelColor` — đồng bộ với CourseLevelManager. */
+function LevelChip({ level }: { level: string }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center px-1.5 py-0 rounded text-[10px] font-semibold leading-4",
+        getLevelColor(level),
+      )}
+    >
+      {level}
+    </span>
+  );
+}
+
+/** Meta tag (branch / mode / room) — neutral, dense. */
+function MetaTag({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="inline-flex items-center px-1.5 py-0 rounded border border-border/60 bg-muted/30 text-[10px] text-muted-foreground leading-4">
+      {children}
+    </span>
   );
 }
 
