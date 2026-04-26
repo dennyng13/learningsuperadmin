@@ -29,6 +29,9 @@ interface LibrarySection {
   moduleKey: AdminModuleKey;
   /** Ưu tiên shape có asset_key chứa từ khoá này (vd "wave", "blob"). */
   preferredShape?: string;
+  /** Danh sách keyword fallback theo thứ tự ưu tiên — nếu DB chưa có shape
+   *  khớp `preferredShape`, picker thử lần lượt qua list này. */
+  preferredShapeFallbacks?: string[];
 }
 
 const SECTIONS: LibrarySection[] = [
@@ -41,6 +44,8 @@ const SECTIONS: LibrarySection[] = [
     palette: "teal",
     extraLinks: [{ label: "Nhập đề từ file", route: "/tests/import" }],
     moduleKey: ADMIN_MODULE_KEYS.TESTS,
+    preferredShape: "blob",
+    preferredShapeFallbacks: ["pebble", "oval", "circle"],
   },
   {
     id: "flashcards",
@@ -50,6 +55,10 @@ const SECTIONS: LibrarySection[] = [
     route: "/flashcards",
     palette: "amber",
     moduleKey: ADMIN_MODULE_KEYS.FLASHCARDS,
+    // Đổi sang shape "petal/leaf" mềm — gợi cảm giác lật trang flashcard,
+    // tránh trùng kiểu blob của card Ngân hàng đề.
+    preferredShape: "petal",
+    preferredShapeFallbacks: ["leaf", "drop", "moon"],
   },
   {
     id: "study-plans",
@@ -60,7 +69,10 @@ const SECTIONS: LibrarySection[] = [
     palette: "coral",
     extraLinks: [{ label: "Mẫu lộ trình", route: "/study-plans/templates" }],
     moduleKey: ADMIN_MODULE_KEYS.STUDY_PLANS,
-    preferredShape: "wave",
+    // Đổi sang "cloud/curve" — gợi dòng chảy lộ trình, khác với wave (đã thấy
+    // hơi giống petal). Fallback cuối là blob nếu DB chỉ có shape cơ bản.
+    preferredShape: "cloud",
+    preferredShapeFallbacks: ["curve", "wave", "bean", "blob"],
   },
 ];
 
@@ -114,7 +126,7 @@ const SectionCard = forwardRef<HTMLButtonElement, { section: LibrarySection }>(f
 
   // Pick a stable shape from the palette using section.id as seed —
   // tránh render khác nhau giữa các lần re-mount (sẽ nhấp nháy).
-  const shapeUrl = pickStableShape(urls, section.id, section.preferredShape);
+  const shapeUrl = pickStableShape(urls, section.id, section.preferredShape, section.preferredShapeFallbacks);
 
   return (
     <button
@@ -193,11 +205,17 @@ const SectionCard = forwardRef<HTMLButtonElement, { section: LibrarySection }>(f
 const SOFT_SHAPE_KEYWORDS = ["blob", "wave", "curve", "drop", "circle", "oval", "leaf", "petal", "cloud", "moon", "pebble", "bean"];
 const HARSH_SHAPE_KEYWORDS = ["stair", "chevron", "arrow", "zigzag", "grid", "cross", "plus", "triangle", "square", "rect"];
 
-function pickStableShape(urls: string[], seed: string, preferred?: string): string | null {
+function pickStableShape(
+  urls: string[],
+  seed: string,
+  preferred?: string,
+  fallbacks?: string[],
+): string | null {
   if (urls.length === 0) return null;
-  // 1. Ưu tiên explicit keyword nếu có khớp
-  if (preferred) {
-    const match = urls.find((u) => u.toLowerCase().includes(preferred.toLowerCase()));
+  // 1. Ưu tiên explicit keyword (preferred → fallbacks theo thứ tự).
+  const keywords = [preferred, ...(fallbacks ?? [])].filter(Boolean) as string[];
+  for (const kw of keywords) {
+    const match = urls.find((u) => u.toLowerCase().includes(kw.toLowerCase()));
     if (match) return match;
   }
   const soft = urls.filter((u) => SOFT_SHAPE_KEYWORDS.some((k) => u.toLowerCase().includes(k)));
