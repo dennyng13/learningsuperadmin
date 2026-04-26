@@ -178,29 +178,31 @@ const SectionCard = forwardRef<
       {/* ─── Brand shape: layer nền, không chiếm chỗ trong flow ─── */}
       <BrandShapeFigure url={shapeUrl} palette={section.palette} />
 
-      {/* ─── Top row: icon avatar + title/blurb ───
-         Icon đặt bên TRÁI (avatar) thay vì top-right để chừa góc dưới-phải
-         hoàn toàn cho geometric shape — tránh đụng decoration. */}
-      <div className="relative z-10 flex items-start gap-3 p-4 sm:p-5 pr-[42%] sm:pr-[44%] md:pr-[46%]">
-        <div
-          className={cn(
-            "shrink-0 flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl",
-            "bg-background/80 border border-border/60 shadow-sm",
-          )}
-        >
-          <Icon
-            className={cn("h-5 w-5 sm:h-5.5 sm:w-5.5", ICON_TONE[section.palette])}
-            strokeWidth={1.85}
-          />
-        </div>
-        <div className="min-w-0 flex-1">
-          <h3 className="font-display text-base sm:text-lg font-extrabold tracking-tight leading-tight text-foreground">
-            {section.title}
-          </h3>
-          <p className="text-[12px] sm:text-[13px] text-muted-foreground mt-0.5 sm:mt-1 leading-snug line-clamp-2">
-            {section.blurb}
-          </p>
-        </div>
+      {/* ─── Icon flat ở GÓC TRÊN-PHẢI ───
+         Đặt absolute để không tham gia flex flow của text.
+         Z-index cao hơn shape để icon luôn rõ. */}
+      <div
+        className={cn(
+          "absolute top-3 right-3 sm:top-3.5 sm:right-3.5 z-20",
+          "flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl",
+          "bg-background/85 backdrop-blur-sm border border-border/60 shadow-sm",
+        )}
+      >
+        <Icon
+          className={cn("h-5 w-5 sm:h-[1.375rem] sm:w-[1.375rem]", ICON_TONE[section.palette])}
+          strokeWidth={1.85}
+        />
+      </div>
+
+      {/* ─── Top row: title + blurb ───
+         Padding-right chừa chỗ cho icon (avatar ~40px + offset 14px ≈ 56px). */}
+      <div className="relative z-10 p-4 sm:p-5 pr-14 sm:pr-16">
+        <h3 className="font-display text-base sm:text-lg font-extrabold tracking-tight leading-tight text-foreground">
+          {section.title}
+        </h3>
+        <p className="text-[12px] sm:text-[13px] text-muted-foreground mt-0.5 sm:mt-1 leading-snug line-clamp-2">
+          {section.blurb}
+        </p>
       </div>
 
       {/* ─── Spacer đẩy bottom row xuống đáy ─── */}
@@ -305,7 +307,9 @@ function BrandShapeFigure({ url, palette }: { url: string | null; palette: Shape
       className={cn(
         "pointer-events-none absolute",
         "-bottom-5 -right-5 sm:-bottom-6 sm:-right-6 md:-bottom-7 md:-right-7",
-        "h-[92%] w-[48%] sm:h-[102%] sm:w-[52%] md:h-[112%] md:w-[56%]",
+        // Giảm chiều cao xuống ~70-80% để shape không trườn lên góc trên-phải
+        // (nơi đặt flat icon avatar). Width giữ nguyên để decoration vẫn đầy.
+        "h-[72%] w-[48%] sm:h-[78%] sm:w-[52%] md:h-[82%] md:w-[56%]",
         "opacity-95 transition-all duration-500 ease-out group-hover:scale-[1.06]",
         "origin-bottom-right",
       )}
