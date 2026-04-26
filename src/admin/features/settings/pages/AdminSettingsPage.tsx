@@ -2,7 +2,7 @@ import { useState, useMemo, type ComponentType } from "react";
 import { Link } from "react-router-dom";
 import {
   ChevronRight, Settings, Database, HardDrive, Globe, Bell, Mail,
-  BookTemplate, Sparkles, BookOpen, ShieldCheck, RefreshCw,
+  BookTemplate, Sparkles, BookOpen, RefreshCw,
   Image as ImageIcon, Search, Menu, X,
 } from "lucide-react";
 import { TabSkeleton } from "@shared/components/ui/tab-skeleton";
