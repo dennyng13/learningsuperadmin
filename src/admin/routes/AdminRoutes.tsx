@@ -52,6 +52,7 @@ import CompensationPage from "@admin/features/compensation/pages/CompensationPag
 import BrandAssetsPage from "@admin/features/brand-assets/pages/BrandAssetsPage";
 import BandDescriptorsPage from "@admin/features/academic/pages/BandDescriptorsPage";
 import FeedbackTemplatesPage from "@admin/features/academic/pages/FeedbackTemplatesPage";
+import LibraryHubPage from "@admin/features/library/pages/LibraryHubPage";
 import { SuperAdminRoute } from "@admin/guards/SuperAdminRoute";
 
 function PageLoader() {
@@ -79,6 +80,9 @@ export default function AppRoutes() {
         {/* ─── Protected ─── */}
         <Route element={<ProtectedAdminRoute><ErrorBoundary><AdminLayout /></ErrorBoundary></ProtectedAdminRoute>}>
           <Route index element={<AdminDashboardPage />} />
+
+          {/* Quản lý học liệu — hub gom Tests / Flashcards / Study Plans */}
+          <Route path="library" element={<LibraryHubPage />} />
 
           {/* Tests / Practice */}
           <Route path="tests" element={<TestManagementPage />} />
