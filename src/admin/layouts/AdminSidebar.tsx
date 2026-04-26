@@ -86,12 +86,15 @@ export function AdminSidebar() {
       {/* Header */}
       <SidebarHeader className="px-3 py-3">
         <div className="flex items-center gap-2 overflow-hidden">
-          <div className="rounded-xl bg-gradient-to-br from-primary/15 to-accent/15 flex items-center justify-center shrink-0 h-9 w-9 shadow-sm">
+          <div className={cn(
+            "flex items-center justify-center shrink-0 h-9 w-9",
+            !logoUrl && "rounded-xl bg-gradient-to-br from-primary/15 to-accent/15 shadow-sm"
+          )}>
             {logoUrl ? (
               <img
                 src={logoUrl}
                 alt="Logo"
-                className="h-7 w-7 object-contain"
+                className="h-9 w-9 object-contain"
                 loading="eager"
                 decoding="async"
               />
