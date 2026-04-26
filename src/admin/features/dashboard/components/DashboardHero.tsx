@@ -171,7 +171,7 @@ export default function DashboardHero({
       {/* KPI row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
-          label="Total Students"
+          eyebrow="Total Students"
           value={totalStudents.toLocaleString("vi-VN")}
           icon={Users}
           iconTone="teal"
@@ -179,7 +179,7 @@ export default function DashboardHero({
           onClick={() => navigate("/users")}
         />
         <StatCard
-          label="Teachers"
+          eyebrow="Teachers"
           value={totalTeachers.toLocaleString("vi-VN")}
           icon={GraduationCap}
           iconTone="coral"
@@ -187,7 +187,7 @@ export default function DashboardHero({
           onClick={() => navigate("/teachers")}
         />
         <StatCard
-          label="Active Classes"
+          eyebrow="Active Classes"
           value={totalClasses.toLocaleString("vi-VN")}
           icon={BookOpen}
           iconTone="teal"
@@ -195,7 +195,7 @@ export default function DashboardHero({
           onClick={() => navigate("/classes")}
         />
         <StatCard
-          label="Test Bank"
+          eyebrow="Test Bank"
           value={totalTests.toLocaleString("vi-VN")}
           icon={TrendingUp}
           iconTone="coral"
