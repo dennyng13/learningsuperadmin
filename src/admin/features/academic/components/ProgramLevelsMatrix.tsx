@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, Save, RotateCcw, LayoutGrid, CheckSquare, Square } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@shared/components/ui/button";
@@ -24,24 +24,70 @@ interface Props {
  *   • "Đặt lại" hoàn tác mọi thay đổi chưa lưu.
  */
 export default function ProgramLevelsMatrix({ programs, levels, onSave }: Props) {
-  // local pending state: programId → Set<levelId>
-  const initial = useMemo(() => {
-    const map = new Map<string, Set<string>>();
-    for (const p of programs) map.set(p.id, new Set(p.level_ids));
-    return map;
-  }, [programs]);
-
-  const [pending, setPending] = useState<Map<string, Set<string>>>(() => cloneMap(initial));
+  /**
+   * Local pending state: programId → Set<levelId>.
+   *
+   * Sync rules (tránh ghi đè khi user đang tick):
+   *   1. Khi `programs` (DB snapshot) thay đổi:
+   *        - Thêm program MỚI         → copy level_ids vào pending.
+   *        - Xóa program               → bỏ khỏi pending.
+   *        - Program cũ:
+   *            · Chưa dirty            → đồng bộ theo DB (nhận update từ nơi khác).
+   *            · Đang dirty (user sửa) → GIỮ NGUYÊN pending, không ghi đè.
+   *   2. So sánh DB bằng signature (sort + join) để tránh false-positive
+   *      khi reference đổi nhưng nội dung giống.
+   */
+  const [pending, setPending] = useState<Map<string, Set<string>>>(
+    () => buildInitial(programs),
+  );
   const [savingId, setSavingId] = useState<string | null>(null);
   const [savingAll, setSavingAll] = useState(false);
 
-  // Re-sync local state khi programs đổi (sau refetch). So sánh shallow
-  // theo size + danh sách level_ids đã hash để tránh ghi đè state khi user
-  // đang edit.
+  // Snapshot DB signature đã sync gần nhất (programId → "lid1|lid2|...").
+  // Dùng để biết DB có thực sự đổi không, không phải chỉ reference change.
+  const dbSyncedRef = useRef<Map<string, string>>(buildSignatureMap(programs));
+
   useEffect(() => {
-    setPending(cloneMap(initial));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initial]);
+    setPending((prev) => {
+      const next = new Map<string, Set<string>>();
+      const newSync = new Map<string, string>();
+      const dbSynced = dbSyncedRef.current;
+
+      for (const p of programs) {
+        const dbSig = sigFromIds(p.level_ids);
+        newSync.set(p.id, dbSig);
+
+        const prevSet = prev.get(p.id);
+        const lastDbSig = dbSynced.get(p.id);
+
+        if (!prevSet) {
+          // Program mới xuất hiện → copy từ DB.
+          next.set(p.id, new Set(p.level_ids));
+          continue;
+        }
+
+        const prevSig = sigFromSet(prevSet);
+        const isDirty = lastDbSig !== undefined && prevSig !== lastDbSig;
+        const dbChanged = lastDbSig !== dbSig;
+
+        if (isDirty) {
+          // User đang chỉnh dở → GIỮ pending hiện tại.
+          next.set(p.id, prevSet);
+        } else if (dbChanged) {
+          // DB thật sự đổi (vd. được update từ chỗ khác) → đồng bộ.
+          next.set(p.id, new Set(p.level_ids));
+        } else {
+          // DB không đổi & user không dirty → giữ reference cũ.
+          next.set(p.id, prevSet);
+        }
+      }
+
+      dbSyncedRef.current = newSync;
+      return next;
+    });
+    // Chỉ phụ thuộc vào `programs`. `levels` đổi không cần reset pending —
+    // checkbox sẽ tự re-render khi danh sách cột đổi.
+  }, [programs]);
 
   const isChecked = (pid: string, lid: string) => pending.get(pid)?.has(lid) ?? false;
 
@@ -75,9 +121,9 @@ export default function ProgramLevelsMatrix({ programs, levels, onSave }: Props)
   const dirtyPrograms = useMemo(() => {
     const dirty: string[] = [];
     for (const p of programs) {
-      const orig = new Set(p.level_ids);
-      const cur = pending.get(p.id) ?? new Set<string>();
-      if (!sameSet(orig, cur)) dirty.push(p.id);
+      const cur = pending.get(p.id);
+      if (!cur) continue;
+      if (sigFromSet(cur) !== sigFromIds(p.level_ids)) dirty.push(p.id);
     }
     return dirty;
   }, [pending, programs]);
@@ -91,6 +137,10 @@ export default function ProgramLevelsMatrix({ programs, levels, onSave }: Props)
     setSavingId(pid);
     try {
       await onSave(pid, orderedLevelIdsFor(pid));
+      // Save thành công → coi pending hiện tại là "đã sync" để useEffect tới
+      // không nhận diện nhầm là dirty khi `programs` refetch về.
+      const cur = pending.get(pid);
+      if (cur) dbSyncedRef.current.set(pid, sigFromSet(cur));
       toast.success("Đã lưu gán cấp độ");
     } catch (e: any) {
       toast.error(`Lỗi: ${e.message ?? "Không xác định"}`);
@@ -105,6 +155,8 @@ export default function ProgramLevelsMatrix({ programs, levels, onSave }: Props)
     try {
       for (const pid of dirtyPrograms) {
         await onSave(pid, orderedLevelIdsFor(pid));
+        const cur = pending.get(pid);
+        if (cur) dbSyncedRef.current.set(pid, sigFromSet(cur));
       }
       toast.success(`Đã lưu ${dirtyPrograms.length} khóa học`);
     } catch (e: any) {
@@ -114,7 +166,10 @@ export default function ProgramLevelsMatrix({ programs, levels, onSave }: Props)
     }
   };
 
-  const handleReset = () => setPending(cloneMap(initial));
+  const handleReset = () => {
+    setPending(buildInitial(programs));
+    dbSyncedRef.current = buildSignatureMap(programs);
+  };
 
   if (programs.length === 0 || levels.length === 0) {
     return (
@@ -302,4 +357,24 @@ function sameSet(a: Set<string>, b: Set<string>) {
   if (a.size !== b.size) return false;
   for (const x of a) if (!b.has(x)) return false;
   return true;
+}
+
+function buildInitial(programs: CourseProgram[]): Map<string, Set<string>> {
+  const map = new Map<string, Set<string>>();
+  for (const p of programs) map.set(p.id, new Set(p.level_ids));
+  return map;
+}
+
+function buildSignatureMap(programs: CourseProgram[]): Map<string, string> {
+  const map = new Map<string, string>();
+  for (const p of programs) map.set(p.id, sigFromIds(p.level_ids));
+  return map;
+}
+
+function sigFromIds(ids: string[]): string {
+  return [...ids].sort().join("|");
+}
+
+function sigFromSet(s: Set<string>): string {
+  return [...s].sort().join("|");
 }
