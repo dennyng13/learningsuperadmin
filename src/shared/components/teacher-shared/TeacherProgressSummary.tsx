@@ -18,6 +18,7 @@ import {
 } from "@shared/components/ui/collapsible";
 import { ChevronDown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import WidgetRefreshButton from "@admin/features/dashboard/components/WidgetRefreshButton";
 
 interface DelayedClassInfo {
   classId: string;
@@ -45,6 +46,7 @@ export default function TeacherProgressSummary() {
   } | null>(null);
   const [delayedClasses, setDelayedClasses] = useState<DelayedClassInfo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isFetching, setIsFetching] = useState(false);
   const [open, setOpen] = useState(true);
 
   useEffect(() => {
@@ -53,7 +55,17 @@ export default function TeacherProgressSummary() {
   }, [user, scope?.teacherId, scope?.canViewAllClasses]);
 
   async function fetchData() {
-    setLoading(true);
+    if (!stats) setLoading(true);
+    setIsFetching(true);
+    try {
+      await fetchDataInner();
+    } finally {
+      setLoading(false);
+      setIsFetching(false);
+    }
+  }
+
+  async function fetchDataInner() {
 
     const teacherId = scope?.teacherId || null;
 
