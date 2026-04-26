@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, lazy } from "react";
 import {
   FileText, Loader2, Layers,
   Upload, BarChart3, UserPlus, Award,
@@ -15,21 +15,23 @@ import {
   ResponsiveContainer, Legend, BarChart, Bar, Cell,
 } from "recharts";
 import { Badge } from "@shared/components/ui/badge";
-import ClassQuestionTypeStats from "@shared/components/teacher-shared/ClassQuestionTypeStats";
-import PracticeErrorStats from "@admin/features/practice/components/PracticeErrorStats";
-import AdminActivityCalendar from "@admin/features/dashboard/components/AdminActivityCalendar";
-import TeacherProgressSummary from "@shared/components/teacher-shared/TeacherProgressSummary";
-import ContentAnalytics from "@admin/features/dashboard/components/ContentAnalytics";
-import AppsStatusWidget from "@admin/features/dashboard/components/AppsStatusWidget";
-import TeacherActivityFeed from "@admin/features/dashboard/components/TeacherActivityFeed";
-import ContractStatusWidget from "@admin/features/dashboard/components/ContractStatusWidget";
-import TimesheetStatusWidget from "@admin/features/dashboard/components/TimesheetStatusWidget";
-import PayrollStatusWidget from "@admin/features/dashboard/components/PayrollStatusWidget";
 import DashboardHero from "@admin/features/dashboard/components/DashboardHero";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@shared/components/ui/button";
-import { InfoBanner } from "@shared/components/dashboard";
+import { InfoBanner, LazyWidget } from "@shared/components/dashboard";
 import { useDashboardSections } from "@admin/features/dashboard/hooks/useDashboardSections";
+
+/* ── Lazy-loaded heavy widgets — code-split out of main bundle ── */
+const AppsStatusWidget       = lazy(() => import("@admin/features/dashboard/components/AppsStatusWidget"));
+const TeacherActivityFeed    = lazy(() => import("@admin/features/dashboard/components/TeacherActivityFeed"));
+const ContractStatusWidget   = lazy(() => import("@admin/features/dashboard/components/ContractStatusWidget"));
+const TimesheetStatusWidget  = lazy(() => import("@admin/features/dashboard/components/TimesheetStatusWidget"));
+const PayrollStatusWidget    = lazy(() => import("@admin/features/dashboard/components/PayrollStatusWidget"));
+const TeacherProgressSummary = lazy(() => import("@shared/components/teacher-shared/TeacherProgressSummary"));
+const AdminActivityCalendar  = lazy(() => import("@admin/features/dashboard/components/AdminActivityCalendar"));
+const ClassQuestionTypeStats = lazy(() => import("@shared/components/teacher-shared/ClassQuestionTypeStats"));
+const PracticeErrorStats     = lazy(() => import("@admin/features/practice/components/PracticeErrorStats"));
+const ContentAnalytics       = lazy(() => import("@admin/features/dashboard/components/ContentAnalytics"));
 
 interface DashboardStats {
   totalTests: number;
@@ -369,14 +371,24 @@ export default function AdminDashboardPage() {
         </h2>
 
         {/* Operations: 2 app + activity feed */}
-        <AppsStatusWidget />
-        <TeacherActivityFeed />
+        <LazyWidget label="Trạng thái ứng dụng" minHeight={220}>
+          <AppsStatusWidget />
+        </LazyWidget>
+        <LazyWidget label="Hoạt động giáo viên" minHeight={260}>
+          <TeacherActivityFeed />
+        </LazyWidget>
 
         {/* HR & Payroll */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <ContractStatusWidget />
-          <TimesheetStatusWidget />
-          <PayrollStatusWidget />
+          <LazyWidget label="Hợp đồng" minHeight={200}>
+            <ContractStatusWidget />
+          </LazyWidget>
+          <LazyWidget label="Bảng công" minHeight={200}>
+            <TimesheetStatusWidget />
+          </LazyWidget>
+          <LazyWidget label="Bảng lương" minHeight={200}>
+            <PayrollStatusWidget />
+          </LazyWidget>
         </div>
 
         {/* Activity Trend Chart */}
@@ -446,16 +458,34 @@ export default function AdminDashboardPage() {
         )}
 
         {/* Progress & login streak */}
-        <TeacherProgressSummary />
-        <AdminActivityCalendar />
+        <LazyWidget label="Tổng quan tiến độ" minHeight={240}>
+          <TeacherProgressSummary />
+        </LazyWidget>
+        <LazyWidget label="Lịch hoạt động" minHeight={220}>
+          <AdminActivityCalendar />
+        </LazyWidget>
 
         {/* Error analysis — only render when there is something to analyse. */}
-        {visible.questionTypeStats && <ClassQuestionTypeStats results={testResultsForAnalysis} />}
-        {visible.practiceErrorStats && <PracticeErrorStats results={practiceResultsForAnalysis} />}
+        {visible.questionTypeStats && (
+          <LazyWidget label="Phân tích lỗi câu hỏi" minHeight={260}>
+            <ClassQuestionTypeStats results={testResultsForAnalysis} />
+          </LazyWidget>
+        )}
+        {visible.practiceErrorStats && (
+          <LazyWidget label="Lỗi luyện tập" minHeight={260}>
+            <PracticeErrorStats results={practiceResultsForAnalysis} />
+          </LazyWidget>
+        )}
 
         {/* Prospects & content */}
-        {visible.prospectFunnel && <ProspectFunnel prospects={prospects} navigate={navigate} />}
-        <ContentAnalytics />
+        {visible.prospectFunnel && (
+          <LazyWidget label="Phễu tuyển sinh" minHeight={280}>
+            <ProspectFunnel prospects={prospects} navigate={navigate} />
+          </LazyWidget>
+        )}
+        <LazyWidget label="Phân tích nội dung" minHeight={240}>
+          <ContentAnalytics />
+        </LazyWidget>
       </section>
 
       {/* ╔══════════ 4. QUICK ACTIONS ══════════╗ */}
