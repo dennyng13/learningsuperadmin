@@ -89,32 +89,39 @@ function AvailabilityGrid({ rules }: { rules: ReturnType<typeof normalizeRules> 
   }, 0);
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between text-xs text-muted-foreground">
-        <span>Khung giờ rảnh đăng ký</span>
-        <span className="font-medium text-foreground">≈ {totalCells} ô / tuần</span>
+    <div className="space-y-2.5">
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+          <Clock className="h-3.5 w-3.5" />Khung giờ rảnh
+        </p>
+        <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+          <span className="flex items-center gap-1.5">
+            <span className="h-2 w-2 rounded-sm bg-emerald-500/80" />Có lịch
+          </span>
+          <span className="font-semibold text-foreground tabular-nums">{totalCells}h / tuần</span>
+        </div>
       </div>
-      <div className="border rounded-lg overflow-hidden bg-muted/10">
-        <div className="grid" style={{ gridTemplateColumns: "44px repeat(7, 1fr)" }}>
-          <div className="bg-muted/40 p-1 text-[10px] text-muted-foreground" />
+      <div className="border border-border/60 rounded-xl overflow-hidden bg-card">
+        <div className="grid" style={{ gridTemplateColumns: "40px repeat(7, 1fr)" }}>
+          <div className="bg-muted/30 p-1.5 text-[10px] text-muted-foreground" />
           {WEEKDAY_GRID.map((wd) => (
-            <div key={wd} className="bg-muted/40 p-1 text-center text-[10px] font-semibold text-muted-foreground border-l border-border/40">
+            <div key={wd} className="bg-muted/30 py-1.5 text-center text-[10px] font-semibold text-muted-foreground border-l border-border/40">
               {WEEKDAY_LABELS[wd]}
             </div>
           ))}
           {HOURS.map((h) => (
             <>
-              <div key={`l-${h}`} className="border-t bg-muted/20 p-1 text-[10px] text-muted-foreground/70 text-right pr-1.5">
-                {String(h).padStart(2, "0")}h
+              <div key={`l-${h}`} className="border-t border-border/30 bg-muted/10 py-0.5 text-[9px] tabular-nums text-muted-foreground/70 text-right pr-1.5 leading-6">
+                {String(h).padStart(2, "0")}
               </div>
               {WEEKDAY_GRID.map((wd) => (
                 <div
                   key={`c-${h}-${wd}`}
                   className={cn(
-                    "border-t border-l border-border/40 h-6",
+                    "border-t border-l border-border/30 h-6 transition-colors",
                     isActive(wd, h)
-                      ? "bg-emerald-500/85 dark:bg-emerald-500/70"
-                      : "bg-card",
+                      ? "bg-emerald-500/80 dark:bg-emerald-500/60 hover:bg-emerald-500/95"
+                      : "bg-card hover:bg-muted/30",
                   )}
                 />
               ))}
