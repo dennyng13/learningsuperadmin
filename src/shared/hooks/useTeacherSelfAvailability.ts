@@ -90,7 +90,7 @@ async function loadTeacherSelfAvailabilityData(userId: string, teacherIdOverride
   const [classesRes, draftsRes, rulesRes, exceptionsRes, capabilityRes, sessionsRes] = await Promise.all([
     (async () => {
       let query = supabase
-        .from("teachngo_classes")
+        .from("classes")
         .select("id, class_name, teacher_id, status, level, program, schedule, class_type, room, default_start_time, default_end_time")
         .order("class_name");
       if (teacherId && !canViewAllClasses) query = query.eq("teacher_id", teacherId);

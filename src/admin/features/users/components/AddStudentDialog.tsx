@@ -51,7 +51,7 @@ export default function AddStudentDialog({ open, onOpenChange, onCreated }: Prop
       });
 
       const { data: student, error } = await supabase
-        .from("teachngo_students" as any)
+        .from("synced_students" as any)
         .insert(insertData)
         .select()
         .single();
@@ -73,7 +73,7 @@ export default function AddStudentDialog({ open, onOpenChange, onCreated }: Prop
           });
           if (res.data?.user_id && (student as any)?.id) {
             await supabase
-              .from("teachngo_students" as any)
+              .from("synced_students" as any)
               .update({ linked_user_id: res.data.user_id })
               .eq("id", (student as any).id);
           }

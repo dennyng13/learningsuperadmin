@@ -56,7 +56,7 @@ export function TeacherPerformanceContent() {
 
     // Fetch all classes with teacher assignment
     const { data: classes } = await supabase
-      .from("teachngo_classes")
+      .from("classes")
       .select("id, class_name, teacher_id")
       .not("teacher_id", "is", null);
 
@@ -70,7 +70,7 @@ export function TeacherPerformanceContent() {
     // Fetch all students
     const teachngoIds = [...new Set((enrollments || []).map(e => e.teachngo_student_id))];
     const { data: students } = await supabase
-      .from("teachngo_students")
+      .from("synced_students")
       .select("teachngo_id, linked_user_id")
       .in("teachngo_id", teachngoIds.length > 0 ? teachngoIds : ["__none__"]);
 

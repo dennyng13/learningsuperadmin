@@ -43,7 +43,7 @@ export default function StudentProgressCard({ userId }: Props) {
 
     // Find teachngo_student linked to this user
     const { data: tsData } = await supabase
-      .from("teachngo_students")
+      .from("synced_students")
       .select("teachngo_id")
       .eq("linked_user_id", userId);
 

@@ -148,7 +148,7 @@ export default function TeachngoClassesTab() {
     const val = bulkLevel === "__none__" ? null : bulkLevel;
     const ids = Array.from(selectedIds);
     const { error } = await supabase
-      .from("teachngo_classes")
+      .from("classes")
       .update({ level: val, updated_at: new Date().toISOString() })
       .in("id", ids);
     if (error) {
@@ -168,7 +168,7 @@ export default function TeachngoClassesTab() {
     const val = bulkProgram === "__none__" ? null : bulkProgram;
     const ids = Array.from(selectedIds);
     const { error } = await supabase
-      .from("teachngo_classes")
+      .from("classes")
       .update({ program: val, updated_at: new Date().toISOString() })
       .in("id", ids);
     if (error) {
@@ -185,7 +185,7 @@ export default function TeachngoClassesTab() {
   const handleTeacherChange = async (classId: string, teacherId: string) => {
     const val = teacherId === "__none__" ? null : teacherId;
     const { error } = await supabase
-      .from("teachngo_classes")
+      .from("classes")
       .update({ teacher_id: val, updated_at: new Date().toISOString() } as any)
       .eq("id", classId);
     if (!error) {
@@ -200,7 +200,7 @@ export default function TeachngoClassesTab() {
     const val = bulkTeacher === "__none__" ? null : bulkTeacher;
     const ids = Array.from(selectedIds);
     const { error } = await supabase
-      .from("teachngo_classes")
+      .from("classes")
       .update({ teacher_id: val, updated_at: new Date().toISOString() } as any)
       .in("id", ids);
     if (error) {
@@ -256,7 +256,7 @@ export default function TeachngoClassesTab() {
       const matched = (data as any)?.matched || 0;
       toast.success(`Đã liên kết ${matched} lớp với giáo viên`);
       // Refresh classes
-      const { data: refreshed } = await supabase.from("teachngo_classes").select("*").order("class_name", { ascending: true });
+      const { data: refreshed } = await supabase.from("classes").select("*").order("class_name", { ascending: true });
       if (refreshed) setClasses(refreshed as unknown as TnGClass[]);
     }
     setBulkSaving(false);
@@ -265,7 +265,7 @@ export default function TeachngoClassesTab() {
   const handleProgramSave = async (classId: string) => {
     const val = editingProgramValue.trim() || null;
     const { error } = await supabase
-      .from("teachngo_classes")
+      .from("classes")
       .update({ program: val, updated_at: new Date().toISOString() })
       .eq("id", classId);
     if (!error) {
@@ -277,7 +277,7 @@ export default function TeachngoClassesTab() {
   const handleLevelChange = async (classId: string, level: string) => {
     const val = level === "__none__" ? null : level;
     const { error } = await supabase
-      .from("teachngo_classes")
+      .from("classes")
       .update({ level: val, updated_at: new Date().toISOString() })
       .eq("id", classId);
     if (!error) {
@@ -332,7 +332,7 @@ export default function TeachngoClassesTab() {
     (async () => {
       setLoading(true);
       const [classRes, countRes, teacherRes, plansRes] = await Promise.all([
-        supabase.from("teachngo_classes").select("*").order("class_name", { ascending: true }),
+        supabase.from("classes").select("*").order("class_name", { ascending: true }),
         supabase.from("teachngo_class_students").select("class_id, status"),
         supabase.from("teachers").select("id, full_name, classes, teachngo_staff_id"),
         supabase.from("study_plans").select("id, plan_name, class_ids, teachngo_student_id, program"),
@@ -387,7 +387,7 @@ export default function TeachngoClassesTab() {
         let nameMap = new Map<string, string>();
         if (studentIds.length > 0) {
           const { data: students } = await supabase
-            .from("teachngo_students")
+            .from("synced_students")
             .select("teachngo_id, full_name")
             .in("teachngo_id", studentIds);
           nameMap = new Map((students || []).map((s: any) => [s.teachngo_id, s.full_name]));
@@ -433,7 +433,7 @@ export default function TeachngoClassesTab() {
     if (links && links.length > 0) {
       const studentIds = (links as any[]).map((l: any) => l.teachngo_student_id);
       const { data: students } = await supabase
-        .from("teachngo_students")
+        .from("synced_students")
         .select("teachngo_id, full_name")
         .in("teachngo_id", studentIds);
 
@@ -1082,7 +1082,7 @@ export default function TeachngoClassesTab() {
                               <Switch
                                 checked={c.leaderboard_enabled !== false}
                                 onCheckedChange={async (checked) => {
-                                  await supabase.from("teachngo_classes").update({ leaderboard_enabled: checked, updated_at: new Date().toISOString() }).eq("id", c.id);
+                                  await supabase.from("classes").update({ leaderboard_enabled: checked, updated_at: new Date().toISOString() }).eq("id", c.id);
                                   setClasses(prev => prev.map(cl => cl.id === c.id ? { ...cl, leaderboard_enabled: checked } : cl));
                                 }}
                               />
@@ -1100,7 +1100,7 @@ export default function TeachngoClassesTab() {
                                 checked={c.allow_self_checkin === true}
                                 onCheckedChange={async (checked) => {
                                   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                  await (supabase.from("teachngo_classes") as any)
+                                  await (supabase.from("classes") as any)
                                     .update({ allow_self_checkin: checked, updated_at: new Date().toISOString() })
                                     .eq("id", c.id);
                                   setClasses(prev => prev.map(cl => cl.id === c.id ? { ...cl, allow_self_checkin: checked } : cl));

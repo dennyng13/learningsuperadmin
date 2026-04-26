@@ -42,7 +42,7 @@ export function CloneTemplateDialog({ template, teacherMode = false, onClose }: 
   const { data: classes } = useQuery({
     queryKey: ["classes-clone", template.program, teacherMode, scope?.teacherId, scope?.canViewAllClasses],
     queryFn: async () => {
-      let q = supabase.from("teachngo_classes").select("id, class_name, program, level, start_date, end_date, schedule").order("class_name");
+      let q = supabase.from("classes").select("id, class_name, program, level, start_date, end_date, schedule").order("class_name");
       if (template.program) {
         const programNorm = template.program === "customized" ? "Customized" : template.program === "wre" ? "WRE" : "IELTS";
         q = q.eq("program", programNorm);
@@ -57,15 +57,15 @@ export function CloneTemplateDialog({ template, teacherMode = false, onClose }: 
     queryKey: ["students-clone", teacherMode, scope?.teacherId, scope?.canViewAllClasses],
     queryFn: async () => {
       if (teacherMode && !scope?.canViewAllClasses && scope?.teacherId) {
-        const { data: tc } = await supabase.from("teachngo_classes").select("id").eq("teacher_id", scope.teacherId);
+        const { data: tc } = await supabase.from("classes").select("id").eq("teacher_id", scope.teacherId);
         if (!tc || tc.length === 0) return [];
         const { data: cs } = await supabase.from("teachngo_class_students").select("teachngo_student_id").in("class_id", tc.map(c => c.id));
         if (!cs) return [];
         const ids = [...new Set(cs.map(c => c.teachngo_student_id))];
-        const { data } = await supabase.from("teachngo_students").select("teachngo_id, full_name").in("teachngo_id", ids).order("full_name");
+        const { data } = await supabase.from("synced_students").select("teachngo_id, full_name").in("teachngo_id", ids).order("full_name");
         return data || [];
       }
-      const { data } = await supabase.from("teachngo_students").select("teachngo_id, full_name").order("full_name");
+      const { data } = await supabase.from("synced_students").select("teachngo_id, full_name").order("full_name");
       return data || [];
     },
   });

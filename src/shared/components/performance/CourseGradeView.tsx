@@ -30,7 +30,7 @@ export default function CourseGradeView({ userId }: { userId: string }) {
       setLoadingClasses(true);
       // Find student's teachngo_id
       const { data: ts } = await supabase
-        .from("teachngo_students" as any)
+        .from("synced_students" as any)
         .select("teachngo_id")
         .eq("linked_user_id", userId)
         .maybeSingle() as any;

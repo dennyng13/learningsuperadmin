@@ -114,7 +114,7 @@ export default function CreateClassDialog({ open, onOpenChange, onCreated }: Pro
     (async () => {
       const [tRes, sRes] = await Promise.all([
         supabase.from("teachers").select("id, full_name").order("full_name"),
-        supabase.from("teachngo_students").select("id, teachngo_id, full_name").eq("is_active", true).order("full_name"),
+        supabase.from("synced_students").select("id, teachngo_id, full_name").eq("is_active", true).order("full_name"),
       ]);
       if (tRes.data) setTeachers((tRes.data as any[]).filter(t => t.full_name && !t.full_name.startsWith("Teacher #")));
       if (sRes.data) setAllStudents(sRes.data as StudentOpt[]);
@@ -188,7 +188,7 @@ export default function CreateClassDialog({ open, onOpenChange, onCreated }: Pro
 
       // 1. Create class
       const { data: newClass, error } = await supabase
-        .from("teachngo_classes")
+        .from("classes")
         .insert({
           teachngo_class_id: `LP-${Date.now()}`,
           class_name: className.trim(),
@@ -264,7 +264,7 @@ export default function CreateClassDialog({ open, onOpenChange, onCreated }: Pro
 
           // 5. Link class → plan
           await supabase
-            .from("teachngo_classes")
+            .from("classes")
             .update({ study_plan_id: plan.id } as any)
             .eq("id", newClass.id);
         }

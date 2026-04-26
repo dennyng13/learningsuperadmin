@@ -239,7 +239,7 @@ export type Database = {
             foreignKeyName: "class_announcements_class_id_fkey"
             columns: ["class_id"]
             isOneToOne: false
-            referencedRelation: "teachngo_classes"
+            referencedRelation: "classes"
             referencedColumns: ["id"]
           },
         ]
@@ -451,7 +451,7 @@ export type Database = {
             foreignKeyName: "exercise_assignments_class_id_fkey"
             columns: ["class_id"]
             isOneToOne: false
-            referencedRelation: "teachngo_classes"
+            referencedRelation: "classes"
             referencedColumns: ["id"]
           },
         ]
@@ -1547,14 +1547,14 @@ export type Database = {
             foreignKeyName: "student_notes_class_id_fkey"
             columns: ["class_id"]
             isOneToOne: false
-            referencedRelation: "teachngo_classes"
+            referencedRelation: "classes"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "student_notes_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "teachngo_students"
+            referencedRelation: "synced_students"
             referencedColumns: ["id"]
           },
         ]
@@ -1613,14 +1613,14 @@ export type Database = {
             foreignKeyName: "student_payments_class_id_fkey"
             columns: ["class_id"]
             isOneToOne: false
-            referencedRelation: "teachngo_classes"
+            referencedRelation: "classes"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "student_payments_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "teachngo_students"
+            referencedRelation: "synced_students"
             referencedColumns: ["id"]
           },
         ]
@@ -1679,7 +1679,7 @@ export type Database = {
             foreignKeyName: "student_questions_class_id_fkey"
             columns: ["class_id"]
             isOneToOne: false
-            referencedRelation: "teachngo_classes"
+            referencedRelation: "classes"
             referencedColumns: ["id"]
           },
         ]
@@ -2269,7 +2269,7 @@ export type Database = {
             foreignKeyName: "teachngo_class_students_class_id_fkey"
             columns: ["class_id"]
             isOneToOne: false
-            referencedRelation: "teachngo_classes"
+            referencedRelation: "classes"
             referencedColumns: ["id"]
           },
         ]
@@ -2806,7 +2806,7 @@ export type Database = {
             foreignKeyName: "teachngo_class_students_class_id_fkey"
             columns: ["class_id"]
             isOneToOne: false
-            referencedRelation: "teachngo_classes"
+            referencedRelation: "classes"
             referencedColumns: ["id"]
           },
         ]

@@ -80,7 +80,7 @@ export default function AdminClassDetailPage() {
     queryFn: async (): Promise<ClassDetail | null> => {
       if (!classId) return null;
       const { data, error } = await (supabase as any)
-        .from("teachngo_classes")
+        .from("classes")
         .select("*")
         .eq("id", classId)
         .maybeSingle();
@@ -100,7 +100,7 @@ export default function AdminClassDetailPage() {
       };
       if (args.reason !== undefined) payload.cancellation_reason = args.reason || null;
       const { error } = await (supabase as any)
-        .from("teachngo_classes")
+        .from("classes")
         .update(payload)
         .eq("id", classId);
       if (error) throw error;
@@ -129,7 +129,7 @@ export default function AdminClassDetailPage() {
   const deleteMut = useMutation({
     mutationFn: async () => {
       const { error } = await (supabase as any)
-        .from("teachngo_classes")
+        .from("classes")
         .delete()
         .eq("id", classId);
       if (error) throw error;

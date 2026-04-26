@@ -162,7 +162,7 @@ export default function StudentPerformancePage() {
 
       // Fetch teachngo student + payments + class enrollments
       const { data: tsData } = await supabase
-        .from("teachngo_students" as any)
+        .from("synced_students" as any)
         .select("id, teachngo_id")
         .eq("linked_user_id", userId)
         .maybeSingle();

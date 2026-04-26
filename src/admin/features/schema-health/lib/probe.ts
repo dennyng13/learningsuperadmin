@@ -91,7 +91,7 @@ export interface ExpectedTableSpec {
  */
 export const EXPECTED_SCHEMA: ExpectedTableSpec[] = [
   {
-    table: "teachngo_classes",
+    table: "classes",
     description: "Bảng trung tâm cho mọi class — đồng bộ từ Teach'n Go + chỉnh sửa tại admin.",
     columns: [
       { name: "id", description: "Khóa chính", usedBy: ["mọi nơi"] },
