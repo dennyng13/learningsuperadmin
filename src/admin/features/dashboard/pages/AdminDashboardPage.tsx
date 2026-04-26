@@ -300,75 +300,93 @@ export default function AdminDashboardPage() {
         }))}
       />
 
-      {/* ── Today's Schedule Summary ── */}
-      {todaySchedule && todaySchedule.count > 0 && (
-        <button
-          onClick={() => navigate("/schedule")}
-          className="w-full rounded-xl border bg-card p-4 text-left hover:bg-muted/50 transition-colors"
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                <CalendarDays className="h-5 w-5 text-primary" />
+      {/* ╔══════════ 2. LỊCH HÔM NAY ══════════╗
+         Tóm tắt buổi học hôm nay + KPI bài tập (chưa có trong Hero) */}
+      <section className="space-y-3">
+        <h2 className="font-display text-sm font-bold text-muted-foreground uppercase tracking-[0.12em] flex items-center gap-2">
+          <CalendarDays className="h-3.5 w-3.5" /> Lịch hôm nay
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {todaySchedule && todaySchedule.count > 0 ? (
+            <button
+              onClick={() => navigate("/schedule")}
+              className="rounded-2xl bg-card p-4 text-left shadow-[0_4px_20px_rgba(15,23,42,0.04)] hover:shadow-[0_10px_30px_rgba(15,23,42,0.08)] transition-all"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-xl bg-primary/12 text-primary flex items-center justify-center">
+                    <CalendarDays className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-display font-bold text-sm flex items-center gap-2">
+                      {todaySchedule.count} buổi học
+                      {todaySchedule.conflicts > 0 && (
+                        <span className="flex items-center gap-1 text-destructive text-xs font-medium">
+                          <AlertTriangle className="h-3 w-3" />
+                          {todaySchedule.conflicts} xung đột
+                        </span>
+                      )}
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {todaySchedule.firstTime ? `Buổi đầu lúc ${todaySchedule.firstTime}` : "Chưa có giờ cụ thể"}
+                    </p>
+                  </div>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              </div>
+            </button>
+          ) : (
+            <div className="rounded-2xl bg-card p-4 shadow-[0_4px_20px_rgba(15,23,42,0.04)] flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-muted text-muted-foreground flex items-center justify-center">
+                <CalendarDays className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="font-display font-bold text-sm flex items-center gap-2">
-                  Hôm nay · {todaySchedule.count} buổi học
-                  {todaySchedule.conflicts > 0 && (
-                    <span className="flex items-center gap-1 text-destructive text-xs font-medium">
-                      <AlertTriangle className="h-3 w-3" />
-                      {todaySchedule.conflicts} xung đột
-                    </span>
-                  )}
-                </h3>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  {todaySchedule.firstTime && `Buổi đầu lúc ${todaySchedule.firstTime}`}
-                </p>
+                <h3 className="font-display font-bold text-sm">Không có buổi học hôm nay</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">Lịch trống — hãy nghỉ ngơi 🌿</p>
               </div>
             </div>
-            <span className="text-xs text-muted-foreground flex items-center gap-1">
-              Xem lịch <ChevronRight className="h-3 w-3" />
-            </span>
-          </div>
-        </button>
-      )}
+          )}
 
-      {/* ── Một bài tập KPI bổ sung (không có trong Hero) ── */}
-      {s.totalExercises > 0 && (
-        <button
-          onClick={() => navigate("/tests?type=exercise")}
-          className="w-full flex items-center gap-3 rounded-xl border bg-card p-4 text-left hover:bg-muted/50 transition-colors"
-        >
-          <div className="h-10 w-10 rounded-lg bg-accent/10 text-accent flex items-center justify-center">
-            <Layers className="h-5 w-5" />
-          </div>
-          <div className="flex-1">
-            <p className="font-display font-bold text-sm">
-              {s.totalExercises} bài tập · {s.publishedExercises} đã published
-            </p>
-            <p className="text-xs text-muted-foreground mt-0.5">Quản lý bài luyện tập theo kỹ năng</p>
-          </div>
-          <ChevronRight className="h-4 w-4 text-muted-foreground" />
-        </button>
-      )}
+          {s.totalExercises > 0 && (
+            <button
+              onClick={() => navigate("/tests?type=exercise")}
+              className="flex items-center gap-3 rounded-2xl bg-card p-4 text-left shadow-[0_4px_20px_rgba(15,23,42,0.04)] hover:shadow-[0_10px_30px_rgba(15,23,42,0.08)] transition-all"
+            >
+              <div className="h-10 w-10 rounded-xl bg-accent/12 text-accent flex items-center justify-center">
+                <Layers className="h-5 w-5" />
+              </div>
+              <div className="flex-1">
+                <p className="font-display font-bold text-sm">
+                  {s.totalExercises} bài tập · {s.publishedExercises} published
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">Quản lý bài luyện tập theo kỹ năng</p>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            </button>
+          )}
+        </div>
+      </section>
 
-      {/* ── Trạng thái 2 app (IELTS Practice + Teacher's Hub) ── */}
-      <AppsStatusWidget />
+      {/* ╔══════════ 3. ANALYTICS ══════════╗
+         Toàn bộ widget phân tích, vận hành & nội dung */}
+      <section className="space-y-4">
+        <h2 className="font-display text-sm font-bold text-muted-foreground uppercase tracking-[0.12em] flex items-center gap-2">
+          <BarChart3 className="h-3.5 w-3.5" /> Analytics & vận hành
+        </h2>
 
-      {/* ── Hoạt động giáo viên (realtime feed) ── */}
-      <TeacherActivityFeed />
+        {/* Operations: 2 app + activity feed */}
+        <AppsStatusWidget />
+        <TeacherActivityFeed />
 
-      {/* ── HR Contracts: trạng thái ký + sắp hết hạn ── */}
-      <ContractStatusWidget />
+        {/* HR & Payroll */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <ContractStatusWidget />
+          <TimesheetStatusWidget />
+          <PayrollStatusWidget />
+        </div>
 
-      {/* ── Bảng công: kỳ chờ duyệt / chờ khoá / đã khoá ── */}
-      <TimesheetStatusWidget />
-
-      {/* ── Bảng lương: payslip nháp / chờ TT / đã TT ── */}
-      <PayrollStatusWidget />
-
-      {/* ── Activity Trend Chart ── */}
-      {activityTrend.some(d => d.tests > 0 || d.practices > 0) && (
+        {/* Activity Trend Chart */}
+        {activityTrend.some(d => d.tests > 0 || d.practices > 0) && (
         <div className="rounded-xl border bg-card p-4">
           <h2 className="font-display text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
             <BarChart3 className="h-3.5 w-3.5" />
@@ -431,30 +449,25 @@ export default function AdminDashboardPage() {
             </AreaChart>
           </ResponsiveContainer>
         </div>
-      )}
+        )}
 
-      {/* ── Overall Progress Summary ── */}
-      <TeacherProgressSummary />
+        {/* Progress & login streak */}
+        <TeacherProgressSummary />
+        <AdminActivityCalendar />
 
-      {/* ── Login Streak Calendar ── */}
-      <AdminActivityCalendar />
+        {/* Error analysis */}
+        <ClassQuestionTypeStats results={testResultsForAnalysis} />
+        <PracticeErrorStats results={practiceResultsForAnalysis} />
 
-      {/* ── Question Type Error Analysis ── */}
-      <ClassQuestionTypeStats results={testResultsForAnalysis} />
+        {/* Prospects & content */}
+        <ProspectFunnel prospects={prospects} navigate={navigate} />
+        <ContentAnalytics />
+      </section>
 
-      {/* ── Practice Exercise Error Stats ── */}
-      <PracticeErrorStats results={practiceResultsForAnalysis} />
-
-      {/* ── Prospect Funnel ── */}
-      <ProspectFunnel prospects={prospects} navigate={navigate} />
-
-      {/* ── Content Analytics ── */}
-      <ContentAnalytics />
-
-      {/* ── Quick Actions (single column, gọn) ── */}
-      <div>
-        <h2 className="font-display text-sm font-bold text-muted-foreground uppercase tracking-wider mb-3">
-          Thao tác nhanh
+      {/* ╔══════════ 4. QUICK ACTIONS ══════════╗ */}
+      <section>
+        <h2 className="font-display text-sm font-bold text-muted-foreground uppercase tracking-[0.12em] mb-3 flex items-center gap-2">
+          <ArrowRight className="h-3.5 w-3.5" /> Thao tác nhanh
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
           <QuickAction icon={PenLine} label="Tạo đề thi" desc="Tạo mới với câu hỏi IELTS" onClick={() => navigate("/tests/new")} />
@@ -463,7 +476,7 @@ export default function AdminDashboardPage() {
           <QuickAction icon={UserPlus} label="Quản lý người dùng" desc="Học viên, giáo viên, tài khoản" onClick={() => navigate("/users")} />
           <QuickAction icon={Award} label="Huy hiệu" desc="Trao huy hiệu cho học viên" onClick={() => navigate("/badges")} />
         </div>
-      </div>
+      </section>
     </div>
   );
 }
