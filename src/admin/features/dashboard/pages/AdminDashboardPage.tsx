@@ -425,13 +425,16 @@ function AdminDashboardPageInner() {
       {/* ╔══════════ 3. ANALYTICS ══════════╗
          Toàn bộ widget phân tích, vận hành & nội dung */}
       <section className="space-y-4">
-        <h2 className="font-display text-sm font-bold text-muted-foreground uppercase tracking-[0.12em] flex items-center gap-2">
-          <BarChart3 className="h-3.5 w-3.5" /> Analytics & vận hành
-        </h2>
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <h2 className="font-display text-sm font-bold text-muted-foreground uppercase tracking-[0.12em] flex items-center gap-2">
+            <BarChart3 className="h-3.5 w-3.5" /> Analytics & vận hành
+          </h2>
+          <AnalyticsRangeSelector />
+        </div>
 
         {/* Operations: 2 app + activity feed */}
         <AppsStatusWidget />
-        <TeacherActivityFeed />
+        <TeacherActivityFeed range={range} />
 
         {/* HR & Payroll */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -445,7 +448,7 @@ function AdminDashboardPageInner() {
         <div className="rounded-xl border bg-card p-4">
           <h2 className="font-display text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
             <BarChart3 className="h-3.5 w-3.5" />
-            Xu hướng hoạt động (14 ngày)
+            Xu hướng hoạt động ({rangeDays(range)} ngày)
           </h2>
           <ResponsiveContainer width="100%" height={260}>
             <AreaChart data={activityTrend} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
@@ -511,12 +514,12 @@ function AdminDashboardPageInner() {
         <AdminActivityCalendar />
 
         {/* Error analysis */}
-        <ClassQuestionTypeStats results={testResultsForAnalysis} />
-        <PracticeErrorStats results={practiceResultsForAnalysis} />
+        <ClassQuestionTypeStats results={testResultsForAnalysis} range={range} />
+        <PracticeErrorStats results={practiceResultsForAnalysis} range={range} />
 
         {/* Prospects & content */}
         <ProspectFunnel prospects={prospects} navigate={navigate} />
-        <ContentAnalytics />
+        <ContentAnalytics range={range} />
       </section>
 
       {/* ╔══════════ 4. QUICK ACTIONS ══════════╗ */}
