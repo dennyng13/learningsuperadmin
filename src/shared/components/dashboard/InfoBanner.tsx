@@ -1,30 +1,23 @@
-import { ChevronRight, type LucideIcon } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { ReactNode } from "react";
 import { cn } from "@shared/lib/utils";
+import { ICON_TONE_CLASS, type DashboardCardBaseProps } from "./types";
 
-interface InfoBannerProps {
-  icon: LucideIcon;
+interface InfoBannerProps extends Omit<DashboardCardBaseProps, "title" | "eyebrow"> {
+  /** Required leading icon. */
+  icon: NonNullable<DashboardCardBaseProps["icon"]>;
+  /** Bold title text (was previously the only required content). */
   title: ReactNode;
+  /** Optional helper line beneath the title. */
   description?: ReactNode;
-  /** Optional badge/extra slot on the right (before chevron) */
-  trailing?: ReactNode;
-  iconTone?: "teal" | "coral" | "muted";
-  onClick?: () => void;
-  className?: string;
 }
-
-const TONE = {
-  teal: "bg-primary/12 text-primary",
-  coral: "bg-accent/12 text-accent",
-  muted: "bg-muted text-muted-foreground",
-} as const;
 
 /**
  * Compact horizontal banner (icon + title + desc + chevron).
  * Used for "today's schedule", quick-jump KPI rows, etc.
  */
 export default function InfoBanner({
-  icon: Icon, title, description, trailing, iconTone = "teal", onClick, className,
+  icon: Icon, title, description, action, iconTone = "teal", onClick, className,
 }: InfoBannerProps) {
   const Comp: any = onClick ? "button" : "div";
   return (
@@ -37,7 +30,7 @@ export default function InfoBanner({
         className,
       )}
     >
-      <div className={cn("h-10 w-10 rounded-xl flex items-center justify-center shrink-0", TONE[iconTone])}>
+      <div className={cn("h-10 w-10 rounded-xl flex items-center justify-center shrink-0", ICON_TONE_CLASS[iconTone])}>
         <Icon className="h-5 w-5" />
       </div>
       <div className="flex-1 min-w-0">
@@ -46,7 +39,7 @@ export default function InfoBanner({
           <p className="text-xs text-muted-foreground mt-0.5 truncate">{description}</p>
         )}
       </div>
-      {trailing}
+      {action}
       {onClick && <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />}
     </Comp>
   );
