@@ -61,20 +61,20 @@ export function TeacherPerformanceContent() {
       .not("teacher_id", "is", null);
 
     // Fetch all enrollments
-    const classIds = (classes || []).map(c => c.id);
+    const classIds = ((classes || []) as any[]).map(c => c.id);
     const { data: enrollments } = await (supabase as any)
       .from("class_students")
       .select("class_id, teachngo_student_id")
       .in("class_id", classIds.length > 0 ? classIds : ["__none__"]);
 
     // Fetch all students
-    const teachngoIds = [...new Set((enrollments || []).map(e => e.teachngo_student_id))];
+    const teachngoIds = [...new Set(((enrollments || []) as any[]).map(e => e.teachngo_student_id))] as string[];
     const { data: students } = await (supabase as any)
       .from("synced_students")
       .select("teachngo_id, linked_user_id")
       .in("teachngo_id", teachngoIds.length > 0 ? teachngoIds : ["__none__"]);
 
-    const linkedStudents = (students || []).filter(s => s.linked_user_id);
+    const linkedStudents = ((students || []) as any[]).filter(s => s.linked_user_id);
     const linkedUserIds = linkedStudents.map(s => s.linked_user_id!);
 
     // Fetch all plans
@@ -101,10 +101,10 @@ export function TeacherPerformanceContent() {
     const teacherRows: TeacherRow[] = [];
 
     for (const teacher of teachersData) {
-      const teacherClasses = (classes || []).filter(c => c.teacher_id === teacher.id);
+      const teacherClasses = ((classes || []) as any[]).filter(c => c.teacher_id === teacher.id);
       const teacherClassIds = teacherClasses.map(c => c.id);
-      const teacherEnrollments = (enrollments || []).filter(e => teacherClassIds.includes(e.class_id));
-      const teacherStudentIds = [...new Set(teacherEnrollments.map(e => e.teachngo_student_id))];
+      const teacherEnrollments = ((enrollments || []) as any[]).filter(e => teacherClassIds.includes(e.class_id));
+      const teacherStudentIds = [...new Set(teacherEnrollments.map(e => e.teachngo_student_id))] as string[];
       const teacherLinkedStudents = linkedStudents.filter(s => teacherStudentIds.includes(s.teachngo_id));
 
       const progresses: StudentProgress[] = [];

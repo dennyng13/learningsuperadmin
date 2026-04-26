@@ -194,10 +194,10 @@ export default function TeachngoTab({ roleCategory = "students" }: { roleCategor
       .eq("teachngo_student_id", teachngoId);
     if (links && links.length > 0) {
       const classIds = (links as any[]).map((l: any) => l.class_id);
-      const { data: classes } = await (supabase as any)
+      const { data:  classes } = await (supabase as any)
         .from("classes")
         .select("id, class_name, status")
-        .in("id", classIds);
+        .in("id", classIds) as any;
       const classMap = new Map((classes || []).map((c: any) => [c.id, c]));
       const result = (links as any[]).map((l: any) => ({
         class_name: classMap.get(l.class_id)?.class_name || "Unknown",
