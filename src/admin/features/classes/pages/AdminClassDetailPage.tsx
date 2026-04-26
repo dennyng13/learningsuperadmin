@@ -37,6 +37,7 @@ import {
   ClassInfoCard,
   type ClassDetail,
 } from "@admin/features/classes/components/ClassInfoCard";
+import RequestReplacementTeacherButton from "@admin/features/classes/components/RequestReplacementTeacherButton";
 import {
   SessionsTab, StudentsTab, PlanProgressTab, ActivityTab,
   AnnouncementsTab, LeaderboardTab, HistoryTab, SettingsTab,
@@ -216,6 +217,15 @@ export default function AdminClassDetailPage() {
 
   const headerActions = (
     <div className="flex items-center gap-1.5">
+      {/* Tìm GV thay thế: hiện khi lớp đang vận hành/chuẩn bị và đã có GV. */}
+      {["recruiting", "ready", "in_progress"].includes(cls.lifecycle_status ?? "") &&
+        (cls.teacher_id || cls.teacher_name) && (
+          <RequestReplacementTeacherButton
+            classId={cls.id}
+            className={cls.name ?? cls.class_name ?? "(không tên)"}
+          />
+        )}
+
       {/* Status selector */}
       <Select
         value={cls.lifecycle_status ?? "planning"}
