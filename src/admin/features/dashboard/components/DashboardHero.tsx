@@ -167,9 +167,9 @@ export default function DashboardHero({
   ]), [recentResults7d, recentPractice7d]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 md:space-y-6">
       {/* KPI row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 auto-rows-fr gap-4 md:gap-5 lg:gap-6">
         <StatCard
           eyebrow="Total Students"
           value={totalStudents.toLocaleString("vi-VN")}
@@ -205,7 +205,7 @@ export default function DashboardHero({
       </div>
 
       {/* Calendar + Performance */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 md:gap-5 lg:gap-6">
         <div className="lg:col-span-2">
           <CalendarWidget activeDays={scheduleDays} />
         </div>
