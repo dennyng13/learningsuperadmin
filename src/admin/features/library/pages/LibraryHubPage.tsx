@@ -96,9 +96,19 @@ export default function LibraryHubPage() {
         </div>
       ) : (
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {visible.map((s) => (
-            <SectionCard key={s.id} section={s} />
-          ))}
+          {/* Track shapes đã dùng để mỗi card chọn shape khác nhau —
+             tránh tình huống cả 3 card share cùng 1 asset khi DB ít shape. */}
+          {(() => {
+            const used: string[] = [];
+            return visible.map((s) => (
+              <SectionCard
+                key={s.id}
+                section={s}
+                excludeUrls={used}
+                onPicked={(u) => { if (u) used.push(u); }}
+              />
+            ));
+          })()}
         </div>
       )}
     </div>
@@ -107,8 +117,11 @@ export default function LibraryHubPage() {
 
 /* ─────────── Card ─────────── */
 
-const SectionCard = forwardRef<HTMLButtonElement, { section: LibrarySection }>(function SectionCard(
-  { section },
+const SectionCard = forwardRef<
+  HTMLButtonElement,
+  { section: LibrarySection; excludeUrls?: string[]; onPicked?: (url: string | null) => void }
+>(function SectionCard(
+  { section, excludeUrls = [], onPicked },
   ref,
 ) {
   const Icon = section.icon;
@@ -126,7 +139,17 @@ const SectionCard = forwardRef<HTMLButtonElement, { section: LibrarySection }>(f
 
   // Pick a stable shape from the palette using section.id as seed —
   // tránh render khác nhau giữa các lần re-mount (sẽ nhấp nháy).
-  const shapeUrl = pickStableShape(urls, section.id, section.preferredShape, section.preferredShapeFallbacks);
+  // `excludeUrls` đảm bảo mỗi card chọn shape khác nhau ngay cả khi
+  // các card share palette hoặc DB chỉ có vài shape.
+  const shapeUrl = pickStableShape(
+    urls,
+    section.id,
+    section.preferredShape,
+    section.preferredShapeFallbacks,
+    excludeUrls,
+  );
+  // Notify parent (sync, trong render — chỉ push string vào array, idempotent).
+  onPicked?.(shapeUrl);
 
   // Debug helper — log một lần khi không tìm được shape, để dễ phát hiện
   // palette nào chưa upload asset trong /brand-assets.
@@ -220,19 +243,23 @@ function pickStableShape(
   seed: string,
   preferred?: string,
   fallbacks?: string[],
+  excludeUrls: string[] = [],
 ): string | null {
   if (urls.length === 0) return null;
+  const available = urls.filter((u) => !excludeUrls.includes(u));
+  // Nếu loại trừ hết → đành dùng pool gốc (chấp nhận trùng còn hơn không có).
+  const baseUrls = available.length > 0 ? available : urls;
   // 1. Ưu tiên explicit keyword (preferred → fallbacks theo thứ tự).
   const keywords = [preferred, ...(fallbacks ?? [])].filter(Boolean) as string[];
   for (const kw of keywords) {
-    const match = urls.find((u) => u.toLowerCase().includes(kw.toLowerCase()));
+    const match = baseUrls.find((u) => u.toLowerCase().includes(kw.toLowerCase()));
     if (match) return match;
   }
-  const soft = urls.filter((u) => SOFT_SHAPE_KEYWORDS.some((k) => u.toLowerCase().includes(k)));
-  const safe = (soft.length > 0 ? soft : urls).filter(
+  const soft = baseUrls.filter((u) => SOFT_SHAPE_KEYWORDS.some((k) => u.toLowerCase().includes(k)));
+  const safe = (soft.length > 0 ? soft : baseUrls).filter(
     (u) => !HARSH_SHAPE_KEYWORDS.some((k) => u.toLowerCase().includes(k)),
   );
-  const pool = safe.length > 0 ? safe : urls;
+  const pool = safe.length > 0 ? safe : baseUrls;
   let h = 0;
   for (let i = 0; i < seed.length; i++) {
     h = (h * 31 + seed.charCodeAt(i)) >>> 0;
@@ -262,7 +289,7 @@ function BrandShapeFigure({ url, palette }: { url: string | null; palette: Shape
       <div
         aria-hidden
         className={cn(
-          "absolute -bottom-8 -right-8 h-[80%] w-[55%] pointer-events-none",
+          "absolute -bottom-6 -right-6 h-[60%] w-[40%] pointer-events-none",
           "bg-gradient-to-tl rounded-tl-[100%] opacity-70 transition-opacity duration-500 group-hover:opacity-100",
           FALLBACK_TONE[palette],
         )}
@@ -277,15 +304,13 @@ function BrandShapeFigure({ url, palette }: { url: string | null; palette: Shape
       alt=""
       loading="lazy"
       decoding="async"
-      // Shape là nhân vật chính ở góc dưới-phải. Card khá thấp (h-32→h-40)
-      // nên cần kích thước lớn (≈90% chiều cao) và offset tràn ra ngoài để
-      // không bị "đóng khung". Opacity mặc định cao (75%) để luôn nhìn thấy
-      // ngay cả khi không hover; hover rõ hơn + scale nhẹ.
+      // Shape là decoration ở góc dưới-phải, kích thước vừa phải (~70% chiều cao)
+      // để cân bằng với content text. Hover phóng nhẹ + tăng opacity.
       className={cn(
-        "pointer-events-none absolute -bottom-3 -right-3",
-        "h-[95%] w-auto max-w-[55%] object-contain object-bottom-right",
-        "opacity-75 saturate-100 transition-all duration-500 ease-out",
-        "group-hover:opacity-100 group-hover:scale-[1.08]",
+        "pointer-events-none absolute -bottom-2 -right-2",
+        "h-[70%] w-auto max-w-[40%] object-contain object-bottom-right",
+        "opacity-70 saturate-100 transition-all duration-500 ease-out",
+        "group-hover:opacity-95 group-hover:scale-[1.06]",
         "origin-bottom-right",
       )}
     />
