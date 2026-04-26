@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import {
   CalendarCheck, Search, Loader2, AlertCircle, CheckCircle2, XCircle,
   MessageSquareWarning, Inbox, Clock, BookOpen, ChevronRight, Sparkles,
-  Wifi, MapPin, ShieldCheck,
+  Wifi, MapPin, ShieldCheck, Filter,
 } from "lucide-react";
 import { formatDistanceToNow, parseISO, format } from "date-fns";
 import { vi } from "date-fns/locale";
@@ -26,12 +26,12 @@ import { WEEKDAY_LABELS, normalizeRules, validateAvailabilityDraft } from "@shar
 import { cn } from "@shared/lib/utils";
 
 const STATUS_META: Record<string, { label: string; pill: string; dot: string }> = {
-  pending:        { label: "Chờ duyệt",     pill: "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-500/15 dark:text-amber-200 dark:border-amber-500/30", dot: "bg-amber-500" },
-  needs_changes:  { label: "Cần sửa",       pill: "bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-500/15 dark:text-orange-200 dark:border-orange-500/30", dot: "bg-orange-500" },
-  approved:       { label: "Đã duyệt",      pill: "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-200 dark:border-emerald-500/30", dot: "bg-emerald-500" },
-  applied:        { label: "Đã áp dụng",    pill: "bg-emerald-600 text-white border-emerald-600", dot: "bg-emerald-600" },
-  rejected:       { label: "Từ chối",       pill: "bg-red-100 text-red-700 border-red-200 dark:bg-red-500/15 dark:text-red-200 dark:border-red-500/30", dot: "bg-red-500" },
-  superseded:     { label: "Đã thay thế",   pill: "bg-muted text-muted-foreground border-border", dot: "bg-muted-foreground" },
+  pending:        { label: "Chờ duyệt",     pill: "bg-amber-50 text-amber-700 border-amber-200/70 dark:bg-amber-500/10 dark:text-amber-200 dark:border-amber-500/25", dot: "bg-amber-500" },
+  needs_changes:  { label: "Cần sửa",       pill: "bg-orange-50 text-orange-700 border-orange-200/70 dark:bg-orange-500/10 dark:text-orange-200 dark:border-orange-500/25", dot: "bg-orange-500" },
+  approved:       { label: "Đã duyệt",      pill: "bg-emerald-50 text-emerald-700 border-emerald-200/70 dark:bg-emerald-500/10 dark:text-emerald-200 dark:border-emerald-500/25", dot: "bg-emerald-500" },
+  applied:        { label: "Đã áp dụng",    pill: "bg-emerald-600 text-white border-emerald-600 shadow-sm shadow-emerald-600/20", dot: "bg-white" },
+  rejected:       { label: "Từ chối",       pill: "bg-rose-50 text-rose-700 border-rose-200/70 dark:bg-rose-500/10 dark:text-rose-200 dark:border-rose-500/25", dot: "bg-rose-500" },
+  superseded:     { label: "Đã thay thế",   pill: "bg-muted text-muted-foreground border-border/60", dot: "bg-muted-foreground" },
 };
 
 const STATUS_TABS: Array<{ value: string; label: string }> = [
