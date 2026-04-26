@@ -5,6 +5,24 @@ import {
 } from "@shared/components/ui/breadcrumb";
 import { adminNavItems } from "@shared/config/navigation";
 
+// Group label hiển thị trong breadcrumb (không phải route — render plain text)
+const GROUP_LABELS: Record<string, string> = {
+  academic: "Học thuật",
+  classes: "Lớp & Lịch",
+  users: "Người dùng",
+  hr: "Nhân sự",
+  system: "Hệ thống",
+};
+
+// Chỉ chèn cấp "group" vào breadcrumb cho các nhóm con (Người dùng / Nhân sự /
+// Hệ thống / Lớp & Lịch). Group "academic" đã ở top-level nên bỏ qua.
+const SHOW_GROUP_FOR = new Set(["users", "hr", "system", "classes"]);
+const routeGroup: Record<string, string> = Object.fromEntries(
+  adminNavItems
+    .filter((i) => i.route !== "/" && SHOW_GROUP_FOR.has(i.group))
+    .map((i) => [i.route, i.group]),
+);
+
 // Build label map from single source of truth (adminNavItems) + a few extras
 // for nested / non-nav routes.
 const EXTRA_LABELS: Record<string, string> = {
@@ -23,12 +41,19 @@ const routeLabels: Record<string, string> = {
 
 interface Crumb { label: string; path: string }
 
+const groupPrefix = (route: string): Crumb[] => {
+  const g = routeGroup[route];
+  if (!g) return [];
+  const label = GROUP_LABELS[g];
+  return label ? [{ label, path: "" }] : [];
+};
+
 function resolveCrumbs(pathname: string): Crumb[] {
   if (pathname === "/") return [];
 
   // Direct match
   if (routeLabels[pathname]) {
-    return [{ label: routeLabels[pathname], path: pathname }];
+    return [...groupPrefix(pathname), { label: routeLabels[pathname], path: pathname }];
   }
 
   // Try nested matching with dynamic segments: /tests/:id, /users/:id/performance,
@@ -43,6 +68,10 @@ function resolveCrumbs(pathname: string): Crumb[] {
     const prev = segments[i - 1];
 
     if (routeLabels[built]) {
+      // Crumb đầu tiên có thể có group → prepend group label
+      if (crumbs.length === 0) {
+        crumbs.push(...groupPrefix(built));
+      }
       crumbs.push({ label: routeLabels[built], path: built });
       continue;
     }
@@ -58,7 +87,11 @@ function resolveCrumbs(pathname: string): Crumb[] {
     // Dynamic ID under a known parent → add parent crumb once + "Chỉnh sửa"
     const parentPath = "/" + prev;
     if (prev && routeLabels[parentPath] && !crumbs.find(c => c.path === parentPath)) {
-      crumbs.unshift({ label: routeLabels[parentPath], path: parentPath });
+      // Prepend group nếu là crumb đầu
+      if (crumbs.length === 0) {
+        crumbs.push(...groupPrefix(parentPath));
+      }
+      crumbs.push({ label: routeLabels[parentPath], path: parentPath });
       if (prev === "tests" || prev === "placement") {
         crumbs.push({ label: "Chỉnh sửa", path: built });
       }
@@ -83,10 +116,12 @@ export function AdminBreadcrumb() {
           </BreadcrumbLink>
         </BreadcrumbItem>
         {crumbs.map((crumb, i) => (
-          <span key={crumb.path} className="contents">
+          <span key={crumb.path || `group-${i}`} className="contents">
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              {i === crumbs.length - 1 ? (
+              {crumb.path === "" ? (
+                <span className="text-[11px] text-muted-foreground">{crumb.label}</span>
+              ) : i === crumbs.length - 1 ? (
                 <BreadcrumbPage className="text-[11px] font-semibold">{crumb.label}</BreadcrumbPage>
               ) : (
                 <BreadcrumbLink asChild>
