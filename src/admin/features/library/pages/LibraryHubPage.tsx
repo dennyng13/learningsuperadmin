@@ -58,7 +58,7 @@ const SECTIONS: LibrarySection[] = [
 
 export default function LibraryHubPage() {
   return (
-    <div className="p-4 md:p-6 max-w-5xl mx-auto animate-page-in">
+    <div className="p-4 md:p-6 max-w-6xl mx-auto animate-page-in">
       <PageHeader
         icon={Sparkles}
         title="Quản lý học liệu"
@@ -102,7 +102,7 @@ const SectionCard = forwardRef<HTMLButtonElement, { section: LibrarySection }>(f
       ref={ref}
       onClick={() => navigate(section.route)}
       className={cn(
-        "group relative aspect-square overflow-hidden rounded-2xl text-left bg-card text-card-foreground",
+        "group relative h-56 md:h-60 overflow-hidden rounded-2xl text-left bg-card text-card-foreground",
         "border border-border/70 transition-all duration-300",
         "hover:-translate-y-0.5 hover:shadow-lg hover:border-primary/30",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
