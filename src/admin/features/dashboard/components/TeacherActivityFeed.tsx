@@ -25,6 +25,11 @@ import {
 } from "@shared/components/ui/select";
 import { Button } from "@shared/components/ui/button";
 import WidgetRetryState from "./WidgetRetryState";
+import {
+  type AnalyticsRange,
+  DEFAULT_RANGE,
+  AnalyticsRangeBadge,
+} from "@shared/components/dashboard/analyticsRange";
 
 type ActivityKind = "writing" | "speaking" | "announcement" | "answer" | "session";
 
@@ -96,10 +101,9 @@ interface TeacherLite { id: string; full_name: string }
 interface StudentLite { id: string; full_name: string }
 interface ClassLite { id: string; class_name: string }
 
-async function fetchFeed(limit: number): Promise<FeedItem[]> {
-  // Pull recent rows from each source (last ~7 days). Per-source limit scales
-  // with overall page size so we have enough candidates to merge & sort.
-  const sinceIso = new Date(Date.now() - 7 * 24 * 3600_000).toISOString();
+async function fetchFeed(limit: number, sinceIso: string, untilIso: string): Promise<FeedItem[]> {
+  // Pull recent rows from each source within the supplied range.
+  // Per-source limit scales with overall page size so we have enough candidates to merge & sort.
   const perSource = Math.max(10, Math.ceil(limit / 2));
 
   const [writingRes, speakingRes, announcementsRes, answersRes, sessionsRes] = await Promise.all([
@@ -108,18 +112,21 @@ async function fetchFeed(limit: number): Promise<FeedItem[]> {
       .select("id, teacher_id, student_id, task_key, overall_band, result_id, created_at")
       .not("teacher_id", "is", null)
       .gte("created_at", sinceIso)
+      .lte("created_at", untilIso)
       .order("created_at", { ascending: false })
       .limit(perSource),
     supabase
       .from("speaking_feedback")
       .select("id, teacher_id, student_id, part_key, overall_band, result_id, created_at")
       .gte("created_at", sinceIso)
+      .lte("created_at", untilIso)
       .order("created_at", { ascending: false })
       .limit(perSource),
     supabase
       .from("class_announcements")
       .select("id, teacher_id, class_id, title, created_at")
       .gte("created_at", sinceIso)
+      .lte("created_at", untilIso)
       .order("created_at", { ascending: false })
       .limit(perSource),
     supabase
@@ -128,6 +135,7 @@ async function fetchFeed(limit: number): Promise<FeedItem[]> {
       .not("teacher_id", "is", null)
       .not("response_at", "is", null)
       .gte("response_at", sinceIso)
+      .lte("response_at", untilIso)
       .order("response_at", { ascending: false })
       .limit(perSource),
     // Sessions: only "completed" entries — that's when a teacher actively updated the session.
@@ -136,6 +144,7 @@ async function fetchFeed(limit: number): Promise<FeedItem[]> {
       .select("id, plan_id, session_number, session_title, entry_date, completed_at")
       .not("completed_at", "is", null)
       .gte("completed_at", sinceIso)
+      .lte("completed_at", untilIso)
       .order("completed_at", { ascending: false })
       .limit(Math.max(15, perSource)),
   ]);
@@ -329,7 +338,9 @@ const KIND_FILTERS: { value: ActivityKind; label: string }[] = [
   { value: "session", label: "Buổi học" },
 ];
 
-export default function TeacherActivityFeed() {
+export default function TeacherActivityFeed({
+  range = DEFAULT_RANGE,
+}: { range?: AnalyticsRange } = {}) {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -361,9 +372,12 @@ export default function TeacherActivityFeed() {
     setLimit(PAGE_SIZE);
   };
 
+  const sinceIso = range.from.toISOString();
+  const untilIso = range.to.toISOString();
+
   const { data: items, isLoading, isFetching, error, refetch } = useQuery({
-    queryKey: ["teacher-activity-feed", limit],
-    queryFn: () => fetchFeed(limit),
+    queryKey: ["teacher-activity-feed", limit, sinceIso, untilIso],
+    queryFn: () => fetchFeed(limit, sinceIso, untilIso),
     staleTime: 60_000,
   });
 
@@ -469,6 +483,7 @@ export default function TeacherActivityFeed() {
         <h2 className="font-display text-sm font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2 min-w-0">
           <Activity className="h-3.5 w-3.5 shrink-0" />
           <span className="truncate">Hoạt động giáo viên</span>
+          <AnalyticsRangeBadge range={range} className="ml-1 normal-case tracking-normal" />
         </h2>
         <span className={cn(
           "text-[11px] flex items-center gap-1.5 transition-colors shrink-0",

@@ -7,7 +7,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@shared/hooks/useAuth";
-import { format, subDays, eachDayOfInterval } from "date-fns";
+import { format, eachDayOfInterval } from "date-fns";
 import { vi } from "date-fns/locale";
 import { cn } from "@shared/lib/utils";
 import {
@@ -28,6 +28,13 @@ import PayrollStatusWidget from "@admin/features/dashboard/components/PayrollSta
 import DashboardHero from "@admin/features/dashboard/components/DashboardHero";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@shared/components/ui/button";
+import {
+  AnalyticsRangeProvider,
+  AnalyticsRangeSelector,
+  useAnalyticsRange,
+  rangeDays,
+  type AnalyticsRange,
+} from "@shared/components/dashboard/analyticsRange";
 
 interface DashboardStats {
   totalTests: number;
@@ -61,8 +68,17 @@ interface DailyActivity {
 }
 
 export default function AdminDashboardPage() {
+  return (
+    <AnalyticsRangeProvider>
+      <AdminDashboardPageInner />
+    </AnalyticsRangeProvider>
+  );
+}
+
+function AdminDashboardPageInner() {
   const navigate = useNavigate();
   const { isSuperAdmin } = useAuth();
+  const { range } = useAnalyticsRange();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [recentItems, setRecentItems] = useState<RecentItem[]>([]);
   const [activityTrend, setActivityTrend] = useState<DailyActivity[]>([]);
@@ -123,9 +139,9 @@ export default function AdminDashboardPage() {
       setLoadError(null);
 
       try {
-        const now = new Date();
-        const sevenDaysAgo = subDays(now, 7).toISOString();
-        const fourteenDaysAgo = subDays(now, 14).toISOString();
+        const sinceIso = range.from.toISOString();
+        const untilIso = range.to.toISOString();
+        const days = eachDayOfInterval({ start: range.from, end: range.to });
 
         const [
           assessmentsRes,
@@ -143,8 +159,8 @@ export default function AdminDashboardPage() {
           supabase.from("teachngo_students").select("*", { count: "exact", head: true }).not("linked_user_id", "is", null),
           supabase.from("teachers").select("*", { count: "exact", head: true }),
           supabase.from("teachngo_classes").select("*", { count: "exact", head: true }),
-          supabase.from("test_results").select("*", { count: "exact", head: true }).gte("created_at", sevenDaysAgo),
-          supabase.from("practice_results").select("*", { count: "exact", head: true }).gte("created_at", sevenDaysAgo),
+          supabase.from("test_results").select("*", { count: "exact", head: true }).gte("created_at", sinceIso).lte("created_at", untilIso),
+          supabase.from("practice_results").select("*", { count: "exact", head: true }).gte("created_at", sinceIso).lte("created_at", untilIso),
         ]);
 
         const criticalError = [
@@ -193,11 +209,10 @@ export default function AdminDashboardPage() {
         setRecentItems(merged);
 
         const [trendResultsRes, trendPracticeRes] = await Promise.all([
-          supabase.from("test_results").select("created_at").gte("created_at", fourteenDaysAgo),
-          supabase.from("practice_results").select("created_at").gte("created_at", fourteenDaysAgo),
+          supabase.from("test_results").select("created_at").gte("created_at", sinceIso).lte("created_at", untilIso),
+          supabase.from("practice_results").select("created_at").gte("created_at", sinceIso).lte("created_at", untilIso),
         ]);
 
-        const days = eachDayOfInterval({ start: subDays(now, 13), end: now });
         const trend: DailyActivity[] = days.map(day => {
           const dateStr = format(day, "yyyy-MM-dd");
           const tests = (trendResultsRes.data || []).filter(r => typeof r.created_at === "string" && r.created_at.startsWith(dateStr)).length;
@@ -211,16 +226,17 @@ export default function AdminDashboardPage() {
         });
         setActivityTrend(trend);
 
-        const thirtyDaysAgo = subDays(now, 30).toISOString();
         const [analysisResultsRes, practiceAnalysisRes, prospectsRes] = await Promise.all([
           supabase
             .from("test_results")
             .select("user_id, section_type, answers, parts_data")
-            .gte("created_at", thirtyDaysAgo),
+            .gte("created_at", sinceIso)
+            .lte("created_at", untilIso),
           supabase
             .from("practice_results")
             .select("exercise_id, exercise_title, skill, question_type, correct_answers, total_questions")
-            .gte("created_at", thirtyDaysAgo),
+            .gte("created_at", sinceIso)
+            .lte("created_at", untilIso),
           supabase
             .from("prospects")
             .select("id, full_name, source, status, suggested_level, created_at, placement_test_id, token")
@@ -244,7 +260,7 @@ export default function AdminDashboardPage() {
       }
     }
     fetchData();
-  }, [isSuperAdmin]);
+  }, [isSuperAdmin, range.from, range.to]);
 
   if (loading) {
     return (
@@ -409,13 +425,16 @@ export default function AdminDashboardPage() {
       {/* ╔══════════ 3. ANALYTICS ══════════╗
          Toàn bộ widget phân tích, vận hành & nội dung */}
       <section className="space-y-4">
-        <h2 className="font-display text-sm font-bold text-muted-foreground uppercase tracking-[0.12em] flex items-center gap-2">
-          <BarChart3 className="h-3.5 w-3.5" /> Analytics & vận hành
-        </h2>
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <h2 className="font-display text-sm font-bold text-muted-foreground uppercase tracking-[0.12em] flex items-center gap-2">
+            <BarChart3 className="h-3.5 w-3.5" /> Analytics & vận hành
+          </h2>
+          <AnalyticsRangeSelector />
+        </div>
 
         {/* Operations: 2 app + activity feed */}
         <AppsStatusWidget />
-        <TeacherActivityFeed />
+        <TeacherActivityFeed range={range} />
 
         {/* HR & Payroll */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -429,7 +448,7 @@ export default function AdminDashboardPage() {
         <div className="rounded-xl border bg-card p-4">
           <h2 className="font-display text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
             <BarChart3 className="h-3.5 w-3.5" />
-            Xu hướng hoạt động (14 ngày)
+            Xu hướng hoạt động ({rangeDays(range)} ngày)
           </h2>
           <ResponsiveContainer width="100%" height={260}>
             <AreaChart data={activityTrend} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
@@ -495,12 +514,12 @@ export default function AdminDashboardPage() {
         <AdminActivityCalendar />
 
         {/* Error analysis */}
-        <ClassQuestionTypeStats results={testResultsForAnalysis} />
-        <PracticeErrorStats results={practiceResultsForAnalysis} />
+        <ClassQuestionTypeStats results={testResultsForAnalysis} range={range} />
+        <PracticeErrorStats results={practiceResultsForAnalysis} range={range} />
 
         {/* Prospects & content */}
         <ProspectFunnel prospects={prospects} navigate={navigate} />
-        <ContentAnalytics />
+        <ContentAnalytics range={range} />
       </section>
 
       {/* ╔══════════ 4. QUICK ACTIONS ══════════╗ */}

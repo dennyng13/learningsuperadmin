@@ -2,6 +2,11 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AlertTriangle, BookOpen, Headphones, PenLine, Mic, ArrowRight } from "lucide-react";
 import { cn } from "@shared/lib/utils";
+import {
+  type AnalyticsRange,
+  AnalyticsRangeBadge,
+  formatRangeLabel,
+} from "@shared/components/dashboard/analyticsRange";
 
 interface PracticeResultRow {
   exercise_id: string;
@@ -14,6 +19,7 @@ interface PracticeResultRow {
 
 interface Props {
   results: PracticeResultRow[];
+  range?: AnalyticsRange;
 }
 
 interface ExerciseStat {
@@ -81,7 +87,7 @@ function analyzePracticeErrors(results: PracticeResultRow[]): ExerciseStat[] {
     .slice(0, 8);
 }
 
-export default function PracticeErrorStats({ results }: Props) {
+export default function PracticeErrorStats({ results, range }: Props) {
   const navigate = useNavigate();
   const [skillFilter, setSkillFilter] = useState("ALL");
   const weakExercises = useMemo(() => analyzePracticeErrors(results), [results]);
@@ -97,7 +103,8 @@ export default function PracticeErrorStats({ results }: Props) {
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
           <AlertTriangle className="h-3.5 w-3.5 text-orange-500" />
-          Bài tập hay sai nhất (30 ngày)
+          Bài tập hay sai nhất
+          {range && <AnalyticsRangeBadge range={range} className="normal-case tracking-normal" />}
         </h2>
         <div className="flex gap-1">
           {SKILL_FILTERS.map(sf => (

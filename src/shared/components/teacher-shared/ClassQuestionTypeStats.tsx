@@ -2,6 +2,10 @@ import { useMemo, useState } from "react";
 import { AlertTriangle, BookOpen, Headphones } from "lucide-react";
 import { cn } from "@shared/lib/utils";
 import { QUESTION_TYPE_LABELS_VI } from "@shared/utils/questionTypes";
+import {
+  type AnalyticsRange,
+  AnalyticsRangeBadge,
+} from "@shared/components/dashboard/analyticsRange";
 
 interface TestResultRow {
   user_id: string;
@@ -12,6 +16,7 @@ interface TestResultRow {
 
 interface Props {
   results: TestResultRow[];
+  range?: AnalyticsRange;
 }
 
 // QUESTION_TYPE_LABELS_VI is now imported from shared utilities.
@@ -87,7 +92,7 @@ const SKILL_FILTERS = [
   { key: "LISTENING", label: "Listening", icon: Headphones },
 ];
 
-export default function ClassQuestionTypeStats({ results }: Props) {
+export default function ClassQuestionTypeStats({ results, range }: Props) {
   const [skillFilter, setSkillFilter] = useState("ALL");
   const weakTypes = useMemo(() => analyzeClassQuestionTypes(results), [results]);
   const filtered = useMemo(
@@ -103,6 +108,7 @@ export default function ClassQuestionTypeStats({ results }: Props) {
         <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
           <AlertTriangle className="h-3.5 w-3.5 text-orange-500" />
           Dạng câu hỏi hay sai (cả lớp)
+          {range && <AnalyticsRangeBadge range={range} className="normal-case tracking-normal" />}
         </h2>
         <div className="flex gap-1">
           {SKILL_FILTERS.map(sf => (
