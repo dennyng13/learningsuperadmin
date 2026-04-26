@@ -54,6 +54,7 @@ export const adminNavItems: NavItem[] = [
   // ─── Người dùng ───
   { id: "users",        label: "Học viên",          icon: Users,           route: "/users",                      group: "users",    order: 20 },
   { id: "teachers",     label: "Giáo viên",         icon: GraduationCap,   route: "/teachers",                   group: "users",    order: 21 },
+  { id: "permissions",  label: "Phân quyền",        icon: ShieldCheck,     route: "/modules",                    group: "users",    superAdminOnly: true, order: 22 },
 
   // ─── Nhân sự ───
   { id: "contracts",    label: "Hợp đồng",          icon: FileSignature,   route: "/contracts",                  group: "hr",       order: 30 },
@@ -61,7 +62,6 @@ export const adminNavItems: NavItem[] = [
   { id: "payroll",      label: "Bảng lương",        icon: Banknote,        route: "/payroll",                    group: "hr",       order: 32 },
 
   // ─── Hệ thống (super_admin) ───
-  { id: "permissions",  label: "Phân quyền",        icon: ShieldCheck,     route: "/modules",        group: "system", superAdminOnly: true, order: 40 },
   { id: "feature-flags", label: "Feature Flags",    icon: Flag,            route: "/feature-flags",  group: "system", superAdminOnly: true, order: 41 },
   { id: "settings",     label: "Cài đặt",           icon: Settings,        route: "/settings",       group: "system", superAdminOnly: true, order: 42 },
 ];
