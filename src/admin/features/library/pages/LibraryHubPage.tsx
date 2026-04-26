@@ -290,45 +290,32 @@ function BrandShapeFigure({ url, palette }: { url: string | null; palette: Shape
     slate:  "from-slate-500/40 to-slate-500/10",
   };
 
-  if (!url) {
-    return (
+  return (
+    <div
+      aria-hidden
+      className={cn(
+        "pointer-events-none absolute",
+        "-bottom-5 -right-5 sm:-bottom-6 sm:-right-6 md:-bottom-7 md:-right-7",
+        "h-[92%] w-[48%] sm:h-[102%] sm:w-[52%] md:h-[112%] md:w-[56%]",
+        "opacity-95 transition-all duration-500 ease-out group-hover:scale-[1.06]",
+        "origin-bottom-right",
+      )}
+    >
       <div
-        aria-hidden
         className={cn(
-          "pointer-events-none absolute",
-          // Vị trí lấn ra ngoài card: nhỏ hơn ở mobile, đậm hơn ở desktop.
-          "-bottom-6 -right-6 sm:-bottom-7 sm:-right-7 md:-bottom-8 md:-right-8",
-          // Kích thước scale theo breakpoint để shape luôn cân với card
-          // (card mobile h-32, desktop h-40). Tránh shape lùn, méo trên mobile.
-          "h-[95%] w-[45%] sm:h-[105%] sm:w-[50%] md:h-[110%] md:w-[55%]",
-          "bg-gradient-to-tl rounded-tl-[100%] opacity-80 transition-all duration-500",
-          "group-hover:opacity-100 group-hover:scale-105 origin-bottom-right",
+          "absolute inset-0 rounded-tl-[999px] bg-gradient-to-tl shadow-[inset_0_1px_0_hsl(var(--background)/0.45)]",
           FALLBACK_TONE[palette],
         )}
       />
-    );
-  }
-
-  return (
-    <img
-      aria-hidden
-      src={url}
-      alt=""
-      loading="lazy"
-      decoding="async"
-      // Shape là decoration ở góc dưới-phải. Card scale theo breakpoint
-      // (h-32 mobile → h-40 desktop), nên shape cũng cần scale tương ứng để
-      // không bị méo, lùn ở mobile hay quá nhỏ ở desktop.
-      // Tailwind v3 dùng `object-right-bottom` (KHÔNG phải `object-bottom-right`).
-      className={cn(
-        "pointer-events-none absolute",
-        "-bottom-3 -right-3 sm:-bottom-3.5 sm:-right-3.5 md:-bottom-4 md:-right-4",
-        "h-[100%] w-auto max-w-[45%] sm:h-[110%] sm:max-w-[50%] md:h-[120%] md:max-w-[55%]",
-        "object-contain object-right-bottom",
-        "opacity-85 saturate-100 transition-all duration-500 ease-out",
-        "group-hover:opacity-100 group-hover:scale-[1.08]",
-        "origin-bottom-right",
+      {url && (
+        <img
+          src={url}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          className="absolute inset-0 h-full w-full object-contain object-right-bottom opacity-100 saturate-125 drop-shadow-[0_10px_18px_hsl(var(--foreground)/0.16)]"
+        />
       )}
-    />
+    </div>
   );
 }
