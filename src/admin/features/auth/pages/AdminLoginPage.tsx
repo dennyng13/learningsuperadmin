@@ -18,7 +18,10 @@ export default function AdminLoginPage() {
   const [mode, setMode] = useState<"login" | "forgot">("login");
   // Pull the active logo from the brand-assets registry; degrade to the
   // bundled PNG so login still renders if the registry is empty / loading.
-  const { url: brandLogoUrl } = useBrandAsset(["logoApp", "logoMain", "favicon"]);
+  const { url: brandLogoUrl } = useBrandAsset([
+    "logo-main", "logo-app", "favicon",
+    "logoMain", "logoApp", // legacy camelCase fallback
+  ]);
   const logoSrc = brandLogoUrl ?? fallbackLogo;
 
   const handleEmailLogin = async (e: React.FormEvent) => {
