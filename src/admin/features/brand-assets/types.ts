@@ -1,4 +1,11 @@
-export type BrandAssetType = "logo" | "favicon" | "mascot" | "icon" | "illustration" | "other";
+export type BrandAssetType =
+  | "logo"
+  | "favicon"
+  | "mascot"
+  | "icon"
+  | "illustration"
+  | "shape"
+  | "other";
 
 export interface BrandAsset {
   id: string;
@@ -21,6 +28,7 @@ export const BRAND_ASSET_TYPE_LABELS: Record<BrandAssetType, string> = {
   mascot: "Mascot",
   icon: "Icon",
   illustration: "Illustration",
+  shape: "Shape (geometric)",
   other: "Khác",
 };
 
