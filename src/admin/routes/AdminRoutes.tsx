@@ -52,6 +52,7 @@ import PayrollBatchDetailPage from "@admin/features/payroll/pages/PayrollBatchDe
 import PayrollPayslipDetailPage from "@admin/features/payroll/pages/PayrollPayslipDetailPage";
 import CompensationPage from "@admin/features/compensation/pages/CompensationPage";
 import BrandAssetsPage from "@admin/features/brand-assets/pages/BrandAssetsPage";
+import MaxQuotesPage from "@admin/features/max-quotes/pages/MaxQuotesPage";
 import BandDescriptorsPage from "@admin/features/academic/pages/BandDescriptorsPage";
 import FeedbackTemplatesPage from "@admin/features/academic/pages/FeedbackTemplatesPage";
 import CoursesPage from "@admin/features/academic/pages/CoursesPage";
@@ -182,6 +183,7 @@ export default function AppRoutes() {
           <Route path="settings" element={<AdminSettingsPage />} />
           <Route path="settings/email-preview" element={<EmailTemplatePreviewPage />} />
           <Route path="brand-assets" element={<SuperAdminRoute><BrandAssetsPage /></SuperAdminRoute>} />
+          <Route path="brand-assets/quotes" element={<SuperAdminRoute><MaxQuotesPage /></SuperAdminRoute>} />
           <Route path="schema-health" element={<SuperAdminRoute><SchemaHealthPage /></SuperAdminRoute>} />
 
           {/* 404 */}
