@@ -1,9 +1,10 @@
-import { Calendar, Users, BarChart3, Activity, Trophy, ClipboardList } from "lucide-react";
+import { Calendar, BarChart3, Activity, Trophy, ClipboardList } from "lucide-react";
 import { BackendPendingTab } from "./PlaceholderTab";
 
 export { AnnouncementsTab } from "./AnnouncementsTab";
 export { HistoryTab } from "./HistoryTab";
 export { SettingsTab } from "./SettingsTab";
+export { StudentsTab } from "./StudentsTab";
 
 /* ─── 5 tabs còn chờ backend ─── */
 
@@ -17,20 +18,6 @@ export function SessionsTab(_: { classId: string }) {
         "Bảng class_sessions (class_id, session_no, date, time, room, teacher_id, status, notes)",
         "Bảng class_session_attendance (session_id, student_id, status)",
         "RPC: generate_class_sessions(class_id, schedule, dates)",
-      ]}
-    />
-  );
-}
-
-export function StudentsTab(_: { classId: string }) {
-  return (
-    <BackendPendingTab
-      icon={Users}
-      title="Học viên"
-      description="Bảng học viên trong lớp với tiến độ kế hoạch, phút học, điểm 4 kỹ năng. Cần backend liên kết student ↔ class."
-      checklist={[
-        "Bảng class_enrollments (class_id, student_id, enrolled_at, status)",
-        "View class_student_summary (rollup từ synced_students + assessments)",
       ]}
     />
   );
