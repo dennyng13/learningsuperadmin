@@ -3,7 +3,7 @@ import {
   LayoutDashboard, FileText, Award, Users, School,
   CalendarDays, UserSearch, Settings, ShieldCheck, BarChart3,
   BookOpen, ClipboardList, Flag, GraduationCap, CalendarCheck,
-  FileSignature, FileBadge, Wallet, BookTemplate,
+  FileSignature, FileBadge, Wallet, BookTemplate, Library,
 } from "lucide-react";
 
 export interface NavItem {
@@ -17,6 +17,8 @@ export interface NavItem {
   group: "academic" | "classes" | "users" | "hr" | "system";
   /** Only show for super_admin */
   superAdminOnly?: boolean;
+  /** Extra paths that should also keep this item visually "active" in the sidebar. */
+  aliasPaths?: string[];
 }
 
 /* ═══════════════════════════════════════════
@@ -39,9 +41,8 @@ export const adminNavItems: NavItem[] = [
   { id: "dashboard",    label: "Dashboard",         icon: LayoutDashboard, route: "/",                end: true, group: "academic", order: 0 },
 
   // ─── Học thuật ───
-  { id: "tests",        label: "Ngân hàng đề",      icon: FileText,        route: "/tests",                      group: "academic", order: 1 },
-  { id: "flashcards",   label: "Flashcard",         icon: BookOpen,        route: "/flashcards",                 group: "academic", order: 2 },
-  { id: "study-plans",  label: "Study Plans",       icon: ClipboardList,   route: "/study-plans",                group: "academic", order: 3 },
+  { id: "library",      label: "Quản lý học liệu",  icon: Library,         route: "/library",                    group: "academic", order: 1,
+    aliasPaths: ["/tests", "/flashcards", "/study-plans", "/practice"] },
   { id: "badges",       label: "Huy hiệu",          icon: Award,           route: "/badges",                     group: "academic", order: 4 },
   { id: "band-descriptors", label: "Band Descriptor", icon: BookOpen,      route: "/band-descriptors",           group: "academic", order: 5 },
   { id: "feedback-templates", label: "Mẫu nhận xét", icon: BookTemplate,   route: "/feedback-templates",         group: "academic", order: 6 },

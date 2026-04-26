@@ -35,15 +35,20 @@ export function AdminSidebar() {
   // kept as fallback for any historic uploads.
   const { url: logoUrl } = useBrandAsset(["logo-app", "logo-main", "logoApp", "logoMain"]);
 
-  const allPaths = adminNavItems.map(i => i.route);
+  // Build a map of every route → which nav item it should highlight.
+  // aliasPaths lets one nav entry "own" multiple URL prefixes (vd /library
+  // được active khi user đang ở /tests, /flashcards, /study-plans).
+  const pathOwnership = adminNavItems.flatMap(i =>
+    [i.route, ...(i.aliasPaths ?? [])].map(p => ({ path: p, ownerRoute: i.route }))
+  );
   const isActive = (path: string) => {
     if (path === "/") return location.pathname === "/";
-    const matchingPaths = allPaths.filter(
-      p => p !== "/" && (location.pathname === p || location.pathname.startsWith(p + "/"))
+    const matches = pathOwnership.filter(
+      ({ path: p }) => p !== "/" && (location.pathname === p || location.pathname.startsWith(p + "/"))
     );
-    if (matchingPaths.length === 0) return false;
-    const longestMatch = matchingPaths.reduce((a, b) => (a.length >= b.length ? a : b));
-    return path === longestMatch;
+    if (matches.length === 0) return false;
+    const longest = matches.reduce((a, b) => (a.path.length >= b.path.length ? a : b));
+    return path === longest.ownerRoute;
   };
 
   const handleSignOut = async () => {
