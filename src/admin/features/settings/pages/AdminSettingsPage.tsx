@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ChevronRight, Settings, Database, HardDrive, Globe, Bell, Mail, BookTemplate, Sparkles, BookOpen, ShieldCheck, RefreshCw, FileText } from "lucide-react";
+import { ChevronRight, Settings, Database, HardDrive, Globe, Bell, Mail, BookTemplate, Sparkles, BookOpen, ShieldCheck, RefreshCw, FileText, Image as ImageIcon } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@shared/components/ui/tabs";
 import { TabSkeleton } from "@shared/components/ui/tab-skeleton";
 import AdminBackupTab from "@admin/features/settings/components/AdminBackupTab";
@@ -14,6 +14,7 @@ import AdminBandDescriptorsTab from "@admin/features/settings/components/AdminBa
 import AdminFieldAccessTab from "@admin/features/settings/components/AdminFieldAccessTab";
 import AdminSyncTypesTab from "@admin/features/settings/components/AdminSyncTypesTab";
 import AdminContractsTab from "@admin/features/settings/components/AdminContractsTab";
+import AdminBrandAssetsTab from "@admin/features/settings/components/AdminBrandAssetsTab";
 import { useAuth } from "@shared/hooks/useAuth";
 
 export default function AdminSettingsPage() {
@@ -71,6 +72,9 @@ export default function AdminSettingsPage() {
             <TabsTrigger value="contracts" className="gap-1.5 px-3 md:px-4 py-2 md:py-2.5 rounded-lg text-xs md:text-sm font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">
               <FileText className="h-3.5 w-3.5 md:h-4 md:w-4" /> Hợp đồng
             </TabsTrigger>
+            <TabsTrigger value="brand-assets" className="gap-1.5 px-3 md:px-4 py-2 md:py-2.5 rounded-lg text-xs md:text-sm font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">
+              <ImageIcon className="h-3.5 w-3.5 md:h-4 md:w-4" /> Brand
+            </TabsTrigger>
             {isAdmin && (
               <TabsTrigger value="sync-types" className="gap-1.5 px-3 md:px-4 py-2 md:py-2.5 rounded-lg text-xs md:text-sm font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">
                 <RefreshCw className="h-3.5 w-3.5 md:h-4 md:w-4" /> Sync Types
@@ -108,6 +112,9 @@ export default function AdminSettingsPage() {
         </TabsContent>
         <TabsContent value="contracts" className="mt-6">
           <TabSkeleton><AdminContractsTab /></TabSkeleton>
+        </TabsContent>
+        <TabsContent value="brand-assets" className="mt-6">
+          <TabSkeleton><AdminBrandAssetsTab /></TabSkeleton>
         </TabsContent>
         {isAdmin && (
           <TabsContent value="sync-types" className="mt-6">
