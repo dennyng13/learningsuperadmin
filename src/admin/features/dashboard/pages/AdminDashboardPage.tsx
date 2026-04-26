@@ -28,6 +28,7 @@ import PayrollStatusWidget from "@admin/features/dashboard/components/PayrollSta
 import DashboardHero from "@admin/features/dashboard/components/DashboardHero";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@shared/components/ui/button";
+import { InfoBanner } from "@shared/components/dashboard";
 
 interface DashboardStats {
   totalTests: number;
@@ -308,61 +309,40 @@ export default function AdminDashboardPage() {
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {todaySchedule && todaySchedule.count > 0 ? (
-            <button
+            <InfoBanner
+              icon={CalendarDays}
+              iconTone="teal"
               onClick={() => navigate("/schedule")}
-              className="rounded-2xl bg-card p-4 text-left shadow-[0_4px_20px_rgba(15,23,42,0.04)] hover:shadow-[0_10px_30px_rgba(15,23,42,0.08)] transition-all"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-primary/12 text-primary flex items-center justify-center">
-                    <CalendarDays className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-display font-bold text-sm flex items-center gap-2">
-                      {todaySchedule.count} buổi học
-                      {todaySchedule.conflicts > 0 && (
-                        <span className="flex items-center gap-1 text-destructive text-xs font-medium">
-                          <AlertTriangle className="h-3 w-3" />
-                          {todaySchedule.conflicts} xung đột
-                        </span>
-                      )}
-                    </h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {todaySchedule.firstTime ? `Buổi đầu lúc ${todaySchedule.firstTime}` : "Chưa có giờ cụ thể"}
-                    </p>
-                  </div>
-                </div>
-                <ChevronRight className="h-4 w-4 text-muted-foreground" />
-              </div>
-            </button>
+              title={
+                <>
+                  {todaySchedule.count} buổi học
+                  {todaySchedule.conflicts > 0 && (
+                    <span className="flex items-center gap-1 text-destructive text-xs font-medium">
+                      <AlertTriangle className="h-3 w-3" />
+                      {todaySchedule.conflicts} xung đột
+                    </span>
+                  )}
+                </>
+              }
+              description={todaySchedule.firstTime ? `Buổi đầu lúc ${todaySchedule.firstTime}` : "Chưa có giờ cụ thể"}
+            />
           ) : (
-            <div className="rounded-2xl bg-card p-4 shadow-[0_4px_20px_rgba(15,23,42,0.04)] flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-muted text-muted-foreground flex items-center justify-center">
-                <CalendarDays className="h-5 w-5" />
-              </div>
-              <div>
-                <h3 className="font-display font-bold text-sm">Không có buổi học hôm nay</h3>
-                <p className="text-xs text-muted-foreground mt-0.5">Lịch trống — hãy nghỉ ngơi 🌿</p>
-              </div>
-            </div>
+            <InfoBanner
+              icon={CalendarDays}
+              iconTone="muted"
+              title="Không có buổi học hôm nay"
+              description="Lịch trống — hãy nghỉ ngơi 🌿"
+            />
           )}
 
           {s.totalExercises > 0 && (
-            <button
+            <InfoBanner
+              icon={Layers}
+              iconTone="coral"
               onClick={() => navigate("/tests?type=exercise")}
-              className="flex items-center gap-3 rounded-2xl bg-card p-4 text-left shadow-[0_4px_20px_rgba(15,23,42,0.04)] hover:shadow-[0_10px_30px_rgba(15,23,42,0.08)] transition-all"
-            >
-              <div className="h-10 w-10 rounded-xl bg-accent/12 text-accent flex items-center justify-center">
-                <Layers className="h-5 w-5" />
-              </div>
-              <div className="flex-1">
-                <p className="font-display font-bold text-sm">
-                  {s.totalExercises} bài tập · {s.publishedExercises} published
-                </p>
-                <p className="text-xs text-muted-foreground mt-0.5">Quản lý bài luyện tập theo kỹ năng</p>
-              </div>
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
-            </button>
+              title={`${s.totalExercises} bài tập · ${s.publishedExercises} published`}
+              description="Quản lý bài luyện tập theo kỹ năng"
+            />
           )}
         </div>
       </section>
