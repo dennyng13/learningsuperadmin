@@ -74,14 +74,12 @@ export const adminNavItems: NavItem[] = [
 
 /* ═══════════════════════════════════════════
    TOP-LEVEL ROUTES — không hiển thị nút "Quay lại" trong PageHeader.
-   Bao gồm dashboard + tất cả route ở sidebar (kể cả aliasPaths) — vì
-   đây là entry-points chính, người dùng đến từ sidebar chứ không phải
-   từ một trang cha. Mọi route khác (vd /classes/list/:id, /tests/:id,
-   /tests/import, /contracts/templates/:id) sẽ TỰ ĐỘNG hiện nút back.
+   Hiện chỉ có dashboard `/` được coi là top-level. MỌI route khác —
+   kể cả các entry-point trong sidebar như `/library`, `/tests`,
+   `/users`, `/classes/list` — đều hiện nút back để user dễ quay lại
+   dashboard hoặc trang trước đó (qua `navigate(-1)`).
    ═══════════════════════════════════════════ */
-export const TOP_LEVEL_ADMIN_ROUTES: ReadonlySet<string> = new Set(
-  adminNavItems.flatMap((item) => [item.route, ...(item.aliasPaths ?? [])]),
-);
+export const TOP_LEVEL_ADMIN_ROUTES: ReadonlySet<string> = new Set(["/"]);
 
 /** True nếu pathname trùng KHỚP CHÍNH XÁC một top-level route. */
 export function isTopLevelAdminRoute(pathname: string): boolean {
