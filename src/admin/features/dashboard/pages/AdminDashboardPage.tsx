@@ -371,14 +371,24 @@ export default function AdminDashboardPage() {
         </h2>
 
         {/* Operations: 2 app + activity feed */}
-        <AppsStatusWidget />
-        <TeacherActivityFeed />
+        <LazyWidget label="Trạng thái ứng dụng" minHeight={220}>
+          <AppsStatusWidget />
+        </LazyWidget>
+        <LazyWidget label="Hoạt động giáo viên" minHeight={260}>
+          <TeacherActivityFeed />
+        </LazyWidget>
 
         {/* HR & Payroll */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <ContractStatusWidget />
-          <TimesheetStatusWidget />
-          <PayrollStatusWidget />
+          <LazyWidget label="Hợp đồng" minHeight={200}>
+            <ContractStatusWidget />
+          </LazyWidget>
+          <LazyWidget label="Bảng công" minHeight={200}>
+            <TimesheetStatusWidget />
+          </LazyWidget>
+          <LazyWidget label="Bảng lương" minHeight={200}>
+            <PayrollStatusWidget />
+          </LazyWidget>
         </div>
 
         {/* Activity Trend Chart */}
@@ -448,16 +458,34 @@ export default function AdminDashboardPage() {
         )}
 
         {/* Progress & login streak */}
-        <TeacherProgressSummary />
-        <AdminActivityCalendar />
+        <LazyWidget label="Tổng quan tiến độ" minHeight={240}>
+          <TeacherProgressSummary />
+        </LazyWidget>
+        <LazyWidget label="Lịch hoạt động" minHeight={220}>
+          <AdminActivityCalendar />
+        </LazyWidget>
 
         {/* Error analysis — only render when there is something to analyse. */}
-        {visible.questionTypeStats && <ClassQuestionTypeStats results={testResultsForAnalysis} />}
-        {visible.practiceErrorStats && <PracticeErrorStats results={practiceResultsForAnalysis} />}
+        {visible.questionTypeStats && (
+          <LazyWidget label="Phân tích lỗi câu hỏi" minHeight={260}>
+            <ClassQuestionTypeStats results={testResultsForAnalysis} />
+          </LazyWidget>
+        )}
+        {visible.practiceErrorStats && (
+          <LazyWidget label="Lỗi luyện tập" minHeight={260}>
+            <PracticeErrorStats results={practiceResultsForAnalysis} />
+          </LazyWidget>
+        )}
 
         {/* Prospects & content */}
-        {visible.prospectFunnel && <ProspectFunnel prospects={prospects} navigate={navigate} />}
-        <ContentAnalytics />
+        {visible.prospectFunnel && (
+          <LazyWidget label="Phễu tuyển sinh" minHeight={280}>
+            <ProspectFunnel prospects={prospects} navigate={navigate} />
+          </LazyWidget>
+        )}
+        <LazyWidget label="Phân tích nội dung" minHeight={240}>
+          <ContentAnalytics />
+        </LazyWidget>
       </section>
 
       {/* ╔══════════ 4. QUICK ACTIONS ══════════╗ */}
