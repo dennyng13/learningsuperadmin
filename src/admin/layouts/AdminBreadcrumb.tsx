@@ -38,6 +38,8 @@ const EXTRA_LABELS: Record<string, string> = {
   "/permissions": "Phân quyền",
   "/band-descriptors": "Band Descriptor",
   "/feedback-templates": "Mẫu nhận xét",
+  "/classes": "Vận hành lớp",
+  "/classes/list": "Danh sách lớp",
 };
 
 const routeLabels: Record<string, string> = {

@@ -49,7 +49,8 @@ export const adminNavItems: NavItem[] = [
 
   // ─── Lớp & Lịch ───
   { id: "schedule",     label: "Lịch học",          icon: CalendarDays,    route: "/schedule",                   group: "classes",  order: 10 },
-  { id: "classes",      label: "Lớp học",           icon: School,          route: "/classes",                    group: "classes",  order: 11 },
+  { id: "classes",      label: "Lớp học",           icon: School,          route: "/classes/list",               group: "classes",  order: 11,
+    aliasPaths: ["/classes"] },
   { id: "placement",    label: "Sắp lớp",           icon: UserSearch,      route: "/placement",                  group: "classes",  order: 12 },
   { id: "attendance",   label: "Điểm danh",         icon: CalendarCheck,   route: "/attendance",                 group: "classes",  order: 13 },
   { id: "availability-drafts", label: "Duyệt lịch rảnh", icon: CalendarCheck, route: "/availability-drafts",     group: "classes",  order: 14 },
