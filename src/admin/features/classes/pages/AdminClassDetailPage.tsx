@@ -70,6 +70,9 @@ export default function AdminClassDetailPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const classId = id ?? "";
+  // Gate header actions (vd nút "Tìm GV thay thế") theo role.
+  // RPC server-side cũng chặn non-admin nên đây thuần UX.
+  const { isAdmin } = useAuth();
 
   /* ─── Query: class detail ─── */
   const { data: cls, isLoading, error, refetch, isRefetching } = useQuery({
