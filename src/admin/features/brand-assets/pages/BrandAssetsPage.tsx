@@ -1,6 +1,10 @@
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Image as ImageIcon, Search, Plus, Loader2, Palette } from "lucide-react";
+import {
+  Image as ImageIcon, Search, Plus, Loader2, Palette,
+  Tag, Globe, Sparkles, Shapes, Brush, Star, Package,
+  type LucideIcon,
+} from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@shared/components/ui/tabs";
 import { Input } from "@shared/components/ui/input";
 import { Button } from "@shared/components/ui/button";
@@ -25,17 +29,17 @@ const QUERY_KEY = ["brand-assets"] as const;
 const TABS: {
   key: BrandAssetType;
   label: string;
-  emoji: string;
+  icon: LucideIcon;
   cardSize: "hero" | "default" | "compact";
   cols: string;
 }[] = [
-  { key: "logo",         label: "Logo",         emoji: "🏷️", cardSize: "hero",    cols: "md:grid-cols-2" },
-  { key: "favicon",      label: "Favicon",      emoji: "🌐", cardSize: "hero",    cols: "md:grid-cols-2" },
-  { key: "mascot",       label: "Mascots",      emoji: "🐻", cardSize: "default", cols: "md:grid-cols-2 lg:grid-cols-3" },
-  { key: "shape",        label: "Shapes",       emoji: "🔷", cardSize: "compact", cols: "grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8" },
-  { key: "illustration", label: "Illustrations",emoji: "🎨", cardSize: "default", cols: "md:grid-cols-2 lg:grid-cols-3" },
-  { key: "icon",         label: "Icons",        emoji: "✨", cardSize: "default", cols: "md:grid-cols-3 lg:grid-cols-4" },
-  { key: "other",        label: "Other",        emoji: "📦", cardSize: "default", cols: "md:grid-cols-3 lg:grid-cols-4" },
+  { key: "logo",         label: "Logo",          icon: Tag,      cardSize: "hero",    cols: "md:grid-cols-2" },
+  { key: "favicon",      label: "Favicon",       icon: Globe,    cardSize: "hero",    cols: "md:grid-cols-2" },
+  { key: "mascot",       label: "Mascots",       icon: Sparkles, cardSize: "default", cols: "md:grid-cols-2 lg:grid-cols-3" },
+  { key: "shape",        label: "Shapes",        icon: Shapes,   cardSize: "compact", cols: "grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8" },
+  { key: "illustration", label: "Illustrations", icon: Brush,    cardSize: "default", cols: "md:grid-cols-2 lg:grid-cols-3" },
+  { key: "icon",         label: "Icons",         icon: Star,     cardSize: "default", cols: "md:grid-cols-3 lg:grid-cols-4" },
+  { key: "other",        label: "Other",         icon: Package,  cardSize: "default", cols: "md:grid-cols-3 lg:grid-cols-4" },
 ];
 
 export default function BrandAssetsPage() {
@@ -138,7 +142,7 @@ export default function BrandAssetsPage() {
           <TabsList className="w-full justify-start flex-wrap h-auto">
             {TABS.map((t) => (
               <TabsTrigger key={t.key} value={t.key} className="gap-1.5">
-                <span aria-hidden>{t.emoji}</span> {t.label}
+                <t.icon className="h-3.5 w-3.5" aria-hidden /> {t.label}
                 <Badge variant="secondary" className="ml-1 text-[10px]">
                   {byType[t.key].length}
                 </Badge>
