@@ -27,6 +27,8 @@ interface LibrarySection {
   palette: ShapePalette;  // dùng để lookup shapes trong DB
   extraLinks?: { label: string; route: string }[];
   moduleKey: AdminModuleKey;
+  /** Ưu tiên shape có asset_key chứa từ khoá này (vd "wave", "blob"). */
+  preferredShape?: string;
 }
 
 const SECTIONS: LibrarySection[] = [
@@ -58,6 +60,7 @@ const SECTIONS: LibrarySection[] = [
     palette: "coral",
     extraLinks: [{ label: "Mẫu lộ trình", route: "/study-plans/templates" }],
     moduleKey: ADMIN_MODULE_KEYS.STUDY_PLANS,
+    preferredShape: "wave",
   },
 ];
 
@@ -111,7 +114,7 @@ const SectionCard = forwardRef<HTMLButtonElement, { section: LibrarySection }>(f
 
   // Pick a stable shape from the palette using section.id as seed —
   // tránh render khác nhau giữa các lần re-mount (sẽ nhấp nháy).
-  const shapeUrl = pickStableShape(urls, section.id);
+  const shapeUrl = pickStableShape(urls, section.id, section.preferredShape);
 
   return (
     <button
@@ -190,8 +193,13 @@ const SectionCard = forwardRef<HTMLButtonElement, { section: LibrarySection }>(f
 const SOFT_SHAPE_KEYWORDS = ["blob", "wave", "curve", "drop", "circle", "oval", "leaf", "petal", "cloud", "moon", "pebble", "bean"];
 const HARSH_SHAPE_KEYWORDS = ["stair", "chevron", "arrow", "zigzag", "grid", "cross", "plus", "triangle", "square", "rect"];
 
-function pickStableShape(urls: string[], seed: string): string | null {
+function pickStableShape(urls: string[], seed: string, preferred?: string): string | null {
   if (urls.length === 0) return null;
+  // 1. Ưu tiên explicit keyword nếu có khớp
+  if (preferred) {
+    const match = urls.find((u) => u.toLowerCase().includes(preferred.toLowerCase()));
+    if (match) return match;
+  }
   const soft = urls.filter((u) => SOFT_SHAPE_KEYWORDS.some((k) => u.toLowerCase().includes(k)));
   const safe = (soft.length > 0 ? soft : urls).filter(
     (u) => !HARSH_SHAPE_KEYWORDS.some((k) => u.toLowerCase().includes(k)),
