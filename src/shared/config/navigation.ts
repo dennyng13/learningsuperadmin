@@ -3,7 +3,7 @@ import {
   LayoutDashboard, FileText, Award, Users, School,
   CalendarDays, UserSearch, Settings, ShieldCheck, BarChart3,
   BookOpen, ClipboardList, Flag, GraduationCap, CalendarCheck,
-  FileSignature, CalendarClock, Banknote, Image as ImageIcon,
+  FileSignature, CalendarClock, Banknote,
 } from "lucide-react";
 
 export interface NavItem {
