@@ -43,6 +43,7 @@ export const adminNavItems: NavItem[] = [
   // ─── Học thuật ───
   { id: "library",      label: "Quản lý học liệu",  icon: Library,         route: "/library",                    group: "academic", order: 1,
     aliasPaths: ["/tests", "/flashcards", "/study-plans", "/practice"] },
+  { id: "courses",      label: "Quản lý khóa học",  icon: GraduationCap,   route: "/courses",                    group: "academic", order: 2 },
   { id: "badges",       label: "Huy hiệu",          icon: Award,           route: "/badges",                     group: "academic", order: 4 },
   { id: "band-descriptors", label: "Band Descriptor", icon: BookOpen,      route: "/band-descriptors",           group: "academic", order: 5 },
   { id: "feedback-templates", label: "Mẫu nhận xét", icon: BookTemplate,   route: "/feedback-templates",         group: "academic", order: 6 },

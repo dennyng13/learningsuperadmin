@@ -54,6 +54,7 @@ import CompensationPage from "@admin/features/compensation/pages/CompensationPag
 import BrandAssetsPage from "@admin/features/brand-assets/pages/BrandAssetsPage";
 import BandDescriptorsPage from "@admin/features/academic/pages/BandDescriptorsPage";
 import FeedbackTemplatesPage from "@admin/features/academic/pages/FeedbackTemplatesPage";
+import CoursesPage from "@admin/features/academic/pages/CoursesPage";
 import LibraryHubPage from "@admin/features/library/pages/LibraryHubPage";
 import { SuperAdminRoute } from "@admin/guards/SuperAdminRoute";
 import { ModuleAccessRoute } from "@admin/guards/ModuleAccessRoute";
@@ -154,6 +155,8 @@ export default function AppRoutes() {
           {/* Academic — Band Descriptor & Mẫu nhận xét (chuyển từ Settings) */}
           <Route path="band-descriptors" element={<BandDescriptorsPage />} />
           <Route path="feedback-templates" element={<FeedbackTemplatesPage />} />
+          {/* Academic — Module Quản lý Khóa học (programs + cấp độ) */}
+          <Route path="courses" element={<CoursesPage />} />
           {/* Legacy redirects — bookmark cũ /settings/<id> → trang riêng */}
           <Route path="settings/ai-grading"       element={<Navigate to="/permissions?tab=ai-grading" replace />} />
           <Route path="settings/band-descriptors" element={<Navigate to="/band-descriptors" replace />} />
