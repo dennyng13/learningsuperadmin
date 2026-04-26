@@ -9,7 +9,7 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@shared/components/ui/table";
-import { FileText, Plus, Search, Loader2 } from "lucide-react";
+import { FileText, Plus, Search, Loader2, Settings2 } from "lucide-react";
 import { useContractList } from "../hooks/useContracts";
 import ContractStatusBadge from "../components/ContractStatusBadge";
 import { CONTRACT_STATUS_LABELS, type ContractStatus } from "../types";
@@ -54,10 +54,20 @@ export default function ContractsListPage() {
       subtitle="Quản lý hợp đồng dịch vụ đào tạo của giáo viên"
       icon={FileText}
       actions={
-        <Button onClick={() => navigate("/contracts/new")} size="sm">
-          <Plus className="h-4 w-4 mr-1" />
-          Tạo hợp đồng
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            onClick={() => navigate("/contracts/templates")}
+            size="sm"
+            variant="outline"
+          >
+            <Settings2 className="h-4 w-4 mr-1" />
+            Quản lý template
+          </Button>
+          <Button onClick={() => navigate("/contracts/new")} size="sm">
+            <Plus className="h-4 w-4 mr-1" />
+            Tạo hợp đồng
+          </Button>
+        </div>
       }
       filterBar={
         <div className="flex flex-wrap items-center gap-2">

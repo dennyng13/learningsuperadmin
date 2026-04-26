@@ -38,6 +38,8 @@ import HealthCheckPage from "@admin/features/misc/pages/HealthCheckPage";
 import ContractsListPage from "@admin/features/contracts/pages/ContractsListPage";
 import ContractCreatePage from "@admin/features/contracts/pages/ContractCreatePage";
 import ContractDetailPage from "@admin/features/contracts/pages/ContractDetailPage";
+import ContractTemplatesListPage from "@admin/features/contracts/pages/ContractTemplatesListPage";
+import ContractTemplateEditorPage from "@admin/features/contracts/pages/ContractTemplateEditorPage";
 
 function PageLoader() {
   return (
@@ -104,6 +106,8 @@ export default function AppRoutes() {
           {/* Contracts (Stage F1) */}
           <Route path="contracts" element={<ContractsListPage />} />
           <Route path="contracts/new" element={<ContractCreatePage />} />
+          <Route path="contracts/templates" element={<ContractTemplatesListPage />} />
+          <Route path="contracts/templates/:templateId" element={<ContractTemplateEditorPage />} />
           <Route path="contracts/:contractId" element={<ContractDetailPage />} />
 
           {/* Misc */}
