@@ -12,6 +12,7 @@ import {
 } from "@shared/components/ui/sidebar";
 import { adminNavItems } from "@shared/config/navigation";
 import { usePendingDraftCount } from "@shared/hooks/useAvailabilityDrafts";
+import { useBrandAsset } from "@shared/hooks/useBrandAsset";
 
 const mainItems = adminNavItems.filter(i => i.group === "main").sort((a, b) => a.order - b.order);
 const hrItems = adminNavItems.filter(i => i.group === "hr").sort((a, b) => a.order - b.order);
@@ -24,6 +25,9 @@ export function AdminSidebar() {
   const navigate = useNavigate();
   const { user, isSuperAdmin, signOut } = useAuth();
   const pendingDrafts = usePendingDraftCount();
+  // Resolve the app logo from the brand-assets registry. Try `logoApp` first,
+  // fall back to `logoMain` for transitional naming.
+  const { url: logoUrl } = useBrandAsset(["logoApp", "logoMain"]);
 
   const allPaths = adminNavItems.map(i => i.route);
   const isActive = (path: string) => {
@@ -77,10 +81,20 @@ export function AdminSidebar() {
       <SidebarHeader className="px-3 py-3">
         <div className="flex items-center gap-2 overflow-hidden">
           <div className="rounded-xl bg-gradient-to-br from-primary/15 to-accent/15 flex items-center justify-center shrink-0 h-9 w-9 shadow-sm">
-            <span className="font-display font-extrabold text-base leading-none tracking-tight">
-              <span className="text-primary">L</span>
-              <span className="text-accent">+</span>
-            </span>
+            {logoUrl ? (
+              <img
+                src={logoUrl}
+                alt="Logo"
+                className="h-7 w-7 object-contain"
+                loading="eager"
+                decoding="async"
+              />
+            ) : (
+              <span className="font-display font-extrabold text-base leading-none tracking-tight">
+                <span className="text-primary">L</span>
+                <span className="text-accent">+</span>
+              </span>
+            )}
           </div>
           <div className="min-w-0 group-data-[collapsible=icon]:hidden">
             <p className="font-display text-sm font-extrabold text-sidebar-foreground leading-tight truncate tracking-tight">
