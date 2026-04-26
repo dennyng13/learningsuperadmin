@@ -197,8 +197,11 @@ const SectionCard = forwardRef<
       {/* ─── Spacer đẩy bottom row xuống đáy ─── */}
       <div className="flex-1" />
 
-      {/* ─── Bottom row: arrow + extra links — pr lớn để chừa chỗ cho shape ─── */}
-      <div className="relative z-10 flex items-center gap-2 p-4 sm:p-5 pr-[42%]">
+      {/* ─── Bottom row: arrow + extra links ───
+         Padding-right scale theo breakpoint vì shape cũng phình to dần
+         (mobile 45% → desktop 55%). Phải để chừa đủ chỗ cho chip không
+         đè lên shape ở góc dưới-phải. */}
+      <div className="relative z-10 flex items-center gap-2 p-4 sm:p-5 pr-[48%] sm:pr-[50%] md:pr-[52%]">
         <ArrowRight
           className="h-5 w-5 shrink-0 text-foreground/80 transition-transform duration-300 group-hover:translate-x-1"
           strokeWidth={1.75}
