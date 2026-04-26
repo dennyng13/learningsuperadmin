@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, Save, RotateCcw, LayoutGrid } from "lucide-react";
+import { Loader2, Save, RotateCcw, LayoutGrid, CheckSquare, Square } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@shared/components/ui/button";
 import { Checkbox } from "@shared/components/ui/checkbox";
@@ -52,6 +52,22 @@ export default function ProgramLevelsMatrix({ programs, levels, onSave }: Props)
       if (set.has(lid)) set.delete(lid);
       else set.add(lid);
       next.set(pid, set);
+      return next;
+    });
+  };
+
+  const selectAll = (pid: string) => {
+    setPending((prev) => {
+      const next = cloneMap(prev);
+      next.set(pid, new Set(levels.map((l) => l.id)));
+      return next;
+    });
+  };
+
+  const clearAll = (pid: string) => {
+    setPending((prev) => {
+      const next = cloneMap(prev);
+      next.set(pid, new Set());
       return next;
     });
   };
@@ -205,11 +221,34 @@ export default function ProgramLevelsMatrix({ programs, levels, onSave }: Props)
                         >
                           <Icon className={cn("h-3.5 w-3.5", palette.iconText)} />
                         </div>
-                        <div className="min-w-0">
+                        <div className="min-w-0 flex-1">
                           <p className="text-sm font-semibold truncate">{p.name}</p>
                           <p className="text-[10px] font-mono text-muted-foreground truncate">
                             {p.key} · {count}/{levels.length}
                           </p>
+                        </div>
+                        {/* Bulk-select shortcuts */}
+                        <div className="flex items-center gap-0.5 shrink-0">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-6 w-6"
+                            title="Chọn tất cả cấp độ"
+                            onClick={() => selectAll(p.id)}
+                            disabled={count === levels.length}
+                          >
+                            <CheckSquare className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-6 w-6"
+                            title="Bỏ chọn tất cả"
+                            onClick={() => clearAll(p.id)}
+                            disabled={count === 0}
+                          >
+                            <Square className="h-3.5 w-3.5" />
+                          </Button>
                         </div>
                       </div>
                     </td>
