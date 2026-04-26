@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
-  GraduationCap, Plus, Loader2, Trash2, EyeOff,
+  GraduationCap, Plus, Loader2, Trash2, EyeOff, Layers,
 } from "lucide-react";
 import { toast } from "sonner";
+import { Link } from "react-router-dom";
 import { Button } from "@shared/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@shared/components/ui/tabs";
 import { ScrollArea, ScrollBar } from "@shared/components/ui/scroll-area";
@@ -101,9 +102,16 @@ export default function CoursesPage() {
             đầu ra, mô tả và lớp đang chạy.
           </p>
         </div>
-        <Button onClick={handleCreate} size="sm" className="h-8 gap-1.5 shrink-0">
-          <Plus className="h-3.5 w-3.5" /> Tạo khóa học
-        </Button>
+        <div className="flex items-center gap-2 shrink-0">
+          <Button asChild size="sm" variant="outline" className="h-8 gap-1.5">
+            <Link to="/courses/levels">
+              <Layers className="h-3.5 w-3.5" /> Quản lý cấp độ
+            </Link>
+          </Button>
+          <Button onClick={handleCreate} size="sm" className="h-8 gap-1.5">
+            <Plus className="h-3.5 w-3.5" /> Tạo khóa học
+          </Button>
+        </div>
       </header>
 
       {loading ? (
