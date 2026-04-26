@@ -35,6 +35,7 @@ const EXTRA_LABELS: Record<string, string> = {
   "/timesheet": "Bảng công",
   "/payroll": "Bảng lương",
   "/contracts/templates": "Mẫu hợp đồng",
+  "/permissions": "Phân quyền",
 };
 
 const routeLabels: Record<string, string> = {

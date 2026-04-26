@@ -2,7 +2,7 @@ import { useState, useMemo, type ComponentType } from "react";
 import { Link } from "react-router-dom";
 import {
   ChevronRight, Settings, Database, HardDrive, Globe, Bell, Mail,
-  BookTemplate, Sparkles, BookOpen, ShieldCheck, RefreshCw,
+  BookTemplate, Sparkles, BookOpen, RefreshCw,
   Image as ImageIcon, Search, Menu, X,
 } from "lucide-react";
 import { TabSkeleton } from "@shared/components/ui/tab-skeleton";
@@ -16,7 +16,6 @@ import AdminEmailTab from "@admin/features/settings/components/AdminEmailTab";
 import AdminFeedbackTemplatesTab from "@admin/features/settings/components/AdminFeedbackTemplatesTab";
 import AdminAIGradingTab from "@admin/features/settings/components/AdminAIGradingTab";
 import AdminBandDescriptorsTab from "@admin/features/settings/components/AdminBandDescriptorsTab";
-import AdminFieldAccessTab from "@admin/features/settings/components/AdminFieldAccessTab";
 import AdminSyncTypesTab from "@admin/features/settings/components/AdminSyncTypesTab";
 import AdminBrandAssetsTab from "@admin/features/settings/components/AdminBrandAssetsTab";
 import { useAuth } from "@shared/hooks/useAuth";
@@ -55,7 +54,6 @@ const GROUPS: SettingsGroup[] = [
       { id: "ai-grading", label: "AI Chấm bài", description: "Cấu hình mô hình AI chấm Writing / Speaking", icon: Sparkles, component: AdminAIGradingTab, keywords: "ai grading writing speaking" },
       { id: "band-descriptors", label: "Band Descriptor", description: "Tiêu chí band IELTS dùng cho chấm điểm", icon: BookOpen, component: AdminBandDescriptorsTab, keywords: "ielts band rubric" },
       { id: "templates", label: "Mẫu nhận xét", description: "Template nhận xét nhanh cho giáo viên", icon: BookTemplate, component: AdminFeedbackTemplatesTab, keywords: "feedback template" },
-      { id: "field-access", label: "Phân quyền học viên", description: "Trường nào học viên được xem / chỉnh sửa", icon: ShieldCheck, component: AdminFieldAccessTab, keywords: "permission student field" },
     ],
   },
   {

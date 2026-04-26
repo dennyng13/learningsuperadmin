@@ -17,7 +17,7 @@ import TeacherManagementPage from "@admin/features/users/pages/TeacherManagement
 import TeacherProfilePage from "@admin/features/users/pages/TeacherProfilePage";
 import ClassManagementPage from "@admin/features/classes/pages/ClassManagementPage";
 import CreateClassWizardPage from "@admin/features/classes/pages/CreateClassWizardPage";
-import ModulePermissionsPage from "@admin/features/modules/pages/ModulePermissionsPage";
+import PermissionsPage from "@admin/features/permissions/pages/PermissionsPage";
 import FlashcardSetsPage from "@admin/features/flashcards/pages/FlashcardSetsPage";
 import PracticeExerciseDetailPage from "@admin/features/practice/pages/PracticeExerciseDetailPage";
 import BadgeManagementPage from "@admin/features/badges/pages/BadgeManagementPage";
@@ -139,8 +139,11 @@ export default function AppRoutes() {
           <Route path="badges" element={<BadgeManagementPage />} />
           <Route path="profile" element={<AdminProfilePage />} />
 
+          {/* Permissions — gộp Module access + Student field access */}
+          <Route path="permissions" element={<PermissionsPage />} />
+          <Route path="modules" element={<Navigate to="/permissions?tab=modules" replace />} />
+
           {/* System */}
-          <Route path="modules" element={<ModulePermissionsPage />} />
           <Route path="feature-flags" element={<FeatureFlagsPage />} />
           <Route path="settings" element={<AdminSettingsPage />} />
           <Route path="settings/email-preview" element={<EmailTemplatePreviewPage />} />
