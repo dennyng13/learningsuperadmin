@@ -347,6 +347,12 @@ export default function ProgramLevelsMatrix({ programs, levels, onSave }: Props)
 }
 
 /* ---------- helpers ---------- */
+function cloneMap(m: Map<string, Set<string>>): Map<string, Set<string>> {
+  const next = new Map<string, Set<string>>();
+  for (const [k, v] of m) next.set(k, new Set(v));
+  return next;
+}
+
 function buildInitial(programs: CourseProgram[]): Map<string, Set<string>> {
   const map = new Map<string, Set<string>>();
   for (const p of programs) map.set(p.id, new Set(p.level_ids));
