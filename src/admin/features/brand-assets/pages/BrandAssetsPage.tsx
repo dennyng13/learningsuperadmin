@@ -149,31 +149,13 @@ export default function BrandAssetsPage() {
 
           {/* Logo & Favicon */}
           <TabsContent value="logo-favicon" className="mt-4 space-y-4">
-            <SectionGrid
-              title="Logo"
-              assets={byType.logo}
-              size="hero"
-              cols="md:grid-cols-2"
-              {...{ setPreviewAsset, setEditAsset, handleReplace, handleToggleActive, handleDelete }}
-            />
-            <SectionGrid
-              title="Favicon"
-              assets={byType.favicon}
-              size="hero"
-              cols="md:grid-cols-2"
-              {...{ setPreviewAsset, setEditAsset, handleReplace, handleToggleActive, handleDelete }}
-            />
+            <SectionGrid title="Logo" assets={byType.logo} size="hero" cols="md:grid-cols-2" onChanged={invalidate} />
+            <SectionGrid title="Favicon" assets={byType.favicon} size="hero" cols="md:grid-cols-2" onChanged={invalidate} />
           </TabsContent>
 
           {/* Mascots */}
           <TabsContent value="mascot" className="mt-4">
-            <SectionGrid
-              title=""
-              assets={byType.mascot}
-              size="default"
-              cols="md:grid-cols-2 lg:grid-cols-3"
-              {...{ setPreviewAsset, setEditAsset, handleReplace, handleToggleActive, handleDelete }}
-            />
+            <SectionGrid title="" assets={byType.mascot} size="default" cols="md:grid-cols-2 lg:grid-cols-3" onChanged={invalidate} />
           </TabsContent>
 
           {/* Shapes */}
@@ -208,39 +190,25 @@ export default function BrandAssetsPage() {
               assets={shapesByPalette}
               size="compact"
               cols="grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8"
-              {...{ setPreviewAsset, setEditAsset, handleReplace, handleToggleActive, handleDelete }}
+              onChanged={invalidate}
             />
           </TabsContent>
 
           {/* Other */}
           <TabsContent value="other" className="mt-4 space-y-4">
-            <SectionGrid
-              title="Icon"
-              assets={byType.icon}
-              size="default"
-              cols="md:grid-cols-3 lg:grid-cols-4"
-              {...{ setPreviewAsset, setEditAsset, handleReplace, handleToggleActive, handleDelete }}
-            />
-            <SectionGrid
-              title="Illustration"
-              assets={byType.illustration}
-              size="default"
-              cols="md:grid-cols-2 lg:grid-cols-3"
-              {...{ setPreviewAsset, setEditAsset, handleReplace, handleToggleActive, handleDelete }}
-            />
+            <SectionGrid title="Icon" assets={byType.icon} size="default" cols="md:grid-cols-3 lg:grid-cols-4" onChanged={invalidate} />
+            <SectionGrid title="Illustration" assets={byType.illustration} size="default" cols="md:grid-cols-2 lg:grid-cols-3" onChanged={invalidate} />
             <SectionGrid
               title="Other"
               assets={byType.other.filter((a) => !a.asset_key.startsWith("shape-"))}
               size="default"
               cols="md:grid-cols-3 lg:grid-cols-4"
-              {...{ setPreviewAsset, setEditAsset, handleReplace, handleToggleActive, handleDelete }}
+              onChanged={invalidate}
             />
           </TabsContent>
         </Tabs>
       )}
 
-      <PreviewDialog asset={previewAsset} onClose={() => setPreviewAsset(null)} />
-      <EditMetadataDialog asset={editAsset} onClose={() => setEditAsset(null)} onSave={handleEdit} />
       <UploadAssetDialog open={uploadOpen} onClose={() => setUploadOpen(false)} onCreated={() => invalidate()} />
     </div>
   );
@@ -253,17 +221,10 @@ interface SectionProps {
   assets: BrandAsset[];
   size: "hero" | "default" | "compact";
   cols: string;
-  setPreviewAsset: (a: BrandAsset) => void;
-  setEditAsset: (a: BrandAsset) => void;
-  handleReplace: (a: BrandAsset, file: File) => Promise<void>;
-  handleToggleActive: (a: BrandAsset) => Promise<void>;
-  handleDelete: (a: BrandAsset) => Promise<void>;
+  onChanged: () => void;
 }
 
-function SectionGrid({
-  title, assets, size, cols,
-  setPreviewAsset, setEditAsset, handleReplace, handleToggleActive, handleDelete,
-}: SectionProps) {
+function SectionGrid({ title, assets, size, cols, onChanged }: SectionProps) {
   if (assets.length === 0) {
     return title ? (
       <div>
@@ -289,16 +250,7 @@ function SectionGrid({
       )}
       <div className={`grid grid-cols-1 ${cols} gap-3`}>
         {assets.map((a) => (
-          <AssetCard
-            key={a.id}
-            asset={a}
-            size={size}
-            onPreview={setPreviewAsset}
-            onEdit={setEditAsset}
-            onReplace={handleReplace}
-            onToggleActive={handleToggleActive}
-            onDelete={handleDelete}
-          />
+          <BrandAssetCard key={a.id} asset={a} size={size} onChanged={onChanged} />
         ))}
       </div>
     </div>
