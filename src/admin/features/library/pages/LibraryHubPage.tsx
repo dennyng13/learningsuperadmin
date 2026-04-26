@@ -231,7 +231,7 @@ function BrandShapeFigure({ url, palette }: { url: string | null; palette: Shape
       // tăng nhẹ khi hover để màu thêm sống động.
       className={cn(
         "pointer-events-none absolute -bottom-4 -right-4",
-        "h-[70%] w-auto max-w-[45%] object-contain object-bottom-right",
+        "h-[60%] w-auto max-w-[40%] object-contain object-bottom-right",
         "opacity-35 saturate-75 transition-all duration-500 ease-out",
         "group-hover:opacity-90 group-hover:saturate-100 group-hover:scale-[1.06]",
         "origin-bottom-right",
