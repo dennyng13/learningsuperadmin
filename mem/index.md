@@ -1,9 +1,8 @@
 # Project Memory
 
 ## Core
-Admin Portal for Learning Plus ecosystem (3 portals share 1 Supabase backend).
-Roles via `user_roles` table + `has_role(uid, role)` RPC. Never store roles on profiles.
-Use semantic design tokens (HSL) from index.css; `font-display` for headings.
+Brand geometric shapes live in DB (`brand_assets`, type=shape, key `shape-{palette}-{name}`); use `useBrandShapes(palette)` to render them — never hard-code SVG decoration.
 
 ## Memories
-- [Brand Assets Manager](mem://features/admin/brand-assets-manager.md) — Super-admin /brand-assets page, helpers, RLS, cache-busting, conventions.
+- [Brand Assets Manager](mem://features/admin/brand-assets-manager) — Super-admin /brand-assets page, bucket + RPC + helpers in `src/admin/lib/brandAssets.ts`.
+- [Library Hub](mem://features/admin/library-hub) — /library page gom Tests/Flashcards/Study Plans, card-with-shape pattern reusable cho hub khác.
