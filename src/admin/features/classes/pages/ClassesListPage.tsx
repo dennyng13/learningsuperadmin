@@ -31,12 +31,15 @@ import {
 import { Textarea } from "@shared/components/ui/textarea";
 import { useArchiveClass } from "@admin/features/classes/hooks/useArchiveClass";
 import { cn } from "@shared/lib/utils";
+import { getLevelColor } from "@shared/utils/levelColors";
 
 /* ─────────── Types ─────────── */
 
 interface ClassRow {
   id: string;
   name: string | null;
+  /** Hệ thống cũ: trước khi migration backbone backfill `name`, vẫn còn `class_name`. */
+  class_name?: string | null;
   class_code: string | null;
   program: string | null;
   level: string | null;
@@ -44,12 +47,20 @@ interface ClassRow {
   mode: string | null;
   start_date: string | null;
   end_date: string | null;
+  schedule: string | null;
+  room: string | null;
   teacher_name: string | null;
   student_count: number | null;
   data_source: string | null;
   lifecycle_status: ClassLifecycleStatus | null;
   cancellation_reason: string | null;
   status_changed_at: string | null;
+}
+
+/** Lấy tên hiển thị an toàn — fallback sang cột cũ để UI không trắng
+ *  khi migration backbone chưa backfill xong. */
+function displayName(cls: ClassRow): string {
+  return cls.name ?? cls.class_name ?? "(không tên)";
 }
 
 type SortKey = "start_date" | "name" | "status_changed_at";
