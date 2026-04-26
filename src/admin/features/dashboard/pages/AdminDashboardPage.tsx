@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import {
-  FileText, Users, Loader2, Layers, GraduationCap,
-  Upload, BarChart3, UserPlus, School, TrendingUp, Award,
+  FileText, Loader2, Layers,
+  Upload, BarChart3, UserPlus, Award,
   ArrowRight, PenLine, ListChecks, UserSearch, ChevronRight, CalendarDays, AlertTriangle,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -20,7 +20,6 @@ import PracticeErrorStats from "@admin/features/practice/components/PracticeErro
 import AdminActivityCalendar from "@admin/features/dashboard/components/AdminActivityCalendar";
 import TeacherProgressSummary from "@shared/components/teacher-shared/TeacherProgressSummary";
 import ContentAnalytics from "@admin/features/dashboard/components/ContentAnalytics";
-import SchoolOverview from "@admin/features/dashboard/components/SchoolOverview";
 import AppsStatusWidget from "@admin/features/dashboard/components/AppsStatusWidget";
 import TeacherActivityFeed from "@admin/features/dashboard/components/TeacherActivityFeed";
 import ContractStatusWidget from "@admin/features/dashboard/components/ContractStatusWidget";
@@ -301,30 +300,6 @@ export default function AdminDashboardPage() {
         }))}
       />
 
-      {/* ── Trạng thái 2 app (IELTS Practice + Teacher's Hub) ── */}
-      <AppsStatusWidget />
-
-      {/* ── Hoạt động giáo viên (realtime feed) ── */}
-      <TeacherActivityFeed />
-
-      {/* ── HR Contracts: trạng thái ký + sắp hết hạn ── */}
-      <ContractStatusWidget />
-
-      {/* ── Bảng công: kỳ chờ duyệt / chờ khoá / đã khoá ── */}
-      <TimesheetStatusWidget />
-
-      {/* ── Bảng lương: payslip nháp / chờ TT / đã TT ── */}
-      <PayrollStatusWidget />
-
-      {/* ── Stats Grid ── */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-        <StatCard icon={Users} label="Học viên" value={s.totalStudents} sub={`${s.linkedStudents} đã liên kết`} onClick={() => navigate("/users")} />
-        <StatCard icon={GraduationCap} label="Giáo viên" value={s.totalTeachers} onClick={() => navigate("/users")} />
-        <StatCard icon={FileText} label="Đề thi" value={s.totalTests} sub={`${s.publishedTests} published`} onClick={() => navigate("/tests")} />
-        <StatCard icon={Layers} label="Bài tập" value={s.totalExercises} sub={`${s.publishedExercises} published`} onClick={() => navigate("/tests?type=exercise")} />
-        <StatCard icon={School} label="Lớp học" value={s.totalClasses} onClick={() => navigate("/classes")} />
-      </div>
-
       {/* ── Today's Schedule Summary ── */}
       {todaySchedule && todaySchedule.count > 0 && (
         <button
@@ -357,18 +332,40 @@ export default function AdminDashboardPage() {
           </div>
         </button>
       )}
-      {(s.recentResults7d > 0 || s.recentPractice7d > 0) && (
-        <div className="bg-primary/5 border border-primary/15 rounded-xl p-4 flex items-center gap-3">
-          <TrendingUp className="h-5 w-5 text-primary shrink-0" />
-          <p className="text-sm text-foreground">
-            <span className="font-semibold">7 ngày qua:</span>{" "}
-            {s.recentResults7d > 0 && <span>{s.recentResults7d} bài thi</span>}
-            {s.recentResults7d > 0 && s.recentPractice7d > 0 && ", "}
-            {s.recentPractice7d > 0 && <span>{s.recentPractice7d} bài luyện tập</span>}
-            {" "}được hoàn thành
-          </p>
-        </div>
+
+      {/* ── Một bài tập KPI bổ sung (không có trong Hero) ── */}
+      {s.totalExercises > 0 && (
+        <button
+          onClick={() => navigate("/tests?type=exercise")}
+          className="w-full flex items-center gap-3 rounded-xl border bg-card p-4 text-left hover:bg-muted/50 transition-colors"
+        >
+          <div className="h-10 w-10 rounded-lg bg-accent/10 text-accent flex items-center justify-center">
+            <Layers className="h-5 w-5" />
+          </div>
+          <div className="flex-1">
+            <p className="font-display font-bold text-sm">
+              {s.totalExercises} bài tập · {s.publishedExercises} đã published
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">Quản lý bài luyện tập theo kỹ năng</p>
+          </div>
+          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+        </button>
       )}
+
+      {/* ── Trạng thái 2 app (IELTS Practice + Teacher's Hub) ── */}
+      <AppsStatusWidget />
+
+      {/* ── Hoạt động giáo viên (realtime feed) ── */}
+      <TeacherActivityFeed />
+
+      {/* ── HR Contracts: trạng thái ký + sắp hết hạn ── */}
+      <ContractStatusWidget />
+
+      {/* ── Bảng công: kỳ chờ duyệt / chờ khoá / đã khoá ── */}
+      <TimesheetStatusWidget />
+
+      {/* ── Bảng lương: payslip nháp / chờ TT / đã TT ── */}
+      <PayrollStatusWidget />
 
       {/* ── Activity Trend Chart ── */}
       {activityTrend.some(d => d.tests > 0 || d.practices > 0) && (
@@ -454,86 +451,20 @@ export default function AdminDashboardPage() {
       {/* ── Content Analytics ── */}
       <ContentAnalytics />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
-        {/* ── Quick Actions ── */}
-        <div className="lg:col-span-1 space-y-3">
-          <h2 className="font-display text-sm font-bold text-muted-foreground uppercase tracking-wider">Thao tác nhanh</h2>
-          <div className="space-y-2">
-            <QuickAction icon={PenLine} label="Tạo đề thi" desc="Tạo mới với câu hỏi IELTS" onClick={() => navigate("/tests/new")} />
-            <QuickAction icon={Upload} label="Import đề" desc="Từ file Word/PDF" onClick={() => navigate("/tests/import")} />
-            <QuickAction icon={ListChecks} label="Tạo bài tập" desc="Luyện tập theo kỹ năng" onClick={() => navigate("/tests?type=exercise")} />
-            <QuickAction icon={UserPlus} label="Quản lý người dùng" desc="Học viên, giáo viên, tài khoản" onClick={() => navigate("/users")} />
-            <QuickAction icon={Award} label="Huy hiệu" desc="Trao huy hiệu cho học viên" onClick={() => navigate("/badges")} />
-          </div>
-        </div>
-
-        {/* ── Recent Items ── */}
-        <div className="lg:col-span-2">
-          <h2 className="font-display text-sm font-bold text-muted-foreground uppercase tracking-wider mb-3">Mới tạo gần đây</h2>
-          {recentItems.length === 0 ? (
-            <div className="bg-card rounded-xl border p-8 text-center text-muted-foreground text-sm">
-              Chưa có nội dung nào. Bắt đầu bằng cách tạo đề mới hoặc bài tập.
-            </div>
-          ) : (
-            <div className="bg-card rounded-xl border overflow-hidden">
-              <div className="divide-y divide-border">
-                {recentItems.map((item) => (
-                  <button
-                    key={`${item.type}-${item.id}`}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted/30 transition-colors group"
-                    onClick={() => navigate(item.type === "test" ? `/tests/${item.id}` : `/tests?type=exercise`)}
-                  >
-                    <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
-                      item.type === "test" ? "bg-primary/10 text-primary" : "bg-accent/10 text-accent"
-                    )}>
-                      {item.type === "test" ? <FileText className="h-4 w-4" /> : <Layers className="h-4 w-4" />}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{item.name}</p>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">
-                          {item.type === "test" ? item.section_type : item.skill}
-                        </span>
-                        <span className={cn("text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-full",
-                          item.status === "published" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
-                        )}>
-                          {item.status === "published" ? "Published" : "Nháp"}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[11px] text-muted-foreground hidden sm:block">
-                        {format(new Date(item.created_at), "dd/MM/yyyy")}
-                      </span>
-                      <ArrowRight className="h-3.5 w-3.5 text-muted-foreground/40 group-hover:text-primary transition-colors" />
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+      {/* ── Quick Actions (single column, gọn) ── */}
+      <div>
+        <h2 className="font-display text-sm font-bold text-muted-foreground uppercase tracking-wider mb-3">
+          Thao tác nhanh
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+          <QuickAction icon={PenLine} label="Tạo đề thi" desc="Tạo mới với câu hỏi IELTS" onClick={() => navigate("/tests/new")} />
+          <QuickAction icon={Upload} label="Import đề" desc="Từ file Word/PDF" onClick={() => navigate("/tests/import")} />
+          <QuickAction icon={ListChecks} label="Tạo bài tập" desc="Luyện tập theo kỹ năng" onClick={() => navigate("/tests?type=exercise")} />
+          <QuickAction icon={UserPlus} label="Quản lý người dùng" desc="Học viên, giáo viên, tài khoản" onClick={() => navigate("/users")} />
+          <QuickAction icon={Award} label="Huy hiệu" desc="Trao huy hiệu cho học viên" onClick={() => navigate("/badges")} />
         </div>
       </div>
     </div>
-  );
-}
-
-function StatCard({ icon: Icon, label, value, sub, onClick }: {
-  icon: any; label: string; value: number; sub?: string; onClick?: () => void;
-}) {
-  return (
-    <button onClick={onClick} className="bg-card rounded-xl border p-3 md:p-4 text-left hover:border-primary/30 hover:shadow-sm transition-all group">
-      <div className="flex items-center gap-2.5">
-        <div className="w-9 h-9 rounded-lg bg-secondary flex items-center justify-center text-primary group-hover:bg-primary/10 transition-colors">
-          <Icon className="h-4 w-4" />
-        </div>
-        <div>
-          <p className="text-lg md:text-xl font-bold leading-none">{value}</p>
-          <p className="text-[10px] md:text-xs text-muted-foreground mt-0.5">{label}</p>
-        </div>
-      </div>
-      {sub && <p className="text-[10px] text-muted-foreground/60 mt-1.5 ml-[46px]">{sub}</p>}
-    </button>
   );
 }
 
@@ -542,7 +473,7 @@ function QuickAction({ icon: Icon, label, desc, onClick }: {
 }) {
   return (
     <button onClick={onClick} className="w-full flex items-center gap-3 bg-card rounded-xl border px-4 py-3 text-left hover:border-primary/30 hover:shadow-sm transition-all group">
-      <div className="w-9 h-9 rounded-lg bg-dark flex items-center justify-center text-primary shrink-0 group-hover:bg-primary/10 transition-colors">
+      <div className="w-9 h-9 rounded-lg bg-secondary flex items-center justify-center text-primary shrink-0 group-hover:bg-primary/10 transition-colors">
         <Icon className="h-4 w-4" />
       </div>
       <div className="flex-1 min-w-0">
