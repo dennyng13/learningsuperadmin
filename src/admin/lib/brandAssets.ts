@@ -44,10 +44,13 @@ export function suggestStoragePath(
       return `icons/${key}.${safeExt}`;
     case "illustration":
       return `illustrations/${key}.${safeExt}`;
-    default: {
+    case "shape": {
       // shape-teal-circle → shapes/teal/circle.png
       const m = key.match(/^shape-([a-z]+)-(.+)$/);
       if (m) return `shapes/${m[1]}/${m[2]}.${safeExt}`;
+      return `shapes/${key}.${safeExt}`;
+    }
+    default: {
       return `other/${key}.${safeExt}`;
     }
   }
