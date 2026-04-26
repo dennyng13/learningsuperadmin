@@ -44,8 +44,10 @@ const SECTIONS: LibrarySection[] = [
     palette: "teal",
     extraLinks: [{ label: "Nhập đề từ file", route: "/tests/import" }],
     moduleKey: ADMIN_MODULE_KEYS.TESTS,
+    // Card "đề thi" → shape KHỐI ĐẶC tròn đầy (blob/circle) — gợi sự
+    // chắc chắn của ngân hàng nội dung.
     preferredShape: "blob",
-    preferredShapeFallbacks: ["pebble", "oval", "circle"],
+    preferredShapeFallbacks: ["pebble", "oval", "circle", "bean"],
   },
   {
     id: "flashcards",
@@ -55,10 +57,10 @@ const SECTIONS: LibrarySection[] = [
     route: "/flashcards",
     palette: "amber",
     moduleKey: ADMIN_MODULE_KEYS.FLASHCARDS,
-    // Đổi sang shape "petal/leaf" mềm — gợi cảm giác lật trang flashcard,
-    // tránh trùng kiểu blob của card Ngân hàng đề.
-    preferredShape: "petal",
-    preferredShapeFallbacks: ["leaf", "drop", "moon"],
+    // Card "flashcard" → shape TIA / NGÔI SAO — gợi điểm sáng kiến
+    // thức, khác hẳn blob đặc của card đề thi.
+    preferredShape: "star",
+    preferredShapeFallbacks: ["burst", "spark", "sun", "flower", "petal"],
   },
   {
     id: "study-plans",
@@ -69,10 +71,10 @@ const SECTIONS: LibrarySection[] = [
     palette: "coral",
     extraLinks: [{ label: "Mẫu lộ trình", route: "/study-plans/templates" }],
     moduleKey: ADMIN_MODULE_KEYS.STUDY_PLANS,
-    // Đổi sang "cloud/curve" — gợi dòng chảy lộ trình, khác với wave (đã thấy
-    // hơi giống petal). Fallback cuối là blob nếu DB chỉ có shape cơ bản.
-    preferredShape: "cloud",
-    preferredShapeFallbacks: ["curve", "wave", "bean", "blob"],
+    // Card "lộ trình" → shape SÓNG / DÒNG CHẢY — gợi đường đi liên tục
+    // qua các giai đoạn, khác hẳn 2 card trên.
+    preferredShape: "wave",
+    preferredShapeFallbacks: ["curve", "ribbon", "arc", "cloud", "drop"],
   },
 ];
 
