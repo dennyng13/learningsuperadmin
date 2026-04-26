@@ -538,6 +538,39 @@ export default function CourseEditorPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Confirm save dialog — chống lưu nhầm */}
+      <AlertDialog open={confirmSave} onOpenChange={(o) => !saving && setConfirmSave(o)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {isEdit ? "Lưu thay đổi cho khóa học?" : "Tạo khóa học mới?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p>Vui lòng xác nhận thông tin trước khi lưu:</p>
+                <ul className="space-y-1 rounded-md border bg-muted/30 p-3 text-xs">
+                  <li><span className="text-muted-foreground">Tên:</span> <span className="font-semibold">{name || "(trống)"}</span></li>
+                  <li><span className="text-muted-foreground">Key:</span> <code className="font-mono">{key || "(trống)"}</code></li>
+                  <li><span className="text-muted-foreground">Cấp độ:</span> {levelIds.length} level</li>
+                  <li><span className="text-muted-foreground">Đầu ra:</span> {outcomes.length} mục</li>
+                  <li><span className="text-muted-foreground">Trạng thái:</span> {active ? "Đang hoạt động" : "Ẩn"}</li>
+                </ul>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={saving}>Hủy</AlertDialogCancel>
+            <AlertDialogAction onClick={handleSubmit} disabled={saving}>
+              {saving ? (
+                <><Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> Đang lưu…</>
+              ) : (
+                <>{isEdit ? "Xác nhận lưu" : "Xác nhận tạo"}</>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
