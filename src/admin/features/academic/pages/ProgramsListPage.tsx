@@ -7,6 +7,14 @@ import {
 import { toast } from "sonner";
 import { Button } from "@shared/components/ui/button";
 import { Input } from "@shared/components/ui/input";
+import { Label } from "@shared/components/ui/label";
+import { Switch } from "@shared/components/ui/switch";
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from "@shared/components/ui/dialog";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@shared/components/ui/select";
 import { useCoursesAdmin, type CourseProgram } from "@admin/features/academic/hooks/useCoursesAdmin";
 import { useCourseLevels } from "@shared/hooks/useCourseLevels";
 import { getProgramIcon, getProgramPalette } from "@shared/utils/programColors";
@@ -23,10 +31,11 @@ import { cn } from "@shared/lib/utils";
  */
 export default function ProgramsListPage() {
   const navigate = useNavigate();
-  const { programs, loading, update, refetch } = useCoursesAdmin();
+  const { programs, loading, create, update, refetch } = useCoursesAdmin();
   const { levels } = useCourseLevels();
   const [query, setQuery] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
 
   const programsByLevelCount = useMemo(() => {
     const m = new Map<string, number>();
@@ -98,7 +107,7 @@ export default function ProgramsListPage() {
               <Layers className="h-3.5 w-3.5" /> Khóa học (cấp độ)
             </Link>
           </Button>
-          <Button onClick={() => navigate("/courses/new")} size="sm" className="h-8 gap-1.5">
+          <Button onClick={() => setCreateOpen(true)} size="sm" className="h-8 gap-1.5">
             <Plus className="h-3.5 w-3.5" /> Tạo chương trình
           </Button>
         </div>
@@ -125,7 +134,7 @@ export default function ProgramsListPage() {
             {query ? "Không có chương trình khớp." : "Chưa có chương trình nào."}
           </p>
           {!query && (
-            <Button onClick={() => navigate("/courses/new")} size="sm" variant="outline">
+            <Button onClick={() => setCreateOpen(true)} size="sm" variant="outline">
               <Plus className="h-3.5 w-3.5 mr-1" /> Tạo chương trình đầu tiên
             </Button>
           )}
@@ -234,6 +243,17 @@ export default function ProgramsListPage() {
           </div>
         </section>
       )}
+
+      <CreateProgramDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        existingKeys={programs.map((p) => p.key.toLowerCase())}
+        nextSortOrder={(programs.reduce((m, p) => Math.max(m, p.sort_order), 0) ?? 0) + 1}
+        onCreate={async (input) => {
+          await create(input);
+          await refetch();
+        }}
+      />
     </div>
   );
 }
@@ -253,4 +273,162 @@ function toInput(p: CourseProgram, override: Partial<CourseProgram>) {
     level_ids: p.level_ids,
     ...override,
   };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Inline dialog: tạo nhanh 1 trong 3 chương trình chuẩn (WRE / IELTS / Customized).
+// Editor full-page (/courses/new) vẫn giữ cho trường hợp cần chỉnh sâu (mô tả,
+// outcomes, gán level…). Dialog này chỉ bắt buộc 3 trường: loại, sort, status.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const PROGRAM_PRESETS = [
+  { key: "ielts",      name: "IELTS",      color: "blue",    icon: "trophy",         description: "Lộ trình luyện thi IELTS Academic." },
+  { key: "wre",        name: "WRE",        color: "emerald", icon: "graduation-cap", description: "Chương trình Writing & Reading Excellence." },
+  { key: "customized", name: "Customized", color: "violet",  icon: "sparkles",       description: "Lộ trình thiết kế riêng theo nhu cầu học viên." },
+] as const;
+
+type PresetKey = typeof PROGRAM_PRESETS[number]["key"];
+
+interface CreateProgramDialogProps {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  existingKeys: string[];
+  nextSortOrder: number;
+  onCreate: (input: {
+    key: string;
+    name: string;
+    description: string | null;
+    long_description: string | null;
+    outcomes: string[];
+    color_key: string | null;
+    icon_key: string | null;
+    sort_order: number;
+    status: "active" | "inactive";
+    level_ids: string[];
+  }) => Promise<void>;
+}
+
+function CreateProgramDialog({
+  open, onOpenChange, existingKeys, nextSortOrder, onCreate,
+}: CreateProgramDialogProps) {
+  const [presetKey, setPresetKey] = useState<PresetKey>("ielts");
+  const [sortOrder, setSortOrder] = useState<number>(nextSortOrder);
+  const [active, setActive] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  // Reset khi mở lại (đồng bộ sort gợi ý)
+  useState(() => { setSortOrder(nextSortOrder); });
+
+  const preset = PROGRAM_PRESETS.find((p) => p.key === presetKey)!;
+  const Icon = getProgramIcon(preset.key);
+  const palette = getProgramPalette(preset.key);
+  const duplicate = existingKeys.includes(preset.key);
+
+  const handleSubmit = async () => {
+    if (duplicate) {
+      toast.error(`Chương trình "${preset.name}" đã tồn tại.`);
+      return;
+    }
+    setSaving(true);
+    try {
+      await onCreate({
+        key: preset.key,
+        name: preset.name,
+        description: preset.description,
+        long_description: null,
+        outcomes: [],
+        color_key: preset.color,
+        icon_key: preset.icon,
+        sort_order: sortOrder,
+        status: active ? "active" : "inactive",
+        level_ids: [],
+      });
+      toast.success(`Đã tạo chương trình "${preset.name}"`);
+      onOpenChange(false);
+    } catch (err: any) {
+      toast.error(`Lỗi: ${err.message ?? "Không xác định"}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Tạo chương trình mới</DialogTitle>
+          <DialogDescription>
+            Chọn 1 trong 3 loại chương trình chuẩn. Có thể chỉnh sửa mô tả, màu sắc, cấp độ con sau ở trang chi tiết.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-2">
+          <div>
+            <Label className="text-xs">Loại chương trình</Label>
+            <Select value={presetKey} onValueChange={(v) => setPresetKey(v as PresetKey)}>
+              <SelectTrigger className="h-9 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PROGRAM_PRESETS.map((p) => {
+                  const exists = existingKeys.includes(p.key);
+                  return (
+                    <SelectItem key={p.key} value={p.key} disabled={exists}>
+                      {p.name} {exists && <span className="text-muted-foreground text-xs">(đã có)</span>}
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Preview */}
+          <div className={cn("flex items-center gap-3 rounded-lg border p-3", duplicate && "opacity-60")}>
+            <div className={cn("h-10 w-10 rounded-lg flex items-center justify-center shrink-0", palette.iconBg)}>
+              <Icon className={cn("h-5 w-5", palette.iconText)} />
+            </div>
+            <div className="min-w-0">
+              <div className="font-display font-bold text-sm">{preset.name}</div>
+              <p className="text-[11px] text-muted-foreground truncate">{preset.description}</p>
+            </div>
+          </div>
+          {duplicate && (
+            <p className="text-[11px] text-destructive">
+              Chương trình "{preset.name}" đã tồn tại — vui lòng chọn loại khác.
+            </p>
+          )}
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-xs">Sort order</Label>
+              <Input
+                type="number"
+                value={sortOrder}
+                onChange={(e) => setSortOrder(Number(e.target.value) || 0)}
+                className="h-9 text-sm"
+              />
+              <p className="text-[10px] text-muted-foreground mt-1">
+                Số nhỏ hiển thị trước.
+              </p>
+            </div>
+            <div>
+              <Label className="text-xs">Trạng thái</Label>
+              <div className="h-9 flex items-center justify-between rounded-md border bg-muted/30 px-3">
+                <span className="text-xs">{active ? "Hoạt động" : "Đã ẩn"}</span>
+                <Switch checked={active} onCheckedChange={setActive} />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={saving}>Hủy</Button>
+          <Button onClick={handleSubmit} disabled={saving || duplicate}>
+            {saving && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />}
+            Tạo chương trình
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 }
