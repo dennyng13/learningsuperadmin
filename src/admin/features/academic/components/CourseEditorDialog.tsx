@@ -263,18 +263,6 @@ export default function CourseEditorDialog({
         <ScrollArea className="flex-1">
           <div className="px-6 py-5 space-y-5">
             {step === 0 && (
-              <StepInfo
-                name={name} setName={setName}
-                description={description} setDescription={setDescription}
-                longDescription={longDescription} setLongDescription={setLongDescription}
-                outcomes={outcomes}
-                updateOutcome={updateOutcome}
-                removeOutcome={removeOutcome}
-                addOutcome={addOutcome}
-              />
-            )}
-
-            {step === 1 && (
               <StepLevels
                 levels={levels}
                 filtered={filteredLevels}
@@ -285,6 +273,18 @@ export default function CourseEditorDialog({
                 onToggleAll={toggleAllFiltered}
                 allSelected={allFilteredSelected}
                 palette={palette}
+              />
+            )}
+
+            {step === 1 && (
+              <StepInfo
+                name={name} setName={setName}
+                description={description} setDescription={setDescription}
+                longDescription={longDescription} setLongDescription={setLongDescription}
+                outcomes={outcomes}
+                updateOutcome={updateOutcome}
+                removeOutcome={removeOutcome}
+                addOutcome={addOutcome}
               />
             )}
 
