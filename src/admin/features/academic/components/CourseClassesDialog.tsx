@@ -1,9 +1,14 @@
 /**
  * CourseClassesDialog — Hiển thị danh sách lớp đang gán với một Khoá học.
  *
- * Match logic: classes.level (string) trùng với tên của bất kỳ level nào
- * được gán vào course (xem `useCourses.fetchCourseStats`). Đây là cách rẻ
- * & đúng nhất cho tới khi `classes` có cột `course_id` riêng.
+ * Match logic (auto-detect):
+ *   1. Nếu bảng `classes` có cột `course_id` → match trực tiếp
+ *      `classes.course_id === course.id` (chính xác tuyệt đối, lớp cùng
+ *      level vẫn có thể thuộc khoá khác nhau).
+ *   2. Fallback (cột chưa tồn tại) → match qua tên level:
+ *      `classes.level ∈ {tên các level đã gán cho course}`.
+ *
+ * Detection được cache 1 lần / phiên qua `hasClassesCourseIdColumn()`.
  */
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
@@ -23,6 +28,7 @@ import { cn } from "@shared/lib/utils";
 import { getProgramPalette } from "@shared/utils/programColors";
 import type { Course } from "@admin/features/academic/hooks/useCourses";
 import type { CourseLevel } from "@shared/hooks/useCourseLevels";
+import { hasClassesCourseIdColumn } from "@admin/features/academic/utils/classesCourseIdSupport";
 
 interface ClassRow {
   id: string;
@@ -77,15 +83,27 @@ export default function CourseClassesDialog({
 
   const { data: classes, isLoading } = useQuery({
     queryKey: ["course-classes", course.id, linkedLevelNames.join("|")],
-    enabled: open && linkedLevelNames.length > 0,
+    // Khi đã có cột `course_id`, ta vẫn truy vấn được kể cả khi course chưa
+    // có level nào — vì matching dựa vào course_id chứ không phải tên level.
+    // Vì vậy chỉ disable khi dialog đóng.
+    enabled: open,
     queryFn: async (): Promise<ClassRow[]> => {
-      const { data, error } = await (supabase as any)
+      const useCourseId = await hasClassesCourseIdColumn();
+      let q = (supabase as any)
         .from("classes")
         .select(
           "id, name, class_name, class_code, level, program, branch, schedule, room, teacher_name, student_count, start_date, end_date, lifecycle_status, status_changed_at, cancellation_reason",
-        )
-        .in("level", linkedLevelNames)
-        .order("start_date", { ascending: false, nullsFirst: false });
+        );
+      if (useCourseId) {
+        q = q.eq("course_id", course.id);
+      } else {
+        // Fallback: không có cột course_id → match qua tên level. Khi course
+        // chưa có level nào, trả mảng rỗng cho an toàn (tránh `.in("level", [])`
+        // bị Supabase coi là điều kiện rỗng → trả tất cả).
+        if (linkedLevelNames.length === 0) return [];
+        q = q.in("level", linkedLevelNames);
+      }
+      const { data, error } = await q.order("start_date", { ascending: false, nullsFirst: false });
       if (error) throw error;
       return (data ?? []) as ClassRow[];
     },
@@ -127,12 +145,7 @@ export default function CourseClassesDialog({
 
         {/* Body */}
         <div className="flex-1 min-h-0 overflow-y-auto scrollbar-prominent px-6 py-4 space-y-5">
-          {linkedLevelNames.length === 0 ? (
-            <EmptyState
-              title="Khoá học chưa có cấp độ nào"
-              hint="Hãy gán ít nhất 1 cấp độ ở bước 'Cấp độ' trong dialog sửa khoá."
-            />
-          ) : isLoading ? (
+          {isLoading ? (
             <>
               <Skeleton className="h-20 w-full" />
               <Skeleton className="h-20 w-full" />
@@ -141,7 +154,11 @@ export default function CourseClassesDialog({
           ) : total === 0 ? (
             <EmptyState
               title="Chưa có lớp nào dùng khoá này"
-              hint={`Không tìm thấy lớp với cấp độ: ${linkedLevelNames.join(", ")}.`}
+              hint={
+                linkedLevelNames.length === 0
+                  ? "Khoá học chưa có cấp độ — hãy gán cấp độ hoặc tạo lớp gán trực tiếp vào khoá này."
+                  : `Không tìm thấy lớp khớp với khoá này (cấp độ: ${linkedLevelNames.join(", ")}).`
+              }
             />
           ) : (
             grouped.map(([levelName, items]) => (
@@ -165,9 +182,7 @@ export default function CourseClassesDialog({
 
         {/* Footer */}
         <div className="px-6 py-3 border-t bg-muted/20 flex items-center justify-between gap-3">
-          <p className="text-[11px] text-muted-foreground">
-            Lớp được match qua <code className="text-[10px] bg-background px-1 py-0.5 rounded border">classes.level</code>.
-          </p>
+          <MatchInfo />
           <div className="flex items-center gap-2">
             <Button asChild variant="outline" size="sm" className="h-8">
               <Link to={`/classes/list?program=${encodeURIComponent(programKey)}`}>
@@ -272,5 +287,33 @@ function EmptyState({ title, hint }: { title: string; hint: string }) {
       <p className="font-bold text-sm">{title}</p>
       <p className="text-xs text-muted-foreground mt-1 max-w-md">{hint}</p>
     </div>
+  );
+}
+
+/**
+ * Hiển thị nguồn match (course_id vs level) để admin biết cơ chế hiện hành.
+ * Dùng `useQuery` với staleTime vô hạn để chỉ probe đúng 1 lần / phiên.
+ */
+function MatchInfo() {
+  const { data: useCourseId } = useQuery({
+    queryKey: ["classes-course-id-support"],
+    queryFn: () => hasClassesCourseIdColumn(),
+    staleTime: Infinity,
+    gcTime: Infinity,
+  });
+  const codeCls = "text-[10px] bg-background px-1 py-0.5 rounded border";
+  return (
+    <p className="text-[11px] text-muted-foreground">
+      Lớp được match qua{" "}
+      {useCourseId ? (
+        <code className={codeCls}>classes.course_id</code>
+      ) : (
+        <>
+          <code className={codeCls}>classes.level</code>{" "}
+          <span className="text-muted-foreground/70">(fallback)</span>
+        </>
+      )}
+      .
+    </p>
   );
 }

@@ -13,6 +13,7 @@
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { hasClassesCourseIdColumn } from "@admin/features/academic/utils/classesCourseIdSupport";
 
 export interface Course {
   id: string;
@@ -148,15 +149,57 @@ async function fetchCourses(programId?: string): Promise<Course[]> {
 }
 
 /**
- * Aggregate class stats per course based on `classes.level` matching one of
- * the level names linked to that course. We resolve `level_id → name` from
- * the `course_levels` table, then count classes whose `level` equals that name.
+ * Aggregate class stats per course.
  *
- * NOTE: This is the cheapest accurate path until classes carry a `course_id`
- * column. It works because `classes.level` already mirrors a level name.
+ * Match logic (auto-detect, cùng cơ chế với CourseClassesDialog):
+ *   1. Khi bảng `classes` có cột `course_id` → group theo `course_id`.
+ *   2. Fallback (cột chưa tồn tại) → match qua tên level
+ *      (`classes.level` ≡ `course_levels.name`).
  */
 async function fetchCourseStats(courses: Course[]): Promise<Record<string, CourseStats>> {
   if (courses.length === 0) return {};
+
+  const useCourseId = await hasClassesCourseIdColumn();
+
+  /* ── Path A: dùng classes.course_id (chính xác) ───────────────────── */
+  if (useCourseId) {
+    const courseIds = courses.map((c) => c.id);
+    const { data: classes } = await (supabase as any)
+      .from("classes")
+      .select("id, course_id, student_count, lifecycle_status, student_ids")
+      .in("course_id", courseIds);
+
+    const out: Record<string, CourseStats> = {};
+    for (const c of courses) out[c.id] = { ...EMPTY_STATS };
+
+    const buckets = new Map<string, any[]>();
+    for (const cls of (classes ?? []) as any[]) {
+      if (!cls.course_id) continue;
+      const arr = buckets.get(cls.course_id) ?? [];
+      arr.push(cls);
+      buckets.set(cls.course_id, arr);
+    }
+
+    for (const c of courses) {
+      const matched = buckets.get(c.id) ?? [];
+      const studentSet = new Set<string>();
+      let active = 0;
+      for (const cls of matched) {
+        const status = (cls.lifecycle_status ?? "").toLowerCase();
+        if (["active", "in_progress", "ongoing", "upcoming", "scheduled"].includes(status)) active++;
+        const ids = Array.isArray(cls.student_ids) ? cls.student_ids : [];
+        for (const id of ids) if (typeof id === "string") studentSet.add(id);
+      }
+      out[c.id] = {
+        totalClasses: matched.length,
+        activeClasses: active,
+        uniqueStudents: studentSet.size,
+      };
+    }
+    return out;
+  }
+
+  /* ── Path B (fallback): match qua tên level ───────────────────────── */
   const levelIds = Array.from(new Set(courses.flatMap((c) => c.level_ids)));
   if (levelIds.length === 0) {
     return Object.fromEntries(courses.map((c) => [c.id, EMPTY_STATS]));
