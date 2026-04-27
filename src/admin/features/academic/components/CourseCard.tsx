@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import {
   BookOpen, CheckCircle2, Layers, Users, CalendarDays, ClipboardList,
-  Pencil, Trash2, EyeOff, PlayCircle, Sparkles,
+  Pencil, Trash2, EyeOff, PlayCircle, Sparkles, Plus, Star,
 } from "lucide-react";
 import { Button } from "@shared/components/ui/button";
 import {
@@ -176,22 +176,31 @@ export default function CourseCard({
       >
         <div className="min-h-[2.25rem]">
           {planCount === 0 ? (
-            <p className="text-[11px] text-muted-foreground/60 italic">
-              Chưa gán study plan nào.
-            </p>
+            <Link
+              to="/study-plans/templates"
+              className={cn(
+                "flex items-center gap-1.5 text-[11px] px-2 py-1.5 rounded-md border border-dashed",
+                "text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors",
+              )}
+            >
+              <Plus className="h-3 w-3" />
+              Chưa gán plan — tạo / chọn study plan
+            </Link>
           ) : (
             <div className="flex flex-wrap gap-1">
-              {plans.slice(0, 3).map((p) => (
+              {plans.slice(0, 3).map((p, idx) => (
                 <Link
                   key={p.id}
                   to={`/study-plans/templates`}
                   className={cn(
-                    "text-[10px] font-semibold px-1.5 py-0.5 rounded-md border",
-                    "bg-background hover:bg-muted transition-colors max-w-[140px] truncate",
+                    "inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-md border",
+                    "bg-background hover:bg-muted transition-colors max-w-[160px]",
+                    idx === 0 && "border-primary/40 bg-primary/5",
                   )}
-                  title={p.name}
+                  title={idx === 0 ? `${p.name} (mặc định)` : p.name}
                 >
-                  {p.name}
+                  {idx === 0 && <Star className="h-2.5 w-2.5 fill-current text-primary shrink-0" />}
+                  <span className="truncate">{p.name}</span>
                 </Link>
               ))}
               {plans.length > 3 && (
