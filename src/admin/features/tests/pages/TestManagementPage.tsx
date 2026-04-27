@@ -184,6 +184,11 @@ export default function TestManagementPage() {
   const testCount = (assessments || []).filter(a => (a as any).content_type !== "exercise").length;
   const exerciseCount = (assessments || []).filter(a => (a as any).content_type === "exercise").length;
 
+  // Bulk selection
+  const visibleIds = useMemo(() => filtered.map((t: any) => t.id as string), [filtered]);
+  const bulkSel = useBulkSelection(visibleIds);
+  const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
+
   return (
     <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-4 md:space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -362,6 +367,26 @@ export default function TestManagementPage() {
           />
 
           <span className="text-xs text-muted-foreground ml-auto">{filtered.length} / {(assessments || []).length} đề thi</span>
+
+          {bulkSel.count > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold shadow-sm hover:bg-primary/90 transition-colors">
+                  <Tags className="h-3.5 w-3.5" />
+                  Hành động ({bulkSel.count})
+                  <ChevronDown className="h-3 w-3" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setBulkDialogOpen(true)}>
+                  <GraduationCap className="h-4 w-4 mr-2" /> Gán khoá học...
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={bulkSel.clear}>
+                  <X className="h-4 w-4 mr-2" /> Bỏ chọn tất cả
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
 
         {/* Level chips row */}
