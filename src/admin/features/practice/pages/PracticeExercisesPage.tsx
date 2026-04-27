@@ -32,6 +32,14 @@ import {
 import {
   Collapsible, CollapsibleContent, CollapsibleTrigger,
 } from "@shared/components/ui/collapsible";
+import { ResourceFilterBar } from "@shared/components/resources/ResourceFilterBar";
+import { useResourceList } from "@shared/hooks/useResourceList";
+import { useResourceCourseMutations, useCoursesForResource } from "@shared/hooks/useResourceCourses";
+import { Badge } from "@shared/components/ui/badge";
+import { usePrograms } from "@shared/hooks/usePrograms";
+import { useCourses } from "@/admin/features/academic/hooks/useCourses";
+import { GraduationCap, Check } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@shared/components/ui/popover";
 
 const PROGRAMS = [
   { value: "ielts", label: "IELTS" },
@@ -179,6 +187,55 @@ export default function PracticeExercisesPage() {
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [exerciseStatus, setExerciseStatus] = useState("draft");
 
+  /**
+   * Course assignments cho exercise đang edit. Lưu vào pivot `resource_courses`
+   * sau khi save xong. Khi tạo mới: rỗng — admin chọn courses rồi chúng sẽ được
+   * insert ngay lần save đầu.
+   *
+   * Khi mở exercise có sẵn: hydrate từ pivot ở `openEditor`.
+   */
+  const [editingCourseIds, setEditingCourseIds] = useState<string[]>([]);
+  const { setCourses: setResourceCourses } = useResourceCourseMutations();
+  const { data: existingResourceCourses = [] } = useCoursesForResource(
+    "exercise",
+    editing && editing !== "new" ? editing : null,
+  );
+  // Hydrate khi mở editor
+  useEffect(() => {
+    if (editing && editing !== "new") {
+      setEditingCourseIds(existingResourceCourses.map((r) => r.course_id));
+    }
+  }, [editing, existingResourceCourses.length]);
+
+  // Lookup program → resolve programId cho useCourses
+  const { programs: allPrograms } = usePrograms();
+  const editingProgramId = useMemo(
+    () => allPrograms.find((p) => p.key.toLowerCase() === program?.toLowerCase())?.id,
+    [allPrograms, program],
+  );
+  const { courses: programCoursesForEditor } = useCourses({
+    programId: editingProgramId,
+    withStats: false,
+  });
+
+  /**
+   * Khi đổi program: drop các course không thuộc program mới (tránh dữ liệu mồ
+   * côi). Chỉ chạy khi đã load xong courses (length>0 hoặc programId trống).
+   */
+  useEffect(() => {
+    if (!editing) return;
+    if (editingCourseIds.length === 0) return;
+    if (!editingProgramId) {
+      setEditingCourseIds([]);
+      return;
+    }
+    if (programCoursesForEditor.length === 0) return;
+    const validIds = new Set(programCoursesForEditor.map((c) => c.id));
+    const next = editingCourseIds.filter((id) => validIds.has(id));
+    if (next.length !== editingCourseIds.length) setEditingCourseIds(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editingProgramId, programCoursesForEditor.length]);
+
   // Expanded groups
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const toggleGroup = (id: string) => {
@@ -226,7 +283,7 @@ export default function PracticeExercisesPage() {
     if (!editing) { editorLoadedRef.current = false; return; }
     if (!editorLoadedRef.current) { editorLoadedRef.current = true; return; }
     setIsDirty(true);
-  }, [title, description, program, skill, groups, difficulty, courseLevel, passage, audioUrl, transcript, diagramUrl, timerEnabled, timerDuration, scoringMode, allowRetake]);
+  }, [title, description, program, skill, groups, difficulty, courseLevel, passage, audioUrl, transcript, diagramUrl, timerEnabled, timerDuration, scoringMode, allowRetake, editingCourseIds]);
 
   useEffect(() => {
     if (!isDirty || !editing) return;
@@ -245,8 +302,10 @@ export default function PracticeExercisesPage() {
   const [filterStatuses, setFilterStatuses] = useState<Set<string>>(new Set());
   const [filterPrograms, setFilterPrograms] = useState<Set<string>>(new Set());
   const [filterLevels, setFilterLevels] = useState<Set<string>>(new Set());
+  const [filterCourses, setFilterCourses] = useState<Set<string>>(new Set());
   const [levelExpanded, setLevelExpanded] = useState(false);
   const [programExpanded, setProgramExpanded] = useState(false);
+  const [courseExpanded, setCourseExpanded] = useState(false);
   const [skillExpanded, setSkillExpanded] = useState(false);
   const [typeExpanded, setTypeExpanded] = useState(false);
   const [statusExpanded, setStatusExpanded] = useState(false);
@@ -303,6 +362,7 @@ export default function PracticeExercisesPage() {
     setScoringMode("ielts_band");
     setAllowRetake(true);
     setBlankAnswers({}); setExpandedGroups(new Set());
+    setEditingCourseIds([]);
     setIsDirty(false); setExerciseStatus("draft"); setEditing("new");
   };
 
@@ -381,11 +441,26 @@ export default function PracticeExercisesPage() {
         .select().single();
       if (error) { toast.error("Lỗi tạo bài tập"); setSaving(false); return; }
       toast.success("Đã lưu!");
-      setEditing((data as any).id);
+      const newId = (data as any).id as string;
+      setEditing(newId);
+      // Sync course assignments vào pivot
+      if (editingCourseIds.length > 0) {
+        await setResourceCourses.mutateAsync({
+          kind: "exercise",
+          resourceId: newId,
+          courseIds: editingCourseIds,
+        });
+      }
     } else {
       const { error } = await supabase.from("practice_exercises").update({ ...payload, status: effectiveStatus } as any).eq("id", editing);
       if (error) { toast.error("Lỗi lưu"); setSaving(false); return; }
       toast.success(statusOverride === "published" ? "Đã xuất bản!" : statusOverride === "draft" ? "Đã chuyển về nháp!" : "Đã lưu!");
+      // Sync course assignments
+      await setResourceCourses.mutateAsync({
+        kind: "exercise",
+        resourceId: editing,
+        courseIds: editingCourseIds,
+      });
     }
 
     setSaving(false); setIsDirty(false);
@@ -622,6 +697,99 @@ export default function PracticeExercisesPage() {
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          {/* Course assignments — gắn bài tập vào nhiều khoá học để Study Plan
+              tự động lọc đúng resource theo khoá. */}
+          <div>
+            <label className="text-xs font-bold text-muted-foreground mb-1 flex items-center gap-1.5">
+              <GraduationCap className="h-3.5 w-3.5 text-emerald-600" />
+              Khoá học áp dụng
+              {!program && (
+                <span className="text-[10px] font-normal text-muted-foreground">
+                  — Chọn chương trình trước
+                </span>
+              )}
+              {program && programCoursesForEditor.length === 0 && (
+                <span className="text-[10px] font-normal text-muted-foreground">
+                  — Chương trình này chưa có khoá học
+                </span>
+              )}
+            </label>
+            <Popover>
+              <PopoverTrigger asChild disabled={!program || programCoursesForEditor.length === 0}>
+                <button
+                  type="button"
+                  disabled={!program || programCoursesForEditor.length === 0}
+                  className={cn(
+                    "w-full min-h-[40px] flex items-center justify-between gap-2 px-3 py-2 rounded-md border bg-background text-sm transition-colors",
+                    "hover:border-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed",
+                    editingCourseIds.length > 0 && "border-emerald-300 bg-emerald-50/50",
+                  )}
+                >
+                  {editingCourseIds.length === 0 ? (
+                    <span className="text-muted-foreground text-xs">
+                      {program
+                        ? "Chưa gán khoá nào — bài tập sẽ hiện ở mục 'Chưa phân loại'"
+                        : "—"}
+                    </span>
+                  ) : (
+                    <div className="flex flex-wrap gap-1">
+                      {editingCourseIds.map((cid) => {
+                        const c = programCoursesForEditor.find((x) => x.id === cid);
+                        if (!c) return null;
+                        return (
+                          <Badge
+                            key={cid}
+                            variant="secondary"
+                            className="bg-emerald-100 text-emerald-800 border border-emerald-200 gap-1"
+                          >
+                            <GraduationCap className="h-3 w-3" /> {c.name}
+                          </Badge>
+                        );
+                      })}
+                    </div>
+                  )}
+                  <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[320px] p-2" align="start">
+                <div className="text-[11px] font-bold text-muted-foreground uppercase px-2 py-1">
+                  Chọn khoá học
+                </div>
+                <div className="max-h-64 overflow-y-auto space-y-0.5">
+                  {programCoursesForEditor.map((c) => {
+                    const checked = editingCourseIds.includes(c.id);
+                    return (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() =>
+                          setEditingCourseIds((prev) =>
+                            checked ? prev.filter((x) => x !== c.id) : [...prev, c.id],
+                          )
+                        }
+                        className={cn(
+                          "w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm hover:bg-muted transition-colors text-left",
+                          checked && "bg-emerald-50",
+                        )}
+                      >
+                        <div
+                          className={cn(
+                            "w-4 h-4 rounded border flex items-center justify-center shrink-0",
+                            checked ? "bg-emerald-600 border-emerald-600" : "border-muted-foreground/30",
+                          )}
+                        >
+                          {checked && <Check className="h-3 w-3 text-white" />}
+                        </div>
+                        <GraduationCap className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                        <span className="truncate">{c.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
 
           {/* Auto-derived type labels */}
@@ -1061,10 +1229,22 @@ export default function PracticeExercisesPage() {
 
   // ---- List view ----
 
-  const filtered = exercises.filter(ex => {
+  // Stage 1: filter Program + Course qua pivot resource_courses (logic dùng chung).
+  const courseFilters = useMemo(
+    () => ({ programIds: filterPrograms, courseIds: filterCourses, includeUntagged: true }),
+    [filterPrograms, filterCourses],
+  );
+  const {
+    filtered: programCourseFiltered,
+    matched: matchedToCourse,
+    untagged: untaggedItems,
+    assignmentMap: exerciseCourseMap,
+  } = useResourceList("exercise", exercises as any, courseFilters);
+
+  // Stage 2: áp các filter còn lại (skill / type / status / level / search).
+  const filtered = (programCourseFiltered as Exercise[]).filter(ex => {
     if (filterSkills.size > 0 && !filterSkills.has(ex.skill)) return false;
     if (filterStatuses.size > 0 && !filterStatuses.has(ex.status)) return false;
-    if (filterPrograms.size > 0 && !(ex as any).program || (filterPrograms.size > 0 && !filterPrograms.has((ex as any).program))) return false;
     if (filterLevels.size > 0 && (!ex.course_level || !filterLevels.has(ex.course_level))) return false;
     if (filterTypes.size > 0) {
       const types = getEffectiveTypes(ex);
@@ -1077,8 +1257,8 @@ export default function PracticeExercisesPage() {
     return true;
   });
 
-  const hasFilters = filterSkills.size > 0 || filterTypes.size > 0 || filterStatuses.size > 0 || filterPrograms.size > 0 || filterLevels.size > 0 || listSearch.trim().length > 0;
-  const clearFilters = () => { setFilterSkills(new Set()); setFilterTypes(new Set()); setFilterStatuses(new Set()); setFilterPrograms(new Set()); setFilterLevels(new Set()); setListSearch(""); setShowListSearch(false); };
+  const hasFilters = filterSkills.size > 0 || filterTypes.size > 0 || filterStatuses.size > 0 || filterPrograms.size > 0 || filterLevels.size > 0 || filterCourses.size > 0 || listSearch.trim().length > 0;
+  const clearFilters = () => { setFilterSkills(new Set()); setFilterTypes(new Set()); setFilterStatuses(new Set()); setFilterPrograms(new Set()); setFilterLevels(new Set()); setFilterCourses(new Set()); setListSearch(""); setShowListSearch(false); };
 
   const publishedCount = exercises.filter(e => e.status === "published").length;
   const totalQ = exercises.reduce((sum, e) => {
@@ -1215,28 +1395,25 @@ export default function PracticeExercisesPage() {
             </>
           )}
 
-          {/* Program toggle */}
-          {usedPrograms.length > 0 && (
-            <>
-              <span className="h-5 w-px bg-border mx-0.5" />
-              <button
-                onClick={() => setProgramExpanded(!programExpanded)}
-                className={cn(
-                  "flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold transition-all cursor-pointer shadow-sm",
-                  filterPrograms.size > 0
-                    ? "bg-primary/10 text-primary border-primary/30"
-                    : "bg-card border-border text-muted-foreground hover:text-foreground hover:border-primary/40"
-                )}
-              >
-                <Tags className="h-3.5 w-3.5" />
-                Chương trình
-                {filterPrograms.size > 0 && (
-                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground">{filterPrograms.size}</span>
-                )}
-                <ChevronDown className={cn("h-3 w-3 transition-transform", programExpanded && "rotate-180")} />
-              </button>
-            </>
-          )}
+          {/* Program + Course (cascading, dùng chung component) */}
+          <span className="h-5 w-px bg-border mx-0.5" />
+          <div className="contents">
+            <ResourceFilterBar
+              programIds={filterPrograms}
+              courseIds={filterCourses}
+              onProgramsChange={(next) => {
+                setFilterPrograms(next);
+                if (next.size === 0) setFilterCourses(new Set());
+              }}
+              onCoursesChange={setFilterCourses}
+              programExpanded={programExpanded}
+              courseExpanded={courseExpanded}
+              onToggleProgram={() => setProgramExpanded(!programExpanded)}
+              onToggleCourse={() => setCourseExpanded(!courseExpanded)}
+              matchedCount={matchedToCourse.length}
+              untaggedCount={untaggedItems.length}
+            />
+          </div>
 
           {/* Skill toggle */}
           {usedSkills.length > 1 && (
@@ -1327,39 +1504,6 @@ export default function PracticeExercisesPage() {
                     "text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center",
                     active ? (lc ? `bg-white/40 ${lc.text}` : "bg-primary-foreground/20 text-primary-foreground") : (lc ? `bg-white/60 ${lc.text}` : "bg-muted text-muted-foreground")
                   )}>
-                    {count}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Program chips row */}
-        {programExpanded && usedPrograms.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2 animate-in slide-in-from-top-2 duration-200 pl-1">
-            {usedPrograms.map((prog, i) => {
-              const count = exercises.filter(e => (e as any).program === prog).length;
-              const active = filterPrograms.has(prog);
-              const colors = [
-                { bg: "bg-indigo-50", text: "text-indigo-700", border: "border-indigo-200", active: "bg-indigo-200 text-indigo-800 border-indigo-300" },
-                { bg: "bg-rose-50", text: "text-rose-700", border: "border-rose-200", active: "bg-rose-200 text-rose-800 border-rose-300" },
-                { bg: "bg-amber-50", text: "text-amber-700", border: "border-amber-200", active: "bg-amber-200 text-amber-800 border-amber-300" },
-                { bg: "bg-teal-50", text: "text-teal-700", border: "border-teal-200", active: "bg-teal-200 text-teal-800 border-teal-300" },
-              ];
-              const pc = colors[i % colors.length];
-              return (
-                <button
-                  key={prog}
-                  onClick={() => toggleFilter(setFilterPrograms, prog)}
-                  className={cn(
-                    "flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border text-xs font-semibold transition-all cursor-pointer shadow-sm",
-                    active ? `${pc.active} shadow-md scale-105 ring-1 ring-offset-1` : `${pc.bg} ${pc.text} ${pc.border} hover:shadow-md hover:scale-[1.02]`
-                  )}
-                >
-                  <Tags className="h-3.5 w-3.5" />
-                  {PROGRAMS.find(p => p.value === prog)?.label || prog}
-                  <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center", active ? `bg-white/40 ${pc.text}` : `bg-white/60 ${pc.text}`)}>
                     {count}
                   </span>
                 </button>
