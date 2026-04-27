@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import {
   BookOpen, CheckCircle2, Layers, Users, CalendarDays, ClipboardList,
   Pencil, Trash2, EyeOff, PlayCircle, Sparkles, Plus, Star,
-  Wallet, Clock,
+  Wallet, Clock, UserCheck, Target,
 } from "lucide-react";
 import { Button } from "@shared/components/ui/button";
 import {
