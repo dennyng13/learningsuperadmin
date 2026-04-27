@@ -22,6 +22,7 @@ import { getLevelColorConfig } from "@shared/utils/levelColors";
 import { useAssessmentDetail, useSaveAssessment } from "@shared/hooks/useAssessments";
 import { supabase } from "@/integrations/supabase/client";
 import AudioUploader from "@admin/features/tests/components/AudioUploader";
+import { CourseAssignmentPanel } from "@shared/components/study-plan/CourseAssignmentPanel";
 import DiagramPinEditor, { type DiagramPin, type DiagramDisplayMode } from "@admin/features/tests/components/DiagramPinEditor";
 import UnsavedChangesDialog from "@admin/features/tests/components/UnsavedChangesDialog";
 import WritingTaskConfig from "@admin/features/tests/components/WritingTaskConfig";
