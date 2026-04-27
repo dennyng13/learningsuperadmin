@@ -344,7 +344,7 @@ export default function CourseEditorDialog({
             ref={bodyRef}
             tabIndex={0}
             onScroll={handleBodyScroll}
-            className="absolute inset-0 overflow-y-auto overscroll-contain scroll-smooth focus:outline-none"
+            className="absolute inset-0 overflow-y-auto overscroll-contain scroll-smooth focus:outline-none scrollbar-prominent"
           >
             <div className="px-6 py-5 space-y-5">
             {step === 0 && (
