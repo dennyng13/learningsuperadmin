@@ -32,6 +32,10 @@ import {
 import {
   Collapsible, CollapsibleContent, CollapsibleTrigger,
 } from "@shared/components/ui/collapsible";
+import { ResourceFilterBar } from "@shared/components/resources/ResourceFilterBar";
+import { useResourceList } from "@shared/hooks/useResourceList";
+import { useResourceCourseMutations, useCoursesForResource } from "@shared/hooks/useResourceCourses";
+import { Badge } from "@shared/components/ui/badge";
 
 const PROGRAMS = [
   { value: "ielts", label: "IELTS" },
@@ -245,8 +249,10 @@ export default function PracticeExercisesPage() {
   const [filterStatuses, setFilterStatuses] = useState<Set<string>>(new Set());
   const [filterPrograms, setFilterPrograms] = useState<Set<string>>(new Set());
   const [filterLevels, setFilterLevels] = useState<Set<string>>(new Set());
+  const [filterCourses, setFilterCourses] = useState<Set<string>>(new Set());
   const [levelExpanded, setLevelExpanded] = useState(false);
   const [programExpanded, setProgramExpanded] = useState(false);
+  const [courseExpanded, setCourseExpanded] = useState(false);
   const [skillExpanded, setSkillExpanded] = useState(false);
   const [typeExpanded, setTypeExpanded] = useState(false);
   const [statusExpanded, setStatusExpanded] = useState(false);
