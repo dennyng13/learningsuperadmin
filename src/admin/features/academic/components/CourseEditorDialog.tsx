@@ -220,7 +220,9 @@ export default function CourseEditorDialog({
               const Icon = s.icon;
               const isActive = step === s.key;
               const isDone = step > s.key;
-              const reachable = idx === 0 || step0Valid;
+              // Step 0 (Cấp độ) & Step 1 (Thông tin) luôn vào được.
+              // Step 2 (Study plan) chỉ vào khi đã có tên khoá.
+              const reachable = idx <= 1 || nameValid;
               return (
                 <button
                   key={s.key}
