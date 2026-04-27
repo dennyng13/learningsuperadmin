@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
-  Plus, Pencil, Trash2, Loader2, Layers, ArrowLeft, AlertTriangle, Search,
+  Plus, Pencil, Trash2, Loader2, Layers, ArrowLeft, AlertTriangle, Search, GripVertical,
   Sparkles, Target,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -49,9 +49,35 @@ export default function CourseLevelsPage() {
     return m;
   }, [programs]);
 
+  /**
+   * Sắp xếp theo (program.sort_order, program_levels.sort_order trong mỗi
+   * program). Vì `levels` từ `useCourseLevels` đã order theo
+   * `course_levels.sort_order` (global), ta cần group lại theo program để
+   * drag-and-drop chỉ thay đổi `program_levels.sort_order` của program đó.
+   */
+  const orderedLevels = useMemo(() => {
+    // Map levelId → vị trí trong program.level_ids (đã đúng order theo program_levels.sort_order)
+    const posByLevel = new Map<string, { programOrder: number; idxInProgram: number }>();
+    for (const p of programs) {
+      p.level_ids.forEach((lid, idx) => {
+        posByLevel.set(lid, { programOrder: p.sort_order ?? 0, idxInProgram: idx });
+      });
+    }
+    return [...levels].sort((a, b) => {
+      const pa = posByLevel.get(a.id);
+      const pb = posByLevel.get(b.id);
+      // Orphan (không thuộc program) đẩy xuống cuối
+      if (!pa && !pb) return a.sort_order - b.sort_order;
+      if (!pa) return 1;
+      if (!pb) return -1;
+      if (pa.programOrder !== pb.programOrder) return pa.programOrder - pb.programOrder;
+      return pa.idxInProgram - pb.idxInProgram;
+    });
+  }, [levels, programs]);
+
   const filteredLevels = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return levels.filter((l) => {
+    return orderedLevels.filter((l) => {
       if (q && !l.name.toLowerCase().includes(q)) return false;
       if (filterProgramId) {
         const p = programByLevel.get(l.id);
@@ -59,7 +85,117 @@ export default function CourseLevelsPage() {
       }
       return true;
     });
-  }, [levels, query, filterProgramId, programByLevel]);
+  }, [orderedLevels, query, filterProgramId, programByLevel]);
+
+  /* ─── Drag & drop sort (chỉ trong cùng 1 program) ─── */
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [overId, setOverId] = useState<string | null>(null);
+  // Optimistic override: programId → ordered levelIds (chỉ render trong khi đang lưu)
+  const [optimistic, setOptimistic] = useState<Record<string, string[]>>({});
+  const savingRef = useRef(false);
+
+  const displayLevels = useMemo(() => {
+    if (Object.keys(optimistic).length === 0) return filteredLevels;
+    // Áp optimistic order: với mỗi program có override, sắp xếp lại các level
+    // của program đó trong filteredLevels theo thứ tự override.
+    const byProgram = new Map<string, CourseLevel[]>();
+    const orphans: CourseLevel[] = [];
+    for (const l of filteredLevels) {
+      const p = programByLevel.get(l.id);
+      if (!p) { orphans.push(l); continue; }
+      const arr = byProgram.get(p.id) ?? [];
+      arr.push(l);
+      byProgram.set(p.id, arr);
+    }
+    const result: CourseLevel[] = [];
+    // Giữ thứ tự program theo lần xuất hiện đầu tiên trong filteredLevels
+    const seen = new Set<string>();
+    for (const l of filteredLevels) {
+      const p = programByLevel.get(l.id);
+      if (!p) continue;
+      if (seen.has(p.id)) continue;
+      seen.add(p.id);
+      const list = byProgram.get(p.id) ?? [];
+      const override = optimistic[p.id];
+      if (override) {
+        const map = new Map(list.map((x) => [x.id, x]));
+        for (const id of override) {
+          const item = map.get(id);
+          if (item) result.push(item);
+        }
+      } else {
+        result.push(...list);
+      }
+    }
+    result.push(...orphans);
+    return result;
+  }, [filteredLevels, optimistic, programByLevel]);
+
+  const handleDragStart = (id: string) => setDragId(id);
+  const handleDragOver = (e: React.DragEvent, id: string) => {
+    e.preventDefault();
+    if (!dragId || dragId === id) return;
+    setOverId(id);
+  };
+  const handleDragEnd = () => { setDragId(null); setOverId(null); };
+
+  const persistOrder = async (programId: string, orderedIds: string[]) => {
+    if (savingRef.current) return;
+    savingRef.current = true;
+    try {
+      // Xoá hết link của program rồi insert lại theo thứ tự mới (đơn giản,
+      // tránh race trên UNIQUE(level_id) khi update từng dòng).
+      const { error: delErr } = await (supabase as any)
+        .from("program_levels")
+        .delete()
+        .eq("program_id", programId);
+      if (delErr) throw delErr;
+      const rows = orderedIds.map((level_id, idx) => ({
+        program_id: programId, level_id, sort_order: idx,
+      }));
+      if (rows.length > 0) {
+        const { error: insErr } = await (supabase as any).from("program_levels").insert(rows);
+        if (insErr) throw insErr;
+      }
+      toast.success("Đã lưu thứ tự");
+      await Promise.all([refetchLevels(), refetchPrograms()]);
+    } catch (err: any) {
+      toast.error(`Lỗi lưu thứ tự: ${err.message ?? "Unknown"}`);
+      await Promise.all([refetchLevels(), refetchPrograms()]);
+    } finally {
+      savingRef.current = false;
+      setOptimistic({});
+    }
+  };
+
+  const handleDrop = async (e: React.DragEvent, dropId: string) => {
+    e.preventDefault();
+    const draggedId = dragId;
+    handleDragEnd();
+    if (!draggedId || draggedId === dropId) return;
+
+    const dragProgram = programByLevel.get(draggedId);
+    const dropProgram = programByLevel.get(dropId);
+    if (!dragProgram) {
+      toast.error("Cấp độ chưa thuộc chương trình — gán chương trình trước.");
+      return;
+    }
+    if (!dropProgram || dropProgram.id !== dragProgram.id) {
+      toast.error(`Chỉ kéo thả trong cùng 1 chương trình. Để chuyển sang chương trình khác, sửa cấp độ.`);
+      return;
+    }
+
+    // Build new order cho program này
+    const currentIds = [...dragProgram.level_ids];
+    const fromIdx = currentIds.indexOf(draggedId);
+    const toIdx = currentIds.indexOf(dropId);
+    if (fromIdx < 0 || toIdx < 0) return;
+    currentIds.splice(fromIdx, 1);
+    currentIds.splice(toIdx, 0, draggedId);
+
+    setOptimistic({ [dragProgram.id]: currentIds });
+    await persistOrder(dragProgram.id, currentIds);
+  };
 
   /* ─── Editor dialog ─── */
   const [editorOpen, setEditorOpen] = useState(false);
@@ -163,18 +299,45 @@ export default function CourseLevelsPage() {
             </h3>
           </div>
 
-          {filteredLevels.length === 0 ? (
+          {displayLevels.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-12 italic">
               {levels.length === 0 ? "Chưa có cấp độ nào." : "Không có cấp độ khớp bộ lọc."}
             </p>
           ) : (
             <div className="divide-y">
-              {filteredLevels.map((l) => {
+              {displayLevels.map((l) => {
                 const owner = programByLevel.get(l.id);
                 const Icon = owner ? getProgramIcon(owner.key) : null;
                 const palette = owner ? getProgramPalette(owner.key) : null;
+                const draggable = !!owner;
+                const isDragging = dragId === l.id;
+                const isOver = overId === l.id && dragId !== null && dragId !== l.id;
+                const dragOwner = dragId ? programByLevel.get(dragId) : null;
+                const sameProgram = dragOwner && owner && dragOwner.id === owner.id;
                 return (
-                  <div key={l.id} className="px-4 py-3 flex items-center gap-3 hover:bg-muted/20 transition-colors">
+                  <div
+                    key={l.id}
+                    draggable={draggable}
+                    onDragStart={() => handleDragStart(l.id)}
+                    onDragOver={(e) => handleDragOver(e, l.id)}
+                    onDrop={(e) => handleDrop(e, l.id)}
+                    onDragEnd={handleDragEnd}
+                    className={cn(
+                      "px-4 py-3 flex items-center gap-3 transition-colors select-none",
+                      isDragging && "opacity-40",
+                      isOver && sameProgram && "bg-primary/10",
+                      isOver && !sameProgram && "bg-destructive/5",
+                      dragId === null && "hover:bg-muted/20",
+                    )}
+                  >
+                    <GripVertical
+                      className={cn(
+                        "h-4 w-4 shrink-0",
+                        draggable
+                          ? "text-muted-foreground/50 cursor-grab"
+                          : "text-muted-foreground/20 cursor-not-allowed",
+                      )}
+                    />
                     <span
                       className={cn(
                         "inline-block h-4 w-4 rounded-full border shrink-0",
@@ -253,6 +416,11 @@ export default function CourseLevelsPage() {
           )}
         </section>
       )}
+
+      <p className="text-[11px] text-muted-foreground -mt-2">
+        Kéo <GripVertical className="inline h-3 w-3" /> để sắp xếp cấp độ trong cùng 1 chương trình.
+        Chuyển cấp độ sang chương trình khác qua nút <Pencil className="inline h-3 w-3" /> Sửa.
+      </p>
 
       <LevelEditorDialog
         open={editorOpen}
