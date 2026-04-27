@@ -35,6 +35,9 @@ import {
 import { ResourceFilterBar } from "@shared/components/resources/ResourceFilterBar";
 import { useResourceList } from "@shared/hooks/useResourceList";
 import { useResourceCourseMutations, useCoursesForResource } from "@shared/hooks/useResourceCourses";
+import { BulkCourseAssignDialog } from "@shared/components/resources/BulkCourseAssignDialog";
+import { useBulkSelection } from "@shared/hooks/useBulkSelection";
+import { Checkbox } from "@shared/components/ui/checkbox";
 import { Badge } from "@shared/components/ui/badge";
 import { usePrograms } from "@shared/hooks/usePrograms";
 import { useCourses } from "@/admin/features/academic/hooks/useCourses";
@@ -1276,6 +1279,11 @@ export default function PracticeExercisesPage() {
   const usedPrograms = [...new Set(exercises.map(e => (e as any).program).filter(Boolean))];
   const usedLevels = [...new Set(exercises.map(e => e.course_level).filter(Boolean))];
   const usedSkills = [...new Set(exercises.map(e => e.skill).filter(Boolean))];
+
+  // ───────── Bulk selection (course tagging) ─────────
+  const visibleIds = useMemo(() => filtered.map((ex) => ex.id), [filtered]);
+  const bulkSel = useBulkSelection(visibleIds);
+  const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
 
   const getExerciseQuestionCount = (ex: Exercise): number => {
     const qs = Array.isArray(ex.questions) ? ex.questions : [];
