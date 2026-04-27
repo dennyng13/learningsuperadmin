@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import {
   BookOpen, CheckCircle2, Layers, Users, CalendarDays, ClipboardList,
-  Pencil, Trash2, EyeOff,
+  Pencil, Trash2, EyeOff, PlayCircle, Sparkles,
 } from "lucide-react";
 import { Button } from "@shared/components/ui/button";
 import {
@@ -22,13 +22,14 @@ interface Props {
   stats: CourseStats;
   /** Tất cả levels (để resolve tên hiển thị) */
   levels: CourseLevel[];
-  studyPlanCount?: number;
+  /** Tên study plan templates đã link (đã resolve sẵn ở hook). */
+  studyPlans?: Array<{ id: string; name: string }>;
   onEdit: () => void;
   onDelete: () => void;
 }
 
 export default function CourseCard({
-  course, programKey, programName, stats, levels, studyPlanCount, onEdit, onDelete,
+  course, programKey, programName, stats, levels, studyPlans, onEdit, onDelete,
 }: Props) {
   const palette = getProgramPalette(programKey);
   const isInactive = course.status === "inactive";
@@ -38,7 +39,8 @@ export default function CourseCard({
     return course.level_ids.map((id) => map.get(id)).filter(Boolean) as string[];
   }, [course.level_ids, levels]);
 
-  const planCount = studyPlanCount ?? course.study_plan_ids.length;
+  const plans = studyPlans ?? course.study_plan_ids.map((id) => ({ id, name: "Plan" }));
+  const planCount = plans.length;
 
   return (
     <article
@@ -69,74 +71,138 @@ export default function CourseCard({
         </div>
       </header>
 
-      {/* Description (fixed height to align cards) */}
-      <div className="px-4 pb-2">
-        <p className="text-xs text-muted-foreground line-clamp-2 min-h-[2rem] leading-relaxed">
+      {/* ─── 1. Mô tả khoá học (cố định 2 dòng để đồng cao) ─── */}
+      <Section
+        icon={<Sparkles className={cn("h-3 w-3", palette.iconText)} />}
+        label="Mô tả khoá học"
+      >
+        <p className="text-xs text-foreground/80 line-clamp-2 min-h-[2rem] leading-relaxed">
           {course.description || (
             <span className="italic text-muted-foreground/60">Chưa có mô tả ngắn.</span>
           )}
         </p>
-      </div>
+      </Section>
 
-      {/* Outcomes preview */}
-      <div className="px-4 pb-3">
-        <div className="rounded-lg bg-muted/40 p-2.5 min-h-[4.5rem]">
-          <div className="flex items-center gap-1.5 mb-1.5">
-            <CheckCircle2 className={cn("h-3 w-3", palette.iconText)} />
-            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-              Đầu ra ({course.outcomes.length})
-            </span>
-          </div>
+      {/* ─── 2. Đầu ra khoá học (cố định 3 dòng) ─── */}
+      <Section
+        icon={<CheckCircle2 className={cn("h-3 w-3", palette.iconText)} />}
+        label={`Đầu ra khoá học (${course.outcomes.length})`}
+      >
+        <div className="rounded-lg bg-muted/40 p-2.5 min-h-[5.25rem]">
           {course.outcomes.length === 0 ? (
             <p className="text-[11px] text-muted-foreground/60 italic">Chưa có đầu ra nào.</p>
           ) : (
-            <ul className="space-y-0.5">
-              {course.outcomes.slice(0, 2).map((o, i) => (
-                <li key={i} className="text-[11px] text-foreground/80 truncate flex items-start gap-1">
-                  <span className="text-muted-foreground/60 shrink-0">•</span>
+            <ul className="space-y-1">
+              {course.outcomes.slice(0, 3).map((o, i) => (
+                <li
+                  key={i}
+                  className="text-[11px] text-foreground/85 leading-snug flex items-start gap-1.5"
+                >
+                  <span className={cn("mt-1 h-1 w-1 rounded-full shrink-0", palette.progressFill)} />
                   <span className="truncate">{o}</span>
                 </li>
               ))}
-              {course.outcomes.length > 2 && (
-                <li className="text-[10px] text-muted-foreground italic">
-                  +{course.outcomes.length - 2} đầu ra khác
+              {course.outcomes.length > 3 && (
+                <li className="text-[10px] text-muted-foreground italic pl-3">
+                  +{course.outcomes.length - 3} đầu ra khác
                 </li>
               )}
             </ul>
           )}
         </div>
-      </div>
+      </Section>
 
-      {/* Stats grid */}
-      <div className="px-4 pb-3 grid grid-cols-4 gap-1.5">
-        <Stat icon={<Layers className="h-3 w-3" />} value={course.level_ids.length} label="Cấp độ" tone={palette.iconText} />
-        <Stat icon={<CalendarDays className="h-3 w-3" />} value={stats.activeClasses} label="Lớp" sub={`/${stats.totalClasses}`} tone={palette.iconText} />
-        <Stat icon={<Users className="h-3 w-3" />} value={stats.uniqueStudents} label="HV" tone={palette.iconText} />
-        <Stat icon={<ClipboardList className="h-3 w-3" />} value={planCount} label="Plan" tone={palette.iconText} />
-      </div>
+      {/* ─── 3. Thống kê (4 ô đồng đều) ─── */}
+      <Section
+        icon={<Layers className={cn("h-3 w-3", palette.iconText)} />}
+        label="Thống kê"
+      >
+        <div className="grid grid-cols-4 gap-1.5">
+          <BigStat
+            icon={<Layers className="h-3 w-3" />}
+            value={course.level_ids.length}
+            label="Cấp độ"
+            tone={palette.iconText}
+          />
+          <BigStat
+            icon={<CalendarDays className="h-3 w-3" />}
+            value={stats.totalClasses}
+            label="Lớp"
+            tone={palette.iconText}
+          />
+          <BigStat
+            icon={<PlayCircle className="h-3 w-3" />}
+            value={stats.activeClasses}
+            label="Đang chạy"
+            tone={palette.iconText}
+            highlight
+          />
+          <BigStat
+            icon={<Users className="h-3 w-3" />}
+            value={stats.uniqueStudents}
+            label="Học viên"
+            tone={palette.iconText}
+          />
+        </div>
 
-      {/* Linked levels chips */}
-      {linkedLevelNames.length > 0 && (
-        <div className="px-4 pb-3 flex flex-wrap gap-1">
-          {linkedLevelNames.slice(0, 4).map((n, i) => (
-            <span
-              key={i}
-              className={cn(
-                "text-[10px] font-semibold px-1.5 py-0.5 rounded-md",
-                palette.accentSoftBg,
-                palette.accentText,
+        {/* Linked levels chips dưới stats */}
+        {linkedLevelNames.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-1">
+            {linkedLevelNames.slice(0, 5).map((n, i) => (
+              <span
+                key={i}
+                className={cn(
+                  "text-[10px] font-semibold px-1.5 py-0.5 rounded-md",
+                  palette.accentSoftBg,
+                  palette.accentText,
+                )}
+              >
+                {n}
+              </span>
+            ))}
+            {linkedLevelNames.length > 5 && (
+              <span className="text-[10px] text-muted-foreground self-center">
+                +{linkedLevelNames.length - 5}
+              </span>
+            )}
+          </div>
+        )}
+      </Section>
+
+      {/* ─── 4. Study plans đang gán (cố định min-height) ─── */}
+      <Section
+        icon={<ClipboardList className={cn("h-3 w-3", palette.iconText)} />}
+        label={`Study plan đang gán (${planCount})`}
+      >
+        <div className="min-h-[2.25rem]">
+          {planCount === 0 ? (
+            <p className="text-[11px] text-muted-foreground/60 italic">
+              Chưa gán study plan nào.
+            </p>
+          ) : (
+            <div className="flex flex-wrap gap-1">
+              {plans.slice(0, 3).map((p) => (
+                <Link
+                  key={p.id}
+                  to={`/study-plans/templates`}
+                  className={cn(
+                    "text-[10px] font-semibold px-1.5 py-0.5 rounded-md border",
+                    "bg-background hover:bg-muted transition-colors max-w-[140px] truncate",
+                  )}
+                  title={p.name}
+                >
+                  {p.name}
+                </Link>
+              ))}
+              {plans.length > 3 && (
+                <span className="text-[10px] text-muted-foreground self-center">
+                  +{plans.length - 3}
+                </span>
               )}
-            >
-              {n}
-            </span>
-          ))}
-          {linkedLevelNames.length > 4 && (
-            <span className="text-[10px] text-muted-foreground self-center">
-              +{linkedLevelNames.length - 4}
-            </span>
+            </div>
           )}
         </div>
-      )}
+      </Section>
 
       {/* Footer actions */}
       <footer className="mt-auto border-t bg-muted/20 px-3 py-2 flex items-center gap-1.5">
@@ -175,25 +241,53 @@ export default function CourseCard({
   );
 }
 
-function Stat({
-  icon, value, label, sub, tone,
+/* ─────────────────────────── Sub-components ─────────────────────────── */
+
+function Section({
+  icon, label, children,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="px-4 pb-3">
+      <div className="flex items-center gap-1.5 mb-1.5">
+        {icon}
+        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+          {label}
+        </span>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function BigStat({
+  icon, value, label, tone, highlight,
 }: {
   icon: React.ReactNode;
   value: number | string;
   label: string;
-  sub?: string;
   tone: string;
+  highlight?: boolean;
 }) {
   return (
-    <div className="rounded-md bg-muted/30 px-1.5 py-1 text-center">
-      <div className={cn("flex items-center justify-center gap-0.5", tone)}>
+    <div
+      className={cn(
+        "rounded-md px-1.5 py-1.5 text-center transition-colors",
+        highlight ? "bg-primary/10 ring-1 ring-primary/20" : "bg-muted/30",
+      )}
+    >
+      <div className={cn("flex items-center justify-center", tone)}>
         {icon}
       </div>
-      <p className="text-sm font-display font-extrabold leading-none mt-0.5">
+      <p className="text-base font-display font-extrabold leading-none mt-1">
         {value}
-        {sub && <span className="text-[9px] font-normal text-muted-foreground ml-0.5">{sub}</span>}
       </p>
-      <p className="text-[9px] uppercase tracking-wider text-muted-foreground mt-0.5">{label}</p>
+      <p className="text-[9px] uppercase tracking-wider text-muted-foreground mt-1 truncate">
+        {label}
+      </p>
     </div>
   );
 }

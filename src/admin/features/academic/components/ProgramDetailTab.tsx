@@ -35,7 +35,7 @@ export default function ProgramDetailTab({ program, levels, onChanged: _onChange
   const isInactive = program.status === "inactive";
 
   /* ─── Courses của program ─── */
-  const { courses, loading, getStats, create, update, remove } = useCourses({
+  const { courses, loading, getStats, getStudyPlanNames, create, update, remove } = useCourses({
     programId: program.id,
     withStats: true,
   });
@@ -135,6 +135,7 @@ export default function ProgramDetailTab({ program, levels, onChanged: _onChange
               programName={program.name}
               stats={getStats(c.id)}
               levels={levels}
+              studyPlans={getStudyPlanNames(c.study_plan_ids)}
               onEdit={() => openEdit(c)}
               onDelete={() => handleDelete(c)}
             />
@@ -165,11 +166,12 @@ export default function ProgramDetailTab({ program, levels, onChanged: _onChange
   );
 }
 
-/* ───────────── Skeleton card (đồng cao với CourseCard) ───────────── */
+/* ───────────── Skeleton card (đồng cao với CourseCard mới) ───────────── */
 function CourseSkeleton() {
   return (
     <div className="rounded-2xl border bg-card overflow-hidden flex flex-col">
       <div className="h-1 w-full bg-muted" />
+      {/* Header */}
       <div className="p-4 pb-2 flex items-start gap-3">
         <div className="h-10 w-10 rounded-lg bg-muted animate-pulse shrink-0" />
         <div className="flex-1 space-y-1.5">
@@ -177,17 +179,31 @@ function CourseSkeleton() {
           <div className="h-3 w-1/3 rounded bg-muted animate-pulse" />
         </div>
       </div>
-      <div className="px-4 pb-2">
-        <div className="h-8 w-full rounded bg-muted/60 animate-pulse" />
-      </div>
+      {/* 1. Mô tả */}
       <div className="px-4 pb-3">
-        <div className="h-[4.5rem] w-full rounded-lg bg-muted/40 animate-pulse" />
+        <div className="h-3 w-24 rounded bg-muted animate-pulse mb-1.5" />
+        <div className="h-[2rem] w-full rounded bg-muted/60 animate-pulse" />
       </div>
-      <div className="px-4 pb-3 grid grid-cols-4 gap-1.5">
-        {[0, 1, 2, 3].map((i) => (
-          <div key={i} className="h-12 rounded-md bg-muted/30 animate-pulse" />
-        ))}
+      {/* 2. Đầu ra */}
+      <div className="px-4 pb-3">
+        <div className="h-3 w-28 rounded bg-muted animate-pulse mb-1.5" />
+        <div className="h-[5.25rem] w-full rounded-lg bg-muted/40 animate-pulse" />
       </div>
+      {/* 3. Stats */}
+      <div className="px-4 pb-3">
+        <div className="h-3 w-20 rounded bg-muted animate-pulse mb-1.5" />
+        <div className="grid grid-cols-4 gap-1.5">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="h-14 rounded-md bg-muted/30 animate-pulse" />
+          ))}
+        </div>
+      </div>
+      {/* 4. Study plans */}
+      <div className="px-4 pb-3">
+        <div className="h-3 w-32 rounded bg-muted animate-pulse mb-1.5" />
+        <div className="h-[2.25rem] w-full rounded bg-muted/30 animate-pulse" />
+      </div>
+      {/* Footer */}
       <div className="mt-auto border-t bg-muted/20 px-3 py-2 flex items-center gap-2">
         <div className="h-5 flex-1 rounded bg-muted animate-pulse" />
         <div className="h-5 w-5 rounded bg-muted animate-pulse" />
