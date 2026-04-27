@@ -56,7 +56,9 @@ function ColorPicker({ value, onChange }: { value: string | null; onChange: (key
 }
 
 export default function CourseLevelManager() {
-  const { levels, loading, refetch } = useCourseLevels();
+  // Trang quản lý cấp độ trong Settings — hiển thị cả level mồ côi / inactive
+  // để admin có thể edit / xóa.
+  const { levels, loading, refetch } = useCourseLevels({ includeOrphans: true });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editColorKey, setEditColorKey] = useState<string | null>(null);
