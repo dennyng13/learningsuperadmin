@@ -1,13 +1,16 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link, useParams, Navigate } from "react-router-dom";
 import {
-  ArrowLeft, BookOpen, EyeOff, Layers, Loader2, Pencil,
+  ArrowLeft, BookOpen, EyeOff, Layers, Loader2, Pencil, Plus,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@shared/components/ui/button";
 import { useCoursesAdmin } from "@admin/features/academic/hooks/useCoursesAdmin";
 import { useCourseLevels } from "@shared/hooks/useCourseLevels";
-import { useCourses } from "@admin/features/academic/hooks/useCourses";
+import { useCourses, type Course, type CourseInput } from "@admin/features/academic/hooks/useCourses";
 import ProgramLevelManager from "@admin/features/academic/components/ProgramLevelManager";
+import CourseCard from "@admin/features/academic/components/CourseCard";
+import CourseEditorDialog from "@admin/features/academic/components/CourseEditorDialog";
 import { getProgramIcon, getProgramPalette } from "@shared/utils/programColors";
 import { cn } from "@shared/lib/utils";
 
@@ -24,10 +27,37 @@ export default function ProgramDetailPage() {
     () => programs.find((p) => p.key.toLowerCase() === key.toLowerCase()),
     [programs, key],
   );
-  const { courses, loading: coursesLoading } = useCourses({
-    programId: program?.id,
-    withStats: false,
-  });
+  const {
+    courses, loading: coursesLoading,
+    getStats, getStudyPlanNames, create, update, remove,
+  } = useCourses({ programId: program?.id, withStats: true });
+
+  /* ─── Course editor ─── */
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editing, setEditing] = useState<Course | null>(null);
+  const openCreate = () => { setEditing(null); setEditorOpen(true); };
+  const openEdit = (c: Course) => { setEditing(c); setEditorOpen(true); };
+
+  const handleSubmit = async (input: CourseInput) => {
+    if (editing) await update(editing.id, input);
+    else await create(input);
+  };
+
+  const handleDelete = async (c: Course) => {
+    try {
+      await remove(c.id);
+      toast.success(`Đã xoá khoá học "${c.name}".`);
+    } catch (e: any) {
+      toast.error(`Lỗi xoá: ${e?.message ?? "không rõ"}`);
+    }
+  };
+
+  /* ─── Levels chỉ trong program (cho dialog resolve tên) ─── */
+  const programLevels = useMemo(() => {
+    if (!program) return [];
+    const set = new Set(program.level_ids);
+    return levels.filter((l) => set.has(l.id));
+  }, [program, levels]);
 
   if (programsLoading) {
     return (
@@ -93,49 +123,72 @@ export default function ProgramDetailPage() {
       {/* Cấp độ thuộc chương trình */}
       <ProgramLevelManager program={program} allLevels={levels} onChanged={onChanged} />
 
-      {/* Khoá học gắn vào chương trình (read-only list, edit ở /courses) */}
-      <section className="rounded-xl border bg-card p-5 space-y-3">
-        <div className="flex items-center justify-between">
+      {/* Khoá học gắn vào chương trình — quản lý đầy đủ inline */}
+      <section className="space-y-3">
+        <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <Layers className={cn("h-4 w-4", palette.iconText)} />
+            <BookOpen className={cn("h-4 w-4", palette.iconText)} />
             <h2 className="font-display font-bold text-sm">
-              Khoá học gắn vào chương trình ({courses.length})
+              Khoá học của {program.name} ({courses.length})
             </h2>
           </div>
-          <Button asChild size="sm" variant="outline" className="h-7 text-xs">
-            <Link to={`/courses?tab=${encodeURIComponent(program.key)}`}>
-              Quản lý khoá học
-            </Link>
+          <Button onClick={openCreate} size="sm" className="h-8 gap-1.5">
+            <Plus className="h-3.5 w-3.5" /> Thêm khoá học
           </Button>
         </div>
 
         {coursesLoading ? (
-          <div className="flex items-center justify-center py-6">
-            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          <div className="flex items-center justify-center py-10">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
         ) : courses.length === 0 ? (
-          <p className="text-xs text-muted-foreground italic py-2">
-            Chưa có khoá học nào trong chương trình này.
-          </p>
+          <div className="text-center py-12 border-2 border-dashed rounded-xl bg-muted/20">
+            <BookOpen className="h-10 w-10 text-muted-foreground/40 mx-auto mb-2" />
+            <p className="text-sm text-muted-foreground mb-3">
+              Chưa có khoá học nào trong chương trình {program.name}.
+            </p>
+            <Button onClick={openCreate} size="sm" className="gap-1.5">
+              <Plus className="h-3.5 w-3.5" /> Tạo khoá học đầu tiên
+            </Button>
+          </div>
         ) : (
-          <div className="rounded-lg border divide-y overflow-hidden">
+          <div className="grid gap-3 grid-cols-1 md:grid-cols-2">
             {courses.map((c) => (
-              <div key={c.id} className="flex items-center gap-3 px-3 py-2">
-                <BookOpen className={cn("h-3.5 w-3.5 shrink-0", palette.iconText)} />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold truncate">{c.name}</p>
-                  {c.description && (
-                    <p className="text-[11px] text-muted-foreground truncate">{c.description}</p>
-                  )}
-                </div>
-                <span className="text-[10px] text-muted-foreground hidden sm:inline">
-                  {c.level_ids.length} cấp độ · {c.outcomes.length} đầu ra
-                </span>
-              </div>
+              <CourseCard
+                key={c.id}
+                course={c}
+                programKey={program.key}
+                programName={program.name}
+                stats={getStats(c.id)}
+                levels={levels}
+                studyPlans={getStudyPlanNames(c.study_plan_ids)}
+                onEdit={() => openEdit(c)}
+                onDelete={() => handleDelete(c)}
+              />
             ))}
           </div>
         )}
+
+        <div className="flex justify-end">
+          <Button asChild size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground">
+            <Link to={`/classes/list?program=${encodeURIComponent(program.key)}`}>
+              <Layers className="h-3 w-3 mr-1" />
+              Xem tất cả lớp đang dùng {program.name}
+            </Link>
+          </Button>
+        </div>
       </section>
+
+      <CourseEditorDialog
+        open={editorOpen}
+        onOpenChange={setEditorOpen}
+        programId={program.id}
+        programKey={program.key}
+        programName={program.name}
+        levels={programLevels}
+        course={editing}
+        onSubmit={handleSubmit}
+      />
     </div>
   );
 }
