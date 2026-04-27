@@ -779,28 +779,23 @@ export default function FlashcardSetsPage() {
             </span>
           </button>
 
-          {/* Program toggle */}
-          {usedPrograms.length > 0 && (
-            <>
-              <span className="h-5 w-px bg-border mx-0.5" />
-              <button
-                onClick={() => setProgramExpanded(!programExpanded)}
-                className={cn(
-                  "flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold transition-all cursor-pointer shadow-sm",
-                  filterPrograms.size > 0
-                    ? "bg-primary/10 text-primary border-primary/30"
-                    : "bg-card border-border text-muted-foreground hover:text-foreground hover:border-primary/40"
-                )}
-              >
-                <Tags className="h-3.5 w-3.5" />
-                Chương trình
-                {filterPrograms.size > 0 && (
-                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground">{filterPrograms.size}</span>
-                )}
-                <ChevronDown className={cn("h-3 w-3 transition-transform", programExpanded && "rotate-180")} />
-              </button>
-            </>
-          )}
+          {/* Program + Course (cascading, dùng chung component) */}
+          <span className="h-5 w-px bg-border mx-0.5" />
+          <ResourceFilterBar
+            programIds={filterPrograms}
+            courseIds={filterCourses}
+            onProgramsChange={(next) => {
+              setFilterPrograms(next);
+              if (next.size === 0) setFilterCourses(new Set());
+            }}
+            onCoursesChange={setFilterCourses}
+            programExpanded={programExpanded}
+            courseExpanded={courseExpanded}
+            onToggleProgram={() => setProgramExpanded(!programExpanded)}
+            onToggleCourse={() => setCourseExpanded(!courseExpanded)}
+            matchedCount={matchedToCourse.length}
+            untaggedCount={untaggedItems.length}
+          />
 
           {/* Level toggle */}
           {usedLevels.length > 0 && (
@@ -845,26 +840,6 @@ export default function FlashcardSetsPage() {
 
           <span className="text-xs text-muted-foreground ml-auto">{filteredSets.length} / {sets.length} bộ</span>
         </div>
-
-        {/* Program chips */}
-        {programExpanded && usedPrograms.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2 animate-in slide-in-from-top-2 duration-200 pl-1">
-            {usedPrograms.map(prog => {
-              const count = sets.filter(s => (s as any).program === prog).length;
-              const active = filterPrograms.has(prog);
-              return (
-                <button key={prog} onClick={() => toggleFilter(setFilterPrograms, prog)}
-                  className={cn(
-                    "flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-medium transition-all",
-                    active ? "bg-primary/15 text-primary border-primary/30" : "bg-card border-border text-muted-foreground hover:border-primary/40"
-                  )}
-                >
-                  {prog.toUpperCase()} <span className="text-[10px] opacity-60">({count})</span>
-                </button>
-              );
-            })}
-          </div>
-        )}
 
         {/* Level chips */}
         {levelExpanded && usedLevels.length > 0 && (
