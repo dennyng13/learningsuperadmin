@@ -123,8 +123,9 @@ export function useCoursesAdmin() {
    * không cần reload.
    */
   useEffect(() => {
+    const channelName = `courses-admin-sync-${Math.random().toString(36).slice(2, 10)}`;
     const channel = (supabase as any)
-      .channel("courses-admin-sync")
+      .channel(channelName)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "programs" },
