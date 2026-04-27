@@ -35,6 +35,9 @@ import {
 import { ResourceFilterBar } from "@shared/components/resources/ResourceFilterBar";
 import { useResourceList } from "@shared/hooks/useResourceList";
 import { useResourceCourseMutations, useCoursesForResource } from "@shared/hooks/useResourceCourses";
+import { BulkCourseAssignDialog } from "@shared/components/resources/BulkCourseAssignDialog";
+import { useBulkSelection } from "@shared/hooks/useBulkSelection";
+import { Checkbox } from "@shared/components/ui/checkbox";
 import { Badge } from "@shared/components/ui/badge";
 import { usePrograms } from "@shared/hooks/usePrograms";
 import { useCourses } from "@/admin/features/academic/hooks/useCourses";
@@ -1277,6 +1280,11 @@ export default function PracticeExercisesPage() {
   const usedLevels = [...new Set(exercises.map(e => e.course_level).filter(Boolean))];
   const usedSkills = [...new Set(exercises.map(e => e.skill).filter(Boolean))];
 
+  // ───────── Bulk selection (course tagging) ─────────
+  const visibleIds = useMemo(() => filtered.map((ex) => ex.id), [filtered]);
+  const bulkSel = useBulkSelection(visibleIds);
+  const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
+
   const getExerciseQuestionCount = (ex: Exercise): number => {
     const qs = Array.isArray(ex.questions) ? ex.questions : [];
     if (qs.length > 0 && qs[0]?.question_type && Array.isArray(qs[0]?.questions)) {
@@ -1479,6 +1487,27 @@ export default function PracticeExercisesPage() {
           </>
 
           <span className="text-xs text-muted-foreground ml-auto">{filtered.length} / {exercises.length} bài tập</span>
+
+          {/* Bulk action — chỉ hiện khi có chọn */}
+          {bulkSel.count > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold shadow-sm hover:bg-primary/90 transition-colors">
+                  <Tags className="h-3.5 w-3.5" />
+                  Hành động ({bulkSel.count})
+                  <ChevronDown className="h-3 w-3" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setBulkDialogOpen(true)}>
+                  <GraduationCap className="h-4 w-4 mr-2" /> Gán khoá học...
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={bulkSel.clear}>
+                  <X className="h-4 w-4 mr-2" /> Bỏ chọn tất cả
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
 
         {/* Level chips row */}
@@ -1609,6 +1638,14 @@ export default function PracticeExercisesPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-dark text-dark-foreground text-left">
+                <th className="px-3 py-3 w-8">
+                  <Checkbox
+                    checked={bulkSel.allSelected}
+                    data-state={bulkSel.allSelected ? "checked" : bulkSel.someSelected ? "indeterminate" : "unchecked"}
+                    onCheckedChange={() => bulkSel.toggleAll()}
+                    aria-label="Chọn tất cả"
+                  />
+                </th>
                 <th className="px-4 py-3 font-medium">Tiêu đề</th>
                 <th className="px-4 py-3 font-medium hidden md:table-cell">Chương trình</th>
                 <th className="px-4 py-3 font-medium">Kỹ năng</th>
@@ -1625,7 +1662,20 @@ export default function PracticeExercisesPage() {
                 const types = getEffectiveTypes(ex);
                 const prog = PROGRAMS.find(p => p.value === (ex as any).program);
                 return (
-                  <tr key={ex.id} className="border-t hover:bg-muted/30 transition-colors">
+                  <tr
+                    key={ex.id}
+                    className={cn(
+                      "border-t hover:bg-muted/30 transition-colors",
+                      bulkSel.isSelected(ex.id) && "bg-primary/5",
+                    )}
+                  >
+                    <td className="px-3 py-3 w-8" onClick={(e) => e.stopPropagation()}>
+                      <Checkbox
+                        checked={bulkSel.isSelected(ex.id)}
+                        onCheckedChange={() => bulkSel.toggle(ex.id)}
+                        aria-label={`Chọn ${ex.title}`}
+                      />
+                    </td>
                     <td className="px-4 py-3 font-medium">{ex.title}</td>
                     <td className="px-4 py-3 hidden md:table-cell">
                       {prog ? (
@@ -1714,6 +1764,15 @@ export default function PracticeExercisesPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <BulkCourseAssignDialog
+        open={bulkDialogOpen}
+        onOpenChange={setBulkDialogOpen}
+        kind="exercise"
+        resourceIds={bulkSel.selectedIds}
+        resourceLabel="bài tập"
+        onDone={() => bulkSel.clear()}
+      />
     </div>
   );
 }

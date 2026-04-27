@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@shared/components/ui/button";
 import { Input } from "@shared/components/ui/input";
 import {
-  Plus, Search, MoreVertical, FileText, Trash2, Eye, Pencil, Copy, Loader2, BookOpen, Cloud, ChevronDown, Tags, X, Layers, Upload,
+  Plus, Search, MoreVertical, FileText, Trash2, Eye, Pencil, Copy, Loader2, BookOpen, Cloud, ChevronDown, Tags, X, Layers, Upload, GraduationCap,
 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
@@ -24,6 +24,9 @@ import QuestionTypeBadge from "@shared/components/misc/QuestionTypeBadge";
 import { ALL_TYPE_LABELS_EN as ALL_QUESTION_TYPE_LABELS } from "@shared/utils/questionTypes";
 import { ResourceFilterBar } from "@shared/components/resources/ResourceFilterBar";
 import { useResourceList } from "@shared/hooks/useResourceList";
+import { BulkCourseAssignDialog } from "@shared/components/resources/BulkCourseAssignDialog";
+import { useBulkSelection } from "@shared/hooks/useBulkSelection";
+import { Checkbox } from "@shared/components/ui/checkbox";
 
 const statusLabels: Record<string, { label: string; className: string }> = {
   published: { label: "Published", className: "bg-primary/15 text-primary" },
@@ -180,6 +183,11 @@ export default function TestManagementPage() {
   const contentTypeLabel = contentTypeFilter === "exercise" ? "bài tập" : contentTypeFilter === "test" ? "đề thi" : "đề";
   const testCount = (assessments || []).filter(a => (a as any).content_type !== "exercise").length;
   const exerciseCount = (assessments || []).filter(a => (a as any).content_type === "exercise").length;
+
+  // Bulk selection
+  const visibleIds = useMemo(() => filtered.map((t: any) => t.id as string), [filtered]);
+  const bulkSel = useBulkSelection(visibleIds);
+  const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
 
   return (
     <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-4 md:space-y-6">
@@ -359,6 +367,26 @@ export default function TestManagementPage() {
           />
 
           <span className="text-xs text-muted-foreground ml-auto">{filtered.length} / {(assessments || []).length} đề thi</span>
+
+          {bulkSel.count > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold shadow-sm hover:bg-primary/90 transition-colors">
+                  <Tags className="h-3.5 w-3.5" />
+                  Hành động ({bulkSel.count})
+                  <ChevronDown className="h-3 w-3" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setBulkDialogOpen(true)}>
+                  <GraduationCap className="h-4 w-4 mr-2" /> Gán khoá học...
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={bulkSel.clear}>
+                  <X className="h-4 w-4 mr-2" /> Bỏ chọn tất cả
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
 
         {/* Level chips row */}
@@ -462,13 +490,33 @@ export default function TestManagementPage() {
         </div>
       ) : (
         <div className="space-y-3">
+          {filtered.length > 0 && (
+            <div className="flex items-center gap-2 px-1 text-xs text-muted-foreground">
+              <Checkbox
+                checked={bulkSel.allSelected}
+                onCheckedChange={() => bulkSel.toggleAll()}
+                aria-label="Chọn tất cả"
+              />
+              <span>
+                {bulkSel.count > 0 ? `Đã chọn ${bulkSel.count} / ${filtered.length}` : `Chọn tất cả`}
+              </span>
+            </div>
+          )}
           {filtered.map((test) => {
             const st = statusLabels[test.status] || statusLabels.draft;
             return (
               <div
                 key={test.id}
-                className="bg-card rounded-xl border p-4 flex items-center gap-4 hover:shadow-sm transition-shadow"
+                className={cn(
+                  "bg-card rounded-xl border p-4 flex items-center gap-4 hover:shadow-sm transition-shadow",
+                  bulkSel.isSelected(test.id) && "border-primary/40 bg-primary/5",
+                )}
               >
+                <Checkbox
+                  checked={bulkSel.isSelected(test.id)}
+                  onCheckedChange={() => bulkSel.toggle(test.id)}
+                  aria-label={`Chọn ${test.name}`}
+                />
                 <div className="w-10 h-10 rounded-lg bg-dark flex items-center justify-center flex-shrink-0">
                   <FileText className="h-5 w-5 text-primary" />
                 </div>
@@ -568,6 +616,15 @@ export default function TestManagementPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <BulkCourseAssignDialog
+        open={bulkDialogOpen}
+        onOpenChange={setBulkDialogOpen}
+        kind="assessment"
+        resourceIds={bulkSel.selectedIds}
+        resourceLabel="đề thi"
+        onDone={() => bulkSel.clear()}
+      />
     </div>
   );
 }

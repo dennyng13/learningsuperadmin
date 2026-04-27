@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@shared/hooks/useAuth";
@@ -9,7 +10,7 @@ import { cn } from "@shared/lib/utils";
 import { toast } from "sonner";
 import {
   Plus, Trash2, Loader2, Sparkles, Upload, Eye, EyeOff, Save, Layers, ArrowLeft, FileUp, Image, X, Link2,
-  Search, ChevronDown, Tags, BookOpen,
+  Search, ChevronDown, Tags, BookOpen, GraduationCap,
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@shared/components/ui/select";
 import {
@@ -26,6 +27,12 @@ import UnsavedChangesDialog from "@admin/features/tests/components/UnsavedChange
 import { CourseAssignmentPanel } from "@shared/components/study-plan/CourseAssignmentPanel";
 import { ResourceFilterBar } from "@shared/components/resources/ResourceFilterBar";
 import { useResourceList } from "@shared/hooks/useResourceList";
+import { BulkCourseAssignDialog } from "@shared/components/resources/BulkCourseAssignDialog";
+import { useBulkSelection } from "@shared/hooks/useBulkSelection";
+import { Checkbox } from "@shared/components/ui/checkbox";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from "@shared/components/ui/dropdown-menu";
 
 
 interface FlashcardItem {
@@ -698,6 +705,11 @@ export default function FlashcardSetsPage() {
     return cl ? "bg-primary/10 text-primary border-primary/30" : "bg-muted text-muted-foreground border-border";
   };
 
+  // Bulk selection
+  const visibleIds = useMemo(() => filteredSets.map((s) => s.id), [filteredSets]);
+  const bulkSel = useBulkSelection(visibleIds);
+  const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
+
   return (
     <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-8">
       <div className="flex items-center justify-between">
@@ -839,6 +851,26 @@ export default function FlashcardSetsPage() {
           </button>
 
           <span className="text-xs text-muted-foreground ml-auto">{filteredSets.length} / {sets.length} bộ</span>
+
+          {bulkSel.count > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold shadow-sm hover:bg-primary/90 transition-colors">
+                  <Tags className="h-3.5 w-3.5" />
+                  Hành động ({bulkSel.count})
+                  <ChevronDown className="h-3 w-3" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setBulkDialogOpen(true)}>
+                  <GraduationCap className="h-4 w-4 mr-2" /> Gán khoá học...
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={bulkSel.clear}>
+                  <X className="h-4 w-4 mr-2" /> Bỏ chọn tất cả
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
 
         {/* Level chips */}
@@ -895,6 +927,13 @@ export default function FlashcardSetsPage() {
            <table className="w-full text-sm min-w-[700px]">
             <thead>
               <tr className="bg-dark text-dark-foreground text-left">
+                <th className="px-3 py-3 w-8">
+                  <Checkbox
+                    checked={bulkSel.allSelected}
+                    onCheckedChange={() => bulkSel.toggleAll()}
+                    aria-label="Chọn tất cả"
+                  />
+                </th>
                 <th className="px-4 py-3 font-medium">Tên bộ</th>
                 <th className="px-4 py-3 font-medium hidden md:table-cell">Mô tả</th>
                 <th className="px-4 py-3 font-medium">Số thẻ</th>
@@ -912,7 +951,20 @@ export default function FlashcardSetsPage() {
                   ? exercises.find(e => e.id === (set as any).linked_exercise_id)
                   : null;
                 return (
-                <tr key={set.id} className="border-t hover:bg-muted/30 transition-colors">
+                <tr
+                  key={set.id}
+                  className={cn(
+                    "border-t hover:bg-muted/30 transition-colors",
+                    bulkSel.isSelected(set.id) && "bg-primary/5",
+                  )}
+                >
+                  <td className="px-3 py-3 w-8" onClick={(e) => e.stopPropagation()}>
+                    <Checkbox
+                      checked={bulkSel.isSelected(set.id)}
+                      onCheckedChange={() => bulkSel.toggle(set.id)}
+                      aria-label={`Chọn ${set.title}`}
+                    />
+                  </td>
                   <td className="px-4 py-3 font-medium">{set.title}</td>
                   <td className="px-4 py-3 text-muted-foreground hidden md:table-cell max-w-[200px] truncate">
                     {set.description || "—"}
@@ -1021,6 +1073,15 @@ export default function FlashcardSetsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <BulkCourseAssignDialog
+        open={bulkDialogOpen}
+        onOpenChange={setBulkDialogOpen}
+        kind="flashcard_set"
+        resourceIds={bulkSel.selectedIds}
+        resourceLabel="bộ flashcard"
+        onDone={() => bulkSel.clear()}
+      />
     </div>
   );
 }
