@@ -130,9 +130,21 @@ export default function FlashcardSetsPage() {
       supabase.from("practice_exercises").select("id, title, skill, program").order("title").then(({ data }) => {
         if (data) setExercises(data as ExerciseOption[]);
       });
-      supabase.from("course_levels").select("id, name").order("sort_order").then(({ data }) => {
-        if (data) setCourseLevels(data);
-      });
+      // Chỉ tải levels thuộc program ACTIVE — đồng bộ với danh sách 3 chương trình hiện hành.
+      (async () => {
+        const [{ data: progRows }, { data: linkRows }, { data: lvlRows }] = await Promise.all([
+          (supabase as any).from("programs").select("id").eq("status", "active"),
+          (supabase as any).from("program_levels").select("level_id, program_id"),
+          supabase.from("course_levels").select("id, name").order("sort_order"),
+        ]);
+        const activeIds = new Set((progRows ?? []).map((p: any) => p.id));
+        const allowed = new Set<string>(
+          (linkRows ?? [])
+            .filter((r: any) => activeIds.has(r.program_id))
+            .map((r: any) => r.level_id),
+        );
+        if (lvlRows) setCourseLevels((lvlRows as any[]).filter((l) => allowed.has(l.id)));
+      })();
       // Auto-open editor if ?edit= param
       const editId = searchParams.get("edit");
       if (editId) {
