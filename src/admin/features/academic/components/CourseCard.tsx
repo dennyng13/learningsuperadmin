@@ -416,3 +416,37 @@ function Fact({ icon, text, tone }: { icon: React.ReactNode; text: string; tone:
     </span>
   );
 }
+
+/**
+ * Block giàu nội dung dùng cho `target_audience` và `problem_solving`.
+ * Hỗ trợ multiline (whitespace-pre-line) và markdown nhẹ (xuống dòng tự nhiên).
+ * Giới hạn 4 dòng + tooltip hiển thị toàn văn khi hover để giữ card đồng cao.
+ */
+function RichBlock({
+  icon, label, text, tone,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  text: string;
+  tone: { accentSoftBg: string; accentBorder: string; accentText: string };
+}) {
+  return (
+    <div
+      className={cn(
+        "rounded-lg border p-2 min-h-[4.5rem] flex flex-col",
+        tone.accentSoftBg, tone.accentBorder,
+      )}
+      title={text}
+    >
+      <div className="flex items-center gap-1 mb-1">
+        {icon}
+        <span className={cn("text-[10px] font-bold uppercase tracking-wider", tone.accentText)}>
+          {label}
+        </span>
+      </div>
+      <p className="text-[11px] leading-snug text-foreground/85 whitespace-pre-line line-clamp-4">
+        {text}
+      </p>
+    </div>
+  );
+}
