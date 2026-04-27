@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import {
   BookOpen, CheckCircle2, Layers, Users, CalendarDays, ClipboardList,
   Pencil, Trash2, EyeOff, PlayCircle, Sparkles, Plus, Star,
-  Wallet, Clock,
+  Wallet, Clock, UserCheck, Target,
 } from "lucide-react";
 import { Button } from "@shared/components/ui/button";
 import {
@@ -182,6 +182,28 @@ export default function CourseCard({
           )}
         </div>
       </Section>
+
+      {/* ─── 2b. Đối tượng phù hợp + Vấn đề giải quyết ─── */}
+      {(course.target_audience || course.problem_solving) && (
+        <div className="px-4 pb-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {course.target_audience && (
+            <RichBlock
+              icon={<UserCheck className={cn("h-3 w-3", palette.iconText)} />}
+              label="Phù hợp với"
+              text={course.target_audience}
+              tone={palette}
+            />
+          )}
+          {course.problem_solving && (
+            <RichBlock
+              icon={<Target className={cn("h-3 w-3", palette.iconText)} />}
+              label="Khoá học giúp bạn"
+              text={course.problem_solving}
+              tone={palette}
+            />
+          )}
+        </div>
+      )}
 
       {/* ─── 3. Thống kê (4 ô đồng đều) ─── */}
       <Section
@@ -392,5 +414,39 @@ function Fact({ icon, text, tone }: { icon: React.ReactNode; text: string; tone:
       <span className={tone}>{icon}</span>
       {text}
     </span>
+  );
+}
+
+/**
+ * Block giàu nội dung dùng cho `target_audience` và `problem_solving`.
+ * Hỗ trợ multiline (whitespace-pre-line) và markdown nhẹ (xuống dòng tự nhiên).
+ * Giới hạn 4 dòng + tooltip hiển thị toàn văn khi hover để giữ card đồng cao.
+ */
+function RichBlock({
+  icon, label, text, tone,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  text: string;
+  tone: { accentSoftBg: string; accentBorder: string; accentText: string };
+}) {
+  return (
+    <div
+      className={cn(
+        "rounded-lg border p-2 min-h-[4.5rem] flex flex-col",
+        tone.accentSoftBg, tone.accentBorder,
+      )}
+      title={text}
+    >
+      <div className="flex items-center gap-1 mb-1">
+        {icon}
+        <span className={cn("text-[10px] font-bold uppercase tracking-wider", tone.accentText)}>
+          {label}
+        </span>
+      </div>
+      <p className="text-[11px] leading-snug text-foreground/85 whitespace-pre-line line-clamp-4">
+        {text}
+      </p>
+    </div>
   );
 }
