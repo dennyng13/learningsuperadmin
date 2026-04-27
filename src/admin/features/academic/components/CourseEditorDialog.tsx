@@ -20,6 +20,7 @@ import { getProgramPalette, getProgramIcon } from "@shared/utils/programColors";
 import type { CourseLevel } from "@shared/hooks/useCourseLevels";
 import { useStudyPlanTemplates } from "@shared/hooks/useStudyPlanTemplates";
 import type { Course, CourseInput } from "@admin/features/academic/hooks/useCourses";
+import CourseImageUploader from "./CourseImageUploader";
 
 interface Props {
   open: boolean;
@@ -64,6 +65,7 @@ export default function CourseEditorDialog({
   const [hoursPerSession, setHoursPerSession] = useState<string>("");
   const [maxStudents, setMaxStudents] = useState<string>("");
   const [cefrRange, setCefrRange] = useState("");
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
 
   // Search state
   const [levelQuery, setLevelQuery] = useState("");
@@ -166,6 +168,7 @@ export default function CourseEditorDialog({
       setHoursPerSession(course.hours_per_session != null ? String(course.hours_per_session) : "");
       setMaxStudents(course.max_students != null ? String(course.max_students) : "");
       setCefrRange(course.cefr_range ?? "");
+      setImageUrl(course.image_url ?? null);
     } else {
       setName("");
       setDescription("");
@@ -181,6 +184,7 @@ export default function CourseEditorDialog({
       setHoursPerSession("");
       setMaxStudents("");
       setCefrRange("");
+      setImageUrl(null);
     }
   }, [open, course]);
 
@@ -252,6 +256,7 @@ export default function CourseEditorDialog({
         hours_per_session: hoursPerSession.trim() ? Math.max(0, parseFloat(hoursPerSession) || 0) : null,
         max_students: maxStudents.trim() ? Math.max(0, parseInt(maxStudents, 10) || 0) : null,
         cefr_range: cefrRange.trim() || null,
+        image_url: imageUrl,
       });
       toast.success(isEdit ? "Đã cập nhật khoá học." : "Đã tạo khoá học.");
       onOpenChange(false);
