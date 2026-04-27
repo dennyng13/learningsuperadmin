@@ -1764,6 +1764,15 @@ export default function PracticeExercisesPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <BulkCourseAssignDialog
+        open={bulkDialogOpen}
+        onOpenChange={setBulkDialogOpen}
+        kind="exercise"
+        resourceIds={bulkSel.selectedIds}
+        resourceLabel="bài tập"
+        onDone={() => bulkSel.clear()}
+      />
     </div>
   );
 }
