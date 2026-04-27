@@ -7,6 +7,8 @@ export { SettingsTab } from "./SettingsTab";
 export { StudentsTab } from "./StudentsTab";
 export { OverviewTab } from "./OverviewTab";
 export { RevenueTab } from "./RevenueTab";
+export { PayrollTab } from "./PayrollTab";
+export { LifecycleTab } from "./LifecycleTab";
 
 /* ─── 5 tabs còn chờ backend ─── */
 

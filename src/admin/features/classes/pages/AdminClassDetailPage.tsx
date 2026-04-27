@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import {
   GraduationCap, Calendar, Users, BarChart3, Activity, Megaphone,
   History, Settings, MoreVertical, RefreshCw, Loader2, AlertTriangle,
-  LayoutDashboard, Wallet,
+  LayoutDashboard, Wallet, Banknote, Clock,
 } from "lucide-react";
 import { DetailPageLayout } from "@shared/components/layouts/DetailPageLayout";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@shared/components/ui/tabs";
@@ -42,7 +42,7 @@ import RequestReplacementTeacherButton from "@admin/features/classes/components/
 import {
   SessionsTab, StudentsTab, PlanProgressTab, ActivityTab,
   AnnouncementsTab, HistoryTab, SettingsTab,
-  OverviewTab, RevenueTab,
+  OverviewTab, RevenueTab, PayrollTab, LifecycleTab,
 } from "@admin/features/classes/components/detail-tabs";
 import { useAuth } from "@shared/hooks/useAuth";
 
@@ -64,6 +64,8 @@ const TABS = [
   { value: "activity",       label: "Hoạt động",  icon: Activity    },
   { value: "announcements",  label: "Thông báo",  icon: Megaphone   },
   { value: "revenue",        label: "Doanh thu",  icon: Wallet      },
+  { value: "payroll",        label: "Lương GV",   icon: Banknote    },
+  { value: "lifecycle",      label: "Vòng đời",   icon: Clock       },
   { value: "history",        label: "Lịch sử",    icon: History     },
   { value: "settings",       label: "Cấu hình",   icon: Settings    },
 ] as const;
@@ -377,6 +379,12 @@ export default function AdminClassDetailPage() {
         </TabsContent>
         <TabsContent value="revenue" className="mt-4">
           <RevenueTab classId={classId} />
+        </TabsContent>
+        <TabsContent value="payroll" className="mt-4">
+          <PayrollTab classId={classId} />
+        </TabsContent>
+        <TabsContent value="lifecycle" className="mt-4">
+          <LifecycleTab cls={cls} />
         </TabsContent>
         <TabsContent value="history" className="mt-4">
           <HistoryTab cls={cls} />
