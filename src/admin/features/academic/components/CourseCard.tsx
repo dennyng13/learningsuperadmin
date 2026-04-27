@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   BookOpen, CheckCircle2, Layers, Users, CalendarDays, ClipboardList,
@@ -16,6 +16,7 @@ import { getProgramPalette } from "@shared/utils/programColors";
 import { getLevelColorConfig } from "@shared/utils/levelColors";
 import type { Course, CourseStats } from "@admin/features/academic/hooks/useCourses";
 import type { CourseLevel } from "@shared/hooks/useCourseLevels";
+import CourseClassesDialog from "./CourseClassesDialog";
 
 interface Props {
   course: Course;
@@ -35,6 +36,7 @@ export default function CourseCard({
 }: Props) {
   const palette = getProgramPalette(programKey);
   const isInactive = course.status === "inactive";
+  const [showClasses, setShowClasses] = useState(false);
 
   /** Format VND theo locale vi-VN, vd 3500000 -> "3.500.000 ₫". */
   const formattedPrice = useMemo(() => {
@@ -408,25 +410,31 @@ export default function CourseCard({
         )}
       >
         <Button
-          asChild
           size="sm"
           variant="ghost"
           className={cn(
-            "h-7 text-xs flex-1 justify-start font-semibold",
+            "h-7 text-xs flex-1 justify-start font-semibold gap-1",
             "transition-all duration-200",
             "hover:translate-x-0.5",
             palette.accentText,
           )}
+          onClick={() => setShowClasses(true)}
         >
-          <Link to={`/classes/list?program=${encodeURIComponent(programKey)}`}>
-            Xem lớp
-            <span
-              aria-hidden
-              className="ml-1 inline-block transition-transform duration-200 group-hover/btn:translate-x-1"
-            >
-              →
+          Xem lớp
+          {stats.totalClasses > 0 && (
+            <span className={cn(
+              "ml-0.5 inline-flex items-center justify-center text-[10px] font-bold px-1.5 py-0 rounded-full min-w-[18px]",
+              palette.accentSoftBg,
+            )}>
+              {stats.totalClasses}
             </span>
-          </Link>
+          )}
+          <span
+            aria-hidden
+            className="ml-auto inline-block transition-transform duration-200 group-hover:translate-x-1"
+          >
+            →
+          </span>
         </Button>
         <Button
           size="sm"
