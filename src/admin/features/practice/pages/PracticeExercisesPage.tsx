@@ -183,6 +183,26 @@ export default function PracticeExercisesPage() {
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [exerciseStatus, setExerciseStatus] = useState("draft");
 
+  /**
+   * Course assignments cho exercise đang edit. Lưu vào pivot `resource_courses`
+   * sau khi save xong. Khi tạo mới: rỗng — admin chọn courses rồi chúng sẽ được
+   * insert ngay lần save đầu.
+   *
+   * Khi mở exercise có sẵn: hydrate từ pivot ở `openEditor`.
+   */
+  const [editingCourseIds, setEditingCourseIds] = useState<string[]>([]);
+  const { setCourses: setResourceCourses } = useResourceCourseMutations();
+  const { data: existingResourceCourses = [] } = useCoursesForResource(
+    "exercise",
+    editing && editing !== "new" ? editing : null,
+  );
+  // Hydrate khi mở editor
+  useEffect(() => {
+    if (editing && editing !== "new") {
+      setEditingCourseIds(existingResourceCourses.map((r) => r.course_id));
+    }
+  }, [editing, existingResourceCourses.length]);
+
   // Expanded groups
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const toggleGroup = (id: string) => {
