@@ -5,6 +5,7 @@ import { Loader2, ArrowLeft, BookOpen, Headphones, PenLine, Mic, AlertTriangle, 
 import { Button } from "@shared/components/ui/button";
 import { cn } from "@shared/lib/utils";
 import { format, subDays } from "date-fns";
+import { CourseAssignmentPanel } from "@shared/components/study-plan/CourseAssignmentPanel";
 
 const SKILL_ICON: Record<string, typeof BookOpen> = {
   reading: BookOpen,
@@ -212,6 +213,13 @@ export default function PracticeExerciseDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Course assignments — drives global Study Plan filtering */}
+      {exerciseId && (
+        <div className="bg-card rounded-xl border p-3">
+          <CourseAssignmentPanel kind="exercise" resourceId={exerciseId} />
+        </div>
+      )}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
