@@ -3,7 +3,6 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@shared/components/ui/dialog";
 import { Input } from "@shared/components/ui/input";
-import { Textarea } from "@shared/components/ui/textarea";
 import { Label } from "@shared/components/ui/label";
 import { Button } from "@shared/components/ui/button";
 import { Switch } from "@shared/components/ui/switch";
@@ -40,9 +39,6 @@ export default function ProgramEditorDialog({ open, onOpenChange, initial, onSub
   const [key, setKey] = useState("");
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [longDescription, setLongDescription] = useState("");
-  const [outcomes, setOutcomes] = useState<string[]>([]);
-  const [outcomeDraft, setOutcomeDraft] = useState("");
   const [colorKey, setColorKey] = useState<string | null>("teal");
   const [iconKey, setIconKey] = useState<string | null>("graduation-cap");
   const [sortOrder, setSortOrder] = useState(0);
@@ -55,31 +51,17 @@ export default function ProgramEditorDialog({ open, onOpenChange, initial, onSub
       setKey(initial.key);
       setName(initial.name);
       setDescription(initial.description ?? "");
-      setLongDescription(initial.long_description ?? "");
-      setOutcomes(initial.outcomes ?? []);
       setColorKey(initial.color_key ?? "teal");
       setIconKey(initial.icon_key ?? "graduation-cap");
       setSortOrder(initial.sort_order ?? 0);
       setActive(initial.status === "active");
       setLevelIds(initial.level_ids ?? []);
     } else {
-      setKey(""); setName(""); setDescription(""); setLongDescription("");
-      setOutcomes([]); setOutcomeDraft("");
+      setKey(""); setName(""); setDescription("");
       setColorKey("teal"); setIconKey("graduation-cap");
       setSortOrder(0); setActive(true); setLevelIds([]);
     }
-    setOutcomeDraft("");
   }, [open, initial]);
-
-  const addOutcome = () => {
-    const v = outcomeDraft.trim();
-    if (!v) return;
-    setOutcomes((prev) => [...prev, v]);
-    setOutcomeDraft("");
-  };
-
-  const removeOutcome = (idx: number) =>
-    setOutcomes((prev) => prev.filter((_, i) => i !== idx));
 
   const toggleLevel = (id: string) =>
     setLevelIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -103,8 +85,6 @@ export default function ProgramEditorDialog({ open, onOpenChange, initial, onSub
         key: key.trim().toLowerCase(),
         name: name.trim(),
         description: description.trim() || null,
-        long_description: longDescription.trim() || null,
-        outcomes,
         color_key: colorKey,
         icon_key: iconKey,
         sort_order: sortOrder,
@@ -171,15 +151,8 @@ export default function ProgramEditorDialog({ open, onOpenChange, initial, onSub
             />
           </div>
 
-          <div>
-            <Label className="text-xs">Mô tả chi tiết (tùy chọn)</Label>
-            <Textarea
-              value={longDescription}
-              onChange={(e) => setLongDescription(e.target.value)}
-              placeholder="Mô tả đầy đủ về chương trình, đối tượng, phương pháp..."
-              className="text-sm min-h-[80px]"
-            />
-          </div>
+          {/* NOTE: Mô tả chi tiết & đầu ra giờ thuộc về Course (xem trang
+              /courses/programs/:key → tab Khoá học), không còn ở Program. */}
 
           {/* Color + Icon + Sort */}
           <div className="grid grid-cols-2 gap-4">
@@ -276,36 +249,6 @@ export default function ProgramEditorDialog({ open, onOpenChange, initial, onSub
                 </p>
               )}
             </div>
-          </div>
-
-          {/* Outcomes */}
-          <div>
-            <Label className="text-xs mb-1.5 block">Đầu ra (outcomes)</Label>
-            <div className="flex gap-2">
-              <Input
-                value={outcomeDraft}
-                onChange={(e) => setOutcomeDraft(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addOutcome())}
-                placeholder="VD: Đạt band 6.5+ sau 3 tháng"
-                className="h-9 text-sm"
-              />
-              <Button size="sm" onClick={addOutcome} variant="secondary">
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-            {outcomes.length > 0 && (
-              <ul className="mt-2 space-y-1">
-                {outcomes.map((o, i) => (
-                  <li key={i} className="flex items-center gap-2 px-3 py-1.5 rounded bg-muted/40 text-sm">
-                    <span className="text-primary font-mono text-xs">{i + 1}.</span>
-                    <span className="flex-1">{o}</span>
-                    <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => removeOutcome(i)}>
-                      <X className="h-3.5 w-3.5 text-destructive" />
-                    </Button>
-                  </li>
-                ))}
-              </ul>
-            )}
           </div>
 
           {/* Active */}
