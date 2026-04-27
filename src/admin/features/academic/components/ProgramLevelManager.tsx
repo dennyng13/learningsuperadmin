@@ -10,6 +10,7 @@ import { COLOR_PRESETS, getLevelColor } from "@shared/utils/levelColors";
 import { cn } from "@shared/lib/utils";
 import { useCoursesAdmin, type CourseProgram } from "@admin/features/academic/hooks/useCoursesAdmin";
 import type { CourseLevel } from "@shared/hooks/useCourseLevels";
+import { useLevelCefrMap } from "@shared/hooks/useLevelCefrMap";
 import LevelEditorDialog from "@admin/features/academic/components/LevelEditorDialog";
 
 /**
@@ -30,6 +31,7 @@ interface Props {
 
 export default function ProgramLevelManager({ program, allLevels, onChanged }: Props) {
   const { programs } = useCoursesAdmin();
+  const { formatCefr, getCefr } = useLevelCefrMap();
   /* ─── Linked levels (theo program_levels.sort_order, từ program.level_ids) ─── */
   const linkedLevels = useMemo(() => {
     const map = new Map(allLevels.map((l) => [l.id, l]));
@@ -171,9 +173,9 @@ export default function ProgramLevelManager({ program, allLevels, onChanged }: P
                 {l.name}
               </span>
               <div className="flex-1 flex flex-wrap items-center gap-2 min-w-0">
-                {l.cefr && (
+                {getCefr(l.id).length > 0 && (
                   <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-                    CEFR {l.cefr}
+                    CEFR {formatCefr(l.id)}
                   </span>
                 )}
                 {l.target_score && (
