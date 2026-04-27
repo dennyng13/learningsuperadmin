@@ -48,7 +48,7 @@ export default function CourseCard({
   return (
     <article
       className={cn(
-        "group rounded-2xl border bg-card overflow-hidden flex flex-col h-full transition-all",
+        "group relative rounded-2xl border bg-card overflow-hidden flex flex-col h-full transition-all",
         "hover:shadow-lg hover:-translate-y-0.5 hover:border-primary/30",
         isInactive && "opacity-70",
       )}
@@ -57,14 +57,14 @@ export default function CourseCard({
       <div className={cn("h-1.5 w-full", palette.progressFill)} />
       <div
         className={cn(
-          "absolute inset-x-0 top-1.5 h-16 pointer-events-none bg-gradient-to-b to-transparent",
+          "absolute inset-x-0 top-1.5 h-20 pointer-events-none bg-gradient-to-b to-transparent",
           palette.bannerGradient,
         )}
         aria-hidden
       />
 
       {/* Header */}
-      <header className="p-4 pb-2 flex items-start gap-3">
+      <header className="relative p-4 pb-2 flex items-start gap-3">
         <div className={cn("h-10 w-10 rounded-lg flex items-center justify-center shrink-0", palette.iconBg)}>
           <BookOpen className={cn("h-5 w-5", palette.iconText)} />
         </div>
