@@ -71,7 +71,7 @@ export default function ProgramsListPage() {
         <div className="flex items-center gap-2 shrink-0">
           <Button asChild size="sm" variant="outline" className="h-8 gap-1.5">
             <Link to="/courses/levels">
-              <Layers className="h-3.5 w-3.5" /> Cấp độ
+              <Layers className="h-3.5 w-3.5" /> Khoá học/ Cấp độ
             </Link>
           </Button>
           <Button onClick={handleRepair} size="sm" className="h-8 gap-1.5" disabled={repairing || loading}>
