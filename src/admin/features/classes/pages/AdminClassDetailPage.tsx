@@ -380,6 +380,12 @@ export default function AdminClassDetailPage() {
         <TabsContent value="revenue" className="mt-4">
           <RevenueTab classId={classId} />
         </TabsContent>
+        <TabsContent value="payroll" className="mt-4">
+          <PayrollTab classId={classId} />
+        </TabsContent>
+        <TabsContent value="lifecycle" className="mt-4">
+          <LifecycleTab cls={cls} />
+        </TabsContent>
         <TabsContent value="history" className="mt-4">
           <HistoryTab cls={cls} />
         </TabsContent>
