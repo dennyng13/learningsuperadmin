@@ -4,8 +4,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
-  GraduationCap, Calendar, Users, BarChart3, Activity, Megaphone, Trophy,
+  GraduationCap, Calendar, Users, BarChart3, Activity, Megaphone,
   History, Settings, MoreVertical, RefreshCw, Loader2, AlertTriangle,
+  LayoutDashboard, Wallet,
 } from "lucide-react";
 import { DetailPageLayout } from "@shared/components/layouts/DetailPageLayout";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@shared/components/ui/tabs";
@@ -40,7 +41,8 @@ import {
 import RequestReplacementTeacherButton from "@admin/features/classes/components/RequestReplacementTeacherButton";
 import {
   SessionsTab, StudentsTab, PlanProgressTab, ActivityTab,
-  AnnouncementsTab, LeaderboardTab, HistoryTab, SettingsTab,
+  AnnouncementsTab, HistoryTab, SettingsTab,
+  OverviewTab, RevenueTab,
 } from "@admin/features/classes/components/detail-tabs";
 import { useAuth } from "@shared/hooks/useAuth";
 
@@ -55,12 +57,13 @@ import { useAuth } from "@shared/hooks/useAuth";
    ═══════════════════════════════════════════ */
 
 const TABS = [
+  { value: "overview",       label: "Tổng quan",  icon: LayoutDashboard },
   { value: "sessions",       label: "Buổi học",   icon: Calendar    },
   { value: "students",       label: "Học viên",   icon: Users       },
   { value: "plan-progress",  label: "Tiến độ",    icon: BarChart3   },
   { value: "activity",       label: "Hoạt động",  icon: Activity    },
   { value: "announcements",  label: "Thông báo",  icon: Megaphone   },
-  { value: "leaderboard",    label: "Xếp hạng",   icon: Trophy      },
+  { value: "revenue",        label: "Doanh thu",  icon: Wallet      },
   { value: "history",        label: "Lịch sử",    icon: History     },
   { value: "settings",       label: "Cấu hình",   icon: Settings    },
 ] as const;
@@ -74,18 +77,28 @@ export default function AdminClassDetailPage() {
   // RPC server-side cũng chặn non-admin nên đây thuần UX.
   const { isAdmin } = useAuth();
 
-  /* ─── Query: class detail ─── */
+  /* ─── Query: class detail (sau P4a đọc từ v_class_full — có sẵn course +
+     study_plan + teacher + counts join trong 1 row).
+     Fallback: nếu view chưa apply ở môi trường cũ → fallback `classes` shim. */
   const { data: cls, isLoading, error, refetch, isRefetching } = useQuery({
     queryKey: ["admin-class-detail", classId],
     queryFn: async (): Promise<ClassDetail | null> => {
       if (!classId) return null;
-      const { data, error } = await (supabase as any)
+      // Thử v_class_full trước.
+      const v = await (supabase as any)
+        .from("v_class_full" as any)
+        .select("*")
+        .eq("id", classId)
+        .maybeSingle();
+      if (!v.error && v.data) return v.data as ClassDetail;
+      // Fallback shim view / legacy table (P4a `classes` view hoặc teachngo_classes).
+      const fallback = await (supabase as any)
         .from("classes" as any)
         .select("*")
         .eq("id", classId)
         .maybeSingle();
-      if (error) throw error;
-      return data as ClassDetail | null;
+      if (fallback.error) throw fallback.error;
+      return fallback.data as ClassDetail | null;
     },
     enabled: !!classId,
     staleTime: 15_000,
@@ -330,7 +343,7 @@ export default function AdminClassDetailPage() {
       <ClassInfoCard cls={cls} />
 
       {/* Tabs */}
-      <Tabs defaultValue="sessions" className="mt-6">
+      <Tabs defaultValue="overview" className="mt-6">
         <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
           <TabsList className="inline-flex w-max gap-1">
             {TABS.map((t) => {
@@ -344,6 +357,9 @@ export default function AdminClassDetailPage() {
           </TabsList>
         </div>
 
+        <TabsContent value="overview" className="mt-4">
+          <OverviewTab cls={cls} mode="admin" />
+        </TabsContent>
         <TabsContent value="sessions" className="mt-4">
           <SessionsTab classId={classId} />
         </TabsContent>
@@ -359,8 +375,8 @@ export default function AdminClassDetailPage() {
         <TabsContent value="announcements" className="mt-4">
           <AnnouncementsTab classId={classId} />
         </TabsContent>
-        <TabsContent value="leaderboard" className="mt-4">
-          <LeaderboardTab classId={classId} />
+        <TabsContent value="revenue" className="mt-4">
+          <RevenueTab classId={classId} />
         </TabsContent>
         <TabsContent value="history" className="mt-4">
           <HistoryTab cls={cls} />

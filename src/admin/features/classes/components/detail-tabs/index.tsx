@@ -5,6 +5,8 @@ export { AnnouncementsTab } from "./AnnouncementsTab";
 export { HistoryTab } from "./HistoryTab";
 export { SettingsTab } from "./SettingsTab";
 export { StudentsTab } from "./StudentsTab";
+export { OverviewTab } from "./OverviewTab";
+export { RevenueTab } from "./RevenueTab";
 
 /* ─── 5 tabs còn chờ backend ─── */
 
