@@ -172,6 +172,7 @@ export default function AppRoutes() {
           {/* Academic — Module Quản lý Khóa học (programs + cấp độ) */}
           <Route path="courses" element={<CoursesPage />} />
           <Route path="courses/programs" element={<ProgramsListPage />} />
+          <Route path="courses/programs/:key" element={<ProgramDetailPage />} />
           <Route path="courses/levels" element={<CourseLevelsPage />} />
           <Route path="courses/new" element={<Navigate to="/courses/programs" replace />} />
           <Route path="courses/:id/edit" element={<Navigate to="/courses/programs" replace />} />
