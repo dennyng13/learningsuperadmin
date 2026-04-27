@@ -4,6 +4,7 @@ import {
   ArrowLeft, CheckCircle2, DatabaseZap, Layers, Loader2, GraduationCap,
   AlertTriangle, ArrowRight,
 } from "lucide-react";
+import { Skeleton } from "@shared/components/ui/skeleton";
 import { toast } from "sonner";
 import { Button } from "@shared/components/ui/button";
 import { useCoursesAdmin } from "@admin/features/academic/hooks/useCoursesAdmin";
@@ -93,13 +94,34 @@ export default function ProgramsListPage() {
         </section>
       )}
 
-      {loading ? (
-        <div className="flex justify-center py-16">
-          <Loader2 className="h-6 w-6 animate-spin text-primary" />
-        </div>
-      ) : (
-        <section className="grid gap-4 md:grid-cols-3">
-          {CANONICAL_PROGRAMS.map((preset) => {
+      <section className="grid gap-4 md:grid-cols-3">
+        {loading
+          ? CANONICAL_PROGRAMS.map((preset) => (
+              <article key={preset.key} className="rounded-xl border bg-card overflow-hidden flex flex-col">
+                <div className="h-1 w-full bg-muted" />
+                <div className="p-5 flex-1 space-y-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <Skeleton className="h-12 w-12 rounded-xl" />
+                    <Skeleton className="h-5 w-20 rounded-full" />
+                  </div>
+                  <div className="space-y-2">
+                    <Skeleton className="h-6 w-32" />
+                    <Skeleton className="h-3 w-20" />
+                    <Skeleton className="h-4 w-full mt-2" />
+                    <Skeleton className="h-4 w-4/5" />
+                  </div>
+                  <div className="rounded-lg border bg-muted/20 p-3 space-y-2">
+                    <Skeleton className="h-3 w-24" />
+                    <Skeleton className="h-7 w-10" />
+                  </div>
+                </div>
+                <div className="border-t p-3 flex items-center justify-between gap-2">
+                  <Skeleton className="h-3 w-12" />
+                  <Skeleton className="h-8 w-32" />
+                </div>
+              </article>
+            ))
+          : CANONICAL_PROGRAMS.map((preset) => {
             const row = programs.find((p) => p.key === preset.key);
             const Icon = getProgramIcon(preset.key);
             const palette = getProgramPalette(preset.key);
@@ -148,8 +170,7 @@ export default function ProgramsListPage() {
               </article>
             );
           })}
-        </section>
-      )}
+      </section>
 
       <section className="rounded-lg border bg-muted/20 p-4">
         <h2 className="font-display font-bold text-sm">Nguyên tắc dữ liệu mới</h2>
