@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowLeft, Plus, Pencil, EyeOff, Eye, ArrowUp, ArrowDown, Loader2,
@@ -316,8 +316,14 @@ function CreateProgramDialog({
   const [active, setActive] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  // Reset khi mở lại (đồng bộ sort gợi ý)
-  useState(() => { setSortOrder(nextSortOrder); });
+  // Reset khi mở lại (đồng bộ sort gợi ý + chọn preset đầu chưa tồn tại)
+  useEffect(() => {
+    if (!open) return;
+    setSortOrder(nextSortOrder);
+    setActive(true);
+    const firstAvailable = PROGRAM_PRESETS.find((p) => !existingKeys.includes(p.key));
+    if (firstAvailable) setPresetKey(firstAvailable.key);
+  }, [open, nextSortOrder, existingKeys]);
 
   const preset = PROGRAM_PRESETS.find((p) => p.key === presetKey)!;
   const Icon = getProgramIcon(preset.key);
