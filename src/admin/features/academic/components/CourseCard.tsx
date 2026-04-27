@@ -62,29 +62,56 @@ export default function CourseCard({
 
   return (
     <article
+      tabIndex={0}
       className={cn(
-        "group relative rounded-2xl border bg-card overflow-hidden flex flex-col h-full",
-        "transition-all duration-300 ease-out",
-        "shadow-sm hover:shadow-xl hover:-translate-y-1",
+        "group relative rounded-2xl border bg-card overflow-hidden flex flex-col h-full outline-none",
+        "transition-all duration-300 ease-out will-change-transform",
+        // Resting elevation
+        "shadow-sm",
+        // Hover: lift + shadow + viền sáng
+        "hover:shadow-xl hover:-translate-y-1.5 hover:border-foreground/15",
+        // Focus visible (bàn phím): ring rõ ràng theo accent program
+        "focus-visible:-translate-y-1.5 focus-visible:shadow-xl",
+        "focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:ring-primary/60",
         palette.accentBorder,
         isInactive && "opacity-70 grayscale-[0.3]",
       )}
     >
-      {/* Top accent strip — đường nhấn theo program */}
-      <div className={cn("h-1.5 w-full", palette.progressFill)} />
-      {/* Soft tint banner — fade mượt, không over */}
+      {/* Top accent strip — phình ra khi hover */}
+      <div
+        className={cn(
+          "h-1.5 w-full transition-all duration-300 ease-out",
+          "group-hover:h-2 group-focus-visible:h-2",
+          palette.progressFill,
+        )}
+      />
+      {/* Soft tint banner — đậm hơn khi hover */}
       <div
         className={cn(
           "absolute inset-x-0 top-1.5 h-24 pointer-events-none bg-gradient-to-b",
+          "opacity-100 transition-opacity duration-500 group-hover:opacity-100",
           palette.bannerGradient,
         )}
         aria-hidden
       />
-      {/* Decorative glow blob phải — rất nhạt, chỉ để có chiều sâu */}
+      {/* Decorative glow blob — sáng hẳn lên khi hover/focus */}
       <div
         className={cn(
-          "absolute -top-10 -right-10 h-32 w-32 rounded-full pointer-events-none blur-3xl opacity-20",
+          "absolute -top-10 -right-10 h-32 w-32 rounded-full pointer-events-none blur-3xl",
+          "opacity-20 transition-all duration-500 ease-out",
+          "group-hover:opacity-40 group-hover:scale-125",
+          "group-focus-visible:opacity-40 group-focus-visible:scale-125",
           palette.progressFill,
+        )}
+        aria-hidden
+      />
+      {/* Glow border khi hover — vòng sáng quanh card */}
+      <div
+        className={cn(
+          "absolute inset-0 rounded-2xl pointer-events-none opacity-0 transition-opacity duration-300",
+          "group-hover:opacity-100",
+          "ring-1 ring-inset",
+          palette.accentBorder,
         )}
         aria-hidden
       />
@@ -95,6 +122,9 @@ export default function CourseCard({
           className={cn(
             "h-11 w-11 rounded-xl flex items-center justify-center shrink-0",
             "shadow-md ring-1 ring-white/40 dark:ring-white/10",
+            "transition-all duration-300 ease-out",
+            "group-hover:scale-110 group-hover:rotate-[-4deg] group-hover:shadow-lg",
+            "group-focus-visible:scale-110 group-focus-visible:rotate-[-4deg]",
             palette.progressFill,
           )}
         >
@@ -347,18 +377,59 @@ export default function CourseCard({
       </Section>
 
       {/* Footer actions */}
-      <footer className="mt-auto border-t bg-muted/20 px-3 py-2 flex items-center gap-1.5">
-        <Button asChild size="sm" variant="ghost" className="h-7 text-xs flex-1 justify-start">
+      <footer
+        className={cn(
+          "mt-auto border-t px-3 py-2 flex items-center gap-1.5",
+          "bg-muted/20 transition-colors duration-300",
+          "group-hover:bg-muted/40 group-focus-visible:bg-muted/40",
+        )}
+      >
+        <Button
+          asChild
+          size="sm"
+          variant="ghost"
+          className={cn(
+            "h-7 text-xs flex-1 justify-start font-semibold",
+            "transition-all duration-200",
+            "hover:translate-x-0.5",
+            palette.accentText,
+          )}
+        >
           <Link to={`/classes/list?program=${encodeURIComponent(programKey)}`}>
             Xem lớp
+            <span
+              aria-hidden
+              className="ml-1 inline-block transition-transform duration-200 group-hover/btn:translate-x-1"
+            >
+              →
+            </span>
           </Link>
         </Button>
-        <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={onEdit} aria-label="Sửa">
+        <Button
+          size="sm"
+          variant="ghost"
+          className={cn(
+            "h-7 w-7 p-0 transition-all duration-200",
+            "hover:bg-primary/10 hover:text-primary hover:scale-110",
+            "focus-visible:ring-2 focus-visible:ring-primary/40",
+          )}
+          onClick={onEdit}
+          aria-label="Sửa"
+        >
           <Pencil className="h-3.5 w-3.5" />
         </Button>
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive hover:text-destructive" aria-label="Xoá">
+            <Button
+              size="sm"
+              variant="ghost"
+              className={cn(
+                "h-7 w-7 p-0 text-destructive transition-all duration-200",
+                "hover:bg-destructive/10 hover:text-destructive hover:scale-110",
+                "focus-visible:ring-2 focus-visible:ring-destructive/40",
+              )}
+              aria-label="Xoá"
+            >
               <Trash2 className="h-3.5 w-3.5" />
             </Button>
           </AlertDialogTrigger>
