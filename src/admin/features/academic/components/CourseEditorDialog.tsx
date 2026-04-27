@@ -17,6 +17,7 @@ import { Checkbox } from "@shared/components/ui/checkbox";
 import { ScrollArea } from "@shared/components/ui/scroll-area";
 import { cn } from "@shared/lib/utils";
 import { getProgramPalette, getProgramIcon } from "@shared/utils/programColors";
+import { getLevelColorConfig } from "@shared/utils/levelColors";
 import type { CourseLevel } from "@shared/hooks/useCourseLevels";
 import { useStudyPlanTemplates } from "@shared/hooks/useStudyPlanTemplates";
 import type { Course, CourseInput } from "@admin/features/academic/hooks/useCourses";
@@ -808,18 +809,33 @@ function StepLevels({
         <div className="grid gap-1.5 grid-cols-1 sm:grid-cols-2 rounded-lg border bg-muted/10 p-2">
           {filtered.map((l) => {
             const checked = selectedIds.includes(l.id);
+            const cfg = getLevelColorConfig(l.color_key || l.name);
             return (
               <label
                 key={l.id}
                 className={cn(
                   "flex items-center gap-2 px-2.5 py-2 rounded-md cursor-pointer transition-colors border",
                   checked
-                    ? cn(palette.accentSoftBg, "border-current/20")
+                    ? cfg
+                      ? cn(cfg.bg, cfg.border)
+                      : cn(palette.accentSoftBg, "border-current/20")
                     : "border-transparent hover:bg-background",
                 )}
               >
                 <Checkbox checked={checked} onCheckedChange={() => onToggle(l.id)} />
-                <span className={cn("text-sm truncate flex-1", checked && palette.accentText)}>
+                <span
+                  className={cn(
+                    "inline-block h-3 w-3 rounded-full border shrink-0",
+                    !cfg && "border-dashed border-muted-foreground/40",
+                  )}
+                  style={cfg ? { backgroundColor: cfg.swatch } : { backgroundColor: "hsl(var(--muted))" }}
+                />
+                <span
+                  className={cn(
+                    "text-sm truncate flex-1",
+                    checked && (cfg ? cfg.text : palette.accentText),
+                  )}
+                >
                   {l.name}
                 </span>
               </label>
