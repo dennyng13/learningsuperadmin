@@ -417,17 +417,26 @@ function BigStat({
   return (
     <div
       className={cn(
-        "rounded-md px-1.5 py-1.5 text-center transition-colors",
-        highlight ? "bg-primary/10 ring-1 ring-primary/20" : "bg-muted/30",
+        "rounded-lg px-1.5 py-2 text-center transition-all",
+        "border",
+        highlight
+          ? "bg-emerald-50 border-emerald-200 dark:bg-emerald-500/10 dark:border-emerald-500/30"
+          : "bg-muted/40 border-transparent hover:bg-muted/70",
       )}
     >
-      <div className={cn("flex items-center justify-center", tone)}>
+      <div className={cn("flex items-center justify-center", highlight ? "text-emerald-600 dark:text-emerald-400" : tone)}>
         {icon}
       </div>
-      <p className="text-base font-display font-extrabold leading-none mt-1">
+      <p className={cn(
+        "text-base font-display font-extrabold leading-none mt-1 tabular-nums",
+        highlight && "text-emerald-700 dark:text-emerald-400",
+      )}>
         {value}
       </p>
-      <p className="text-[9px] uppercase tracking-wider text-muted-foreground mt-1 truncate">
+      <p className={cn(
+        "text-[9px] font-semibold uppercase tracking-wider mt-1 truncate",
+        highlight ? "text-emerald-700/80 dark:text-emerald-400/80" : "text-muted-foreground",
+      )}>
         {label}
       </p>
     </div>
