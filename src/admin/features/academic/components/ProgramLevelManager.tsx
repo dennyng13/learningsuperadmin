@@ -1,65 +1,24 @@
 import { useEffect, useRef, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import {
-  Plus, GripVertical, Loader2, Layers, Settings2, Pencil,
+  Plus, GripVertical, Layers, Settings2, Pencil, Target, Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { Input } from "@shared/components/ui/input";
 import { Button } from "@shared/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@shared/components/ui/popover";
 import { COLOR_PRESETS, getLevelColor } from "@shared/utils/levelColors";
 import { cn } from "@shared/lib/utils";
-import type { CourseProgram } from "@admin/features/academic/hooks/useCoursesAdmin";
+import { useCoursesAdmin, type CourseProgram } from "@admin/features/academic/hooks/useCoursesAdmin";
 import type { CourseLevel } from "@shared/hooks/useCourseLevels";
+import LevelEditorDialog from "@admin/features/academic/components/LevelEditorDialog";
 
 /**
- * ProgramLevelManager — chỉ Add + Sort trong scope 1 program.
+ * ProgramLevelManager — list + drag-sort cấp độ trong scope 1 program.
  *
- * Edit/Delete chuyển sang trang tập trung `/courses/levels` để tránh
- * vô tình ảnh hưởng program khác (level vẫn many-to-many ở DB).
- *
- * Add: insert vào `course_levels` rồi link vào `program_levels` cho program
- * hiện tại. Sort: drag→ rebuild program_levels.sort_order cho program này.
+ * Tạo/sửa cấp độ qua `LevelEditorDialog` (form đầy đủ trường: outcomes,
+ * mô tả dài, target score, CEFR, study plan template). Mỗi cấp độ thuộc
+ * ĐÚNG 1 chương trình (UI + DB UNIQUE).
  */
-
-const colorKeys = Object.keys(COLOR_PRESETS);
-
-function ColorPicker({ value, onChange }: { value: string | null; onChange: (key: string) => void }) {
-  return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          className={cn(
-            "h-7 w-7 rounded-full border-2 shrink-0 transition-all hover:scale-110",
-            value ? "border-foreground/30" : "border-dashed border-muted-foreground/40",
-          )}
-          style={{ backgroundColor: value ? COLOR_PRESETS[value]?.swatch : "#d1d5db" }}
-          title="Chọn màu"
-        />
-      </PopoverTrigger>
-      <PopoverContent className="w-auto p-3" align="start">
-        <p className="text-xs font-medium text-muted-foreground mb-2">Chọn màu</p>
-        <div className="grid grid-cols-5 gap-2">
-          {colorKeys.map((k) => (
-            <button
-              key={k}
-              type="button"
-              onClick={() => onChange(k)}
-              className={cn(
-                "h-7 w-7 rounded-full border-2 transition-all hover:scale-110",
-                value === k ? "border-foreground ring-2 ring-primary/30 scale-110" : "border-transparent",
-              )}
-              style={{ backgroundColor: COLOR_PRESETS[k].swatch }}
-              title={COLOR_PRESETS[k].label}
-            />
-          ))}
-        </div>
-      </PopoverContent>
-    </Popover>
-  );
-}
 
 interface Props {
   program: CourseProgram;
@@ -70,6 +29,7 @@ interface Props {
 }
 
 export default function ProgramLevelManager({ program, allLevels, onChanged }: Props) {
+  const { programs } = useCoursesAdmin();
   /* ─── Linked levels (theo program_levels.sort_order, từ program.level_ids) ─── */
   const linkedLevels = useMemo(() => {
     const map = new Map(allLevels.map((l) => [l.id, l]));
@@ -78,47 +38,11 @@ export default function ProgramLevelManager({ program, allLevels, onChanged }: P
       .filter((l): l is CourseLevel => !!l);
   }, [program.level_ids, allLevels]);
 
-  /* ─── Add ─── */
-  const [newName, setNewName] = useState("");
-  const [newColor, setNewColor] = useState<string | null>(null);
-  const [adding, setAdding] = useState(false);
-
-  const addLevel = async () => {
-    const name = newName.trim();
-    if (!name) return;
-    setAdding(true);
-    try {
-      const maxOrder = allLevels.length > 0 ? Math.max(...allLevels.map((l) => l.sort_order)) : 0;
-      const { data: created, error: insertErr } = await supabase
-        .from("course_levels")
-        .insert({ name, sort_order: maxOrder + 1, color_key: newColor })
-        .select("id")
-        .single();
-      if (insertErr) {
-        if (insertErr.code === "23505") toast.error("Tên cấp độ đã tồn tại");
-        else toast.error(`Lỗi: ${insertErr.message}`);
-        return;
-      }
-      const nextProgramOrder = linkedLevels.length;
-      const { error: linkErr } = await (supabase as any)
-        .from("program_levels")
-        .insert({
-          program_id: program.id,
-          level_id: created!.id,
-          sort_order: nextProgramOrder,
-        });
-      if (linkErr) {
-        toast.error(`Lỗi liên kết: ${linkErr.message}`);
-        return;
-      }
-      toast.success(`Đã thêm "${name}" vào ${program.name}`);
-      setNewName("");
-      setNewColor(null);
-      await onChanged();
-    } finally {
-      setAdding(false);
-    }
-  };
+  /* ─── Editor dialog ─── */
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editingLevel, setEditingLevel] = useState<CourseLevel | null>(null);
+  const openCreate = () => { setEditingLevel(null); setEditorOpen(true); };
+  const openEdit = (l: CourseLevel) => { setEditingLevel(l); setEditorOpen(true); };
 
   /* ─── Drag sort (program_levels.sort_order, scope theo program) ─── */
   const [dragIdx, setDragIdx] = useState<number | null>(null);
@@ -195,28 +119,16 @@ export default function ProgramLevelManager({ program, allLevels, onChanged }: P
             Cấp độ trong khóa ({display.length})
           </h3>
         </div>
-        <Button asChild size="sm" variant="ghost" className="h-7 text-xs gap-1.5">
-          <Link to="/courses/levels">
-            <Settings2 className="h-3.5 w-3.5" /> Quản lý tập trung
-          </Link>
-        </Button>
-      </div>
-
-      {/* Add row */}
-      <div className="flex items-center gap-2 p-2 rounded-lg border bg-muted/20">
-        <ColorPicker value={newColor} onChange={setNewColor} />
-        <Input
-          value={newName}
-          onChange={(e) => setNewName(e.target.value)}
-          placeholder={`Thêm cấp độ mới cho ${program.name}…`}
-          className="h-9 text-sm"
-          onKeyDown={(e) => e.key === "Enter" && addLevel()}
-          disabled={adding}
-        />
-        <Button size="sm" onClick={addLevel} disabled={adding || !newName.trim()} className="shrink-0">
-          {adding ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
-          <span className="ml-1">Thêm</span>
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button onClick={openCreate} size="sm" className="h-7 text-xs gap-1.5">
+            <Plus className="h-3.5 w-3.5" /> Thêm cấp độ
+          </Button>
+          <Button asChild size="sm" variant="ghost" className="h-7 text-xs gap-1.5">
+            <Link to="/courses/levels">
+              <Settings2 className="h-3.5 w-3.5" /> Quản lý tập trung
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {/* List */}
@@ -253,21 +165,41 @@ export default function ProgramLevelManager({ program, allLevels, onChanged }: P
                 style={{ backgroundColor: l.color_key ? COLOR_PRESETS[l.color_key]?.swatch : "#d1d5db" }}
               />
               <span className={cn(
-                "font-medium text-sm flex-1 px-2 py-0.5 rounded truncate",
+                "font-medium text-sm px-2 py-0.5 rounded truncate shrink-0",
                 getLevelColor(l.color_key || l.name),
               )}>
                 {l.name}
               </span>
+              <div className="flex-1 flex flex-wrap items-center gap-2 min-w-0">
+                {l.cefr && (
+                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                    CEFR {l.cefr}
+                  </span>
+                )}
+                {l.target_score && (
+                  <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
+                    <Target className="h-2.5 w-2.5" /> {l.target_score}
+                  </span>
+                )}
+                {l.study_plan_template_id && (
+                  <span className="inline-flex items-center gap-1 text-[10px] text-primary" title="Có Study Plan Template">
+                    <Sparkles className="h-2.5 w-2.5" /> Template
+                  </span>
+                )}
+                {Array.isArray(l.outcomes) && l.outcomes.length > 0 && (
+                  <span className="text-[10px] text-muted-foreground">
+                    {l.outcomes.length} đầu ra
+                  </span>
+                )}
+              </div>
               <Button
-                asChild
                 size="icon"
                 variant="ghost"
                 className="h-7 w-7"
-                title="Sửa hoặc xóa cấp độ ở trang quản lý tập trung"
+                title="Sửa cấp độ"
+                onClick={() => openEdit(l)}
               >
-                <Link to={`/courses/levels?focus=${l.id}`}>
-                  <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
-                </Link>
+                <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
               </Button>
             </div>
           ))
@@ -276,11 +208,20 @@ export default function ProgramLevelManager({ program, allLevels, onChanged }: P
 
       <p className="text-[11px] text-muted-foreground">
         Kéo <GripVertical className="inline h-3 w-3" /> để đổi thứ tự trong khóa này.
-        Sửa tên/màu/xóa: bấm <Pencil className="inline h-3 w-3" /> hoặc mở{" "}
+        Bấm <Pencil className="inline h-3 w-3" /> để sửa chi tiết, hoặc mở{" "}
         <Link to="/courses/levels" className="underline hover:text-foreground">
-          trang quản lý cấp độ tập trung
+          trang quản lý tập trung
         </Link>.
       </p>
+
+      <LevelEditorDialog
+        open={editorOpen}
+        onOpenChange={setEditorOpen}
+        level={editingLevel}
+        programs={programs}
+        initialProgramId={program.id}
+        onSaved={onChanged}
+      />
     </section>
   );
 }
