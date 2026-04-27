@@ -61,6 +61,8 @@ export interface ProgramPalette {
   accentText: string;
   /** Subtle accent border */
   accentBorder: string;
+  /** Hover variant for `accentBorder` (đậm hơn) */
+  accentBorderHover: string;
   /** Focus ring color */
   ring: string;
 }
@@ -123,6 +125,7 @@ function buildPalette(c: AllowedColor): ProgramPalette {
     accentSoftHover: `hover:bg-${c}-500/15`,
     accentText: `text-${c}-600 dark:text-${c}-400`,
     accentBorder: `border-${c}-500/20`,
+    accentBorderHover: `hover:border-${c}-500/50`,
     ring: `ring-${c}-500/40`,
   };
 }
@@ -142,6 +145,7 @@ const DEFAULT_PALETTE: ProgramPalette = {
   accentSoftHover: "hover:bg-primary/15",
   accentText: "text-primary",
   accentBorder: "border-primary/20",
+  accentBorderHover: "hover:border-primary/60",
   ring: "ring-primary/40",
 };
 
