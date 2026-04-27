@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useTemplateMutations, type StudyPlanTemplate } from "@shared/hooks/useStudyPlanTemplates";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@shared/components/ui/dialog";
 import { Input } from "@shared/components/ui/input";
@@ -10,14 +10,21 @@ import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTeacherAccessScope } from "@shared/hooks/useTeacherAccessScope";
-import { Loader2, School, UserCheck, Calendar, Sparkles } from "lucide-react";
+import { Loader2, School, UserCheck, Calendar, Sparkles, Search, Filter, BookOpen, GraduationCap } from "lucide-react";
 import { Badge } from "@shared/components/ui/badge";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@shared/components/ui/breadcrumb";
+import { usePrograms } from "@shared/hooks/usePrograms";
 
 const DAYS = [
   { value: "mon", label: "T2" }, { value: "tue", label: "T3" }, { value: "wed", label: "T4" },
   { value: "thu", label: "T5" }, { value: "fri", label: "T6" }, { value: "sat", label: "T7" }, { value: "sun", label: "CN" },
 ];
+
+/**
+ * Một số chương trình (vd. Customized) không phân khoá học → bỏ filter khoá.
+ * Có thể mở rộng danh sách này khi xuất hiện program tương tự.
+ */
+const PROGRAMS_WITHOUT_COURSE = new Set(["customized", "other"]);
 
 interface Props {
   template: StudyPlanTemplate;
@@ -28,6 +35,7 @@ interface Props {
 export function CloneTemplateDialog({ template, teacherMode = false, onClose }: Props) {
   const { cloneTemplate } = useTemplateMutations();
   const { data: scope } = useTeacherAccessScope();
+  const { programs } = usePrograms();
 
   const [tab, setTab] = useState<"class" | "student">("class");
   const [selectedClassIds, setSelectedClassIds] = useState<string[]>([]);
@@ -38,20 +46,69 @@ export function CloneTemplateDialog({ template, teacherMode = false, onClose }: 
   const [days, setDays] = useState<string[]>(template.schedule_pattern?.days || ["mon", "wed", "fri"]);
   const [autoFromClass, setAutoFromClass] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [searchClass, setSearchClass] = useState("");
+  const [searchStudent, setSearchStudent] = useState("");
+
+  // Resolve chương trình của template từ DB (an toàn hơn hardcode "IELTS"/"WRE"/"Customized")
+  const tplProgramKey = (template.program || "").toLowerCase();
+  const tplProgram = useMemo(
+    () => programs.find((p) => p.key.toLowerCase() === tplProgramKey),
+    [programs, tplProgramKey],
+  );
+  const programDbName = tplProgram?.name; // tên chuẩn ở cột classes.program
+  const programHasCourse = tplProgramKey && !PROGRAMS_WITHOUT_COURSE.has(tplProgramKey);
+
+  // Filters trong dialog: cho phép tắt từng filter để mở rộng phạm vi nếu cần
+  const [filterByCourse, setFilterByCourse] = useState<boolean>(!!(template as any).course_id && programHasCourse);
+  const [filterByLevel, setFilterByLevel] = useState<boolean>(!!template.assigned_level);
+
+  // Levels thuộc course của template — dùng để OR-match `classes.level`
+  // (vì classes hiện chưa có cột course_id, ta map qua course_level_links → course_levels.name).
+  const { data: courseLevelNames = [] } = useQuery({
+    queryKey: ["clone-course-level-names", (template as any).course_id],
+    enabled: !!(template as any).course_id && programHasCourse,
+    queryFn: async () => {
+      const courseId = (template as any).course_id as string;
+      const { data: links } = await (supabase as any)
+        .from("course_level_links")
+        .select("level_id")
+        .eq("course_id", courseId);
+      const levelIds = (links || []).map((l: any) => l.level_id);
+      if (levelIds.length === 0) return [] as string[];
+      const { data: lvs } = await (supabase as any)
+        .from("course_levels")
+        .select("name")
+        .in("id", levelIds);
+      return (lvs || []).map((l: any) => l.name as string);
+    },
+  });
 
   const { data: classes } = useQuery({
-    queryKey: ["classes-clone", template.program, teacherMode, scope?.teacherId, scope?.canViewAllClasses],
+    queryKey: ["classes-clone", programDbName, teacherMode, scope?.teacherId, scope?.canViewAllClasses],
     queryFn: async () => {
       let q = (supabase as any).from("classes" as any).select("id, class_name, program, level, start_date, end_date, schedule").order("class_name");
-      if (template.program) {
-        const programNorm = template.program === "customized" ? "Customized" : template.program === "wre" ? "WRE" : "IELTS";
-        q = q.eq("program", programNorm);
-      }
+      // Lọc theo program qua tên chuẩn từ bảng `programs` (không hardcode)
+      if (programDbName) q = q.eq("program", programDbName);
       if (teacherMode && !scope?.canViewAllClasses && scope?.teacherId) q = q.eq("teacher_id", scope.teacherId);
       const { data } = await q;
       return data || [];
     },
   });
+
+  // Lọc client-side theo course / level / search
+  const filteredClasses = useMemo(() => {
+    let arr = classes || [];
+    if (filterByCourse && programHasCourse && courseLevelNames.length > 0) {
+      const set = new Set(courseLevelNames);
+      arr = arr.filter((c: any) => c.level && set.has(c.level));
+    }
+    if (filterByLevel && template.assigned_level) {
+      arr = arr.filter((c: any) => c.level === template.assigned_level);
+    }
+    const q = searchClass.trim().toLowerCase();
+    if (q) arr = arr.filter((c: any) => (c.class_name || "").toLowerCase().includes(q));
+    return arr;
+  }, [classes, filterByCourse, filterByLevel, programHasCourse, courseLevelNames, template.assigned_level, searchClass]);
 
   const { data: students } = useQuery({
     queryKey: ["students-clone", teacherMode, scope?.teacherId, scope?.canViewAllClasses],
@@ -69,6 +126,13 @@ export function CloneTemplateDialog({ template, teacherMode = false, onClose }: 
       return data || [];
     },
   });
+
+  const filteredStudents = useMemo(() => {
+    const arr = students || [];
+    const q = searchStudent.trim().toLowerCase();
+    if (!q) return arr;
+    return arr.filter((s: any) => (s.full_name || "").toLowerCase().includes(q));
+  }, [students, searchStudent]);
 
   // When user picks a class with start/end date, auto-fill (if autoFromClass)
   const onPickClass = (id: string) => {
@@ -140,6 +204,53 @@ export function CloneTemplateDialog({ template, teacherMode = false, onClose }: 
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Template scope summary */}
+          <div className="rounded-lg border bg-muted/30 p-2.5 text-[11px] flex flex-wrap items-center gap-2">
+            <Filter className="w-3.5 h-3.5 text-muted-foreground" />
+            <span className="text-muted-foreground">Mẫu đang gắn:</span>
+            {tplProgram ? (
+              <Badge variant="outline" className="gap-1 text-[10px]">
+                <BookOpen className="w-3 h-3" /> {tplProgram.name}
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="text-[10px] text-muted-foreground">Không gắn chương trình</Badge>
+            )}
+            {(template as any).course_id && programHasCourse && (
+              <button
+                type="button"
+                onClick={() => setFilterByCourse((v) => !v)}
+                className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border transition-colors ${
+                  filterByCourse
+                    ? "bg-emerald-50 text-emerald-700 border-emerald-300"
+                    : "bg-background text-muted-foreground border-dashed"
+                }`}
+                title="Bật/tắt lọc lớp theo khoá học của mẫu"
+              >
+                <GraduationCap className="w-3 h-3" />
+                Khoá học {filterByCourse ? "✓" : "—"}
+              </button>
+            )}
+            {template.assigned_level && (
+              <button
+                type="button"
+                onClick={() => setFilterByLevel((v) => !v)}
+                className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border transition-colors ${
+                  filterByLevel
+                    ? "bg-sky-50 text-sky-700 border-sky-300"
+                    : "bg-background text-muted-foreground border-dashed"
+                }`}
+                title="Bật/tắt lọc lớp theo cấp độ của mẫu"
+              >
+                {template.assigned_level} {filterByLevel ? "✓" : "—"}
+              </button>
+            )}
+            {!programHasCourse && tplProgram && (
+              <span className="text-[10px] text-muted-foreground italic">
+                ({tplProgram.name} không phân khoá học → bỏ qua filter khoá)
+              </span>
+            )}
+          </div>
+
           <div>
             <Label>Tên kế hoạch (tuỳ chọn)</Label>
             <Input value={planNameOverride} onChange={e => setPlanNameOverride(e.target.value)} placeholder={template.template_name} />
@@ -151,10 +262,29 @@ export function CloneTemplateDialog({ template, teacherMode = false, onClose }: 
               <TabsTrigger value="student"><UserCheck className="w-3.5 h-3.5 mr-1" /> Theo học viên</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="class" className="space-y-2 max-h-60 overflow-y-auto pr-1">
-              <p className="text-xs text-muted-foreground">Tất cả học viên trong lớp sẽ thấy kế hoạch này</p>
-              {classes?.length === 0 && <p className="text-sm text-muted-foreground italic">Không có lớp phù hợp</p>}
-              {classes?.map(c => (
+            <TabsContent value="class" className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs text-muted-foreground">Tất cả học viên trong lớp sẽ thấy kế hoạch này</p>
+                <span className="text-[10px] text-muted-foreground">
+                  {filteredClasses.length}/{classes?.length || 0} lớp
+                </span>
+              </div>
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={searchClass}
+                  onChange={(e) => setSearchClass(e.target.value)}
+                  placeholder="Tìm lớp theo tên..."
+                  className="h-8 pl-8 text-xs"
+                />
+              </div>
+              <div className="space-y-1.5 max-h-60 overflow-y-auto pr-1">
+                {filteredClasses.length === 0 && (
+                  <p className="text-sm text-muted-foreground italic py-4 text-center">
+                    Không có lớp phù hợp với bộ lọc hiện tại
+                  </p>
+                )}
+                {filteredClasses.map((c: any) => (
                 <label key={c.id} className="flex items-center gap-2 p-2 rounded-lg border hover:bg-muted/50 cursor-pointer">
                   <Checkbox checked={selectedClassIds.includes(c.id)} onCheckedChange={() => onPickClass(c.id)} />
                   <div className="flex-1 min-w-0">
@@ -165,12 +295,28 @@ export function CloneTemplateDialog({ template, teacherMode = false, onClose }: 
                     </p>
                   </div>
                 </label>
-              ))}
+                ))}
+              </div>
             </TabsContent>
 
-            <TabsContent value="student" className="space-y-2 max-h-60 overflow-y-auto pr-1">
-              <p className="text-xs text-muted-foreground">Chỉ các học viên được chọn mới thấy kế hoạch</p>
-              {students?.map(s => (
+            <TabsContent value="student" className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs text-muted-foreground">Chỉ các học viên được chọn mới thấy kế hoạch</p>
+                <span className="text-[10px] text-muted-foreground">
+                  {filteredStudents.length}/{students?.length || 0} HV
+                </span>
+              </div>
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={searchStudent}
+                  onChange={(e) => setSearchStudent(e.target.value)}
+                  placeholder="Tìm học viên theo tên..."
+                  className="h-8 pl-8 text-xs"
+                />
+              </div>
+              <div className="space-y-1.5 max-h-60 overflow-y-auto pr-1">
+                {filteredStudents.map((s: any) => (
                 <label key={s.teachngo_id} className="flex items-center gap-2 p-2 rounded-lg border hover:bg-muted/50 cursor-pointer">
                   <Checkbox
                     checked={selectedStudentIds.includes(s.teachngo_id)}
@@ -178,7 +324,11 @@ export function CloneTemplateDialog({ template, teacherMode = false, onClose }: 
                   />
                   <span className="text-sm">{s.full_name}</span>
                 </label>
-              ))}
+                ))}
+                {filteredStudents.length === 0 && (
+                  <p className="text-sm text-muted-foreground italic py-4 text-center">Không có học viên phù hợp</p>
+                )}
+              </div>
             </TabsContent>
           </Tabs>
 
