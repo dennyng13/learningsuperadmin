@@ -15,8 +15,6 @@ export interface CourseProgram {
   key: string;
   name: string;
   description: string | null;
-  long_description: string | null;
-  outcomes: string[];
   color_key: string | null;
   icon_key: string | null;
   sort_order: number;
@@ -28,8 +26,6 @@ export interface CourseProgramInput {
   key: string;
   name: string;
   description: string | null;
-  long_description: string | null;
-  outcomes: string[];
   color_key: string | null;
   icon_key: string | null;
   sort_order: number;
@@ -44,25 +40,15 @@ export function useCoursesAdmin() {
   const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
-      let progRows: any[] | null = null;
-      const full = await (supabase as any)
+      let progRows: any[] = [];
+      const res = await (supabase as any)
         .from("programs")
-        .select("id, key, name, description, long_description, outcomes, color_key, icon_key, sort_order, status")
+        .select("id, key, name, description, color_key, icon_key, sort_order, status")
         .order("sort_order", { ascending: true });
-
-      if (!full.error) {
-        progRows = full.data ?? [];
+      if (res.error) {
+        console.error("[useCoursesAdmin] programs select failed:", res.error);
       } else {
-        const base = await (supabase as any)
-          .from("programs")
-          .select("id, key, name, description, color_key, icon_key, sort_order, status")
-          .order("sort_order", { ascending: true });
-        if (base.error) {
-          console.error("[useCoursesAdmin] programs select failed:", base.error);
-          progRows = [];
-        } else {
-          progRows = base.data ?? [];
-        }
+        progRows = res.data ?? [];
       }
 
       let linkRows: Array<{ program_id: string; level_id: string; sort_order?: number }> = [];
@@ -79,7 +65,7 @@ export function useCoursesAdmin() {
         linksByProgram.set(row.program_id, arr);
       }
 
-      const merged: CourseProgram[] = (progRows ?? []).map((p) => {
+      const merged: CourseProgram[] = progRows.map((p) => {
         const normalizedKey = normalizeProgramKey(p.key);
         const preset = getCanonicalProgramPreset(normalizedKey);
         return {
@@ -87,8 +73,6 @@ export function useCoursesAdmin() {
           key: normalizedKey,
           name: preset?.name ?? p.name,
           description: p.description ?? preset?.description ?? null,
-          long_description: p.long_description ?? null,
-          outcomes: Array.isArray(p.outcomes) ? (p.outcomes as string[]) : [],
           color_key: p.color_key ?? preset?.color_key ?? null,
           icon_key: p.icon_key ?? preset?.icon_key ?? null,
           sort_order: preset?.sort_order ?? p.sort_order ?? 0,
