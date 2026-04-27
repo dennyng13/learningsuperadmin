@@ -158,18 +158,28 @@ export default function CourseCard({
         {/* Linked levels chips dưới stats */}
         {linkedLevelNames.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-1">
-            {linkedLevelNames.slice(0, 5).map((n, i) => (
-              <span
-                key={i}
-                className={cn(
-                  "text-[10px] font-semibold px-1.5 py-0.5 rounded-md",
-                  palette.accentSoftBg,
-                  palette.accentText,
-                )}
-              >
-                {n}
-              </span>
-            ))}
+            {linkedLevelNames.slice(0, 5).map((lv) => {
+              const cfg = getLevelColorConfig(lv.color_key || lv.name);
+              return (
+                <span
+                  key={lv.id}
+                  className={cn(
+                    "inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-md border",
+                    cfg
+                      ? cn(cfg.bg, cfg.text, cfg.border)
+                      : cn(palette.accentSoftBg, palette.accentText, palette.accentBorder),
+                  )}
+                  title={lv.target_score ? `${lv.name} • ${lv.target_score}` : lv.name}
+                >
+                  <span
+                    className="h-1.5 w-1.5 rounded-full shrink-0"
+                    style={{ backgroundColor: cfg?.swatch ?? "currentColor" }}
+                    aria-hidden
+                  />
+                  {lv.name}
+                </span>
+              );
+            })}
             {linkedLevelNames.length > 5 && (
               <span className="text-[10px] text-muted-foreground self-center">
                 +{linkedLevelNames.length - 5}
