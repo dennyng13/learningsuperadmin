@@ -1,16 +1,20 @@
 import { useMemo, useState } from "react";
 import { Link, useParams, Navigate } from "react-router-dom";
+import { toast } from "sonner";
 import {
   ArrowLeft, BookOpen, EyeOff, Layers, Loader2, Pencil, Plus,
 } from "lucide-react";
-import { toast } from "sonner";
 import { Button } from "@shared/components/ui/button";
-import { useCoursesAdmin } from "@admin/features/academic/hooks/useCoursesAdmin";
+import {
+  useCoursesAdmin,
+  type CourseProgramInput,
+} from "@admin/features/academic/hooks/useCoursesAdmin";
 import { useCourseLevels } from "@shared/hooks/useCourseLevels";
 import { useCourses, type Course, type CourseInput } from "@admin/features/academic/hooks/useCourses";
 import ProgramLevelManager from "@admin/features/academic/components/ProgramLevelManager";
 import CourseCard from "@admin/features/academic/components/CourseCard";
 import CourseEditorDialog from "@admin/features/academic/components/CourseEditorDialog";
+import ProgramEditorDialog from "@admin/features/academic/components/ProgramEditorDialog";
 import { getProgramIcon, getProgramPalette } from "@shared/utils/programColors";
 import { cn } from "@shared/lib/utils";
 
@@ -20,7 +24,7 @@ import { cn } from "@shared/lib/utils";
  */
 export default function ProgramDetailPage() {
   const { key = "" } = useParams<{ key: string }>();
-  const { programs, loading: programsLoading, refetch } = useCoursesAdmin();
+  const { programs, loading: programsLoading, refetch, update: updateProgram } = useCoursesAdmin();
   const { levels, refetch: refetchLevels } = useCourseLevels({ includeOrphans: true });
 
   const program = useMemo(
@@ -31,6 +35,14 @@ export default function ProgramDetailPage() {
     courses, loading: coursesLoading,
     getStats, getStudyPlanNames, create, update, remove,
   } = useCourses({ programId: program?.id, withStats: true });
+
+  /* ─── Program editor (inline) ─── */
+  const [programEditorOpen, setProgramEditorOpen] = useState(false);
+  const handleProgramSubmit = async (input: CourseProgramInput) => {
+    if (!program) return;
+    await updateProgram(program.id, input);
+    await refetch();
+  };
 
   /* ─── Course editor ─── */
   const [editorOpen, setEditorOpen] = useState(false);
@@ -109,10 +121,13 @@ export default function ProgramDetailPage() {
               <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{program.description}</p>
             )}
           </div>
-          <Button asChild size="sm" variant="outline" className="shrink-0 gap-1.5">
-            <Link to="/courses/programs">
-              <Pencil className="h-3.5 w-3.5" /> Sửa
-            </Link>
+          <Button
+            size="sm"
+            variant="outline"
+            className="shrink-0 gap-1.5"
+            onClick={() => setProgramEditorOpen(true)}
+          >
+            <Pencil className="h-3.5 w-3.5" /> Sửa chương trình
           </Button>
         </div>
       </section>
@@ -188,6 +203,13 @@ export default function ProgramDetailPage() {
         levels={programLevels}
         course={editing}
         onSubmit={handleSubmit}
+      />
+
+      <ProgramEditorDialog
+        open={programEditorOpen}
+        onOpenChange={setProgramEditorOpen}
+        initial={program}
+        onSubmit={handleProgramSubmit}
       />
     </div>
   );
