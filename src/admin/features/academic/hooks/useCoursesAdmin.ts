@@ -116,6 +116,36 @@ export function useCoursesAdmin() {
     fetchAll();
   }, [fetchAll]);
 
+  /**
+   * Realtime: tự refetch khi có thay đổi ở `programs`, `course_levels`, hoặc
+   * bảng nối `program_levels`. Nhờ đó khi admin gán level↔program ở trang
+   * `/courses/levels` (CourseLevelsPage), trang `/courses` cập nhật ngay
+   * không cần reload.
+   */
+  useEffect(() => {
+    const channel = (supabase as any)
+      .channel("courses-admin-sync")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "programs" },
+        () => { fetchAll(); },
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "course_levels" },
+        () => { fetchAll(); },
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "program_levels" },
+        () => { fetchAll(); },
+      )
+      .subscribe();
+    return () => {
+      try { (supabase as any).removeChannel(channel); } catch { /* noop */ }
+    };
+  }, [fetchAll]);
+
   /** Sync `program_levels` cho 1 program — xóa hết rồi insert lại theo thứ tự. */
   const syncLevels = async (programId: string, levelIds: string[]) => {
     await (supabase as any).from("program_levels").delete().eq("program_id", programId);
