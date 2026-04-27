@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { Link, useParams, Navigate } from "react-router-dom";
 import {
-  ArrowLeft, BookOpen, CheckCircle2, EyeOff, Layers, Loader2, Pencil,
+  ArrowLeft, EyeOff, Layers, Loader2, Pencil,
 } from "lucide-react";
 import { Button } from "@shared/components/ui/button";
 import { useCoursesAdmin } from "@admin/features/academic/hooks/useCoursesAdmin";
@@ -87,45 +87,8 @@ export default function ProgramDetailPage() {
         </div>
       </section>
 
-      {/* Mô tả + đầu ra */}
-      <section className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-xl border bg-card p-5 space-y-2">
-          <div className="flex items-center gap-2">
-            <BookOpen className={cn("h-4 w-4", palette.iconText)} />
-            <h2 className="font-display font-bold text-sm">Mô tả chi tiết</h2>
-          </div>
-          {program.long_description ? (
-            <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">
-              {program.long_description}
-            </p>
-          ) : (
-            <p className="text-xs text-muted-foreground italic">
-              Chưa có mô tả chi tiết.
-            </p>
-          )}
-        </div>
-
-        <div className="rounded-xl border bg-card p-5 space-y-2">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className={cn("h-4 w-4", palette.iconText)} />
-            <h2 className="font-display font-bold text-sm">
-              Đầu ra chương trình ({program.outcomes.length})
-            </h2>
-          </div>
-          {program.outcomes.length === 0 ? (
-            <p className="text-xs text-muted-foreground italic">Chưa có outcome nào.</p>
-          ) : (
-            <ul className="space-y-1.5">
-              {program.outcomes.map((o, i) => (
-                <li key={i} className="flex items-start gap-2 text-sm">
-                  <CheckCircle2 className={cn("h-3.5 w-3.5 mt-0.5 shrink-0", palette.iconText)} />
-                  <span className="text-foreground/85 leading-snug">{o}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </section>
+      {/* Note: Program chỉ giữ phạm vi (key/name/description ngắn).
+          Mô tả chi tiết + đầu ra giờ thuộc về Course bên dưới. */}
 
       {/* Cấp độ thuộc chương trình */}
       <ProgramLevelManager program={program} allLevels={levels} onChanged={onChanged} />
