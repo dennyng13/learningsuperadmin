@@ -8,7 +8,7 @@ import { Button } from "@shared/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@shared/components/ui/select";
 import { Badge } from "@shared/components/ui/badge";
 import { toast } from "sonner";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, AlertTriangle } from "lucide-react";
 import { SessionCard, SESSION_TYPES } from "./SessionCard";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,6 +17,8 @@ import { usePrograms } from "@shared/hooks/usePrograms";
 import { getProgramIcon, getProgramLabel } from "@shared/utils/programColors";
 import { useCourses } from "@/admin/features/academic/hooks/useCourses";
 import { GraduationCap } from "lucide-react";
+import { useAssignmentMapForResources } from "@shared/hooks/useResourceCourses";
+import { Alert, AlertDescription, AlertTitle } from "@shared/components/ui/alert";
 
 interface Props {
   template: Partial<StudyPlanTemplate> | {};
