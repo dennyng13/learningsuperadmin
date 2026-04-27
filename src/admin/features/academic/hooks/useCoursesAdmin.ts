@@ -128,7 +128,14 @@ export function useCoursesAdmin() {
     const { level_ids, ...payload } = input;
     const { data, error } = await (supabase as any)
       .from("programs")
-      .insert({ ...payload, key: preset.key, name: preset.name, sort_order: preset.sort_order, status: "active" })
+      .insert({
+        ...payload,
+        key: preset.key,
+        name: preset.name,
+        sort_order: preset.sort_order,
+        status: "active",
+        outcomes: payload.outcomes ?? [],
+      })
       .select("id")
       .single();
     if (error) throw error;
@@ -142,7 +149,14 @@ export function useCoursesAdmin() {
     const { level_ids, ...payload } = input;
     const { error } = await (supabase as any)
       .from("programs")
-      .update({ ...payload, key: preset.key, name: preset.name, sort_order: preset.sort_order, status: "active" })
+      .update({
+        ...payload,
+        key: preset.key,
+        name: preset.name,
+        sort_order: preset.sort_order,
+        status: "active",
+        outcomes: payload.outcomes ?? [],
+      })
       .eq("id", id);
     if (error) throw error;
     await syncLevels(id, level_ids);
