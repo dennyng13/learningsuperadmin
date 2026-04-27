@@ -1,16 +1,17 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  CheckCircle2, Layers, Users, GraduationCap, ArrowRight, Loader2, BookOpen,
-  CalendarDays, EyeOff,
+  ArrowRight, BookOpen, EyeOff, Info, Loader2, Plus,
 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { Button } from "@shared/components/ui/button";
 import type { CourseProgram } from "@admin/features/academic/hooks/useCoursesAdmin";
 import type { CourseLevel } from "@shared/hooks/useCourseLevels";
 import { getProgramIcon, getProgramPalette } from "@shared/utils/programColors";
 import { cn } from "@shared/lib/utils";
-import ProgramLevelManager from "@admin/features/academic/components/ProgramLevelManager";
+import { useCourses, type Course, type CourseInput } from "@admin/features/academic/hooks/useCourses";
+import CourseCard from "@admin/features/academic/components/CourseCard";
+import CourseEditorDialog from "@admin/features/academic/components/CourseEditorDialog";
 
 /**
  * Tab nội dung cho 1 program (vd. IELTS / WRE / Customized).
@@ -43,73 +44,55 @@ interface ClassRow {
   student_ids: any;
 }
 
-export default function ProgramDetailTab({ program, levels, onChanged }: Props) {
+export default function ProgramDetailTab({ program, levels, onChanged: _onChanged }: Props) {
   const Icon = getProgramIcon(program.key);
   const palette = getProgramPalette(program.key);
   const isInactive = program.status === "inactive";
-  const linkedCount = program.level_ids.length;
 
-  /* ─── Fetch classes & student count ─── */
-  const [classes, setClasses] = useState<ClassRow[] | null>(null);
-  const [classesError, setClassesError] = useState<string | null>(null);
+  /* ─── Courses của program ─── */
+  const { courses, loading, getStats, create, update, remove } = useCourses({
+    programId: program.id,
+    withStats: true,
+  });
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      setClasses(null);
-      setClassesError(null);
-      const { data, error } = await (supabase as any)
-        .from("classes")
-        .select(
-          "id, name, class_name, class_code, level, start_date, end_date, student_count, lifecycle_status, student_ids",
-        )
-        .eq("program", program.key)
-        .order("start_date", { ascending: false })
-        .limit(50);
-      if (cancelled) return;
-      if (error) {
-        setClassesError(error.message);
-        setClasses([]);
-        return;
-      }
-      setClasses((data ?? []) as ClassRow[]);
-    })();
-    return () => { cancelled = true; };
-  }, [program.key]);
+  /* ─── Levels chỉ trong program này (để dialog & card resolve tên) ─── */
+  const programLevels = useMemo(() => {
+    const set = new Set(program.level_ids);
+    return levels.filter((l) => set.has(l.id));
+  }, [program.level_ids, levels]);
 
-  /* ─── Aggregated stats ─── */
-  const stats = useMemo(() => {
-    if (!classes) return null;
-    const active = classes.filter((c) =>
-      ["active", "in_progress", "ongoing", "upcoming", "scheduled"].includes((c.lifecycle_status ?? "").toLowerCase()),
-    );
-    const studentSet = new Set<string>();
-    let countSum = 0;
-    for (const c of classes) {
-      countSum += c.student_count ?? 0;
-      const ids = Array.isArray(c.student_ids) ? c.student_ids : [];
-      for (const id of ids) if (typeof id === "string") studentSet.add(id);
+  /* ─── Editor ─── */
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editing, setEditing] = useState<Course | null>(null);
+  const openCreate = () => { setEditing(null); setEditorOpen(true); };
+  const openEdit = (c: Course) => { setEditing(c); setEditorOpen(true); };
+
+  const handleSubmit = async (input: CourseInput) => {
+    if (editing) await update(editing.id, input);
+    else await create(input);
+  };
+
+  const handleDelete = async (c: Course) => {
+    try {
+      await remove(c.id);
+      toast.success(`Đã xoá khoá học "${c.name}".`);
+    } catch (e: any) {
+      toast.error(`Lỗi xoá: ${e?.message ?? "không rõ"}`);
     }
-    return {
-      totalClasses: classes.length,
-      activeClasses: active.length,
-      uniqueStudents: studentSet.size,
-      countSum,
-    };
-  }, [classes]);
+  };
 
   return (
     <div className={cn("space-y-5", isInactive && "opacity-80")}>
-      {/* ─── Hero ─── */}
-      <section className={cn("rounded-2xl border bg-card overflow-hidden")}>
+      {/* ─── Hero rút gọn (chi tiết đầy đủ ở /courses/programs/:key) ─── */}
+      <section className="rounded-2xl border bg-card overflow-hidden">
         <div className={cn("h-1 w-full", palette.progressFill)} />
-        <div className="p-5 flex items-start gap-4">
-          <div className={cn("h-14 w-14 rounded-xl flex items-center justify-center shrink-0", palette.iconBg)}>
-            <Icon className={cn("h-7 w-7", palette.iconText)} />
+        <div className="p-4 md:p-5 flex items-start gap-3 md:gap-4">
+          <div className={cn("h-12 w-12 md:h-14 md:w-14 rounded-xl flex items-center justify-center shrink-0", palette.iconBg)}>
+            <Icon className={cn("h-6 w-6 md:h-7 md:w-7", palette.iconText)} />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="font-display text-xl md:text-2xl font-extrabold truncate">{program.name}</h2>
+              <h2 className="font-display text-lg md:text-xl font-extrabold truncate">{program.name}</h2>
               <code className="text-[11px] font-mono px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{program.key}</code>
               {isInactive && (
                 <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-muted text-[10px] text-muted-foreground">
@@ -118,195 +101,112 @@ export default function ProgramDetailTab({ program, levels, onChanged }: Props) 
               )}
             </div>
             {program.description && (
-              <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{program.description}</p>
+              <p className="text-xs md:text-sm text-muted-foreground mt-1 leading-relaxed line-clamp-2">{program.description}</p>
             )}
           </div>
-          <Button asChild size="sm" variant="outline" className="shrink-0">
-            <Link to="/courses/programs">Quản trị chương trình</Link>
-          </Button>
-        </div>
-      </section>
-
-      {/* ─── Stats strip ─── */}
-      <section className="grid gap-3 grid-cols-2 md:grid-cols-4">
-        <StatCard
-          icon={<Layers className="h-4 w-4" />}
-          label="Cấp độ"
-          value={linkedCount}
-          tone={palette}
-        />
-        <StatCard
-          icon={<CalendarDays className="h-4 w-4" />}
-          label="Lớp đang chạy"
-          value={stats?.activeClasses ?? "—"}
-          subValue={stats ? `tổng ${stats.totalClasses}` : undefined}
-          tone={palette}
-        />
-        <StatCard
-          icon={<Users className="h-4 w-4" />}
-          label="Học viên (unique)"
-          value={stats?.uniqueStudents ?? "—"}
-          tone={palette}
-        />
-        <StatCard
-          icon={<GraduationCap className="h-4 w-4" />}
-          label="Sĩ số tổng"
-          value={stats?.countSum ?? "—"}
-          subValue="tổng student_count"
-          tone={palette}
-        />
-      </section>
-
-      {/* ─── 2-column: long desc + outcomes ─── */}
-      <section className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-xl border bg-card p-5 space-y-2">
-          <div className="flex items-center gap-2">
-            <BookOpen className={cn("h-4 w-4", palette.iconText)} />
-            <h3 className="font-display font-bold text-sm">Mô tả chi tiết</h3>
-          </div>
-          {program.long_description ? (
-            <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">
-              {program.long_description}
-            </p>
-          ) : (
-            <p className="text-xs text-muted-foreground italic">
-              Chưa có mô tả chi tiết. Bấm "Sửa khóa học" để thêm.
-            </p>
-          )}
-        </div>
-
-        <div className="rounded-xl border bg-card p-5 space-y-2">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className={cn("h-4 w-4", palette.iconText)} />
-            <h3 className="font-display font-bold text-sm">
-              Đầu ra ({program.outcomes.length})
-            </h3>
-          </div>
-          {program.outcomes.length === 0 ? (
-            <p className="text-xs text-muted-foreground italic">Chưa có outcome nào.</p>
-          ) : (
-            <ul className="space-y-1.5">
-              {program.outcomes.map((o, i) => (
-                <li key={i} className="flex items-start gap-2 text-sm">
-                  <CheckCircle2 className={cn("h-3.5 w-3.5 mt-0.5 shrink-0", palette.iconText)} />
-                  <span className="text-foreground/85 leading-snug">{o}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </section>
-
-      {/* ─── Levels of this program (CRUD inline, scope theo program) ─── */}
-      <ProgramLevelManager
-        program={program}
-        allLevels={levels}
-        onChanged={onChanged}
-      />
-
-      {/* ─── Classes running this program ─── */}
-      <section className="rounded-xl border bg-card p-5 space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <CalendarDays className={cn("h-4 w-4", palette.iconText)} />
-            <h3 className="font-display font-bold text-sm">
-              Lớp đang dùng khóa này {classes && `(${classes.length})`}
-            </h3>
-          </div>
-          <Button asChild size="sm" variant="ghost" className="h-7 text-xs">
-            <Link to={`/classes/list?program=${encodeURIComponent(program.key)}`}>
-              Xem tất cả <ArrowRight className="h-3 w-3 ml-1" />
+          <Button asChild size="sm" variant="outline" className="shrink-0 gap-1.5">
+            <Link to={`/courses/programs/${program.key}`}>
+              <Info className="h-3.5 w-3.5" /> Chi tiết
             </Link>
           </Button>
         </div>
-
-        {classes === null ? (
-          <div className="flex items-center justify-center py-6">
-            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-          </div>
-        ) : classesError ? (
-          <p className="text-xs text-destructive">Lỗi tải lớp: {classesError}</p>
-        ) : classes.length === 0 ? (
-          <p className="text-xs text-muted-foreground italic py-2">
-            Chưa có lớp nào dùng khóa <code className="font-mono">{program.key}</code>.
-          </p>
-        ) : (
-          <div className="rounded-lg border divide-y overflow-hidden">
-            {classes.slice(0, 8).map((c) => {
-              const status = (c.lifecycle_status ?? "").toLowerCase();
-              const statusTone =
-                status === "active" || status === "in_progress" || status === "ongoing"
-                  ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
-                  : status === "upcoming" || status === "scheduled"
-                  ? "bg-blue-500/15 text-blue-700 dark:text-blue-300"
-                  : status === "completed"
-                  ? "bg-muted text-muted-foreground"
-                  : "bg-muted/60 text-muted-foreground";
-              return (
-                <Link
-                  key={c.id}
-                  to={`/classes/${c.id}`}
-                  className="flex items-center gap-3 px-3 py-2 hover:bg-muted/40 transition-colors"
-                >
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold truncate">
-                      {c.name ?? c.class_name ?? "(không tên)"}
-                    </p>
-                    <p className="text-[11px] text-muted-foreground truncate">
-                      {c.class_code ?? "—"}
-                      {c.level ? ` · ${c.level}` : ""}
-                      {c.start_date ? ` · ${c.start_date}` : ""}
-                    </p>
-                  </div>
-                  <span className="text-[11px] text-muted-foreground hidden sm:inline">
-                    {c.student_count ?? 0} HV
-                  </span>
-                  {status && (
-                    <span className={cn("text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded", statusTone)}>
-                      {status}
-                    </span>
-                  )}
-                </Link>
-              );
-            })}
-            {classes.length > 8 && (
-              <Link
-                to={`/classes/list?program=${encodeURIComponent(program.key)}`}
-                className="block text-center text-[11px] text-muted-foreground hover:text-foreground py-2 hover:bg-muted/40"
-              >
-                +{classes.length - 8} lớp khác — xem tất cả
-              </Link>
-            )}
-          </div>
-        )}
       </section>
+
+      {/* ─── Toolbar khoá học ─── */}
+      <section className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <BookOpen className={cn("h-4 w-4", palette.iconText)} />
+          <h3 className="font-display font-bold text-sm">
+            Khoá học của {program.name} ({courses.length})
+          </h3>
+        </div>
+        <Button onClick={openCreate} size="sm" className="h-8 gap-1.5">
+          <Plus className="h-3.5 w-3.5" /> Thêm khoá học
+        </Button>
+      </section>
+
+      {/* ─── Grid khoá học ─── */}
+      {loading ? (
+        <div className="grid gap-3 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+          {[0, 1, 2].map((i) => <CourseSkeleton key={i} />)}
+        </div>
+      ) : courses.length === 0 ? (
+        <section className="text-center py-12 border-2 border-dashed rounded-xl bg-muted/20">
+          <BookOpen className="h-10 w-10 text-muted-foreground/40 mx-auto mb-2" />
+          <p className="text-sm text-muted-foreground mb-3">
+            Chưa có khoá học nào trong chương trình {program.name}.
+          </p>
+          <Button onClick={openCreate} size="sm" className="gap-1.5">
+            <Plus className="h-3.5 w-3.5" /> Tạo khoá học đầu tiên
+          </Button>
+        </section>
+      ) : (
+        <div className="grid gap-3 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+          {courses.map((c) => (
+            <CourseCard
+              key={c.id}
+              course={c}
+              programKey={program.key}
+              programName={program.name}
+              stats={getStats(c.id)}
+              levels={levels}
+              onEdit={() => openEdit(c)}
+              onDelete={() => handleDelete(c)}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Footer link */}
+      <div className="flex justify-end">
+        <Button asChild size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground">
+          <Link to={`/classes/list?program=${encodeURIComponent(program.key)}`}>
+            Xem tất cả lớp đang dùng {program.name} <ArrowRight className="h-3 w-3 ml-1" />
+          </Link>
+        </Button>
+      </div>
+
+      <CourseEditorDialog
+        open={editorOpen}
+        onOpenChange={setEditorOpen}
+        programId={program.id}
+        programKey={program.key}
+        programName={program.name}
+        levels={programLevels}
+        course={editing}
+        onSubmit={handleSubmit}
+      />
     </div>
   );
 }
 
-/* ───────────── Stat card ───────────── */
-function StatCard({
-  icon,
-  label,
-  value,
-  subValue,
-  tone,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: number | string;
-  subValue?: string;
-  tone: ReturnType<typeof getProgramPalette>;
-}) {
+/* ───────────── Skeleton card (đồng cao với CourseCard) ───────────── */
+function CourseSkeleton() {
   return (
-    <div className="rounded-xl border bg-card p-3 flex items-center gap-3">
-      <div className={cn("h-9 w-9 rounded-lg flex items-center justify-center shrink-0", tone.iconBg)}>
-        <span className={cn(tone.iconText)}>{icon}</span>
+    <div className="rounded-2xl border bg-card overflow-hidden flex flex-col">
+      <div className="h-1 w-full bg-muted" />
+      <div className="p-4 pb-2 flex items-start gap-3">
+        <div className="h-10 w-10 rounded-lg bg-muted animate-pulse shrink-0" />
+        <div className="flex-1 space-y-1.5">
+          <div className="h-4 w-3/4 rounded bg-muted animate-pulse" />
+          <div className="h-3 w-1/3 rounded bg-muted animate-pulse" />
+        </div>
       </div>
-      <div className="min-w-0">
-        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{label}</p>
-        <p className="text-lg font-display font-extrabold leading-tight">{value}</p>
-        {subValue && <p className="text-[10px] text-muted-foreground">{subValue}</p>}
+      <div className="px-4 pb-2">
+        <div className="h-8 w-full rounded bg-muted/60 animate-pulse" />
+      </div>
+      <div className="px-4 pb-3">
+        <div className="h-[4.5rem] w-full rounded-lg bg-muted/40 animate-pulse" />
+      </div>
+      <div className="px-4 pb-3 grid grid-cols-4 gap-1.5">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="h-12 rounded-md bg-muted/30 animate-pulse" />
+        ))}
+      </div>
+      <div className="mt-auto border-t bg-muted/20 px-3 py-2 flex items-center gap-2">
+        <div className="h-5 flex-1 rounded bg-muted animate-pulse" />
+        <div className="h-5 w-5 rounded bg-muted animate-pulse" />
+        <div className="h-5 w-5 rounded bg-muted animate-pulse" />
       </div>
     </div>
   );
