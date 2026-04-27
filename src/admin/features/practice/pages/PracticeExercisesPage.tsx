@@ -1350,39 +1350,6 @@ export default function PracticeExercisesPage() {
           </div>
         )}
 
-        {/* Program chips row */}
-        {programExpanded && usedPrograms.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2 animate-in slide-in-from-top-2 duration-200 pl-1">
-            {usedPrograms.map((prog, i) => {
-              const count = exercises.filter(e => (e as any).program === prog).length;
-              const active = filterPrograms.has(prog);
-              const colors = [
-                { bg: "bg-indigo-50", text: "text-indigo-700", border: "border-indigo-200", active: "bg-indigo-200 text-indigo-800 border-indigo-300" },
-                { bg: "bg-rose-50", text: "text-rose-700", border: "border-rose-200", active: "bg-rose-200 text-rose-800 border-rose-300" },
-                { bg: "bg-amber-50", text: "text-amber-700", border: "border-amber-200", active: "bg-amber-200 text-amber-800 border-amber-300" },
-                { bg: "bg-teal-50", text: "text-teal-700", border: "border-teal-200", active: "bg-teal-200 text-teal-800 border-teal-300" },
-              ];
-              const pc = colors[i % colors.length];
-              return (
-                <button
-                  key={prog}
-                  onClick={() => toggleFilter(setFilterPrograms, prog)}
-                  className={cn(
-                    "flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border text-xs font-semibold transition-all cursor-pointer shadow-sm",
-                    active ? `${pc.active} shadow-md scale-105 ring-1 ring-offset-1` : `${pc.bg} ${pc.text} ${pc.border} hover:shadow-md hover:scale-[1.02]`
-                  )}
-                >
-                  <Tags className="h-3.5 w-3.5" />
-                  {PROGRAMS.find(p => p.value === prog)?.label || prog}
-                  <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center", active ? `bg-white/40 ${pc.text}` : `bg-white/60 ${pc.text}`)}>
-                    {count}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        )}
-
         {/* Skill chips row */}
         {skillExpanded && (
           <div className="flex flex-wrap items-center gap-2 animate-in slide-in-from-top-2 duration-200 pl-1">
