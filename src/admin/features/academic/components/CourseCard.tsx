@@ -117,64 +117,86 @@ export default function CourseCard({
       />
 
       {/* Header */}
-      <header className="relative p-4 pb-3 flex items-start gap-3">
-        <div
-          className={cn(
-            "h-11 w-11 rounded-xl flex items-center justify-center shrink-0",
-            "shadow-md ring-1 ring-white/40 dark:ring-white/10",
-            "transition-all duration-300 ease-out",
-            "group-hover:scale-110 group-hover:rotate-[-4deg] group-hover:shadow-lg",
-            "group-focus-visible:scale-110 group-focus-visible:rotate-[-4deg]",
-            palette.progressFill,
-          )}
-        >
-          <BookOpen className="h-5 w-5 text-white" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <h3 className="font-display font-extrabold text-base sm:text-[17px] leading-tight truncate tracking-tight text-foreground">
-              {course.name}
-            </h3>
-            {isInactive && <EyeOff className="h-3.5 w-3.5 text-muted-foreground shrink-0" />}
-          </div>
-          <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-            <span className={cn(
-              "inline-flex items-center text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded",
-              palette.accentSoftBg, palette.accentText,
-            )}>
-              {programName}
-            </span>
-            {course.cefr_range && (
-              <span className={cn(
-                "inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full border",
-                "bg-background/80 backdrop-blur-sm",
-                palette.accentText, palette.accentBorder,
-              )}>
-                {course.cefr_range}
-              </span>
-            )}
-          </div>
-        </div>
-        {/* Price chip — điểm nhấn chính, gradient đậm + chữ trắng */}
-        {formattedPrice && (
+      <header className="relative p-4 pb-3">
+        {/* Hàng 1: Icon + Tên (+ price chip stacked ở sm trở lên) */}
+        <div className="flex items-start gap-3">
           <div
             className={cn(
-              "shrink-0 text-right rounded-xl px-3 py-1.5 text-white",
-              "shadow-lg shadow-black/10 ring-1 ring-white/20",
-              "bg-gradient-to-br",
-              palette.progressFill, // base color đậm
+              "h-11 w-11 rounded-xl flex items-center justify-center shrink-0",
+              "shadow-md ring-1 ring-white/40 dark:ring-white/10",
+              "transition-all duration-300 ease-out",
+              "group-hover:scale-110 group-hover:rotate-[-4deg] group-hover:shadow-lg",
+              "group-focus-visible:scale-110 group-focus-visible:rotate-[-4deg]",
+              palette.progressFill,
             )}
-            title={`Học phí: ${formattedPrice}`}
           >
-            <p className="text-[9px] uppercase tracking-widest font-bold flex items-center justify-end gap-1 text-white/85">
-              <Wallet className="h-2.5 w-2.5" />
-              Học phí
-            </p>
-            <p className="text-sm font-display font-extrabold leading-tight tabular-nums whitespace-nowrap">
-              {formattedPrice}
-            </p>
+            <BookOpen className="h-5 w-5 text-white" />
           </div>
-        )}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5">
+              <h3 className="font-display font-extrabold text-base sm:text-[17px] leading-tight truncate tracking-tight text-foreground">
+                {course.name}
+              </h3>
+              {isInactive && <EyeOff className="h-3.5 w-3.5 text-muted-foreground shrink-0" />}
+            </div>
+          </div>
+          {/* Price chip — chỉ hiển thị bản FULL ở sm+ để tránh đè tên trên xs */}
+          {formattedPrice && (
+            <div
+              className={cn(
+                "hidden sm:block shrink-0 text-right rounded-xl px-3 py-1.5 text-white",
+                "shadow-lg shadow-black/10 ring-1 ring-white/20",
+                "bg-gradient-to-br",
+                palette.progressFill,
+              )}
+              title={`Học phí: ${formattedPrice}`}
+            >
+              <p className="text-[9px] uppercase tracking-widest font-bold flex items-center justify-end gap-1 text-white/85">
+                <Wallet className="h-2.5 w-2.5" />
+                Học phí
+              </p>
+              <p className="text-sm font-display font-extrabold leading-tight tabular-nums whitespace-nowrap">
+                {formattedPrice}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Hàng 2: Cụm chip metadata — wrap mượt trên mọi viewport.
+            Trên xs: price chip xuất hiện ở đây (1 dòng compact) thay vì cột 3.
+            min-w-0 + truncate phòng tên program quá dài. */}
+        <div className="mt-2 flex items-center gap-1.5 flex-wrap">
+          <span className={cn(
+            "inline-flex items-center max-w-full text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded",
+            "truncate",
+            palette.accentSoftBg, palette.accentText,
+          )}>
+            <span className="truncate">{programName}</span>
+          </span>
+          {course.cefr_range && (
+            <span className={cn(
+              "inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full border whitespace-nowrap",
+              "bg-background/80 backdrop-blur-sm",
+              palette.accentText, palette.accentBorder,
+            )}>
+              {course.cefr_range}
+            </span>
+          )}
+          {/* Price chip compact — chỉ xs */}
+          {formattedPrice && (
+            <span
+              className={cn(
+                "sm:hidden inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded-full text-white whitespace-nowrap shadow-sm tabular-nums",
+                "bg-gradient-to-r ring-1 ring-white/20",
+                palette.progressFill,
+              )}
+              title={`Học phí: ${formattedPrice}`}
+            >
+              <Wallet className="h-2.5 w-2.5" />
+              {formattedPrice}
+            </span>
+          )}
+        </div>
       </header>
 
       {/* ─── 1. Mô tả khoá học (cố định 2 dòng để đồng cao) ─── */}
