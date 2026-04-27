@@ -329,7 +329,7 @@ export default function CourseEditorDialog({
                 Tiếp tục <ChevronRight className="h-3.5 w-3.5" />
               </Button>
             ) : (
-              <Button size="sm" onClick={handleSave} disabled={submitting || !step0Valid} className="h-8 gap-1.5">
+              <Button size="sm" onClick={handleSave} disabled={submitting || !nameValid} className="h-8 gap-1.5">
                 {submitting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                 {isEdit ? "Cập nhật" : "Tạo khoá học"}
               </Button>
