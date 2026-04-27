@@ -77,16 +77,41 @@ export default function CourseEditorDialog({
     const el = bodyRef.current;
     if (!el) return;
     setShowTopBtn(el.scrollTop > 240);
+    // Lưu vị trí cuộn hiện tại theo step (cập nhật real-time để
+    // luôn có giá trị mới nhất khi chuyển step).
+    scrollPositions.current[step] = el.scrollTop;
   };
   const scrollBodyToTop = () => {
     bodyRef.current?.scrollTo({ top: 0, behavior: "smooth" });
   };
-  // Reset scroll + ẩn nút khi đổi step hoặc mở lại dialog
+
+  // Lưu scrollTop của từng step để khôi phục khi quay lại.
+  const scrollPositions = useRef<Record<Step, number>>({ 0: 0, 1: 0, 2: 0 });
+  const prevStepRef = useRef<Step>(step);
+
+  // Khi step thay đổi: lưu vị trí của step trước, khôi phục step mới.
   useEffect(() => {
     if (!open) return;
-    bodyRef.current?.scrollTo({ top: 0 });
-    setShowTopBtn(false);
+    const el = bodyRef.current;
+    if (!el) return;
+    // (Vị trí của prev step đã được lưu liên tục qua onScroll.)
+    const target = scrollPositions.current[step] ?? 0;
+    // Đợi step mới render xong rồi mới scroll. Dùng `auto` để snap tức thời,
+    // tránh hiệu ứng cuộn mượt gây giật khi nhảy step.
+    requestAnimationFrame(() => {
+      el.scrollTo({ top: target, behavior: "auto" });
+      setShowTopBtn(target > 240);
+    });
+    prevStepRef.current = step;
   }, [step, open]);
+
+  // Khi mở lại dialog: clear toàn bộ vị trí cuộn đã lưu.
+  useEffect(() => {
+    if (open) {
+      scrollPositions.current = { 0: 0, 1: 0, 2: 0 };
+      setShowTopBtn(false);
+    }
+  }, [open]);
 
   const { data: allTemplates, isLoading: templatesLoading } = useStudyPlanTemplates();
   /**
