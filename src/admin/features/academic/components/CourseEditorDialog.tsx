@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import {
   Loader2, Plus, Trash2, Info, ExternalLink, ClipboardList, Star, AlertCircle,
   Search, X, Check, ChevronLeft, ChevronRight, BookOpen, Layers, Sparkles,
-  CircleCheck,
+  CircleCheck, Users, Clock, Calendar, Wallet, Target, MessageSquare,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@shared/components/ui/button";
@@ -55,6 +55,15 @@ export default function CourseEditorDialog({
   const [levelIds, setLevelIds] = useState<string[]>([]);
   const [studyPlanIds, setStudyPlanIds] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  // Rich descriptive fields
+  const [targetAudience, setTargetAudience] = useState("");
+  const [problemSolving, setProblemSolving] = useState("");
+  const [priceVnd, setPriceVnd] = useState<string>("");
+  const [durationLabel, setDurationLabel] = useState("");
+  const [totalSessions, setTotalSessions] = useState<string>("");
+  const [hoursPerSession, setHoursPerSession] = useState<string>("");
+  const [maxStudents, setMaxStudents] = useState<string>("");
+  const [cefrRange, setCefrRange] = useState("");
 
   // Search state
   const [levelQuery, setLevelQuery] = useState("");
@@ -104,6 +113,14 @@ export default function CourseEditorDialog({
       setOutcomes(course.outcomes.length ? course.outcomes : [""]);
       setLevelIds(course.level_ids);
       setStudyPlanIds(course.study_plan_ids);
+      setTargetAudience(course.target_audience ?? "");
+      setProblemSolving(course.problem_solving ?? "");
+      setPriceVnd(course.price_vnd != null ? String(course.price_vnd) : "");
+      setDurationLabel(course.duration_label ?? "");
+      setTotalSessions(course.total_sessions != null ? String(course.total_sessions) : "");
+      setHoursPerSession(course.hours_per_session != null ? String(course.hours_per_session) : "");
+      setMaxStudents(course.max_students != null ? String(course.max_students) : "");
+      setCefrRange(course.cefr_range ?? "");
     } else {
       setName("");
       setDescription("");
@@ -111,6 +128,14 @@ export default function CourseEditorDialog({
       setOutcomes([""]);
       setLevelIds([]);
       setStudyPlanIds([]);
+      setTargetAudience("");
+      setProblemSolving("");
+      setPriceVnd("");
+      setDurationLabel("");
+      setTotalSessions("");
+      setHoursPerSession("");
+      setMaxStudents("");
+      setCefrRange("");
     }
   }, [open, course]);
 
@@ -174,6 +199,14 @@ export default function CourseEditorDialog({
         level_ids: levelIds,
         study_plan_ids: studyPlanIds,
         status: "active",
+        target_audience: targetAudience.trim() || null,
+        problem_solving: problemSolving.trim() || null,
+        price_vnd: priceVnd.trim() ? Math.max(0, parseInt(priceVnd.replace(/\D/g, ""), 10) || 0) : null,
+        duration_label: durationLabel.trim() || null,
+        total_sessions: totalSessions.trim() ? Math.max(0, parseInt(totalSessions, 10) || 0) : null,
+        hours_per_session: hoursPerSession.trim() ? Math.max(0, parseFloat(hoursPerSession) || 0) : null,
+        max_students: maxStudents.trim() ? Math.max(0, parseInt(maxStudents, 10) || 0) : null,
+        cefr_range: cefrRange.trim() || null,
       });
       toast.success(isEdit ? "Đã cập nhật khoá học." : "Đã tạo khoá học.");
       onOpenChange(false);
@@ -285,6 +318,14 @@ export default function CourseEditorDialog({
                 updateOutcome={updateOutcome}
                 removeOutcome={removeOutcome}
                 addOutcome={addOutcome}
+                targetAudience={targetAudience} setTargetAudience={setTargetAudience}
+                problemSolving={problemSolving} setProblemSolving={setProblemSolving}
+                priceVnd={priceVnd} setPriceVnd={setPriceVnd}
+                durationLabel={durationLabel} setDurationLabel={setDurationLabel}
+                totalSessions={totalSessions} setTotalSessions={setTotalSessions}
+                hoursPerSession={hoursPerSession} setHoursPerSession={setHoursPerSession}
+                maxStudents={maxStudents} setMaxStudents={setMaxStudents}
+                cefrRange={cefrRange} setCefrRange={setCefrRange}
               />
             )}
 
@@ -347,6 +388,14 @@ function StepInfo({
   name, setName, description, setDescription,
   longDescription, setLongDescription, outcomes,
   updateOutcome, removeOutcome, addOutcome,
+  targetAudience, setTargetAudience,
+  problemSolving, setProblemSolving,
+  priceVnd, setPriceVnd,
+  durationLabel, setDurationLabel,
+  totalSessions, setTotalSessions,
+  hoursPerSession, setHoursPerSession,
+  maxStudents, setMaxStudents,
+  cefrRange, setCefrRange,
 }: {
   name: string; setName: (v: string) => void;
   description: string; setDescription: (v: string) => void;
@@ -355,6 +404,14 @@ function StepInfo({
   updateOutcome: (i: number, v: string) => void;
   removeOutcome: (i: number) => void;
   addOutcome: () => void;
+  targetAudience: string; setTargetAudience: (v: string) => void;
+  problemSolving: string; setProblemSolving: (v: string) => void;
+  priceVnd: string; setPriceVnd: (v: string) => void;
+  durationLabel: string; setDurationLabel: (v: string) => void;
+  totalSessions: string; setTotalSessions: (v: string) => void;
+  hoursPerSession: string; setHoursPerSession: (v: string) => void;
+  maxStudents: string; setMaxStudents: (v: string) => void;
+  cefrRange: string; setCefrRange: (v: string) => void;
 }) {
   return (
     <div className="space-y-4">
@@ -445,6 +502,130 @@ function StepInfo({
               )}
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* ── Đối tượng phù hợp ── */}
+      <div className="space-y-1.5">
+        <Label htmlFor="course-audience" className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+          <Users className="h-3.5 w-3.5" /> Đối tượng phù hợp
+        </Label>
+        <Textarea
+          id="course-audience"
+          value={targetAudience}
+          onChange={(e) => setTargetAudience(e.target.value)}
+          placeholder="vd. - Có vốn từ A2&#10;- Mong muốn thi IELTS trong 1 năm tới"
+          rows={4}
+          className="resize-none text-sm"
+        />
+        <p className="text-[10px] text-muted-foreground">Mỗi dòng là một tiêu chí. Hỗ trợ markdown đơn giản (xuống dòng).</p>
+      </div>
+
+      {/* ── Khoá học giải quyết vấn đề gì ── */}
+      <div className="space-y-1.5">
+        <Label htmlFor="course-problem" className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+          <Target className="h-3.5 w-3.5" /> Khoá học giải quyết vấn đề gì
+        </Label>
+        <Textarea
+          id="course-problem"
+          value={problemSolving}
+          onChange={(e) => setProblemSolving(e.target.value)}
+          placeholder="Giải pháp / phương pháp khoá học giúp học viên vượt qua rào cản gì."
+          rows={4}
+          className="resize-none text-sm"
+        />
+      </div>
+
+      {/* ── Thông số khoá học (giá, thời lượng, sĩ số, CEFR) ── */}
+      <div className="rounded-xl border bg-muted/20 p-3 space-y-3">
+        <div className="flex items-center gap-1.5">
+          <Wallet className="h-3.5 w-3.5 text-muted-foreground" />
+          <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+            Thông số khoá học
+          </span>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="space-y-1">
+            <Label htmlFor="course-price" className="text-[11px] flex items-center gap-1">
+              <Wallet className="h-3 w-3" /> Giá (VND)
+            </Label>
+            <Input
+              id="course-price"
+              inputMode="numeric"
+              value={priceVnd}
+              onChange={(e) => setPriceVnd(e.target.value.replace(/[^0-9]/g, ""))}
+              placeholder="3490000"
+              className="h-8 text-sm"
+            />
+            {priceVnd && (
+              <p className="text-[10px] text-muted-foreground">
+                {Number(priceVnd).toLocaleString("vi-VN")} ₫
+              </p>
+            )}
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="course-duration" className="text-[11px] flex items-center gap-1">
+              <Calendar className="h-3 w-3" /> Thời gian
+            </Label>
+            <Input
+              id="course-duration"
+              value={durationLabel}
+              onChange={(e) => setDurationLabel(e.target.value)}
+              placeholder="vd. 1.5 tháng"
+              className="h-8 text-sm"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="course-sessions" className="text-[11px] flex items-center gap-1">
+              <ClipboardList className="h-3 w-3" /> Số buổi
+            </Label>
+            <Input
+              id="course-sessions"
+              inputMode="numeric"
+              value={totalSessions}
+              onChange={(e) => setTotalSessions(e.target.value.replace(/[^0-9]/g, ""))}
+              placeholder="12"
+              className="h-8 text-sm"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="course-hours" className="text-[11px] flex items-center gap-1">
+              <Clock className="h-3 w-3" /> Giờ / buổi
+            </Label>
+            <Input
+              id="course-hours"
+              inputMode="decimal"
+              value={hoursPerSession}
+              onChange={(e) => setHoursPerSession(e.target.value.replace(/[^0-9.]/g, ""))}
+              placeholder="2"
+              className="h-8 text-sm"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="course-max" className="text-[11px] flex items-center gap-1">
+              <Users className="h-3 w-3" /> Sĩ số tối đa
+            </Label>
+            <Input
+              id="course-max"
+              inputMode="numeric"
+              value={maxStudents}
+              onChange={(e) => setMaxStudents(e.target.value.replace(/[^0-9]/g, ""))}
+              placeholder="12"
+              className="h-8 text-sm"
+            />
+          </div>
+          <div className="space-y-1 col-span-2 md:col-span-3">
+            <Label htmlFor="course-cefr" className="text-[11px] flex items-center gap-1">
+              <Layers className="h-3 w-3" /> CEFR khoá học
+            </Label>
+            <Input
+              id="course-cefr"
+              value={cefrRange}
+              onChange={(e) => setCefrRange(e.target.value)}
+              placeholder="vd. A2 - B1"
+              className="h-8 text-sm"
+            />
+          </div>
         </div>
       </div>
     </div>
