@@ -1,8 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import {
-  ArrowRight, BookOpen, EyeOff, Info, Loader2, Plus,
-} from "lucide-react";
+import { ArrowRight, BookOpen, EyeOff, Info, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@shared/components/ui/button";
 import type { CourseProgram } from "@admin/features/academic/hooks/useCoursesAdmin";
@@ -29,19 +27,6 @@ interface Props {
   program: CourseProgram;
   levels: CourseLevel[];
   onChanged: () => void | Promise<void>;
-}
-
-interface ClassRow {
-  id: string;
-  name: string | null;
-  class_name: string | null;
-  class_code: string | null;
-  level: string | null;
-  start_date: string | null;
-  end_date: string | null;
-  student_count: number | null;
-  lifecycle_status: string | null;
-  student_ids: any;
 }
 
 export default function ProgramDetailTab({ program, levels, onChanged: _onChanged }: Props) {
