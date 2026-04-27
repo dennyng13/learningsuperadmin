@@ -71,6 +71,34 @@ export async function refreshCourseLevels(): Promise<void> {
   return fetchPromise;
 }
 
+// ---- Realtime sync (browser only) ----------------------------------------
+// Khi admin gán/đổi level↔program ở bất kỳ trang nào, mọi component dùng
+// hook này (CoursesPage, study-plan editor, flashcards, wizard…) sẽ thấy
+// thay đổi ngay nhờ realtime trên 3 bảng liên quan.
+if (typeof window !== "undefined") {
+  const channel = (supabase as any)
+    .channel("course-levels-sync")
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "course_levels" },
+      () => { refreshCourseLevels(); },
+    )
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "program_levels" },
+      () => { refreshCourseLevels(); },
+    )
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "programs" },
+      () => { refreshCourseLevels(); },
+    )
+    .subscribe();
+  window.addEventListener("beforeunload", () => {
+    try { (supabase as any).removeChannel(channel); } catch { /* noop */ }
+  });
+}
+
 export function useCourseLevels(opts: { includeOrphans?: boolean } = {}) {
   const { includeOrphans = false } = opts;
   const [, setTick] = useState(0);
