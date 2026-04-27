@@ -36,6 +36,10 @@ import { ResourceFilterBar } from "@shared/components/resources/ResourceFilterBa
 import { useResourceList } from "@shared/hooks/useResourceList";
 import { useResourceCourseMutations, useCoursesForResource } from "@shared/hooks/useResourceCourses";
 import { Badge } from "@shared/components/ui/badge";
+import { usePrograms } from "@shared/hooks/usePrograms";
+import { useCourses } from "@/admin/features/academic/hooks/useCourses";
+import { GraduationCap, Check } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@shared/components/ui/popover";
 
 const PROGRAMS = [
   { value: "ielts", label: "IELTS" },
