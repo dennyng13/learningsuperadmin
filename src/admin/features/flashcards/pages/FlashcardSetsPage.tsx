@@ -23,6 +23,7 @@ import {
   Tabs, TabsContent, TabsList, TabsTrigger,
 } from "@shared/components/ui/tabs";
 import UnsavedChangesDialog from "@admin/features/tests/components/UnsavedChangesDialog";
+import { CourseAssignmentPanel } from "@shared/components/study-plan/CourseAssignmentPanel";
 
 
 interface FlashcardItem {
