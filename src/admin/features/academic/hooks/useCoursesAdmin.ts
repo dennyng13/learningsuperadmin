@@ -15,6 +15,8 @@ export interface CourseProgram {
   key: string;
   name: string;
   description: string | null;
+  long_description: string | null;
+  outcomes: string[];
   color_key: string | null;
   icon_key: string | null;
   sort_order: number;
@@ -26,6 +28,8 @@ export interface CourseProgramInput {
   key: string;
   name: string;
   description: string | null;
+  long_description: string | null;
+  outcomes: string[];
   color_key: string | null;
   icon_key: string | null;
   sort_order: number;
@@ -43,7 +47,7 @@ export function useCoursesAdmin() {
       let progRows: any[] = [];
       const res = await (supabase as any)
         .from("programs")
-        .select("id, key, name, description, color_key, icon_key, sort_order, status")
+        .select("id, key, name, description, long_description, outcomes, color_key, icon_key, sort_order, status")
         .order("sort_order", { ascending: true });
       if (res.error) {
         console.error("[useCoursesAdmin] programs select failed:", res.error);
@@ -73,6 +77,8 @@ export function useCoursesAdmin() {
           key: normalizedKey,
           name: preset?.name ?? p.name,
           description: p.description ?? preset?.description ?? null,
+          long_description: p.long_description ?? null,
+          outcomes: Array.isArray(p.outcomes) ? (p.outcomes as string[]) : [],
           color_key: p.color_key ?? preset?.color_key ?? null,
           icon_key: p.icon_key ?? preset?.icon_key ?? null,
           sort_order: preset?.sort_order ?? p.sort_order ?? 0,
@@ -122,7 +128,14 @@ export function useCoursesAdmin() {
     const { level_ids, ...payload } = input;
     const { data, error } = await (supabase as any)
       .from("programs")
-      .insert({ ...payload, key: preset.key, name: preset.name, sort_order: preset.sort_order, status: "active" })
+      .insert({
+        ...payload,
+        key: preset.key,
+        name: preset.name,
+        sort_order: preset.sort_order,
+        status: "active",
+        outcomes: payload.outcomes ?? [],
+      })
       .select("id")
       .single();
     if (error) throw error;
@@ -136,7 +149,14 @@ export function useCoursesAdmin() {
     const { level_ids, ...payload } = input;
     const { error } = await (supabase as any)
       .from("programs")
-      .update({ ...payload, key: preset.key, name: preset.name, sort_order: preset.sort_order, status: "active" })
+      .update({
+        ...payload,
+        key: preset.key,
+        name: preset.name,
+        sort_order: preset.sort_order,
+        status: "active",
+        outcomes: payload.outcomes ?? [],
+      })
       .eq("id", id);
     if (error) throw error;
     await syncLevels(id, level_ids);

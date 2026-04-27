@@ -6,8 +6,9 @@ import { Input } from "@shared/components/ui/input";
 import { Label } from "@shared/components/ui/label";
 import { Button } from "@shared/components/ui/button";
 import { Switch } from "@shared/components/ui/switch";
+import { Textarea } from "@shared/components/ui/textarea";
 import { toast } from "sonner";
-import { Plus, X, Loader2, GripVertical, Lock, ShieldAlert } from "lucide-react";
+import { Plus, X, Loader2, GripVertical, ShieldAlert, Target, Sparkles } from "lucide-react";
 import { cn } from "@shared/lib/utils";
 import type { CourseProgram, CourseProgramInput } from "@admin/features/academic/hooks/useCoursesAdmin";
 import { useCourseLevels } from "@shared/hooks/useCourseLevels";
@@ -46,6 +47,9 @@ export default function ProgramEditorDialog({ open, onOpenChange, initial, onSub
   const [key, setKey] = useState("");
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [longDescription, setLongDescription] = useState("");
+  const [outcomes, setOutcomes] = useState<string[]>([]);
+  const [outcomeDraft, setOutcomeDraft] = useState("");
   const [colorKey, setColorKey] = useState<string | null>("teal");
   const [iconKey, setIconKey] = useState<string | null>("graduation-cap");
   const [sortOrder, setSortOrder] = useState(0);
@@ -58,6 +62,8 @@ export default function ProgramEditorDialog({ open, onOpenChange, initial, onSub
       setKey(initial.key);
       setName(initial.name);
       setDescription(initial.description ?? "");
+      setLongDescription(initial.long_description ?? "");
+      setOutcomes(Array.isArray(initial.outcomes) ? initial.outcomes : []);
       setColorKey(initial.color_key ?? "teal");
       setIconKey(initial.icon_key ?? "graduation-cap");
       setSortOrder(initial.sort_order ?? 0);
@@ -65,6 +71,7 @@ export default function ProgramEditorDialog({ open, onOpenChange, initial, onSub
       setLevelIds(initial.level_ids ?? []);
     } else {
       setKey(""); setName(""); setDescription("");
+      setLongDescription(""); setOutcomes([]); setOutcomeDraft("");
       setColorKey("teal"); setIconKey("graduation-cap");
       setSortOrder(0); setActive(true); setLevelIds([]);
     }
@@ -81,6 +88,15 @@ export default function ProgramEditorDialog({ open, onOpenChange, initial, onSub
     setLevelIds(next);
   };
 
+  const addOutcome = () => {
+    const t = outcomeDraft.trim();
+    if (!t) return;
+    setOutcomes((prev) => (prev.includes(t) ? prev : [...prev, t]));
+    setOutcomeDraft("");
+  };
+  const removeOutcome = (idx: number) =>
+    setOutcomes((prev) => prev.filter((_, i) => i !== idx));
+
   const handleSubmit = async () => {
     if (blockedFromCreate) {
       toast.error("Chỉ Admin được tạo chương trình mới.");
@@ -95,8 +111,9 @@ export default function ProgramEditorDialog({ open, onOpenChange, initial, onSub
       await onSubmit({
         key: key.trim().toLowerCase(),
         name: name.trim(),
-        // Khi EDIT: không cho đổi mô tả ngắn — giữ nguyên giá trị gốc.
-        description: initial ? (initial.description ?? null) : (description.trim() || null),
+        description: description.trim() || null,
+        long_description: longDescription.trim() || null,
+        outcomes: outcomes.map((o) => o.trim()).filter(Boolean),
         color_key: colorKey,
         icon_key: iconKey,
         sort_order: sortOrder,
@@ -165,30 +182,84 @@ export default function ProgramEditorDialog({ open, onOpenChange, initial, onSub
             </div>
           </div>
 
-          {/* Description — khi EDIT thì khoá, không cho đổi mô tả Program */}
+          {/* Mô tả ngắn — 1 dòng dùng ở list / chip */}
           <div>
-            <Label className="text-xs flex items-center gap-1.5">
-              Mô tả ngắn
-              {initial && (
-                <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-muted-foreground">
-                  <Lock className="h-3 w-3" /> Khoá khi sửa
-                </span>
-              )}
-            </Label>
+            <Label className="text-xs">Mô tả ngắn</Label>
             <Input
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Lộ trình luyện thi IELTS toàn diện 4 kỹ năng"
               className="h-9 text-sm"
-              disabled={!!initial}
-              readOnly={!!initial}
             />
-            {initial && (
-              <p className="text-[10px] text-muted-foreground mt-1">
-                Mô tả & đầu ra chi tiết giờ thuộc về <strong>Khoá học</strong>. Sửa ở
-                tab "Khoá học" trong trang chi tiết chương trình.
-              </p>
-            )}
+            <p className="text-[10px] text-muted-foreground mt-1">
+              Hiện ở danh sách / chip / breadcrumb (≤120 ký tự là vừa).
+            </p>
+          </div>
+
+          {/* Mô tả chi tiết — paragraph dùng ở landing/giới thiệu */}
+          <div>
+            <Label className="text-xs flex items-center gap-1.5">
+              <Sparkles className="h-3.5 w-3.5 text-primary" /> Mô tả chi tiết
+            </Label>
+            <Textarea
+              value={longDescription}
+              onChange={(e) => setLongDescription(e.target.value)}
+              placeholder="Mô tả tổng quan về chương trình, đối tượng phù hợp, phương pháp giảng dạy, thời lượng tổng…"
+              rows={4}
+              className="text-sm"
+            />
+          </div>
+
+          {/* Đầu ra — outcomes (chip list) */}
+          <div>
+            <Label className="text-xs flex items-center gap-1.5">
+              <Target className="h-3.5 w-3.5 text-emerald-600" />
+              Đầu ra ({outcomes.length})
+            </Label>
+            <div className="mt-1.5 space-y-2">
+              <div className="flex gap-2">
+                <Input
+                  value={outcomeDraft}
+                  onChange={(e) => setOutcomeDraft(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addOutcome();
+                    }
+                  }}
+                  placeholder="VD: Đạt IELTS 6.5+ sau 6 tháng"
+                  className="h-9 text-sm flex-1"
+                />
+                <Button type="button" size="sm" variant="outline" onClick={addOutcome} disabled={!outcomeDraft.trim()}>
+                  <Plus className="h-3.5 w-3.5 mr-1" /> Thêm
+                </Button>
+              </div>
+              {outcomes.length > 0 ? (
+                <ul className="space-y-1.5">
+                  {outcomes.map((o, idx) => (
+                    <li
+                      key={`${o}-${idx}`}
+                      className="flex items-start gap-2 px-3 py-2 rounded-lg border bg-emerald-50/50 dark:bg-emerald-950/20"
+                    >
+                      <Target className="h-3.5 w-3.5 text-emerald-600 mt-0.5 shrink-0" />
+                      <span className="text-sm flex-1 leading-snug">{o}</span>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-6 w-6 shrink-0"
+                        onClick={() => removeOutcome(idx)}
+                      >
+                        <X className="h-3.5 w-3.5 text-destructive" />
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-[11px] text-muted-foreground italic">
+                  Chưa có đầu ra nào — gõ và bấm Enter (hoặc Thêm) để liệt kê các kết quả học viên đạt được.
+                </p>
+              )}
+            </div>
           </div>
 
           {/* Color + Icon + Sort */}
