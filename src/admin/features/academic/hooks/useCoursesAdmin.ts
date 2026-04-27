@@ -47,7 +47,7 @@ export function useCoursesAdmin() {
       let progRows: any[] = [];
       const res = await (supabase as any)
         .from("programs")
-        .select("id, key, name, description, long_description, outcomes, color_key, icon_key, sort_order, status")
+        .select("id, key, name, description, color_key, icon_key, sort_order, status")
         .order("sort_order", { ascending: true });
       if (res.error) {
         console.error("[useCoursesAdmin] programs select failed:", res.error);
@@ -77,8 +77,8 @@ export function useCoursesAdmin() {
           key: normalizedKey,
           name: preset?.name ?? p.name,
           description: p.description ?? preset?.description ?? null,
-          long_description: p.long_description ?? null,
-          outcomes: Array.isArray(p.outcomes) ? (p.outcomes as string[]) : [],
+          long_description: null,
+          outcomes: [],
           color_key: p.color_key ?? preset?.color_key ?? null,
           icon_key: p.icon_key ?? preset?.icon_key ?? null,
           sort_order: preset?.sort_order ?? p.sort_order ?? 0,
@@ -125,7 +125,7 @@ export function useCoursesAdmin() {
   const create = async (input: CourseProgramInput) => {
     const preset = getCanonicalProgramPreset(input.key);
     if (!preset) throw new Error("Chỉ được tạo IELTS, WRE hoặc Customized.");
-    const { level_ids, ...payload } = input;
+    const { level_ids, long_description: _ld, outcomes: _oc, ...payload } = input;
     const { data, error } = await (supabase as any)
       .from("programs")
       .insert({
@@ -134,7 +134,6 @@ export function useCoursesAdmin() {
         name: preset.name,
         sort_order: preset.sort_order,
         status: "active",
-        outcomes: payload.outcomes ?? [],
       })
       .select("id")
       .single();
@@ -146,7 +145,7 @@ export function useCoursesAdmin() {
   const update = async (id: string, input: CourseProgramInput) => {
     const preset = getCanonicalProgramPreset(input.key);
     if (!preset) throw new Error("Chỉ được cập nhật IELTS, WRE hoặc Customized.");
-    const { level_ids, ...payload } = input;
+    const { level_ids, long_description: _ld, outcomes: _oc, ...payload } = input;
     const { error } = await (supabase as any)
       .from("programs")
       .update({
@@ -155,7 +154,6 @@ export function useCoursesAdmin() {
         name: preset.name,
         sort_order: preset.sort_order,
         status: "active",
-        outcomes: payload.outcomes ?? [],
       })
       .eq("id", id);
     if (error) throw error;
