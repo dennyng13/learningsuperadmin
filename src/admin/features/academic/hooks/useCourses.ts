@@ -28,6 +28,23 @@ export interface Course {
   status: "active" | "inactive";
   level_ids: string[];
   study_plan_ids: string[];
+  // ── Rich descriptive fields (added 2026-04-27 migration) ─────────────────
+  /** Markdown / multiline mô tả đối tượng phù hợp. */
+  target_audience: string | null;
+  /** Khoá học giải quyết vấn đề gì (markdown / multiline). */
+  problem_solving: string | null;
+  /** Giá khoá học, đơn vị VND (integer). */
+  price_vnd: number | null;
+  /** Tổng thời lượng dạng text — vd. "1.5 tháng". */
+  duration_label: string | null;
+  /** Tổng số buổi học. */
+  total_sessions: number | null;
+  /** Số giờ học mỗi buổi. */
+  hours_per_session: number | null;
+  /** Sĩ số tối đa mỗi lớp. */
+  max_students: number | null;
+  /** CEFR text label, vd "A2 - B1". */
+  cefr_range: string | null;
 }
 
 export interface CourseInput {
@@ -43,6 +60,14 @@ export interface CourseInput {
   status?: "active" | "inactive";
   level_ids?: string[];
   study_plan_ids?: string[];
+  target_audience?: string | null;
+  problem_solving?: string | null;
+  price_vnd?: number | null;
+  duration_label?: string | null;
+  total_sessions?: number | null;
+  hours_per_session?: number | null;
+  max_students?: number | null;
+  cefr_range?: string | null;
 }
 
 export interface CourseStats {
@@ -61,7 +86,7 @@ const EMPTY_STATS: CourseStats = { totalClasses: 0, activeClasses: 0, uniqueStud
 async function fetchCourses(programId?: string): Promise<Course[]> {
   let q = (supabase as any)
     .from("courses")
-    .select("id, program_id, name, slug, description, long_description, outcomes, color_key, icon_key, sort_order, status")
+    .select("id, program_id, name, slug, description, long_description, outcomes, color_key, icon_key, sort_order, status, target_audience, problem_solving, price_vnd, duration_label, total_sessions, hours_per_session, max_students, cefr_range")
     .order("sort_order", { ascending: true });
   if (programId) q = q.eq("program_id", programId);
 
@@ -107,6 +132,14 @@ async function fetchCourses(programId?: string): Promise<Course[]> {
     status: (r.status as "active" | "inactive") ?? "active",
     level_ids: linksByCourse.get(r.id) ?? [],
     study_plan_ids: plansByCourse.get(r.id) ?? [],
+    target_audience: r.target_audience ?? null,
+    problem_solving: r.problem_solving ?? null,
+    price_vnd: r.price_vnd != null ? Number(r.price_vnd) : null,
+    duration_label: r.duration_label ?? null,
+    total_sessions: r.total_sessions != null ? Number(r.total_sessions) : null,
+    hours_per_session: r.hours_per_session != null ? Number(r.hours_per_session) : null,
+    max_students: r.max_students != null ? Number(r.max_students) : null,
+    cefr_range: r.cefr_range ?? null,
   }));
 }
 
@@ -270,6 +303,14 @@ export function useCourses(opts: { programId?: string; withStats?: boolean } = {
         icon_key: payload.icon_key ?? null,
         sort_order: payload.sort_order ?? 0,
         status: payload.status ?? "active",
+        target_audience: payload.target_audience ?? null,
+        problem_solving: payload.problem_solving ?? null,
+        price_vnd: payload.price_vnd ?? null,
+        duration_label: payload.duration_label ?? null,
+        total_sessions: payload.total_sessions ?? null,
+        hours_per_session: payload.hours_per_session ?? null,
+        max_students: payload.max_students ?? null,
+        cefr_range: payload.cefr_range ?? null,
       })
       .select("id")
       .single();
@@ -296,6 +337,14 @@ export function useCourses(opts: { programId?: string; withStats?: boolean } = {
         icon_key: payload.icon_key ?? null,
         sort_order: payload.sort_order ?? 0,
         status: payload.status ?? "active",
+        target_audience: payload.target_audience ?? null,
+        problem_solving: payload.problem_solving ?? null,
+        price_vnd: payload.price_vnd ?? null,
+        duration_label: payload.duration_label ?? null,
+        total_sessions: payload.total_sessions ?? null,
+        hours_per_session: payload.hours_per_session ?? null,
+        max_students: payload.max_students ?? null,
+        cefr_range: payload.cefr_range ?? null,
       })
       .eq("id", id);
     if (error) throw error;
