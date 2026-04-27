@@ -292,8 +292,14 @@ export default function CourseEditorDialog({
           </div>
         </div>
 
-        {/* ─── Body ─── */}
-        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
+        {/* ─── Body ───
+            Single scroll container cho toàn dialog. KHÔNG nested overflow ở
+            các step để wheel/trackpad/Page Up-Down hoạt động mượt, không bị
+            "kẹt" khi cuộn hết list con. */}
+        <div
+          tabIndex={0}
+          className="flex-1 min-h-0 overflow-y-auto overscroll-contain scroll-smooth focus:outline-none"
+        >
           <div className="px-6 py-5 space-y-5">
             {step === 0 && (
               <StepLevels
@@ -704,7 +710,7 @@ function StepLevels({
           Không có cấp độ khớp "{query}".
         </p>
       ) : (
-        <div className="grid gap-1.5 grid-cols-1 sm:grid-cols-2 rounded-lg border bg-muted/10 p-2 max-h-72 overflow-y-auto">
+        <div className="grid gap-1.5 grid-cols-1 sm:grid-cols-2 rounded-lg border bg-muted/10 p-2">
           {filtered.map((l) => {
             const checked = selectedIds.includes(l.id);
             return (
@@ -868,7 +874,7 @@ function StudyPlanSection({
               : "Không có plan trong phạm vi này."}
         </p>
       ) : (
-        <div className="rounded-lg border bg-muted/10 max-h-72 overflow-y-auto divide-y">
+        <div className="rounded-lg border bg-muted/10 divide-y">
           {filtered.map((t: any) => {
             const checked = selectedIds.includes(t.id);
             const isDefault = checked && defaultId === t.id;
