@@ -343,7 +343,7 @@ export default function AdminClassDetailPage() {
       <ClassInfoCard cls={cls} />
 
       {/* Tabs */}
-      <Tabs defaultValue="sessions" className="mt-6">
+      <Tabs defaultValue="overview" className="mt-6">
         <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
           <TabsList className="inline-flex w-max gap-1">
             {TABS.map((t) => {
