@@ -329,6 +329,7 @@ export default function PracticeExercisesPage() {
     setScoringMode("ielts_band");
     setAllowRetake(true);
     setBlankAnswers({}); setExpandedGroups(new Set());
+    setEditingCourseIds([]);
     setIsDirty(false); setExerciseStatus("draft"); setEditing("new");
   };
 
@@ -407,11 +408,26 @@ export default function PracticeExercisesPage() {
         .select().single();
       if (error) { toast.error("Lỗi tạo bài tập"); setSaving(false); return; }
       toast.success("Đã lưu!");
-      setEditing((data as any).id);
+      const newId = (data as any).id as string;
+      setEditing(newId);
+      // Sync course assignments vào pivot
+      if (editingCourseIds.length > 0) {
+        await setResourceCourses.mutateAsync({
+          kind: "exercise",
+          resourceId: newId,
+          courseIds: editingCourseIds,
+        });
+      }
     } else {
       const { error } = await supabase.from("practice_exercises").update({ ...payload, status: effectiveStatus } as any).eq("id", editing);
       if (error) { toast.error("Lỗi lưu"); setSaving(false); return; }
       toast.success(statusOverride === "published" ? "Đã xuất bản!" : statusOverride === "draft" ? "Đã chuyển về nháp!" : "Đã lưu!");
+      // Sync course assignments
+      await setResourceCourses.mutateAsync({
+        kind: "exercise",
+        resourceId: editing,
+        courseIds: editingCourseIds,
+      });
     }
 
     setSaving(false); setIsDirty(false);
