@@ -310,11 +310,12 @@ export default function CourseLevelsPage() {
           </Button>
           <h1 className="font-display text-xl md:text-2xl font-extrabold flex items-center gap-2">
             <Layers className="h-5 w-5 md:h-6 md:w-6 text-primary" />
-            Quản lý Cấp độ
+            Khóa học (Cấp độ)
           </h1>
           <p className="text-xs md:text-sm text-muted-foreground mt-1">
-            Mỗi cấp độ có thể thuộc nhiều khóa. Sửa/Xóa ở đây sẽ ảnh hưởng tới
-            <em> tất cả</em> các khóa đang dùng cấp độ đó.
+            Mỗi <strong>khóa học (cấp độ)</strong> thuộc 1 hoặc nhiều
+            <strong> chương trình</strong>. Sửa/Xóa ở đây sẽ ảnh hưởng tới
+            <em> tất cả</em> chương trình đang dùng khóa đó.
           </p>
         </div>
       </header>
