@@ -140,7 +140,8 @@ function ProgramMultiSelect({
 
 export default function CourseLevelsPage() {
   const { programs, loading: programsLoading, refetch: refetchPrograms } = useCoursesAdmin();
-  const { levels, loading: levelsLoading, refetch: refetchLevels } = useCourseLevels();
+  // Trang quản lý — cần thấy cả level mồ côi / thuộc program đã ẩn để dọn dẹp.
+  const { levels, loading: levelsLoading, refetch: refetchLevels } = useCourseLevels({ includeOrphans: true });
   const [searchParams] = useSearchParams();
   const focusId = searchParams.get("focus");
 

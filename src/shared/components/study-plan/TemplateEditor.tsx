@@ -13,6 +13,7 @@ import { Plus, Trash2, ChevronDown, ChevronUp, BookOpen, GraduationCap, Sparkles
 import { SessionCard, SESSION_TYPES } from "./SessionCard";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useCourseLevels } from "@shared/hooks/useCourseLevels";
 
 const PROGRAMS = [
   { value: "ielts", label: "IELTS", icon: <GraduationCap className="h-4 w-4" /> },
@@ -82,13 +83,8 @@ export function TemplateEditor({ template, onClose }: Props) {
     }
   }, [loaded, entriesLoaded]);
 
-  const { data: courseLevels } = useQuery({
-    queryKey: ["course-levels-for-tpl"],
-    queryFn: async () => {
-      const { data } = await supabase.from("course_levels").select("*").order("sort_order");
-      return data || [];
-    },
-  });
+  // Chỉ lấy levels thuộc program đang ACTIVE — tránh lộ level của program đã ẩn.
+  const { levels: courseLevels = [] } = useCourseLevels();
 
   // Resources by program
   const { data: exercises } = useQuery({

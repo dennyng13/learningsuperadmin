@@ -61,12 +61,24 @@ export default function Step1ClassInfo({ value, onChange, errors }: Props) {
     queryKey: ["wizard-levels", value.program],
     enabled: value.program === "ielts",
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("course_levels")
-        .select("id, name, sort_order")
-        .order("sort_order", { ascending: true });
-      if (error) return [];
-      return data || [];
+      // Chỉ lấy levels thuộc program đang chọn VÀ program đó đang ACTIVE.
+      const [{ data: progRows }, { data: linkRows }, { data: lvlRows }] = await Promise.all([
+        (supabase as any)
+          .from("programs")
+          .select("id, key, status")
+          .eq("status", "active")
+          .eq("key", value.program),
+        (supabase as any).from("program_levels").select("level_id, program_id"),
+        supabase.from("course_levels").select("id, name, sort_order").order("sort_order", { ascending: true }),
+      ]);
+      const programId: string | undefined = Array.isArray(progRows) && progRows[0]?.id;
+      if (!programId) return [];
+      const allowed = new Set<string>(
+        (Array.isArray(linkRows) ? linkRows : [])
+          .filter((r: any) => r.program_id === programId)
+          .map((r: any) => r.level_id),
+      );
+      return (lvlRows ?? []).filter((l: any) => allowed.has(l.id));
     },
   });
 

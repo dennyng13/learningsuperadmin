@@ -3,6 +3,7 @@ import { getLevelColorConfig } from "@shared/utils/levelColors";
 import { useStudyPlanEntries, useStudyPlanMutations, type StudyPlan } from "@shared/hooks/useStudyPlan";
 import { useAuth } from "@shared/hooks/useAuth";
 import { useTeacherAccessScope } from "@shared/hooks/useTeacherAccessScope";
+import { useCourseLevels } from "@shared/hooks/useCourseLevels";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@shared/components/ui/card";
@@ -143,13 +144,8 @@ export function SharedPlanEditor({ plan, onClose, teacherMode = false }: SharedP
   const isStructured = program === "wre" || program === "ielts";
 
   // ─── Queries ─────────────────────────────────────────
-  const { data: courseLevels } = useQuery({
-    queryKey: ["course-levels-for-plan"],
-    queryFn: async () => {
-      const { data } = await supabase.from("course_levels").select("*").order("sort_order", { ascending: true });
-      return data || [];
-    },
-  });
+  // Lọc levels thuộc program ACTIVE (ẩn level của program đã ngưng).
+  const { levels: courseLevels = [] } = useCourseLevels();
 
   const { data: classes } = useQuery({
     queryKey: ["classes-for-plan", program, selectedLevel, teacherMode, scope?.teacherId, scope?.canViewAllClasses],
