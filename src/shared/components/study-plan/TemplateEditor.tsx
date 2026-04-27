@@ -427,9 +427,14 @@ export function TemplateEditor({ template, onClose }: Props) {
             <div>
               <Label>
                 Level
-                {form.program && (
+                {form.program && form.program !== "other" && (
                   <span className="ml-1 text-[10px] text-muted-foreground font-normal">
                     (theo chương trình {getProgramLabel(form.program)})
+                  </span>
+                )}
+                {form.program === "other" && (
+                  <span className="ml-1 text-[10px] text-muted-foreground font-normal">
+                    (hiển thị tất cả Level)
                   </span>
                 )}
               </Label>
