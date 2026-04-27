@@ -145,7 +145,9 @@ export default function CourseEditorDialog({
 
   useEffect(() => {
     if (!open) return;
-    setStep(0);
+    // Khi sửa: mở thẳng tab "Thông tin" (step 1) để user thấy ngay tên,
+    // mô tả, học phí... Khi tạo mới: bắt đầu từ "Cấp độ" (step 0).
+    setStep(course ? 1 : 0);
     setLevelQuery("");
     setPlanQuery("");
     setPlanScope("program");
