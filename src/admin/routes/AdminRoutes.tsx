@@ -58,6 +58,7 @@ import FeedbackTemplatesPage from "@admin/features/academic/pages/FeedbackTempla
 import CoursesPage from "@admin/features/academic/pages/CoursesPage";
 import CourseLevelsPage from "@admin/features/academic/pages/CourseLevelsPage";
 import ProgramsListPage from "@admin/features/academic/pages/ProgramsListPage";
+import ProgramDetailPage from "@admin/features/academic/pages/ProgramDetailPage";
 import LibraryHubPage from "@admin/features/library/pages/LibraryHubPage";
 import SchemaHealthPage from "@admin/features/schema-health/pages/SchemaHealthPage";
 import { SuperAdminRoute } from "@admin/guards/SuperAdminRoute";
