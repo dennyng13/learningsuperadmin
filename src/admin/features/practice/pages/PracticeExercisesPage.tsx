@@ -1067,10 +1067,22 @@ export default function PracticeExercisesPage() {
 
   // ---- List view ----
 
-  const filtered = exercises.filter(ex => {
+  // Stage 1: filter Program + Course qua pivot resource_courses (logic dùng chung).
+  const courseFilters = useMemo(
+    () => ({ programIds: filterPrograms, courseIds: filterCourses, includeUntagged: true }),
+    [filterPrograms, filterCourses],
+  );
+  const {
+    filtered: programCourseFiltered,
+    matched: matchedToCourse,
+    untagged: untaggedItems,
+    assignmentMap: exerciseCourseMap,
+  } = useResourceList("exercise", exercises as any, courseFilters);
+
+  // Stage 2: áp các filter còn lại (skill / type / status / level / search).
+  const filtered = (programCourseFiltered as Exercise[]).filter(ex => {
     if (filterSkills.size > 0 && !filterSkills.has(ex.skill)) return false;
     if (filterStatuses.size > 0 && !filterStatuses.has(ex.status)) return false;
-    if (filterPrograms.size > 0 && !(ex as any).program || (filterPrograms.size > 0 && !filterPrograms.has((ex as any).program))) return false;
     if (filterLevels.size > 0 && (!ex.course_level || !filterLevels.has(ex.course_level))) return false;
     if (filterTypes.size > 0) {
       const types = getEffectiveTypes(ex);
@@ -1083,8 +1095,8 @@ export default function PracticeExercisesPage() {
     return true;
   });
 
-  const hasFilters = filterSkills.size > 0 || filterTypes.size > 0 || filterStatuses.size > 0 || filterPrograms.size > 0 || filterLevels.size > 0 || listSearch.trim().length > 0;
-  const clearFilters = () => { setFilterSkills(new Set()); setFilterTypes(new Set()); setFilterStatuses(new Set()); setFilterPrograms(new Set()); setFilterLevels(new Set()); setListSearch(""); setShowListSearch(false); };
+  const hasFilters = filterSkills.size > 0 || filterTypes.size > 0 || filterStatuses.size > 0 || filterPrograms.size > 0 || filterLevels.size > 0 || filterCourses.size > 0 || listSearch.trim().length > 0;
+  const clearFilters = () => { setFilterSkills(new Set()); setFilterTypes(new Set()); setFilterStatuses(new Set()); setFilterPrograms(new Set()); setFilterLevels(new Set()); setFilterCourses(new Set()); setListSearch(""); setShowListSearch(false); };
 
   const publishedCount = exercises.filter(e => e.status === "published").length;
   const totalQ = exercises.reduce((sum, e) => {
