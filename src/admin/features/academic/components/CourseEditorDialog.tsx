@@ -388,6 +388,14 @@ function StepInfo({
   name, setName, description, setDescription,
   longDescription, setLongDescription, outcomes,
   updateOutcome, removeOutcome, addOutcome,
+  targetAudience, setTargetAudience,
+  problemSolving, setProblemSolving,
+  priceVnd, setPriceVnd,
+  durationLabel, setDurationLabel,
+  totalSessions, setTotalSessions,
+  hoursPerSession, setHoursPerSession,
+  maxStudents, setMaxStudents,
+  cefrRange, setCefrRange,
 }: {
   name: string; setName: (v: string) => void;
   description: string; setDescription: (v: string) => void;
@@ -396,6 +404,14 @@ function StepInfo({
   updateOutcome: (i: number, v: string) => void;
   removeOutcome: (i: number) => void;
   addOutcome: () => void;
+  targetAudience: string; setTargetAudience: (v: string) => void;
+  problemSolving: string; setProblemSolving: (v: string) => void;
+  priceVnd: string; setPriceVnd: (v: string) => void;
+  durationLabel: string; setDurationLabel: (v: string) => void;
+  totalSessions: string; setTotalSessions: (v: string) => void;
+  hoursPerSession: string; setHoursPerSession: (v: string) => void;
+  maxStudents: string; setMaxStudents: (v: string) => void;
+  cefrRange: string; setCefrRange: (v: string) => void;
 }) {
   return (
     <div className="space-y-4">
