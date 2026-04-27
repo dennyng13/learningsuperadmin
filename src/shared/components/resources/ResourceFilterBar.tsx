@@ -9,7 +9,7 @@
  *
  * UX: chip-style, theo phong cách của PracticeExercisesPage hiện tại để đồng nhất.
  */
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { ChevronDown, Tags, GraduationCap, X } from "lucide-react";
 import { cn } from "@shared/lib/utils";
 import { usePrograms } from "@shared/hooks/usePrograms";
@@ -48,16 +48,31 @@ export function ResourceFilterBar({
 }: ResourceFilterBarProps) {
   const { programs } = usePrograms();
 
-  // Khi programs đã chọn, fetch courses thuộc TẤT CẢ programs đó.
+  // "Khác" (other) không phải program thật (không có Khoá học gắn theo pivot).
+  // Khi user chỉ chọn "other" → ẩn/disable Course chip để tránh hiểu lầm là
+  // có thể filter khoá theo Khác.
+  const onlyOtherSelected = programIds.size > 0 && [...programIds].every((k) => k === "other");
+
+  // Khi programs đã chọn (không phải other), fetch courses thuộc programs đó.
   // Trick: useCourses hỗ trợ 1 programId → gọi nhiều lần nếu cần,
   // ở đây hiệu năng không phải concern (số program nhỏ < 5).
   const firstProgramId = useMemo(() => {
     if (programIds.size === 0) return undefined;
-    const key = [...programIds][0];
-    return programs.find((p) => p.key.toLowerCase() === key)?.id;
+    const realKey = [...programIds].find((k) => k !== "other");
+    if (!realKey) return undefined;
+    return programs.find((p) => p.key.toLowerCase() === realKey)?.id;
   }, [programIds, programs]);
 
   const { courses } = useCourses({ programId: firstProgramId, withStats: false });
+
+  // Auto-clear courseIds khi user chuyển sang "chỉ Khác" — vì các course đó
+  // không còn áp dụng được nữa.
+  useEffect(() => {
+    if (onlyOtherSelected && courseIds.size > 0) {
+      onCoursesChange(new Set());
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onlyOtherSelected]);
 
   const togglePrograms = (key: string) => {
     const next = new Set(programIds);
@@ -100,13 +115,19 @@ export function ResourceFilterBar({
         {/* Course chip — disabled khi chưa chọn program */}
         {showCourses && (
           <button
-            onClick={() => programIds.size > 0 && onToggleCourse()}
-            disabled={programIds.size === 0}
-            title={programIds.size === 0 ? "Chọn chương trình trước" : ""}
+            onClick={() => programIds.size > 0 && !onlyOtherSelected && onToggleCourse()}
+            disabled={programIds.size === 0 || onlyOtherSelected}
+            title={
+              programIds.size === 0
+                ? "Chọn chương trình trước"
+                : onlyOtherSelected
+                ? "Chương trình \"Khác\" không có Khoá học"
+                : ""
+            }
             className={cn(
               "flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold transition-all shadow-sm",
-              programIds.size === 0 && "opacity-50 cursor-not-allowed",
-              programIds.size > 0 && "cursor-pointer",
+              (programIds.size === 0 || onlyOtherSelected) && "opacity-50 cursor-not-allowed",
+              programIds.size > 0 && !onlyOtherSelected && "cursor-pointer",
               courseIds.size > 0
                 ? "bg-emerald-50 text-emerald-700 border-emerald-300"
                 : "bg-card border-border text-muted-foreground hover:text-foreground hover:border-emerald-400/40",
@@ -121,6 +142,12 @@ export function ResourceFilterBar({
             )}
             <ChevronDown className={cn("h-3 w-3 transition-transform", courseExpanded && "rotate-180")} />
           </button>
+        )}
+
+        {onlyOtherSelected && (
+          <span className="text-[10px] text-muted-foreground italic ml-1">
+            "Khác" không có Khoá học — đang hiển thị toàn bộ.
+          </span>
         )}
 
         {/* Inline counts */}

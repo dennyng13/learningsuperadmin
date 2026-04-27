@@ -121,11 +121,16 @@ export function TemplateEditor({ template, onClose }: Props) {
   // Reset course_id if it does not belong to the new program
   useEffect(() => {
     if (!form.course_id) return;
+    // Program "Khác" không có khoá học → bỏ gán course_id để dữ liệu không lệch.
+    if (form.program === "other") {
+      setForm((f) => ({ ...f, course_id: "" }));
+      return;
+    }
     if (programCourses.length === 0) return;
     if (!programCourses.some((c) => c.id === form.course_id)) {
       setForm((f) => ({ ...f, course_id: "" }));
     }
-  }, [form.course_id, programCourses]);
+  }, [form.course_id, programCourses, form.program]);
 
   /**
    * Auto-persist `course_id` ngay khi user chọn khoá học — chỉ áp dụng khi
@@ -171,6 +176,10 @@ export function TemplateEditor({ template, onClose }: Props) {
 
   const programLevels = useMemo(() => {
     if (!form.program) return courseLevels;
+    // "Khác" (other) không nằm trong bảng `programs` / `program_levels` →
+    // không có pivot để filter. Cho phép admin chọn TOÀN BỘ levels để tránh
+    // dropdown rỗng khi gán template ngoài 3 chương trình chính.
+    if (form.program === "other") return courseLevels;
     const order = new Map(programLevelLinks.map((l, i) => [l.level_id, l.sort_order ?? i]));
     return courseLevels
       .filter((l: any) => order.has(l.id))
@@ -418,9 +427,14 @@ export function TemplateEditor({ template, onClose }: Props) {
             <div>
               <Label>
                 Level
-                {form.program && (
+                {form.program && form.program !== "other" && (
                   <span className="ml-1 text-[10px] text-muted-foreground font-normal">
                     (theo chương trình {getProgramLabel(form.program)})
+                  </span>
+                )}
+                {form.program === "other" && (
+                  <span className="ml-1 text-[10px] text-muted-foreground font-normal">
+                    (hiển thị tất cả Level)
                   </span>
                 )}
               </Label>
@@ -451,6 +465,13 @@ export function TemplateEditor({ template, onClose }: Props) {
               </Select>
             </div>
             <div className="md:col-span-2">
+              {form.program === "other" ? (
+                <div className="rounded-md border border-dashed border-border bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground flex items-center gap-1.5">
+                  <GraduationCap className="w-3.5 h-3.5" />
+                  Chương trình "Khác" không có Khoá học. Bỏ qua bước gán khoá — chỉ chọn Level nếu cần.
+                </div>
+              ) : (
+              <>
               <Label className="flex items-center gap-1.5">
                 <GraduationCap className="w-3.5 h-3.5 text-emerald-600" />
                 Khoá học
@@ -489,6 +510,8 @@ export function TemplateEditor({ template, onClose }: Props) {
                   <GraduationCap className="w-3 h-3" />
                   Bài tập / flashcard sẽ được lọc theo khoá đã chọn — bài chưa gắn khoá nào sẽ hiện ở mục "Chưa phân loại".
                 </p>
+              )}
+              </>
               )}
             </div>
             <div>
