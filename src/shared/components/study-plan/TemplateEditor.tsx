@@ -13,6 +13,7 @@ import { SessionCard, SESSION_TYPES } from "./SessionCard";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useCourseLevels } from "@shared/hooks/useCourseLevels";
+import { useLevelCefrMap } from "@shared/hooks/useLevelCefrMap";
 import { usePrograms } from "@shared/hooks/usePrograms";
 import { getProgramIcon, getProgramLabel } from "@shared/utils/programColors";
 import { useCourses } from "@/admin/features/academic/hooks/useCourses";
