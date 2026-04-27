@@ -753,7 +753,7 @@ function EmptyPlansState({ programName, programKey }: { programName: string; pro
       </p>
       <Button asChild size="sm" className="h-8 gap-1.5">
         <Link
-          to={`/study-plans/templates?program=${encodeURIComponent(programKey)}`}
+          to={`/study-plans/templates?program=${encodeURIComponent(programKey)}&new=1`}
           target="_blank"
           rel="noopener noreferrer"
         >

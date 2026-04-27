@@ -1,5 +1,8 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useStudyPlanTemplates, useTemplateMutations, type StudyPlanTemplate } from "@shared/hooks/useStudyPlanTemplates";
+import { usePrograms } from "@shared/hooks/usePrograms";
+import { getProgramPalette, getProgramIcon } from "@shared/utils/programColors";
 import { Card, CardContent } from "@shared/components/ui/card";
 import { Button } from "@shared/components/ui/button";
 import { Badge } from "@shared/components/ui/badge";
@@ -7,23 +10,10 @@ import { Input } from "@shared/components/ui/input";
 import { Skeleton } from "@shared/components/ui/skeleton";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@shared/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Copy, Search, BookOpen, GraduationCap, Sparkles, Layers, FileStack } from "lucide-react";
+import { Plus, Pencil, Trash2, Copy, Search, Layers, FileStack } from "lucide-react";
 import { cn } from "@shared/lib/utils";
 import { TemplateEditor } from "./TemplateEditor";
 import { CloneTemplateDialog } from "./CloneTemplateDialog";
-
-const PROGRAMS = [
-  { value: "all", label: "Tất cả", icon: <Layers className="h-3.5 w-3.5" /> },
-  { value: "ielts", label: "IELTS", icon: <GraduationCap className="h-3.5 w-3.5" /> },
-  { value: "wre", label: "WRE", icon: <BookOpen className="h-3.5 w-3.5" /> },
-  { value: "customized", label: "Customized", icon: <Sparkles className="h-3.5 w-3.5" /> },
-];
-
-const PROGRAM_STYLE: Record<string, { gradient: string; badge: string; border: string }> = {
-  ielts: { gradient: "bg-gradient-to-br from-sky-500 to-blue-600", badge: "bg-sky-50 text-sky-700 border-sky-200", border: "border-l-sky-200" },
-  wre: { gradient: "bg-gradient-to-br from-violet-500 to-purple-600", badge: "bg-violet-50 text-violet-700 border-violet-200", border: "border-l-violet-200" },
-  customized: { gradient: "bg-gradient-to-br from-amber-500 to-orange-600", badge: "bg-amber-50 text-amber-700 border-amber-200", border: "border-l-amber-200" },
-};
 
 interface Props {
   teacherMode?: boolean;
@@ -32,11 +22,39 @@ interface Props {
 export function TemplateList({ teacherMode = false }: Props) {
   const { data: templates, isLoading } = useStudyPlanTemplates();
   const { deleteTemplate } = useTemplateMutations();
+  const { programs } = usePrograms();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [editTarget, setEditTarget] = useState<Partial<StudyPlanTemplate> | null | "new">(null);
   const [cloneTarget, setCloneTarget] = useState<StudyPlanTemplate | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<StudyPlanTemplate | null>(null);
-  const [filterProgram, setFilterProgram] = useState("all");
+  const initialProgram = (searchParams.get("program") || "all").toLowerCase();
+  const [filterProgram, setFilterProgram] = useState(initialProgram);
   const [search, setSearch] = useState("");
+
+  /** Programs filter chips: "all" + dynamic programs from DB. */
+  const programChips = useMemo(
+    () => [
+      { key: "all", label: "Tất cả", colorKey: null as string | null },
+      ...programs.map((p) => ({ key: p.key.toLowerCase(), label: p.name, colorKey: p.color_key })),
+    ],
+    [programs],
+  );
+
+  /**
+   * Auto-open the editor when arriving via `?program=XYZ&new=1` deep link
+   * (used by CourseEditor "Tạo study plan đầu tiên" button).
+   */
+  useEffect(() => {
+    if (searchParams.get("new") === "1") {
+      const programKey = (searchParams.get("program") || "").toLowerCase();
+      setEditTarget(programKey ? ({ program: programKey } as any) : "new");
+      // Clear the `new` flag so refresh doesn't re-open the dialog.
+      const next = new URLSearchParams(searchParams);
+      next.delete("new");
+      setSearchParams(next, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const filtered = useMemo(() => {
     if (!templates) return [];
@@ -84,7 +102,13 @@ export function TemplateList({ teacherMode = false }: Props) {
             {templates?.length || 0} mẫu · Tạo mẫu một lần, gán cho nhiều lớp/học viên
           </p>
         </div>
-        <Button onClick={() => setEditTarget("new")}>
+        <Button
+          onClick={() => {
+            // Prefill the program from the current filter when admin clicks "Tạo mẫu mới"
+            // while a specific program is selected.
+            setEditTarget(filterProgram !== "all" ? ({ program: filterProgram } as any) : "new");
+          }}
+        >
           <Plus className="w-4 h-4 mr-1" /> Tạo mẫu mới
         </Button>
       </div>
@@ -100,50 +124,83 @@ export function TemplateList({ teacherMode = false }: Props) {
             className="pl-9 h-9 w-48 rounded-full text-sm"
           />
         </div>
-        {PROGRAMS.map(p => {
-          const active = filterProgram === p.value;
-          const cfg = PROGRAM_STYLE[p.value];
-          const count = p.value === "all" ? templates?.length || 0 : (templates || []).filter(t => (t.program || "").toLowerCase() === p.value).length;
+        {programChips.map((p) => {
+          const active = filterProgram === p.key;
+          const palette = p.key === "all" ? null : getProgramPalette(p.key);
+          const Icon = p.key === "all" ? Layers : getProgramIcon(p.key);
+          const count =
+            p.key === "all"
+              ? templates?.length || 0
+              : (templates || []).filter((t) => (t.program || "").toLowerCase() === p.key).length;
           return (
             <button
-              key={p.value}
-              onClick={() => setFilterProgram(p.value)}
+              key={p.key}
+              onClick={() => {
+                setFilterProgram(p.key);
+                const next = new URLSearchParams(searchParams);
+                if (p.key === "all") next.delete("program");
+                else next.set("program", p.key);
+                setSearchParams(next, { replace: true });
+              }}
               className={cn(
                 "flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border text-xs font-semibold transition-all",
                 active
-                  ? cfg ? `${cfg.badge} ring-1 ring-offset-1 ring-current` : "bg-primary text-primary-foreground border-primary"
-                  : "bg-card border-border hover:border-primary/40"
+                  ? palette
+                    ? `${palette.badge} ring-1 ring-offset-1 ${palette.ring}`
+                    : "bg-primary text-primary-foreground border-primary"
+                  : "bg-card border-border hover:border-primary/40 text-foreground",
               )}
             >
-              {p.icon}
+              <Icon className="h-3.5 w-3.5" />
               {p.label}
-              <span className={cn("ml-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center",
-                active ? (cfg ? "opacity-70" : "bg-primary-foreground/20") : "bg-muted text-muted-foreground"
-              )}>{count}</span>
+              <span
+                className={cn(
+                  "ml-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center",
+                  active ? "bg-background/60" : "bg-muted text-muted-foreground",
+                )}
+              >
+                {count}
+              </span>
             </button>
           );
         })}
       </div>
 
       <div className="space-y-3">
-        {filtered.map(tpl => {
-          const cfg = PROGRAM_STYLE[(tpl.program || "").toLowerCase()];
+        {filtered.map((tpl) => {
+          const programKey = (tpl.program || "").toLowerCase();
+          const palette = programKey ? getProgramPalette(programKey) : null;
+          const programLabel = programs.find((p) => p.key.toLowerCase() === programKey)?.name || tpl.program;
           return (
-            <Card key={tpl.id} className={cn("hover:shadow-md transition-shadow border-l-4", cfg?.border || "border-l-muted")}>
+            <Card
+              key={tpl.id}
+              className={cn(
+                "hover:shadow-md transition-shadow border-l-4",
+                palette ? palette.borderLeft : "border-l-muted",
+              )}
+            >
               <CardContent className="p-4">
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center text-white shrink-0",
-                      cfg?.gradient || "bg-gradient-to-br from-primary to-primary/70"
-                    )}>
+                    <div
+                      className={cn(
+                        "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
+                        palette
+                          ? `${palette.iconBg} ${palette.iconText}`
+                          : "bg-primary/15 text-primary",
+                      )}
+                    >
                       <FileStack className="w-5 h-5" />
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="font-bold text-sm truncate">{tpl.template_name}</p>
                         {tpl.program && (
-                          <Badge variant="outline" className={cn("text-[10px]", cfg?.badge)}>
-                            {PROGRAMS.find(p => p.value === (tpl.program || "").toLowerCase())?.label || tpl.program}
+                          <Badge
+                            variant="outline"
+                            className={cn("text-[10px]", palette?.badge)}
+                          >
+                            {programLabel}
                           </Badge>
                         )}
                         {tpl.assigned_level && (
