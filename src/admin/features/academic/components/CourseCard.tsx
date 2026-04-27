@@ -62,29 +62,56 @@ export default function CourseCard({
 
   return (
     <article
+      tabIndex={0}
       className={cn(
-        "group relative rounded-2xl border bg-card overflow-hidden flex flex-col h-full",
-        "transition-all duration-300 ease-out",
-        "shadow-sm hover:shadow-xl hover:-translate-y-1",
+        "group relative rounded-2xl border bg-card overflow-hidden flex flex-col h-full outline-none",
+        "transition-all duration-300 ease-out will-change-transform",
+        // Resting elevation
+        "shadow-sm",
+        // Hover: lift + shadow + viền sáng
+        "hover:shadow-xl hover:-translate-y-1.5 hover:border-foreground/15",
+        // Focus visible (bàn phím): ring rõ ràng theo accent program
+        "focus-visible:-translate-y-1.5 focus-visible:shadow-xl",
+        "focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:ring-primary/60",
         palette.accentBorder,
         isInactive && "opacity-70 grayscale-[0.3]",
       )}
     >
-      {/* Top accent strip — đường nhấn theo program */}
-      <div className={cn("h-1.5 w-full", palette.progressFill)} />
-      {/* Soft tint banner — fade mượt, không over */}
+      {/* Top accent strip — phình ra khi hover */}
+      <div
+        className={cn(
+          "h-1.5 w-full transition-all duration-300 ease-out",
+          "group-hover:h-2 group-focus-visible:h-2",
+          palette.progressFill,
+        )}
+      />
+      {/* Soft tint banner — đậm hơn khi hover */}
       <div
         className={cn(
           "absolute inset-x-0 top-1.5 h-24 pointer-events-none bg-gradient-to-b",
+          "opacity-100 transition-opacity duration-500 group-hover:opacity-100",
           palette.bannerGradient,
         )}
         aria-hidden
       />
-      {/* Decorative glow blob phải — rất nhạt, chỉ để có chiều sâu */}
+      {/* Decorative glow blob — sáng hẳn lên khi hover/focus */}
       <div
         className={cn(
-          "absolute -top-10 -right-10 h-32 w-32 rounded-full pointer-events-none blur-3xl opacity-20",
+          "absolute -top-10 -right-10 h-32 w-32 rounded-full pointer-events-none blur-3xl",
+          "opacity-20 transition-all duration-500 ease-out",
+          "group-hover:opacity-40 group-hover:scale-125",
+          "group-focus-visible:opacity-40 group-focus-visible:scale-125",
           palette.progressFill,
+        )}
+        aria-hidden
+      />
+      {/* Glow border khi hover — vòng sáng quanh card */}
+      <div
+        className={cn(
+          "absolute inset-0 rounded-2xl pointer-events-none opacity-0 transition-opacity duration-300",
+          "group-hover:opacity-100",
+          "ring-1 ring-inset",
+          palette.accentBorder,
         )}
         aria-hidden
       />
@@ -95,6 +122,9 @@ export default function CourseCard({
           className={cn(
             "h-11 w-11 rounded-xl flex items-center justify-center shrink-0",
             "shadow-md ring-1 ring-white/40 dark:ring-white/10",
+            "transition-all duration-300 ease-out",
+            "group-hover:scale-110 group-hover:rotate-[-4deg] group-hover:shadow-lg",
+            "group-focus-visible:scale-110 group-focus-visible:rotate-[-4deg]",
             palette.progressFill,
           )}
         >
