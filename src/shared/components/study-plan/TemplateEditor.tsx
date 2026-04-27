@@ -127,6 +127,34 @@ export function TemplateEditor({ template, onClose }: Props) {
     }
   }, [form.course_id, programCourses]);
 
+  /**
+   * Auto-persist `course_id` ngay khi user chọn khoá học — chỉ áp dụng khi
+   * đang edit template đã có id (isNew thì để Save Tổng lo).
+   * Bỏ qua lần đầu (lúc hydrate từ `loaded`) bằng ref guard.
+   */
+  const initialCourseRef = useState({ initialized: false })[0];
+  useEffect(() => {
+    if (isNew || !tplId) return;
+    if (!initialCourseRef.initialized) {
+      // Lần đầu form.course_id được populate từ loaded → bỏ qua
+      if (loaded) initialCourseRef.initialized = true;
+      return;
+    }
+    const next = form.course_id || null;
+    (async () => {
+      const { error } = await (supabase as any)
+        .from("study_plan_templates")
+        .update({ course_id: next })
+        .eq("id", tplId);
+      if (error) {
+        toast.error("Lưu khoá học thất bại: " + error.message);
+      } else {
+        toast.success(next ? "Đã gán khoá học" : "Đã bỏ gán khoá học", { duration: 1500 });
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.course_id, tplId, isNew]);
+
   const { data: programLevelLinks = [] } = useQuery({
     queryKey: ["program-levels-for-template", selectedProgram?.id],
     enabled: !!selectedProgram?.id,

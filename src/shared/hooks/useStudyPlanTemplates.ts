@@ -91,6 +91,10 @@ export function useTemplateMutations() {
   const upsertTemplate = useMutation({
     mutationFn: async (tpl: Partial<StudyPlanTemplate>) => {
       const { entries, ...header } = tpl as any;
+      // Sanitize: empty-string course_id is invalid for UUID column → null.
+      // Same defensive cleanup for assigned_level (text but UI uses "" sentinel).
+      if (header.course_id === "" || header.course_id === undefined) header.course_id = null;
+      if (header.assigned_level === "") header.assigned_level = null;
       if (header.id) {
         const { error } = await supabase
           .from("study_plan_templates")
@@ -164,7 +168,26 @@ export function useTemplateMutations() {
         p_plan_name_override: params.planNameOverride ?? null,
       } as any);
       if (error) throw error;
-      return data as string;
+      const planId = data as string;
+      // Propagate course_id từ template → plan (RPC server-side chưa biết về
+      // course_id mới). Best-effort: ignore lỗi để không block luồng clone.
+      try {
+        const { data: tpl } = await supabase
+          .from("study_plan_templates")
+          .select("course_id")
+          .eq("id", params.templateId)
+          .maybeSingle();
+        const courseId = (tpl as any)?.course_id ?? null;
+        if (courseId) {
+          await (supabase as any)
+            .from("study_plans")
+            .update({ course_id: courseId })
+            .eq("id", planId);
+        }
+      } catch (e) {
+        console.warn("[cloneTemplate] propagate course_id failed", e);
+      }
+      return planId;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin-study-plans"] });
