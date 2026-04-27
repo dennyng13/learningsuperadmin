@@ -377,18 +377,59 @@ export default function CourseCard({
       </Section>
 
       {/* Footer actions */}
-      <footer className="mt-auto border-t bg-muted/20 px-3 py-2 flex items-center gap-1.5">
-        <Button asChild size="sm" variant="ghost" className="h-7 text-xs flex-1 justify-start">
+      <footer
+        className={cn(
+          "mt-auto border-t px-3 py-2 flex items-center gap-1.5",
+          "bg-muted/20 transition-colors duration-300",
+          "group-hover:bg-muted/40 group-focus-visible:bg-muted/40",
+        )}
+      >
+        <Button
+          asChild
+          size="sm"
+          variant="ghost"
+          className={cn(
+            "h-7 text-xs flex-1 justify-start font-semibold",
+            "transition-all duration-200",
+            "hover:translate-x-0.5",
+            palette.accentText,
+          )}
+        >
           <Link to={`/classes/list?program=${encodeURIComponent(programKey)}`}>
             Xem lớp
+            <span
+              aria-hidden
+              className="ml-1 inline-block transition-transform duration-200 group-hover/btn:translate-x-1"
+            >
+              →
+            </span>
           </Link>
         </Button>
-        <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={onEdit} aria-label="Sửa">
+        <Button
+          size="sm"
+          variant="ghost"
+          className={cn(
+            "h-7 w-7 p-0 transition-all duration-200",
+            "hover:bg-primary/10 hover:text-primary hover:scale-110",
+            "focus-visible:ring-2 focus-visible:ring-primary/40",
+          )}
+          onClick={onEdit}
+          aria-label="Sửa"
+        >
           <Pencil className="h-3.5 w-3.5" />
         </Button>
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive hover:text-destructive" aria-label="Xoá">
+            <Button
+              size="sm"
+              variant="ghost"
+              className={cn(
+                "h-7 w-7 p-0 text-destructive transition-all duration-200",
+                "hover:bg-destructive/10 hover:text-destructive hover:scale-110",
+                "focus-visible:ring-2 focus-visible:ring-destructive/40",
+              )}
+              aria-label="Xoá"
+            >
               <Trash2 className="h-3.5 w-3.5" />
             </Button>
           </AlertDialogTrigger>
