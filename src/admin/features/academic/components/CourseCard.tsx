@@ -68,8 +68,9 @@ export default function CourseCard({
         "transition-all duration-300 ease-out will-change-transform",
         // Resting elevation
         "shadow-sm",
-        // Hover: lift + shadow + viền sáng
-        "hover:shadow-xl hover:-translate-y-1.5 hover:border-foreground/15",
+        // Hover: lift + shadow + viền theo MÀU CHỦ ĐẠO của program (không dùng đen)
+        "hover:shadow-xl hover:-translate-y-1.5",
+        palette.accentBorderHover,
         // Focus visible (bàn phím): ring rõ ràng theo accent program
         "focus-visible:-translate-y-1.5 focus-visible:shadow-xl",
         "focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:ring-primary/60",
