@@ -347,6 +347,10 @@ export function TemplateEditor({ template, onClose }: Props) {
       toast.error("Vui lòng nhập tên mẫu");
       return;
     }
+    if (!form.program) {
+      toast.error("Vui lòng chọn Chương trình — Chương trình là bắt buộc.");
+      return;
+    }
     setSaving(true);
     try {
       const id = await upsertTemplate.mutateAsync({
@@ -401,12 +405,14 @@ export function TemplateEditor({ template, onClose }: Props) {
               <Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Mô tả ngắn về mẫu..." rows={2} />
             </div>
             <div>
-              <Label>Chương trình</Label>
+              <Label>
+                Chương trình <span className="text-destructive">*</span>
+              </Label>
               <Select
                 value={form.program || "__none"}
                 onValueChange={(v) => setForm((f) => ({ ...f, program: v === "__none" ? "" : v }))}
               >
-                <SelectTrigger>
+                <SelectTrigger className={!form.program ? "border-destructive/60 ring-1 ring-destructive/20" : ""}>
                   <SelectValue placeholder="Chọn chương trình" />
                 </SelectTrigger>
                 <SelectContent>
@@ -425,6 +431,11 @@ export function TemplateEditor({ template, onClose }: Props) {
                   })}
                 </SelectContent>
               </Select>
+              {!form.program && (
+                <p className="text-[10px] text-destructive mt-1">
+                  Bắt buộc — Cấp độ và Khoá học sẽ được fetch theo chương trình.
+                </p>
+              )}
             </div>
             <div>
               <Label>
