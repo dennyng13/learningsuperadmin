@@ -7,11 +7,12 @@ import { Label } from "@shared/components/ui/label";
 import { Button } from "@shared/components/ui/button";
 import { Switch } from "@shared/components/ui/switch";
 import { toast } from "sonner";
-import { Plus, X, Loader2, GripVertical } from "lucide-react";
+import { Plus, X, Loader2, GripVertical, Lock, ShieldAlert } from "lucide-react";
 import { cn } from "@shared/lib/utils";
 import type { CourseProgram, CourseProgramInput } from "@admin/features/academic/hooks/useCoursesAdmin";
 import { useCourseLevels } from "@shared/hooks/useCourseLevels";
 import { COLOR_PRESETS } from "@shared/utils/levelColors";
+import { useAuth } from "@shared/hooks/useAuth";
 
 const COLOR_OPTIONS = [
   "emerald", "blue", "violet", "orange", "rose", "cyan", "amber", "pink",
@@ -32,6 +33,12 @@ interface Props {
 }
 
 export default function ProgramEditorDialog({ open, onOpenChange, initial, onSubmit }: Props) {
+  // ─── HARDCODE: chỉ admin / super_admin được TẠO Program (chương trình mới).
+  // Edit Program vẫn cho mọi role có quyền vào trang này (đã được guard ở layout).
+  const { isAdmin } = useAuth();
+  const isCreate = !initial;
+  const blockedFromCreate = isCreate && !isAdmin;
+
   // Editor program — cần thấy mọi level để gán cho program này.
   const { levels } = useCourseLevels({ includeOrphans: true });
   const [saving, setSaving] = useState(false);
@@ -75,6 +82,10 @@ export default function ProgramEditorDialog({ open, onOpenChange, initial, onSub
   };
 
   const handleSubmit = async () => {
+    if (blockedFromCreate) {
+      toast.error("Chỉ Admin được tạo chương trình mới.");
+      return;
+    }
     if (!key.trim() || !name.trim()) {
       toast.error("Vui lòng nhập key và tên khóa học");
       return;
@@ -84,7 +95,8 @@ export default function ProgramEditorDialog({ open, onOpenChange, initial, onSub
       await onSubmit({
         key: key.trim().toLowerCase(),
         name: name.trim(),
-        description: description.trim() || null,
+        // Khi EDIT: không cho đổi mô tả ngắn — giữ nguyên giá trị gốc.
+        description: initial ? (initial.description ?? null) : (description.trim() || null),
         color_key: colorKey,
         icon_key: iconKey,
         sort_order: sortOrder,
@@ -116,6 +128,19 @@ export default function ProgramEditorDialog({ open, onOpenChange, initial, onSub
           </DialogDescription>
         </DialogHeader>
 
+        {blockedFromCreate && (
+          <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 flex items-start gap-2">
+            <ShieldAlert className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+            <div className="text-xs leading-relaxed">
+              <p className="font-semibold text-destructive">Chỉ Admin được tạo chương trình mới.</p>
+              <p className="text-muted-foreground mt-0.5">
+                Bạn chỉ có thể chỉnh sửa các chương trình hiện có. Liên hệ Admin nếu cần
+                tạo chương trình mới (vd. IELTS, WRE, Customized).
+              </p>
+            </div>
+          </div>
+        )}
+
         <div className="space-y-5 py-2">
           {/* Key + Name */}
           <div className="grid grid-cols-3 gap-3">
@@ -140,19 +165,31 @@ export default function ProgramEditorDialog({ open, onOpenChange, initial, onSub
             </div>
           </div>
 
-          {/* Description */}
+          {/* Description — khi EDIT thì khoá, không cho đổi mô tả Program */}
           <div>
-            <Label className="text-xs">Mô tả ngắn</Label>
+            <Label className="text-xs flex items-center gap-1.5">
+              Mô tả ngắn
+              {initial && (
+                <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-muted-foreground">
+                  <Lock className="h-3 w-3" /> Khoá khi sửa
+                </span>
+              )}
+            </Label>
             <Input
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Lộ trình luyện thi IELTS toàn diện 4 kỹ năng"
               className="h-9 text-sm"
+              disabled={!!initial}
+              readOnly={!!initial}
             />
+            {initial && (
+              <p className="text-[10px] text-muted-foreground mt-1">
+                Mô tả & đầu ra chi tiết giờ thuộc về <strong>Khoá học</strong>. Sửa ở
+                tab "Khoá học" trong trang chi tiết chương trình.
+              </p>
+            )}
           </div>
-
-          {/* NOTE: Mô tả chi tiết & đầu ra giờ thuộc về Course (xem trang
-              /courses/programs/:key → tab Khoá học), không còn ở Program. */}
 
           {/* Color + Icon + Sort */}
           <div className="grid grid-cols-2 gap-4">
@@ -265,7 +302,7 @@ export default function ProgramEditorDialog({ open, onOpenChange, initial, onSub
 
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={saving}>Hủy</Button>
-          <Button onClick={handleSubmit} disabled={saving}>
+          <Button onClick={handleSubmit} disabled={saving || blockedFromCreate}>
             {saving && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />}
             {initial ? "Lưu thay đổi" : "Tạo khóa học"}
           </Button>
