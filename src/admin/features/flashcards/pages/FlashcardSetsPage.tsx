@@ -23,6 +23,7 @@ import {
   Tabs, TabsContent, TabsList, TabsTrigger,
 } from "@shared/components/ui/tabs";
 import UnsavedChangesDialog from "@admin/features/tests/components/UnsavedChangesDialog";
+import { CourseAssignmentPanel } from "@shared/components/study-plan/CourseAssignmentPanel";
 
 
 interface FlashcardItem {
@@ -475,6 +476,13 @@ export default function FlashcardSetsPage() {
             </Select>
           </div>
         </div>
+
+        {/* Course assignments — drives global Study Plan filtering */}
+        {editingSet && (
+          <div className="bg-card border rounded-xl p-4">
+            <CourseAssignmentPanel kind="flashcard_set" resourceId={editingSet} />
+          </div>
+        )}
 
         {/* Linking */}
         <div className="bg-card border rounded-xl p-4 space-y-3">

@@ -38,9 +38,11 @@ interface SessionCardProps {
   assessments?: any[];
   students?: { teachngo_id: string; full_name: string }[];
   selectedLevel?: string;
+  /** When set, picker filters resources by course assignment + shows untagged section. */
+  courseId?: string | null;
 }
 
-export function SessionCard({ entry, idx, isExpanded, onToggle, onUpdate, exercises, flashcardSets, assessments, students, selectedLevel }: SessionCardProps) {
+export function SessionCard({ entry, idx, isExpanded, onToggle, onUpdate, exercises, flashcardSets, assessments, students, selectedLevel, courseId }: SessionCardProps) {
   const sessionType = SESSION_TYPES.find(t => t.value === entry.session_type) || SESSION_TYPES[0];
   const Icon = sessionType.icon;
 
@@ -200,6 +202,8 @@ export function SessionCard({ entry, idx, isExpanded, onToggle, onUpdate, exerci
               onChange={(ids) => onUpdate("exercise_ids", ids)}
               selectedBg="bg-primary"
               emptyHint="Chưa có bài tập phù hợp với chương trình"
+              resourceKind="exercise"
+              courseId={courseId}
             />
           )}
 
@@ -217,6 +221,8 @@ export function SessionCard({ entry, idx, isExpanded, onToggle, onUpdate, exerci
               onChange={(ids) => onUpdate("flashcard_set_ids", ids)}
               selectedBg="bg-purple-600"
               emptyHint="Chưa có bộ từ vựng phù hợp"
+              resourceKind="flashcard_set"
+              courseId={courseId}
             />
           )}
 
@@ -235,6 +241,8 @@ export function SessionCard({ entry, idx, isExpanded, onToggle, onUpdate, exerci
               onChange={(ids) => onUpdate("assessment_ids", ids)}
               selectedBg="bg-red-600"
               emptyHint="Chưa có bài thi phù hợp"
+              resourceKind="assessment"
+              courseId={courseId}
             />
           )}
 
