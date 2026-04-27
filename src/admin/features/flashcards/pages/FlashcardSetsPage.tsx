@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@shared/hooks/useAuth";
@@ -9,7 +10,7 @@ import { cn } from "@shared/lib/utils";
 import { toast } from "sonner";
 import {
   Plus, Trash2, Loader2, Sparkles, Upload, Eye, EyeOff, Save, Layers, ArrowLeft, FileUp, Image, X, Link2,
-  Search, ChevronDown, Tags, BookOpen,
+  Search, ChevronDown, Tags, BookOpen, GraduationCap,
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@shared/components/ui/select";
 import {
@@ -26,6 +27,12 @@ import UnsavedChangesDialog from "@admin/features/tests/components/UnsavedChange
 import { CourseAssignmentPanel } from "@shared/components/study-plan/CourseAssignmentPanel";
 import { ResourceFilterBar } from "@shared/components/resources/ResourceFilterBar";
 import { useResourceList } from "@shared/hooks/useResourceList";
+import { BulkCourseAssignDialog } from "@shared/components/resources/BulkCourseAssignDialog";
+import { useBulkSelection } from "@shared/hooks/useBulkSelection";
+import { Checkbox } from "@shared/components/ui/checkbox";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from "@shared/components/ui/dropdown-menu";
 
 
 interface FlashcardItem {
