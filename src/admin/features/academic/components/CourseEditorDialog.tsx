@@ -710,7 +710,7 @@ function StepLevels({
           Không có cấp độ khớp "{query}".
         </p>
       ) : (
-        <div className="grid gap-1.5 grid-cols-1 sm:grid-cols-2 rounded-lg border bg-muted/10 p-2 max-h-72 overflow-y-auto">
+        <div className="grid gap-1.5 grid-cols-1 sm:grid-cols-2 rounded-lg border bg-muted/10 p-2">
           {filtered.map((l) => {
             const checked = selectedIds.includes(l.id);
             return (
@@ -874,7 +874,7 @@ function StudyPlanSection({
               : "Không có plan trong phạm vi này."}
         </p>
       ) : (
-        <div className="rounded-lg border bg-muted/10 max-h-72 overflow-y-auto divide-y">
+        <div className="rounded-lg border bg-muted/10 divide-y">
           {filtered.map((t: any) => {
             const checked = selectedIds.includes(t.id);
             const isDefault = checked && defaultId === t.id;
