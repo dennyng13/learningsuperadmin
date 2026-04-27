@@ -151,15 +151,8 @@ export default function ProgramEditorDialog({ open, onOpenChange, initial, onSub
             />
           </div>
 
-          <div>
-            <Label className="text-xs">Mô tả chi tiết (tùy chọn)</Label>
-            <Textarea
-              value={longDescription}
-              onChange={(e) => setLongDescription(e.target.value)}
-              placeholder="Mô tả đầy đủ về chương trình, đối tượng, phương pháp..."
-              className="text-sm min-h-[80px]"
-            />
-          </div>
+          {/* NOTE: Mô tả chi tiết & đầu ra giờ thuộc về Course (xem trang
+              /courses/programs/:key → tab Khoá học), không còn ở Program. */}
 
           {/* Color + Icon + Sort */}
           <div className="grid grid-cols-2 gap-4">
@@ -256,36 +249,6 @@ export default function ProgramEditorDialog({ open, onOpenChange, initial, onSub
                 </p>
               )}
             </div>
-          </div>
-
-          {/* Outcomes */}
-          <div>
-            <Label className="text-xs mb-1.5 block">Đầu ra (outcomes)</Label>
-            <div className="flex gap-2">
-              <Input
-                value={outcomeDraft}
-                onChange={(e) => setOutcomeDraft(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addOutcome())}
-                placeholder="VD: Đạt band 6.5+ sau 3 tháng"
-                className="h-9 text-sm"
-              />
-              <Button size="sm" onClick={addOutcome} variant="secondary">
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-            {outcomes.length > 0 && (
-              <ul className="mt-2 space-y-1">
-                {outcomes.map((o, i) => (
-                  <li key={i} className="flex items-center gap-2 px-3 py-1.5 rounded bg-muted/40 text-sm">
-                    <span className="text-primary font-mono text-xs">{i + 1}.</span>
-                    <span className="flex-1">{o}</span>
-                    <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => removeOutcome(i)}>
-                      <X className="h-3.5 w-3.5 text-destructive" />
-                    </Button>
-                  </li>
-                ))}
-              </ul>
-            )}
           </div>
 
           {/* Active */}
