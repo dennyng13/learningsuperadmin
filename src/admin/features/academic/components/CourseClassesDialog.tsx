@@ -189,9 +189,61 @@ export default function CourseClassesDialog({
               Chương trình <strong className="text-foreground">{programName}</strong>
               {" · "}{linkedLevelNames.length} cấp độ
               {" · "}<strong className="text-foreground">{total}</strong> lớp
+              {query.trim() && total > 0 && (
+                <> {" · "}lọc còn <strong className="text-foreground">{filteredCount}</strong></>
+              )}
             </DialogDescription>
           </DialogHeader>
         </div>
+
+        {/* Toolbar: search + page size — chỉ hiện khi có dữ liệu */}
+        {!isLoading && total > 0 && (
+          <div className="px-6 py-2.5 border-b bg-background flex items-center gap-2 flex-wrap">
+            <div className="relative flex-1 min-w-[180px]">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Tìm theo tên · code · giáo viên · level · phòng…"
+                className="h-8 pl-8 pr-8 text-sm"
+              />
+              {query && (
+                <button
+                  type="button"
+                  onClick={() => setQuery("")}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  aria-label="Xoá tìm kiếm"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+            <div className="inline-flex items-center gap-1 text-[11px]">
+              <span className="text-muted-foreground">Hiện</span>
+              <div className="inline-flex rounded-md border bg-background p-0.5">
+                {(["20", "50", "100", "all"] as const).map((opt) => {
+                  const v: PageSize = opt === "all" ? "all" : (Number(opt) as PageSize);
+                  const isActive = pageSize === v;
+                  return (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() => setPageSize(v)}
+                      className={cn(
+                        "px-2 py-1 rounded font-semibold transition-colors",
+                        isActive
+                          ? cn(palette.iconBg, palette.iconText)
+                          : "text-muted-foreground hover:text-foreground",
+                      )}
+                    >
+                      {opt === "all" ? "Tất cả" : opt}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Body */}
         <div className="flex-1 min-h-0 overflow-y-auto scrollbar-prominent px-6 py-4 space-y-5">
@@ -210,8 +262,14 @@ export default function CourseClassesDialog({
                   : `Không tìm thấy lớp khớp với khoá này (cấp độ: ${linkedLevelNames.join(", ")}).`
               }
             />
+          ) : filteredCount === 0 ? (
+            <EmptyState
+              title="Không có lớp khớp tìm kiếm"
+              hint={`Không tìm thấy lớp khớp "${query}". Thử bỏ filter hoặc đổi từ khoá.`}
+            />
           ) : (
-            grouped.map(([levelName, items]) => (
+            <>
+            {grouped.map(([levelName, items]) => (
               <section key={levelName}>
                 <header className="flex items-center gap-2 mb-2">
                   <span className={cn("h-1.5 w-1.5 rounded-full", palette.progressFill)} aria-hidden />
@@ -226,7 +284,31 @@ export default function CourseClassesDialog({
                   ))}
                 </ul>
               </section>
-            ))
+            ))}
+
+            {/* Load more / hết danh sách */}
+            {hasMore ? (
+              <div className="pt-1 flex items-center justify-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-8 gap-1.5"
+                  onClick={() => setVisibleCount((n) => n + loadMoreStep)}
+                >
+                  <ChevronDown className="h-3.5 w-3.5" />
+                  Hiện thêm {Math.min(loadMoreStep, remaining)} lớp
+                  <span className="text-muted-foreground font-normal">
+                    (còn {remaining})
+                  </span>
+                </Button>
+              </div>
+            ) : filteredCount > (PAGE_OPTIONS[0] as number) && (
+              <p className="text-[11px] text-center text-muted-foreground italic pt-1">
+                Đã hiển thị toàn bộ {filteredCount} lớp.
+              </p>
+            )}
+            </>
           )}
         </div>
 
