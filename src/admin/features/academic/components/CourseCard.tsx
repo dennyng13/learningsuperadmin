@@ -263,15 +263,15 @@ export default function CourseCard({
 
         {/* Linked levels chips dưới stats */}
         {linkedLevelNames.length > 0 && (
-          <div className="mt-2.5 flex flex-wrap gap-1.5">
+          <div className="mt-2.5 flex flex-wrap gap-1">
             {linkedLevelNames.slice(0, 5).map((lv) => {
               const cfg = getLevelColorConfig(lv.color_key || lv.name);
               return (
                 <span
                   key={lv.id}
                   className={cn(
-                    "inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full border shadow-sm",
-                    "transition-transform hover:-translate-y-0.5 hover:shadow-md",
+                    "inline-flex items-center gap-1.5 text-[10.5px] font-semibold px-2 py-0.5 rounded-full border",
+                    "transition-all hover:shadow-sm hover:-translate-y-0.5",
                     cfg
                       ? cn(cfg.bg, cfg.text, cfg.border)
                       : cn(palette.accentSoftBg, palette.accentText, palette.accentBorder),
@@ -279,7 +279,7 @@ export default function CourseCard({
                   title={lv.target_score ? `${lv.name} • ${lv.target_score}` : lv.name}
                 >
                   <span
-                    className="h-2 w-2 rounded-full shrink-0 ring-2 ring-white/60"
+                    className="h-1.5 w-1.5 rounded-full shrink-0 ring-1 ring-white/70"
                     style={{ backgroundColor: cfg?.swatch ?? "currentColor" }}
                     aria-hidden
                   />
