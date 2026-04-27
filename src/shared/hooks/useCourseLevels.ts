@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface CourseLevel {
@@ -18,46 +19,68 @@ export interface CourseLevel {
  *
  * Truyền `{ includeOrphans: true }` cho các trang QUẢN LÝ (Course Levels,
  * Course Level Manager) — nơi admin cần thấy mọi level để dọn dẹp / gán lại.
+ *
+ * Caching: Dùng React Query với staleTime 5 phút — nhiều component cùng
+ * gọi hook này sẽ chia sẻ cache, không refetch trùng lặp. Gọi `refetch()`
+ * sau khi mutate (insert/update/delete) để invalidate cả 2 biến thể.
  */
+const COURSE_LEVELS_KEY = ["course-levels"] as const;
+
+async function fetchAllLevels(): Promise<CourseLevel[]> {
+  const { data } = await supabase
+    .from("course_levels")
+    .select("*")
+    .order("sort_order", { ascending: true });
+  return (data as unknown as CourseLevel[] | null) ?? [];
+}
+
+/**
+ * Lấy set level_id thuộc về ít nhất 1 program ACTIVE — dùng nested select
+ * của PostgREST để gộp 2 query thành 1 round-trip.
+ */
+async function fetchActiveLevelIds(): Promise<Set<string>> {
+  const { data } = await (supabase as any)
+    .from("program_levels")
+    .select("level_id, program:programs!inner(status)")
+    .eq("program.status", "active");
+  const set = new Set<string>();
+  if (Array.isArray(data)) {
+    for (const row of data) set.add(row.level_id);
+  }
+  return set;
+}
+
 export function useCourseLevels(opts: { includeOrphans?: boolean } = {}) {
   const { includeOrphans = false } = opts;
-  const [levels, setLevels] = useState<CourseLevel[]>([]);
-  const [loading, setLoading] = useState(true);
+  const qc = useQueryClient();
 
-  const fetchLevels = useCallback(async () => {
-    const { data } = await supabase
-      .from("course_levels")
-      .select("*")
-      .order("sort_order", { ascending: true });
-    const all = (data as unknown as CourseLevel[] | null) ?? [];
+  const allQ = useQuery({
+    queryKey: [...COURSE_LEVELS_KEY, "all"],
+    queryFn: fetchAllLevels,
+    staleTime: 5 * 60_000,
+    gcTime: 10 * 60_000,
+  });
 
-    if (includeOrphans) {
-      setLevels(all);
-      setLoading(false);
-      return;
-    }
+  const activeIdsQ = useQuery({
+    queryKey: [...COURSE_LEVELS_KEY, "active-ids"],
+    queryFn: fetchActiveLevelIds,
+    staleTime: 5 * 60_000,
+    gcTime: 10 * 60_000,
+    enabled: !includeOrphans,
+  });
 
-    // Lọc: chỉ giữ level có ít nhất 1 link tới program active.
-    const [{ data: progRows }, { data: linkRows }] = await Promise.all([
-      (supabase as any).from("programs").select("id, status").eq("status", "active"),
-      (supabase as any).from("program_levels").select("level_id, program_id"),
-    ]);
+  const all = allQ.data ?? [];
+  const levels = includeOrphans
+    ? all
+    : activeIdsQ.data
+      ? all.filter((l) => activeIdsQ.data!.has(l.id))
+      : [];
 
-    const activeProgramIds = new Set<string>(
-      Array.isArray(progRows) ? progRows.map((p: any) => p.id) : [],
-    );
-    const allowedLevelIds = new Set<string>();
-    if (Array.isArray(linkRows)) {
-      for (const row of linkRows) {
-        if (activeProgramIds.has(row.program_id)) allowedLevelIds.add(row.level_id);
-      }
-    }
+  const loading = allQ.isLoading || (!includeOrphans && activeIdsQ.isLoading);
 
-    setLevels(all.filter((l) => allowedLevelIds.has(l.id)));
-    setLoading(false);
-  }, [includeOrphans]);
+  const refetch = useCallback(async () => {
+    await qc.invalidateQueries({ queryKey: COURSE_LEVELS_KEY });
+  }, [qc]);
 
-  useEffect(() => { fetchLevels(); }, [fetchLevels]);
-
-  return { levels, loading, refetch: fetchLevels };
+  return { levels, loading, refetch };
 }
