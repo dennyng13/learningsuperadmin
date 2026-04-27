@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Loader2, Plus, Trash2, Info, ExternalLink, ClipboardList, Star, AlertCircle,
   Search, X, Check, ChevronLeft, ChevronRight, BookOpen, Layers, Sparkles,
-  CircleCheck, Users, Clock, Calendar, Wallet, Target, MessageSquare,
+  CircleCheck, Users, Clock, Calendar, Wallet, Target, MessageSquare, ArrowUp,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@shared/components/ui/button";
@@ -69,6 +69,24 @@ export default function CourseEditorDialog({
   const [levelQuery, setLevelQuery] = useState("");
   const [planQuery, setPlanQuery] = useState("");
   const [planScope, setPlanScope] = useState<"all" | "program" | "selected">("program");
+
+  // Scroll-to-top FAB
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const [showTopBtn, setShowTopBtn] = useState(false);
+  const handleBodyScroll = () => {
+    const el = bodyRef.current;
+    if (!el) return;
+    setShowTopBtn(el.scrollTop > 240);
+  };
+  const scrollBodyToTop = () => {
+    bodyRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+  };
+  // Reset scroll + ẩn nút khi đổi step hoặc mở lại dialog
+  useEffect(() => {
+    if (!open) return;
+    bodyRef.current?.scrollTo({ top: 0 });
+    setShowTopBtn(false);
+  }, [step, open]);
 
   const { data: allTemplates, isLoading: templatesLoading } = useStudyPlanTemplates();
   /**
@@ -296,11 +314,14 @@ export default function CourseEditorDialog({
             Single scroll container cho toàn dialog. KHÔNG nested overflow ở
             các step để wheel/trackpad/Page Up-Down hoạt động mượt, không bị
             "kẹt" khi cuộn hết list con. */}
-        <div
-          tabIndex={0}
-          className="flex-1 min-h-0 overflow-y-auto overscroll-contain scroll-smooth focus:outline-none"
-        >
-          <div className="px-6 py-5 space-y-5">
+        <div className="flex-1 min-h-0 relative">
+          <div
+            ref={bodyRef}
+            tabIndex={0}
+            onScroll={handleBodyScroll}
+            className="absolute inset-0 overflow-y-auto overscroll-contain scroll-smooth focus:outline-none"
+          >
+            <div className="px-6 py-5 space-y-5">
             {step === 0 && (
               <StepLevels
                 levels={levels}
@@ -350,7 +371,27 @@ export default function CourseEditorDialog({
                 setScope={setPlanScope}
               />
             )}
+            </div>
           </div>
+
+          {/* Scroll-to-top FAB */}
+          <Button
+            type="button"
+            size="icon"
+            variant="secondary"
+            onClick={scrollBodyToTop}
+            aria-label="Lên đầu"
+            title="Lên đầu"
+            className={cn(
+              "absolute bottom-3 right-4 h-9 w-9 rounded-full shadow-lg border bg-background/95 backdrop-blur",
+              "transition-all duration-200 z-10",
+              showTopBtn
+                ? "opacity-100 translate-y-0 pointer-events-auto"
+                : "opacity-0 translate-y-2 pointer-events-none",
+            )}
+          >
+            <ArrowUp className="h-4 w-4" />
+          </Button>
         </div>
 
         {/* ─── Footer với step nav ─── */}
