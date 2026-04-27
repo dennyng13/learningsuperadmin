@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
-  GraduationCap, Plus, Loader2, Trash2, EyeOff, Layers,
+  GraduationCap, Plus, Loader2, Trash2, EyeOff, Layers, Settings2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
@@ -98,18 +98,23 @@ export default function CoursesPage() {
             Quản lý Khóa học
           </h1>
           <p className="text-xs md:text-sm text-muted-foreground mt-1">
-            Mỗi chương trình (IELTS, WRE, Customized…) có tab riêng — bao gồm cấp độ,
-            đầu ra, mô tả và lớp đang chạy.
+            Mỗi chương trình (IELTS, WRE, Customized…) có tab riêng — bao gồm
+            <strong> khóa học (cấp độ)</strong>, đầu ra, mô tả và lớp đang chạy.
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <Button asChild size="sm" variant="outline" className="h-8 gap-1.5">
+            <Link to="/courses/programs">
+              <Settings2 className="h-3.5 w-3.5" /> Quản trị chương trình
+            </Link>
+          </Button>
+          <Button asChild size="sm" variant="outline" className="h-8 gap-1.5">
             <Link to="/courses/levels">
-              <Layers className="h-3.5 w-3.5" /> Quản lý cấp độ
+              <Layers className="h-3.5 w-3.5" /> Khóa học (cấp độ)
             </Link>
           </Button>
           <Button onClick={handleCreate} size="sm" className="h-8 gap-1.5">
-            <Plus className="h-3.5 w-3.5" /> Tạo khóa học
+            <Plus className="h-3.5 w-3.5" /> Tạo chương trình
           </Button>
         </div>
       </header>

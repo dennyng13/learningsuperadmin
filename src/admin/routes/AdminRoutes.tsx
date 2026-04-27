@@ -58,6 +58,7 @@ import FeedbackTemplatesPage from "@admin/features/academic/pages/FeedbackTempla
 import CoursesPage from "@admin/features/academic/pages/CoursesPage";
 import CourseEditorPage from "@admin/features/academic/pages/CourseEditorPage";
 import CourseLevelsPage from "@admin/features/academic/pages/CourseLevelsPage";
+import ProgramsListPage from "@admin/features/academic/pages/ProgramsListPage";
 import LibraryHubPage from "@admin/features/library/pages/LibraryHubPage";
 import SchemaHealthPage from "@admin/features/schema-health/pages/SchemaHealthPage";
 import { SuperAdminRoute } from "@admin/guards/SuperAdminRoute";
@@ -171,6 +172,7 @@ export default function AppRoutes() {
           <Route path="feedback-templates" element={<FeedbackTemplatesPage />} />
           {/* Academic — Module Quản lý Khóa học (programs + cấp độ) */}
           <Route path="courses" element={<CoursesPage />} />
+          <Route path="courses/programs" element={<ProgramsListPage />} />
           <Route path="courses/levels" element={<CourseLevelsPage />} />
           <Route path="courses/new" element={<CourseEditorPage />} />
           <Route path="courses/:id/edit" element={<CourseEditorPage />} />
