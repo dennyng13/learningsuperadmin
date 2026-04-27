@@ -10,18 +10,19 @@
  *
  * Detection được cache 1 lần / phiên qua `hasClassesCourseIdColumn()`.
  */
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   CalendarDays, Users, MapPin, GraduationCap, ExternalLink, Inbox,
-  ArrowUpRight,
+  ArrowUpRight, Search, X, ChevronDown,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@shared/components/ui/dialog";
 import { Button } from "@shared/components/ui/button";
+import { Input } from "@shared/components/ui/input";
 import { Skeleton } from "@shared/components/ui/skeleton";
 import ClassStatusBadge from "@shared/components/admin/ClassStatusBadge";
 import { cn } from "@shared/lib/utils";
