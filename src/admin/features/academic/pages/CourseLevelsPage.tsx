@@ -16,7 +16,7 @@ import { COLOR_PRESETS, getLevelColor } from "@shared/utils/levelColors";
 import { cn } from "@shared/lib/utils";
 import { useCoursesAdmin, type CourseProgram } from "@admin/features/academic/hooks/useCoursesAdmin";
 import { useCourseLevels, type CourseLevel } from "@shared/hooks/useCourseLevels";
-import { useLevelCefrMap } from "@shared/hooks/useLevelCefrMap";
+import { useLevelCefrMap, CEFR_ORDER, type Cefr } from "@shared/hooks/useLevelCefrMap";
 import { getProgramIcon, getProgramPalette } from "@shared/utils/programColors";
 import LevelEditorDialog from "@admin/features/academic/components/LevelEditorDialog";
 import CefrMappingDialog from "@admin/features/academic/components/CefrMappingDialog";
@@ -42,6 +42,8 @@ export default function CourseLevelsPage() {
 
   const [query, setQuery] = useState("");
   const [filterProgramId, setFilterProgramId] = useState<string>("");
+  /** CEFR filter — multi-select. Rỗng = không lọc. Match nếu level có ÍT NHẤT 1 CEFR trong tập chọn (bao gồm level multi-CEFR). */
+  const [filterCefr, setFilterCefr] = useState<Set<Cefr>>(new Set());
 
   /** levelId → program (single) */
   const programByLevel = useMemo(() => {
@@ -86,9 +88,15 @@ export default function CourseLevelsPage() {
         const p = programByLevel.get(l.id);
         if (!p || p.id !== filterProgramId) return false;
       }
+      if (filterCefr.size > 0) {
+        const cefrs = getCefr(l.id);
+        if (cefrs.length === 0) return false;
+        // OR-match: level khớp nếu có ít nhất 1 CEFR trùng với filter
+        if (!cefrs.some((c) => filterCefr.has(c))) return false;
+      }
       return true;
     });
-  }, [orderedLevels, query, filterProgramId, programByLevel]);
+  }, [orderedLevels, query, filterProgramId, programByLevel, filterCefr, getCefr]);
 
   /* ─── Drag & drop sort (chỉ trong cùng 1 program) ─── */
   const [dragId, setDragId] = useState<string | null>(null);
@@ -299,6 +307,46 @@ export default function CourseLevelsPage() {
             <option key={p.id} value={p.id}>{p.name}</option>
           ))}
         </select>
+        <div className="flex items-center gap-1 flex-wrap">
+          <span className="text-[11px] text-muted-foreground mr-1">CEFR:</span>
+          {CEFR_ORDER.map((c) => {
+            const active = filterCefr.has(c);
+            return (
+              <button
+                key={c}
+                type="button"
+                onClick={() =>
+                  setFilterCefr((prev) => {
+                    const next = new Set(prev);
+                    if (next.has(c)) next.delete(c); else next.add(c);
+                    return next;
+                  })
+                }
+                className={cn(
+                  "h-7 px-2 rounded text-[11px] font-mono font-bold border transition-colors",
+                  active
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-background text-muted-foreground border-border hover:border-primary/50",
+                )}
+                aria-pressed={active}
+                title={`Lọc các cấp độ map với ${c}`}
+              >
+                {c}
+              </button>
+            );
+          })}
+          {filterCefr.size > 0 && (
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="h-7 px-2 text-[11px] text-muted-foreground"
+              onClick={() => setFilterCefr(new Set())}
+            >
+              Xoá
+            </Button>
+          )}
+        </div>
       </div>
 
       {loading ? (
