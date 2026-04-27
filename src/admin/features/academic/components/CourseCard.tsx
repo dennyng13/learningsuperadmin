@@ -63,29 +63,27 @@ export default function CourseCard({
   return (
     <article
       className={cn(
-        "group relative rounded-2xl border bg-card overflow-hidden flex flex-col h-full transition-all duration-300",
-        "hover:shadow-2xl hover:-translate-y-1",
-        "hover:ring-2 hover:ring-offset-1",
+        "group relative rounded-2xl border bg-card overflow-hidden flex flex-col h-full",
+        "transition-all duration-300 ease-out",
+        "shadow-sm hover:shadow-xl hover:-translate-y-1",
         palette.accentBorder,
-        "hover:" + palette.accentBorder,
-        isInactive && "opacity-70",
+        isInactive && "opacity-70 grayscale-[0.3]",
       )}
-      style={{ ['--tw-ring-color' as any]: 'currentColor' }}
     >
-      {/* Top accent strip dày hơn + glow */}
-      <div className={cn("h-2 w-full shadow-md", palette.progressFill)} />
-      {/* Banner gradient mạnh hơn */}
+      {/* Top accent strip — đường nhấn theo program */}
+      <div className={cn("h-1.5 w-full", palette.progressFill)} />
+      {/* Soft tint banner — fade mượt, không over */}
       <div
         className={cn(
-          "absolute inset-x-0 top-2 h-32 pointer-events-none bg-gradient-to-b to-transparent opacity-90",
+          "absolute inset-x-0 top-1.5 h-24 pointer-events-none bg-gradient-to-b",
           palette.bannerGradient,
         )}
         aria-hidden
       />
-      {/* Decorative blob bên phải để bold hơn */}
+      {/* Decorative glow blob phải — rất nhạt, chỉ để có chiều sâu */}
       <div
         className={cn(
-          "absolute -top-8 -right-8 h-32 w-32 rounded-full pointer-events-none blur-2xl opacity-30",
+          "absolute -top-10 -right-10 h-32 w-32 rounded-full pointer-events-none blur-3xl opacity-20",
           palette.progressFill,
         )}
         aria-hidden
@@ -95,48 +93,54 @@ export default function CourseCard({
       <header className="relative p-4 pb-3 flex items-start gap-3">
         <div
           className={cn(
-            "h-12 w-12 rounded-xl flex items-center justify-center shrink-0 shadow-lg ring-2 ring-background",
+            "h-11 w-11 rounded-xl flex items-center justify-center shrink-0",
+            "shadow-md ring-1 ring-white/40 dark:ring-white/10",
             palette.progressFill,
           )}
         >
-          <BookOpen className="h-6 w-6 text-white drop-shadow" />
+          <BookOpen className="h-5 w-5 text-white" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 flex-wrap">
-            <h3 className="font-display font-extrabold text-lg leading-tight truncate tracking-tight">
+            <h3 className="font-display font-extrabold text-base sm:text-[17px] leading-tight truncate tracking-tight text-foreground">
               {course.name}
             </h3>
-            {isInactive && <EyeOff className="h-3 w-3 text-muted-foreground shrink-0" />}
+            {isInactive && <EyeOff className="h-3.5 w-3.5 text-muted-foreground shrink-0" />}
           </div>
-          <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-            <p className={cn("text-[10px] font-extrabold uppercase tracking-widest", palette.accentText)}>
+          <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+            <span className={cn(
+              "inline-flex items-center text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded",
+              palette.accentSoftBg, palette.accentText,
+            )}>
               {programName}
-            </p>
+            </span>
             {course.cefr_range && (
               <span className={cn(
-                "inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full border shadow-sm",
-                palette.accentSoftBg, palette.accentText, palette.accentBorder,
+                "inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full border",
+                "bg-background/80 backdrop-blur-sm",
+                palette.accentText, palette.accentBorder,
               )}>
                 {course.cefr_range}
               </span>
             )}
           </div>
         </div>
-        {/* Price chip — N\u1ed4I B\u1eacT */}
+        {/* Price chip — điểm nhấn chính, gradient đậm + chữ trắng */}
         {formattedPrice && (
           <div
             className={cn(
-              "shrink-0 text-right rounded-xl px-3 py-1.5 shadow-lg ring-1 ring-white/20",
-              "bg-gradient-to-br text-white",
-              palette.bannerGradient,
+              "shrink-0 text-right rounded-xl px-3 py-1.5 text-white",
+              "shadow-lg shadow-black/10 ring-1 ring-white/20",
+              "bg-gradient-to-br",
+              palette.progressFill, // base color đậm
             )}
             title={`Học phí: ${formattedPrice}`}
           >
-            <p className="text-[9px] uppercase tracking-widest font-bold flex items-center justify-end gap-1 text-white/90">
+            <p className="text-[9px] uppercase tracking-widest font-bold flex items-center justify-end gap-1 text-white/85">
               <Wallet className="h-2.5 w-2.5" />
               Học phí
             </p>
-            <p className="text-sm font-display font-extrabold leading-tight tabular-nums whitespace-nowrap drop-shadow-sm">
+            <p className="text-sm font-display font-extrabold leading-tight tabular-nums whitespace-nowrap">
               {formattedPrice}
             </p>
           </div>
@@ -259,15 +263,15 @@ export default function CourseCard({
 
         {/* Linked levels chips dưới stats */}
         {linkedLevelNames.length > 0 && (
-          <div className="mt-2.5 flex flex-wrap gap-1.5">
+          <div className="mt-2.5 flex flex-wrap gap-1">
             {linkedLevelNames.slice(0, 5).map((lv) => {
               const cfg = getLevelColorConfig(lv.color_key || lv.name);
               return (
                 <span
                   key={lv.id}
                   className={cn(
-                    "inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full border shadow-sm",
-                    "transition-transform hover:-translate-y-0.5 hover:shadow-md",
+                    "inline-flex items-center gap-1.5 text-[10.5px] font-semibold px-2 py-0.5 rounded-full border",
+                    "transition-all hover:shadow-sm hover:-translate-y-0.5",
                     cfg
                       ? cn(cfg.bg, cfg.text, cfg.border)
                       : cn(palette.accentSoftBg, palette.accentText, palette.accentBorder),
@@ -275,7 +279,7 @@ export default function CourseCard({
                   title={lv.target_score ? `${lv.name} • ${lv.target_score}` : lv.name}
                 >
                   <span
-                    className="h-2 w-2 rounded-full shrink-0 ring-2 ring-white/60"
+                    className="h-1.5 w-1.5 rounded-full shrink-0 ring-1 ring-white/70"
                     style={{ backgroundColor: cfg?.swatch ?? "currentColor" }}
                     aria-hidden
                   />
@@ -413,17 +417,26 @@ function BigStat({
   return (
     <div
       className={cn(
-        "rounded-md px-1.5 py-1.5 text-center transition-colors",
-        highlight ? "bg-primary/10 ring-1 ring-primary/20" : "bg-muted/30",
+        "rounded-lg px-1.5 py-2 text-center transition-all",
+        "border",
+        highlight
+          ? "bg-emerald-50 border-emerald-200 dark:bg-emerald-500/10 dark:border-emerald-500/30"
+          : "bg-muted/40 border-transparent hover:bg-muted/70",
       )}
     >
-      <div className={cn("flex items-center justify-center", tone)}>
+      <div className={cn("flex items-center justify-center", highlight ? "text-emerald-600 dark:text-emerald-400" : tone)}>
         {icon}
       </div>
-      <p className="text-base font-display font-extrabold leading-none mt-1">
+      <p className={cn(
+        "text-base font-display font-extrabold leading-none mt-1 tabular-nums",
+        highlight && "text-emerald-700 dark:text-emerald-400",
+      )}>
         {value}
       </p>
-      <p className="text-[9px] uppercase tracking-wider text-muted-foreground mt-1 truncate">
+      <p className={cn(
+        "text-[9px] font-semibold uppercase tracking-wider mt-1 truncate",
+        highlight ? "text-emerald-700/80 dark:text-emerald-400/80" : "text-muted-foreground",
+      )}>
         {label}
       </p>
     </div>
