@@ -33,7 +33,8 @@ interface Props {
 }
 
 export default function ProgramEditorDialog({ open, onOpenChange, initial, onSubmit }: Props) {
-  const { levels } = useCourseLevels();
+  // Editor program — cần thấy mọi level để gán cho program này.
+  const { levels } = useCourseLevels({ includeOrphans: true });
   const [saving, setSaving] = useState(false);
 
   const [key, setKey] = useState("");
