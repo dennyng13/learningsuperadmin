@@ -10,18 +10,19 @@
  *
  * Detection được cache 1 lần / phiên qua `hasClassesCourseIdColumn()`.
  */
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   CalendarDays, Users, MapPin, GraduationCap, ExternalLink, Inbox,
-  ArrowUpRight,
+  ArrowUpRight, Search, X, ChevronDown,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@shared/components/ui/dialog";
 import { Button } from "@shared/components/ui/button";
+import { Input } from "@shared/components/ui/input";
 import { Skeleton } from "@shared/components/ui/skeleton";
 import ClassStatusBadge from "@shared/components/admin/ClassStatusBadge";
 import { cn } from "@shared/lib/utils";
@@ -110,18 +111,67 @@ export default function CourseClassesDialog({
     staleTime: 30_000,
   });
 
+  /* ── Quick search + phân trang client-side ───────────────────────────
+     Lý do làm client-side: dialog chỉ mở cho 1 course nên dữ liệu
+     thường < 1000 dòng, fetch một lần rẻ hơn nhiều round-trip. Hiển thị
+     dần dần để DOM không phình khi có vài trăm lớp. */
+  const PAGE_OPTIONS = [20, 50, 100] as const;
+  type PageSize = (typeof PAGE_OPTIONS)[number] | "all";
+
+  const [query, setQuery] = useState("");
+  const [pageSize, setPageSize] = useState<PageSize>(20);
+  const [visibleCount, setVisibleCount] = useState<number>(20);
+
+  // Reset paging mỗi lần mở dialog hoặc đổi course.
+  useEffect(() => {
+    if (!open) return;
+    setQuery("");
+    setPageSize(20);
+    setVisibleCount(20);
+  }, [open, course.id]);
+
+  // Khi đổi pageSize hoặc query, reset cửa sổ hiển thị.
+  useEffect(() => {
+    setVisibleCount(pageSize === "all" ? Number.MAX_SAFE_INTEGER : pageSize);
+  }, [pageSize, query]);
+
+  const total = classes?.length ?? 0;
+
+  /** Lọc theo query (tên / code / teacher / level / room / branch). */
+  const filtered = useMemo(() => {
+    const list = classes ?? [];
+    const q = query.trim().toLowerCase();
+    if (!q) return list;
+    return list.filter((c) => {
+      const blob = [
+        c.name, c.class_name, c.class_code, c.level, c.teacher_name, c.room, c.branch,
+      ].filter(Boolean).join(" ").toLowerCase();
+      return blob.includes(q);
+    });
+  }, [classes, query]);
+
+  const filteredCount = filtered.length;
+  const effectiveVisible = Math.min(visibleCount, filteredCount);
+  /** Lát theo cửa sổ hiển thị TRƯỚC khi group, để cap tổng dòng render. */
+  const sliced = useMemo(
+    () => filtered.slice(0, effectiveVisible),
+    [filtered, effectiveVisible],
+  );
+
   const grouped = useMemo(() => {
     const map = new Map<string, ClassRow[]>();
-    for (const c of classes ?? []) {
+    for (const c of sliced) {
       const k = c.level ?? "(chưa rõ cấp độ)";
       const arr = map.get(k) ?? [];
       arr.push(c);
       map.set(k, arr);
     }
     return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b, "vi"));
-  }, [classes]);
+  }, [sliced]);
 
-  const total = classes?.length ?? 0;
+  const hasMore = effectiveVisible < filteredCount;
+  const remaining = filteredCount - effectiveVisible;
+  const loadMoreStep = pageSize === "all" ? filteredCount : (pageSize as number);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -139,9 +189,61 @@ export default function CourseClassesDialog({
               Chương trình <strong className="text-foreground">{programName}</strong>
               {" · "}{linkedLevelNames.length} cấp độ
               {" · "}<strong className="text-foreground">{total}</strong> lớp
+              {query.trim() && total > 0 && (
+                <> {" · "}lọc còn <strong className="text-foreground">{filteredCount}</strong></>
+              )}
             </DialogDescription>
           </DialogHeader>
         </div>
+
+        {/* Toolbar: search + page size — chỉ hiện khi có dữ liệu */}
+        {!isLoading && total > 0 && (
+          <div className="px-6 py-2.5 border-b bg-background flex items-center gap-2 flex-wrap">
+            <div className="relative flex-1 min-w-[180px]">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Tìm theo tên · code · giáo viên · level · phòng…"
+                className="h-8 pl-8 pr-8 text-sm"
+              />
+              {query && (
+                <button
+                  type="button"
+                  onClick={() => setQuery("")}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  aria-label="Xoá tìm kiếm"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+            <div className="inline-flex items-center gap-1 text-[11px]">
+              <span className="text-muted-foreground">Hiện</span>
+              <div className="inline-flex rounded-md border bg-background p-0.5">
+                {(["20", "50", "100", "all"] as const).map((opt) => {
+                  const v: PageSize = opt === "all" ? "all" : (Number(opt) as PageSize);
+                  const isActive = pageSize === v;
+                  return (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() => setPageSize(v)}
+                      className={cn(
+                        "px-2 py-1 rounded font-semibold transition-colors",
+                        isActive
+                          ? cn(palette.iconBg, palette.iconText)
+                          : "text-muted-foreground hover:text-foreground",
+                      )}
+                    >
+                      {opt === "all" ? "Tất cả" : opt}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Body */}
         <div className="flex-1 min-h-0 overflow-y-auto scrollbar-prominent px-6 py-4 space-y-5">
@@ -160,8 +262,14 @@ export default function CourseClassesDialog({
                   : `Không tìm thấy lớp khớp với khoá này (cấp độ: ${linkedLevelNames.join(", ")}).`
               }
             />
+          ) : filteredCount === 0 ? (
+            <EmptyState
+              title="Không có lớp khớp tìm kiếm"
+              hint={`Không tìm thấy lớp khớp "${query}". Thử bỏ filter hoặc đổi từ khoá.`}
+            />
           ) : (
-            grouped.map(([levelName, items]) => (
+            <>
+            {grouped.map(([levelName, items]) => (
               <section key={levelName}>
                 <header className="flex items-center gap-2 mb-2">
                   <span className={cn("h-1.5 w-1.5 rounded-full", palette.progressFill)} aria-hidden />
@@ -176,13 +284,49 @@ export default function CourseClassesDialog({
                   ))}
                 </ul>
               </section>
-            ))
+            ))}
+
+            {/* Load more / hết danh sách */}
+            {hasMore ? (
+              <div className="pt-1 flex items-center justify-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-8 gap-1.5"
+                  onClick={() => setVisibleCount((n) => n + loadMoreStep)}
+                >
+                  <ChevronDown className="h-3.5 w-3.5" />
+                  Hiện thêm {Math.min(loadMoreStep, remaining)} lớp
+                  <span className="text-muted-foreground font-normal">
+                    (còn {remaining})
+                  </span>
+                </Button>
+              </div>
+            ) : filteredCount > (PAGE_OPTIONS[0] as number) && (
+              <p className="text-[11px] text-center text-muted-foreground italic pt-1">
+                Đã hiển thị toàn bộ {filteredCount} lớp.
+              </p>
+            )}
+            </>
           )}
         </div>
 
         {/* Footer */}
         <div className="px-6 py-3 border-t bg-muted/20 flex items-center justify-between gap-3">
-          <MatchInfo />
+          <div className="flex items-center gap-3 flex-wrap min-w-0">
+            <MatchInfo />
+            {!isLoading && total > 0 && (
+              <span className="text-[11px] text-muted-foreground tabular-nums">
+                Hiển thị <strong className="text-foreground">{Math.min(effectiveVisible, filteredCount)}</strong>
+                {" / "}
+                <strong className="text-foreground">{filteredCount}</strong>
+                {query.trim() && total !== filteredCount && (
+                  <> (lọc từ {total})</>
+                )}
+              </span>
+            )}
+          </div>
           <div className="flex items-center gap-2">
             <Button asChild variant="outline" size="sm" className="h-8">
               <Link to={`/classes/list?program=${encodeURIComponent(programKey)}`}>
