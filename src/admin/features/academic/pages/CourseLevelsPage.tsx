@@ -16,6 +16,7 @@ import { COLOR_PRESETS, getLevelColor } from "@shared/utils/levelColors";
 import { cn } from "@shared/lib/utils";
 import { useCoursesAdmin, type CourseProgram } from "@admin/features/academic/hooks/useCoursesAdmin";
 import { useCourseLevels, type CourseLevel } from "@shared/hooks/useCourseLevels";
+import { useLevelCefrMap } from "@shared/hooks/useLevelCefrMap";
 import { getProgramIcon, getProgramPalette } from "@shared/utils/programColors";
 import LevelEditorDialog from "@admin/features/academic/components/LevelEditorDialog";
 import CefrMappingDialog from "@admin/features/academic/components/CefrMappingDialog";
@@ -35,6 +36,7 @@ import CefrMappingDialog from "@admin/features/academic/components/CefrMappingDi
 export default function CourseLevelsPage() {
   const { programs, loading: programsLoading, refetch: refetchPrograms } = useCoursesAdmin();
   const { levels, loading: levelsLoading, refetch: refetchLevels } = useCourseLevels({ includeOrphans: true });
+  const { formatCefr, getCefr } = useLevelCefrMap();
   const [searchParams] = useSearchParams();
   const focusId = searchParams.get("focus");
 
@@ -381,9 +383,9 @@ export default function CourseLevelsPage() {
                         </span>
                       )}
 
-                      {l.cefr && (
+                      {getCefr(l.id).length > 0 && (
                         <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-                          CEFR {l.cefr}
+                          CEFR {formatCefr(l.id)}
                         </span>
                       )}
                       {l.target_score && (
