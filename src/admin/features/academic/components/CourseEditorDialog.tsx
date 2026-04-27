@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Loader2, Plus, Trash2, Info, ExternalLink, ClipboardList, Star, AlertCircle,
+  Search, X, Check, ChevronLeft, ChevronRight, BookOpen, Layers, Sparkles,
+  CircleCheck,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@shared/components/ui/button";
@@ -13,6 +15,8 @@ import {
 } from "@shared/components/ui/dialog";
 import { Checkbox } from "@shared/components/ui/checkbox";
 import { ScrollArea } from "@shared/components/ui/scroll-area";
+import { cn } from "@shared/lib/utils";
+import { getProgramPalette, getProgramIcon } from "@shared/utils/programColors";
 import type { CourseLevel } from "@shared/hooks/useCourseLevels";
 import { useStudyPlanTemplates } from "@shared/hooks/useStudyPlanTemplates";
 import type { Course, CourseInput } from "@admin/features/academic/hooks/useCourses";
@@ -29,10 +33,21 @@ interface Props {
   onSubmit: (input: CourseInput) => Promise<void>;
 }
 
+type Step = 0 | 1 | 2;
+const STEPS: Array<{ key: Step; label: string; sub: string; icon: typeof BookOpen }> = [
+  { key: 0, label: "Thông tin", sub: "Tên · Mô tả · Đầu ra", icon: Sparkles },
+  { key: 1, label: "Cấp độ",    sub: "Gán level vào khoá",    icon: Layers   },
+  { key: 2, label: "Study plan",sub: "Mẫu kế hoạch áp dụng",  icon: ClipboardList },
+];
+
 export default function CourseEditorDialog({
   open, onOpenChange, programId, programKey, programName, levels, course, onSubmit,
 }: Props) {
   const isEdit = !!course;
+  const palette = getProgramPalette(programKey);
+  const ProgramIcon = getProgramIcon(programKey);
+
+  const [step, setStep] = useState<Step>(0);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [longDescription, setLongDescription] = useState("");
@@ -40,6 +55,11 @@ export default function CourseEditorDialog({
   const [levelIds, setLevelIds] = useState<string[]>([]);
   const [studyPlanIds, setStudyPlanIds] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
+
+  // Search state
+  const [levelQuery, setLevelQuery] = useState("");
+  const [planQuery, setPlanQuery] = useState("");
+  const [planScope, setPlanScope] = useState<"all" | "program" | "selected">("program");
 
   const { data: allTemplates, isLoading: templatesLoading } = useStudyPlanTemplates();
   /**
@@ -73,6 +93,10 @@ export default function CourseEditorDialog({
 
   useEffect(() => {
     if (!open) return;
+    setStep(0);
+    setLevelQuery("");
+    setPlanQuery("");
+    setPlanScope("program");
     if (course) {
       setName(course.name);
       setDescription(course.description ?? "");
@@ -104,6 +128,35 @@ export default function CourseEditorDialog({
   const makePlanDefault = (id: string) =>
     setStudyPlanIds((arr) => [id, ...arr.filter((x) => x !== id)]);
 
+  // Level helpers
+  const filteredLevels = useMemo(() => {
+    const q = levelQuery.trim().toLowerCase();
+    if (!q) return levels;
+    return levels.filter((l) => l.name.toLowerCase().includes(q));
+  }, [levels, levelQuery]);
+  const allFilteredSelected =
+    filteredLevels.length > 0 && filteredLevels.every((l) => levelIds.includes(l.id));
+  const toggleAllFiltered = () => {
+    const ids = filteredLevels.map((l) => l.id);
+    if (allFilteredSelected) {
+      setLevelIds((arr) => arr.filter((id) => !ids.includes(id)));
+    } else {
+      setLevelIds((arr) => Array.from(new Set([...arr, ...ids])));
+    }
+  };
+
+  // Validation
+  const step0Valid = name.trim().length > 0;
+  const canNext = step === 0 ? step0Valid : true;
+  const goNext = () => {
+    if (step === 0 && !step0Valid) {
+      toast.error("Tên khoá học không được trống.");
+      return;
+    }
+    setStep((s) => Math.min(2, (s + 1) as Step));
+  };
+  const goPrev = () => setStep((s) => Math.max(0, (s - 1) as Step));
+
   const handleSave = async () => {
     if (!name.trim()) { toast.error("Tên khoá học không được trống."); return; }
     setSubmitting(true);
@@ -129,136 +182,364 @@ export default function CourseEditorDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
-        <DialogHeader>
-          <DialogTitle>
-            {isEdit ? "Sửa khoá học" : "Tạo khoá học mới"}
-          </DialogTitle>
-          <DialogDescription>
-            Thuộc chương trình <strong>{programName}</strong>. Khoá học là gói nội dung độc
-            lập với cấp độ — có thể gắn nhiều cấp độ và nhiều study plan.
-          </DialogDescription>
-        </DialogHeader>
-
-        <ScrollArea className="flex-1 -mx-6 px-6">
-          <div className="space-y-4 py-2">
-            {/* Tên */}
-            <div className="space-y-1.5">
-              <Label htmlFor="course-name" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                Tên khoá học *
-              </Label>
-              <Input
-                id="course-name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder='vd. "IELTS 6.5 Foundation", "WRE Advanced Track"'
-              />
+      <DialogContent className="max-w-3xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
+        {/* ─── Header với program preview ─── */}
+        <div className={cn("relative px-6 pt-5 pb-4 border-b", palette.surfaceSoft)}>
+          <div className="flex items-start gap-3">
+            <div className={cn("h-11 w-11 rounded-xl flex items-center justify-center shrink-0", palette.iconBg)}>
+              <ProgramIcon className={cn("h-5 w-5", palette.iconText)} />
             </div>
-
-            {/* Mô tả ngắn */}
-            <div className="space-y-1.5">
-              <Label htmlFor="course-desc" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                Mô tả ngắn
-              </Label>
-              <Textarea
-                id="course-desc"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="1-2 câu xuất hiện trên thẻ khoá học."
-                rows={2}
-              />
+            <div className="flex-1 min-w-0">
+              <DialogHeader className="space-y-0.5 text-left">
+                <DialogTitle className="text-lg font-display font-extrabold leading-tight">
+                  {isEdit ? "Sửa khoá học" : "Tạo khoá học mới"}
+                </DialogTitle>
+                <DialogDescription className="text-xs leading-relaxed">
+                  Thuộc chương trình{" "}
+                  <strong className="text-foreground">{programName}</strong>
+                  {name.trim() && (
+                    <>
+                      {" — "}
+                      <span className={cn("font-semibold", palette.accentText)}>
+                        {name.trim()}
+                      </span>
+                    </>
+                  )}
+                </DialogDescription>
+              </DialogHeader>
             </div>
+          </div>
 
-            {/* Mô tả chi tiết */}
-            <div className="space-y-1.5">
-              <Label htmlFor="course-long" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                Mô tả chi tiết
-              </Label>
-              <Textarea
-                id="course-long"
-                value={longDescription}
-                onChange={(e) => setLongDescription(e.target.value)}
-                placeholder="Nội dung chi tiết hiển thị trong trang chi tiết khoá."
-                rows={4}
-              />
-            </div>
-
-            {/* Outcomes */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                  Đầu ra ({outcomes.filter((o) => o.trim()).length})
-                </Label>
-                <Button type="button" variant="ghost" size="sm" onClick={addOutcome} className="h-7 text-xs">
-                  <Plus className="h-3 w-3 mr-1" /> Thêm
-                </Button>
-              </div>
-              <div className="space-y-1.5">
-                {outcomes.map((o, i) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <Input
-                      value={o}
-                      onChange={(e) => updateOutcome(i, e.target.value)}
-                      placeholder={`Đầu ra ${i + 1}`}
-                    />
-                    {outcomes.length > 1 && (
-                      <Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => removeOutcome(i)}>
-                        <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
-                      </Button>
+          {/* Stepper */}
+          <div className="mt-4 flex items-center gap-1.5">
+            {STEPS.map((s, idx) => {
+              const Icon = s.icon;
+              const isActive = step === s.key;
+              const isDone = step > s.key;
+              const reachable = idx === 0 || step0Valid;
+              return (
+                <button
+                  key={s.key}
+                  type="button"
+                  onClick={() => reachable && setStep(s.key)}
+                  disabled={!reachable}
+                  className={cn(
+                    "flex-1 flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left transition-all",
+                    isActive && "bg-background border shadow-sm",
+                    !isActive && isDone && "bg-background/60 hover:bg-background border border-transparent",
+                    !isActive && !isDone && "opacity-60 hover:opacity-100",
+                    !reachable && "cursor-not-allowed",
+                  )}
+                >
+                  <div
+                    className={cn(
+                      "h-7 w-7 rounded-md flex items-center justify-center shrink-0 text-xs font-bold",
+                      isActive ? cn(palette.iconBg, palette.iconText)
+                        : isDone ? "bg-primary/10 text-primary"
+                        : "bg-muted text-muted-foreground",
                     )}
+                  >
+                    {isDone ? <Check className="h-3.5 w-3.5" /> : <Icon className="h-3.5 w-3.5" />}
                   </div>
-                ))}
-              </div>
-            </div>
+                  <div className="min-w-0 hidden sm:block">
+                    <p className="text-[11px] font-bold uppercase tracking-wider truncate">
+                      {s.label}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground truncate">{s.sub}</p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
-            {/* Levels */}
-            <div className="space-y-1.5">
-              <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                Cấp độ thuộc khoá ({levelIds.length})
-              </Label>
-              {levels.length === 0 ? (
-                <p className="text-xs text-muted-foreground italic py-2">
-                  Chương trình này chưa có cấp độ nào. Thêm cấp độ ở phần "Khoá học/ Cấp độ".
-                </p>
-              ) : (
-                <div className="grid gap-1.5 grid-cols-2 rounded-lg border p-2 bg-muted/20">
-                  {levels.map((l) => (
-                    <label key={l.id} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-background cursor-pointer">
-                      <Checkbox
-                        checked={levelIds.includes(l.id)}
-                        onCheckedChange={() => toggleLevel(l.id)}
-                      />
-                      <span className="text-sm truncate">{l.name}</span>
-                    </label>
-                  ))}
-                </div>
-              )}
-            </div>
+        {/* ─── Body ─── */}
+        <ScrollArea className="flex-1">
+          <div className="px-6 py-5 space-y-5">
+            {step === 0 && (
+              <StepInfo
+                name={name} setName={setName}
+                description={description} setDescription={setDescription}
+                longDescription={longDescription} setLongDescription={setLongDescription}
+                outcomes={outcomes}
+                updateOutcome={updateOutcome}
+                removeOutcome={removeOutcome}
+                addOutcome={addOutcome}
+              />
+            )}
 
-            {/* Study plans */}
-            <StudyPlanSection
-              programName={programName}
-              programKey={programKey}
-              templates={eligibleTemplates}
-              loading={templatesLoading}
-              selectedIds={studyPlanIds}
-              onToggle={togglePlan}
-              onMakeDefault={makePlanDefault}
-            />
+            {step === 1 && (
+              <StepLevels
+                levels={levels}
+                filtered={filteredLevels}
+                query={levelQuery}
+                setQuery={setLevelQuery}
+                selectedIds={levelIds}
+                onToggle={toggleLevel}
+                onToggleAll={toggleAllFiltered}
+                allSelected={allFilteredSelected}
+                palette={palette}
+              />
+            )}
+
+            {step === 2 && (
+              <StudyPlanSection
+                programName={programName}
+                programKey={programKey}
+                templates={eligibleTemplates}
+                loading={templatesLoading}
+                selectedIds={studyPlanIds}
+                onToggle={togglePlan}
+                onMakeDefault={makePlanDefault}
+                query={planQuery}
+                setQuery={setPlanQuery}
+                scope={planScope}
+                setScope={setPlanScope}
+              />
+            )}
           </div>
         </ScrollArea>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
-            Huỷ
-          </Button>
-          <Button onClick={handleSave} disabled={submitting}>
-            {submitting && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />}
-            {isEdit ? "Cập nhật" : "Tạo khoá học"}
-          </Button>
-        </DialogFooter>
+        {/* ─── Footer với step nav ─── */}
+        <div className="px-6 py-3 border-t bg-muted/20 flex items-center justify-between gap-3">
+          {/* Summary chips */}
+          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+            <SummaryChip icon={<Layers className="h-3 w-3" />} value={levelIds.length} label="cấp độ" />
+            <SummaryChip icon={<ClipboardList className="h-3 w-3" />} value={studyPlanIds.length} label="plan" />
+            <SummaryChip icon={<CircleCheck className="h-3 w-3" />} value={outcomes.filter((o) => o.trim()).length} label="đầu ra" />
+          </div>
+
+          <div className="flex items-center gap-2">
+            {step > 0 && (
+              <Button variant="outline" size="sm" onClick={goPrev} disabled={submitting} className="h-8 gap-1">
+                <ChevronLeft className="h-3.5 w-3.5" /> Quay lại
+              </Button>
+            )}
+            <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)} disabled={submitting} className="h-8">
+              Huỷ
+            </Button>
+            {step < 2 ? (
+              <Button size="sm" onClick={goNext} disabled={!canNext || submitting} className="h-8 gap-1">
+                Tiếp tục <ChevronRight className="h-3.5 w-3.5" />
+              </Button>
+            ) : (
+              <Button size="sm" onClick={handleSave} disabled={submitting || !step0Valid} className="h-8 gap-1.5">
+                {submitting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                {isEdit ? "Cập nhật" : "Tạo khoá học"}
+              </Button>
+            )}
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/* ──────────────────────────── Step 0: Info ─────────────────────────── */
+
+function StepInfo({
+  name, setName, description, setDescription,
+  longDescription, setLongDescription, outcomes,
+  updateOutcome, removeOutcome, addOutcome,
+}: {
+  name: string; setName: (v: string) => void;
+  description: string; setDescription: (v: string) => void;
+  longDescription: string; setLongDescription: (v: string) => void;
+  outcomes: string[];
+  updateOutcome: (i: number, v: string) => void;
+  removeOutcome: (i: number) => void;
+  addOutcome: () => void;
+}) {
+  return (
+    <div className="space-y-4">
+      {/* Tên */}
+      <div className="space-y-1.5">
+        <Label htmlFor="course-name" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+          Tên khoá học <span className="text-destructive">*</span>
+        </Label>
+        <Input
+          id="course-name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder='vd. "IELTS 6.5 Foundation", "WRE Advanced Track"'
+          autoFocus
+          className="h-10 text-sm"
+        />
+        <p className="text-[10px] text-muted-foreground">
+          Tên hiển thị ở thẻ khoá học và khi tạo lớp.
+        </p>
+      </div>
+
+      {/* Mô tả ngắn */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label htmlFor="course-desc" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+            Mô tả ngắn
+          </Label>
+          <Textarea
+            id="course-desc"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="1-2 câu xuất hiện trên thẻ khoá học."
+            rows={3}
+            className="resize-none"
+          />
+          <p className="text-[10px] text-muted-foreground">{description.length}/200 ký tự</p>
+        </div>
+
+        {/* Mô tả chi tiết */}
+        <div className="space-y-1.5">
+          <Label htmlFor="course-long" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+            Mô tả chi tiết
+          </Label>
+          <Textarea
+            id="course-long"
+            value={longDescription}
+            onChange={(e) => setLongDescription(e.target.value)}
+            placeholder="Nội dung chi tiết hiển thị trong trang chi tiết khoá."
+            rows={3}
+            className="resize-none"
+          />
+        </div>
+      </div>
+
+      {/* Outcomes */}
+      <div className="space-y-1.5">
+        <div className="flex items-center justify-between">
+          <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+            <CircleCheck className="h-3.5 w-3.5" />
+            Đầu ra khoá học ({outcomes.filter((o) => o.trim()).length})
+          </Label>
+          <Button type="button" variant="outline" size="sm" onClick={addOutcome} className="h-7 text-xs gap-1">
+            <Plus className="h-3 w-3" /> Thêm đầu ra
+          </Button>
+        </div>
+        <div className="space-y-1.5 rounded-lg border bg-muted/20 p-2">
+          {outcomes.map((o, i) => (
+            <div key={i} className="flex items-center gap-2 group">
+              <span className="text-[10px] font-bold text-muted-foreground w-5 text-center">
+                {i + 1}
+              </span>
+              <Input
+                value={o}
+                onChange={(e) => updateOutcome(i, e.target.value)}
+                placeholder={`vd. "Đạt band 6.5 Reading sau 12 tuần"`}
+                className="h-8 text-sm"
+              />
+              {outcomes.length > 1 && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={() => removeOutcome(i)}
+                >
+                  <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                </Button>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────── Step 1: Levels ────────────────────────── */
+
+function StepLevels({
+  levels, filtered, query, setQuery, selectedIds,
+  onToggle, onToggleAll, allSelected, palette,
+}: {
+  levels: CourseLevel[];
+  filtered: CourseLevel[];
+  query: string; setQuery: (v: string) => void;
+  selectedIds: string[];
+  onToggle: (id: string) => void;
+  onToggleAll: () => void;
+  allSelected: boolean;
+  palette: ReturnType<typeof getProgramPalette>;
+}) {
+  if (levels.length === 0) {
+    return (
+      <div className="rounded-lg border-2 border-dashed bg-muted/10 p-6 text-center">
+        <Layers className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
+        <p className="text-sm text-muted-foreground">
+          Chương trình này chưa có cấp độ nào.
+        </p>
+        <p className="text-xs text-muted-foreground/70 mt-1">
+          Thêm cấp độ ở mục <strong>Khoá học / Cấp độ</strong> rồi quay lại.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Tìm cấp độ…"
+            className="h-8 pl-8 pr-8 text-sm"
+          />
+          {query && (
+            <button
+              type="button"
+              onClick={() => setQuery("")}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={onToggleAll}
+          disabled={filtered.length === 0}
+          className="h-8 text-xs whitespace-nowrap"
+        >
+          {allSelected ? "Bỏ chọn tất cả" : "Chọn tất cả"}
+        </Button>
+      </div>
+
+      <div className="text-[11px] text-muted-foreground">
+        Đã chọn <strong className="text-foreground">{selectedIds.length}</strong> / {levels.length} cấp độ
+        {query && ` (lọc: ${filtered.length})`}
+      </div>
+
+      {filtered.length === 0 ? (
+        <p className="text-xs text-muted-foreground italic text-center py-6">
+          Không có cấp độ khớp "{query}".
+        </p>
+      ) : (
+        <div className="grid gap-1.5 grid-cols-1 sm:grid-cols-2 rounded-lg border bg-muted/10 p-2 max-h-72 overflow-y-auto">
+          {filtered.map((l) => {
+            const checked = selectedIds.includes(l.id);
+            return (
+              <label
+                key={l.id}
+                className={cn(
+                  "flex items-center gap-2 px-2.5 py-2 rounded-md cursor-pointer transition-colors border",
+                  checked
+                    ? cn(palette.accentSoftBg, "border-current/20")
+                    : "border-transparent hover:bg-background",
+                )}
+              >
+                <Checkbox checked={checked} onCheckedChange={() => onToggle(l.id)} />
+                <span className={cn("text-sm truncate flex-1", checked && palette.accentText)}>
+                  {l.name}
+                </span>
+              </label>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -266,6 +547,7 @@ export default function CourseEditorDialog({
 
 function StudyPlanSection({
   programName, programKey, templates, loading, selectedIds, onToggle, onMakeDefault,
+  query, setQuery, scope, setScope,
 }: {
   programName: string;
   programKey: string;
@@ -274,15 +556,43 @@ function StudyPlanSection({
   selectedIds: string[];
   onToggle: (id: string) => void;
   onMakeDefault: (id: string) => void;
+  query: string;
+  setQuery: (v: string) => void;
+  scope: "all" | "program" | "selected";
+  setScope: (v: "all" | "program" | "selected") => void;
 }) {
   const defaultId = selectedIds[0] ?? null;
 
+  // Apply scope filter
+  const scoped = useMemo(() => {
+    if (scope === "selected") return templates.filter((t: any) => selectedIds.includes(t.id));
+    if (scope === "program") {
+      return templates.filter(
+        (t: any) => !t.program || t.program.toLowerCase() === programKey.toLowerCase(),
+      );
+    }
+    return templates;
+  }, [templates, scope, selectedIds, programKey]);
+
+  // Apply text search across name / level / program
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return scoped;
+    return scoped.filter((t: any) => {
+      const blob = [
+        t.template_name, t.assigned_level, t.program, t.description,
+        ...(Array.isArray(t.skills) ? t.skills : []),
+      ].filter(Boolean).join(" ").toLowerCase();
+      return blob.includes(q);
+    });
+  }, [scoped, query]);
+
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
           <ClipboardList className="h-3.5 w-3.5" />
-          Study plan ({selectedIds.length})
+          Study plan đã chọn ({selectedIds.length})
         </Label>
         <Button
           asChild
@@ -315,21 +625,73 @@ function StudyPlanSection({
         </div>
       </div>
 
+      {/* Search + scope */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <div className="relative flex-1 min-w-[180px]">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Tìm theo tên · level · skills…"
+            className="h-8 pl-8 pr-8 text-sm"
+          />
+          {query && (
+            <button
+              type="button"
+              onClick={() => setQuery("")}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+        <div className="inline-flex rounded-md border bg-background p-0.5 text-[11px]">
+          {([
+            ["program", `${programName}`],
+            ["all",      "Tất cả"],
+            ["selected", `Đã chọn (${selectedIds.length})`],
+          ] as const).map(([v, label]) => (
+            <button
+              key={v}
+              type="button"
+              onClick={() => setScope(v)}
+              className={cn(
+                "px-2 py-1 rounded transition-colors font-semibold",
+                scope === v ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {loading ? (
         <div className="rounded-lg border bg-muted/20 p-3 flex items-center gap-2 text-xs text-muted-foreground">
           <Loader2 className="h-3.5 w-3.5 animate-spin" /> Đang tải study plans…
         </div>
       ) : templates.length === 0 ? (
         <EmptyPlansState programName={programName} programKey={programKey} />
+      ) : filtered.length === 0 ? (
+        <p className="text-xs text-muted-foreground italic text-center py-6 rounded-lg border bg-muted/10">
+          {query
+            ? `Không có study plan khớp "${query}".`
+            : scope === "selected"
+              ? "Chưa có plan nào được chọn."
+              : "Không có plan trong phạm vi này."}
+        </p>
       ) : (
-        <div className="rounded-lg border bg-muted/20 max-h-48 overflow-y-auto divide-y">
-          {templates.map((t: any) => {
+        <div className="rounded-lg border bg-muted/10 max-h-72 overflow-y-auto divide-y">
+          {filtered.map((t: any) => {
             const checked = selectedIds.includes(t.id);
             const isDefault = checked && defaultId === t.id;
             return (
               <div
                 key={t.id}
-                className="flex items-center gap-2 px-2 py-1.5 hover:bg-background"
+                className={cn(
+                  "flex items-center gap-2 px-2.5 py-2 transition-colors",
+                  checked ? "bg-primary/5" : "hover:bg-background",
+                )}
               >
                 <Checkbox
                   checked={checked}
@@ -362,6 +724,7 @@ function StudyPlanSection({
                     className="h-6 text-[10px] px-1.5 shrink-0"
                     onClick={() => onMakeDefault(t.id)}
                   >
+                    <Star className="h-3 w-3 mr-0.5" />
                     Đặt mặc định
                   </Button>
                 )}
@@ -393,5 +756,24 @@ function EmptyPlansState({ programName, programKey }: { programName: string; pro
         </Link>
       </Button>
     </div>
+  );
+}
+
+/* ─────────────────────────── Summary chip ────────────────────────── */
+
+function SummaryChip({
+  icon, value, label,
+}: { icon: React.ReactNode; value: number; label: string }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 px-1.5 py-0.5 rounded border text-[11px]",
+        value > 0 ? "border-primary/30 bg-primary/5 text-foreground" : "border-border bg-background text-muted-foreground",
+      )}
+    >
+      {icon}
+      <strong className="font-bold">{value}</strong>
+      <span className="hidden sm:inline">{label}</span>
+    </span>
   );
 }
