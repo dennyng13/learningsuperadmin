@@ -483,6 +483,57 @@ export function TemplateEditor({ template, onClose }: Props) {
               <Label className="text-base font-bold">Các buổi học ({entries.length})</Label>
               <Button size="sm" onClick={addEntry}><Plus className="w-3.5 h-3.5 mr-1" /> Thêm buổi</Button>
             </div>
+
+            {(mismatch.totalProgram > 0 || mismatch.totalCourse > 0) && (
+              <div className="space-y-2 mb-3">
+                {mismatch.totalProgram > 0 && (
+                  <Alert variant="destructive" className="border-amber-300 bg-amber-50 text-amber-900">
+                    <AlertTriangle className="h-4 w-4 !text-amber-600" />
+                    <AlertTitle className="text-sm">
+                      {mismatch.totalProgram} resource không thuộc chương trình{" "}
+                      <b>{getProgramLabel(form.program)}</b>
+                    </AlertTitle>
+                    <AlertDescription className="text-xs flex items-center justify-between gap-3 mt-1">
+                      <span>
+                        Các bài tập / flashcard / đề thi đã gán trước đây nay không còn xuất hiện trong danh sách của
+                        chương trình mới. Học viên sẽ không thấy chúng.
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-amber-400 text-amber-900 hover:bg-amber-100"
+                        onClick={() => removeMismatched("program")}
+                      >
+                        Gỡ {mismatch.totalProgram} resource lệch
+                      </Button>
+                    </AlertDescription>
+                  </Alert>
+                )}
+                {mismatch.totalCourse > 0 && (
+                  <Alert className="border-orange-300 bg-orange-50 text-orange-900">
+                    <AlertTriangle className="h-4 w-4 !text-orange-600" />
+                    <AlertTitle className="text-sm">
+                      {mismatch.totalCourse} resource đã gán cho khoá khác
+                    </AlertTitle>
+                    <AlertDescription className="text-xs flex items-center justify-between gap-3 mt-1">
+                      <span>
+                        Resource này được tag cho khoá học khác — không khớp khoá hiện tại. Bạn có thể gỡ hoặc giữ lại
+                        nếu muốn dùng chéo khoá.
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-orange-400 text-orange-900 hover:bg-orange-100"
+                        onClick={() => removeMismatched("course")}
+                      >
+                        Gỡ {mismatch.totalCourse} resource lệch khoá
+                      </Button>
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </div>
+            )}
+
             <div className="space-y-2">
               {entries.map((entry, idx) => (
                 <div key={idx} className="relative group">
