@@ -69,16 +69,25 @@ export default function ProgramDetailTab({ program, levels, onChanged: _onChange
   return (
     <div className={cn("space-y-5", isInactive && "opacity-80")}>
       {/* ─── Hero rút gọn (chi tiết đầy đủ ở /courses/programs/:key) ─── */}
-      <section className="rounded-2xl border bg-card overflow-hidden">
-        <div className={cn("h-1 w-full", palette.progressFill)} />
-        <div className="p-4 md:p-5 flex items-start gap-3 md:gap-4">
-          <div className={cn("h-12 w-12 md:h-14 md:w-14 rounded-xl flex items-center justify-center shrink-0", palette.iconBg)}>
+      <section className={cn(
+        "relative rounded-2xl border overflow-hidden bg-gradient-to-br to-card",
+        palette.bannerGradient,
+        palette.bannerBorder,
+      )}>
+        <div className={cn("h-1.5 w-full", palette.progressFill)} />
+        <div className={cn("absolute -top-10 -right-10 h-40 w-40 rounded-full blur-3xl pointer-events-none", palette.accentSoftBg)} aria-hidden />
+        <div className="relative p-4 md:p-5 flex items-start gap-3 md:gap-4">
+          <div className={cn(
+            "h-12 w-12 md:h-14 md:w-14 rounded-xl flex items-center justify-center shrink-0 ring-1",
+            palette.iconBg,
+            palette.accentBorder,
+          )}>
             <Icon className={cn("h-6 w-6 md:h-7 md:w-7", palette.iconText)} />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="font-display text-lg md:text-xl font-extrabold truncate">{program.name}</h2>
-              <code className="text-[11px] font-mono px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{program.key}</code>
+              <h2 className={cn("font-display text-lg md:text-xl font-extrabold truncate", palette.accentText)}>{program.name}</h2>
+              <code className="text-[11px] font-mono px-1.5 py-0.5 rounded bg-card/70 backdrop-blur text-muted-foreground border">{program.key}</code>
               {isInactive && (
                 <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-muted text-[10px] text-muted-foreground">
                   <EyeOff className="h-3 w-3" /> Đã ẩn
@@ -86,10 +95,10 @@ export default function ProgramDetailTab({ program, levels, onChanged: _onChange
               )}
             </div>
             {program.description && (
-              <p className="text-xs md:text-sm text-muted-foreground mt-1 leading-relaxed line-clamp-2">{program.description}</p>
+              <p className="text-xs md:text-sm text-foreground/75 mt-1 leading-relaxed line-clamp-2">{program.description}</p>
             )}
           </div>
-          <Button asChild size="sm" variant="outline" className="shrink-0 gap-1.5">
+          <Button asChild size="sm" variant="outline" className="shrink-0 gap-1.5 bg-card/70 backdrop-blur">
             <Link to={`/courses/programs/${program.key}`}>
               <Info className="h-3.5 w-3.5" /> Chi tiết
             </Link>
@@ -100,9 +109,14 @@ export default function ProgramDetailTab({ program, levels, onChanged: _onChange
       {/* ─── Toolbar khoá học ─── */}
       <section className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <BookOpen className={cn("h-4 w-4", palette.iconText)} />
+          <span className={cn("h-7 w-7 rounded-lg flex items-center justify-center", palette.iconBg)}>
+            <BookOpen className={cn("h-3.5 w-3.5", palette.iconText)} />
+          </span>
           <h3 className="font-display font-bold text-sm">
-            Khoá học của {program.name} ({courses.length})
+            Khoá học của {program.name}
+            <span className={cn("ml-1.5 px-1.5 py-0.5 rounded text-[10px] font-bold", palette.accentSoftBg, palette.accentText)}>
+              {courses.length}
+            </span>
           </h3>
         </div>
         <Button onClick={openCreate} size="sm" className="h-8 gap-1.5">

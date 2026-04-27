@@ -12,6 +12,7 @@ import {
 } from "@shared/components/ui/alert-dialog";
 import { cn } from "@shared/lib/utils";
 import { getProgramPalette } from "@shared/utils/programColors";
+import { getLevelColorConfig } from "@shared/utils/levelColors";
 import type { Course, CourseStats } from "@admin/features/academic/hooks/useCourses";
 import type { CourseLevel } from "@shared/hooks/useCourseLevels";
 
@@ -35,8 +36,10 @@ export default function CourseCard({
   const isInactive = course.status === "inactive";
 
   const linkedLevelNames = useMemo(() => {
-    const map = new Map(levels.map((l) => [l.id, l.name]));
-    return course.level_ids.map((id) => map.get(id)).filter(Boolean) as string[];
+    const map = new Map(levels.map((l) => [l.id, l]));
+    return course.level_ids
+      .map((id) => map.get(id))
+      .filter(Boolean) as CourseLevel[];
   }, [course.level_ids, levels]);
 
   const plans = studyPlans ?? course.study_plan_ids.map((id) => ({ id, name: "Plan" }));
@@ -45,16 +48,23 @@ export default function CourseCard({
   return (
     <article
       className={cn(
-        "group rounded-2xl border bg-card overflow-hidden flex flex-col h-full transition-all",
-        "hover:shadow-md hover:border-primary/30",
+        "group relative rounded-2xl border bg-card overflow-hidden flex flex-col h-full transition-all",
+        "hover:shadow-lg hover:-translate-y-0.5 hover:border-primary/30",
         isInactive && "opacity-70",
       )}
     >
-      {/* Top accent strip */}
-      <div className={cn("h-1 w-full", palette.progressFill)} />
+      {/* Top accent strip + soft tint */}
+      <div className={cn("h-1.5 w-full", palette.progressFill)} />
+      <div
+        className={cn(
+          "absolute inset-x-0 top-1.5 h-20 pointer-events-none bg-gradient-to-b to-transparent",
+          palette.bannerGradient,
+        )}
+        aria-hidden
+      />
 
       {/* Header */}
-      <header className="p-4 pb-2 flex items-start gap-3">
+      <header className="relative p-4 pb-2 flex items-start gap-3">
         <div className={cn("h-10 w-10 rounded-lg flex items-center justify-center shrink-0", palette.iconBg)}>
           <BookOpen className={cn("h-5 w-5", palette.iconText)} />
         </div>
@@ -148,18 +158,28 @@ export default function CourseCard({
         {/* Linked levels chips dưới stats */}
         {linkedLevelNames.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-1">
-            {linkedLevelNames.slice(0, 5).map((n, i) => (
-              <span
-                key={i}
-                className={cn(
-                  "text-[10px] font-semibold px-1.5 py-0.5 rounded-md",
-                  palette.accentSoftBg,
-                  palette.accentText,
-                )}
-              >
-                {n}
-              </span>
-            ))}
+            {linkedLevelNames.slice(0, 5).map((lv) => {
+              const cfg = getLevelColorConfig(lv.color_key || lv.name);
+              return (
+                <span
+                  key={lv.id}
+                  className={cn(
+                    "inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-md border",
+                    cfg
+                      ? cn(cfg.bg, cfg.text, cfg.border)
+                      : cn(palette.accentSoftBg, palette.accentText, palette.accentBorder),
+                  )}
+                  title={lv.target_score ? `${lv.name} • ${lv.target_score}` : lv.name}
+                >
+                  <span
+                    className="h-1.5 w-1.5 rounded-full shrink-0"
+                    style={{ backgroundColor: cfg?.swatch ?? "currentColor" }}
+                    aria-hidden
+                  />
+                  {lv.name}
+                </span>
+              );
+            })}
             {linkedLevelNames.length > 5 && (
               <span className="text-[10px] text-muted-foreground self-center">
                 +{linkedLevelNames.length - 5}
