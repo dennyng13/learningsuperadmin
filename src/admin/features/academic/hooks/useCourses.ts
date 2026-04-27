@@ -315,6 +315,7 @@ export function useCourses(opts: { programId?: string; withStats?: boolean } = {
         hours_per_session: payload.hours_per_session ?? null,
         max_students: payload.max_students ?? null,
         cefr_range: payload.cefr_range ?? null,
+        image_url: payload.image_url ?? null,
       })
       .select("id")
       .single();
@@ -349,6 +350,7 @@ export function useCourses(opts: { programId?: string; withStats?: boolean } = {
         hours_per_session: payload.hours_per_session ?? null,
         max_students: payload.max_students ?? null,
         cefr_range: payload.cefr_range ?? null,
+        image_url: payload.image_url ?? null,
       })
       .eq("id", id);
     if (error) throw error;
