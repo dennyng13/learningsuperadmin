@@ -363,3 +363,16 @@ function BigStat({
     </div>
   );
 }
+
+function Fact({ icon, text, tone }: { icon: React.ReactNode; text: string; tone: string }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-md border bg-background/60",
+      )}
+    >
+      <span className={tone}>{icon}</span>
+      {text}
+    </span>
+  );
+}
