@@ -35,8 +35,8 @@ interface Props {
 
 type Step = 0 | 1 | 2;
 const STEPS: Array<{ key: Step; label: string; sub: string; icon: typeof BookOpen }> = [
-  { key: 0, label: "Thông tin", sub: "Tên · Mô tả · Đầu ra", icon: Sparkles },
-  { key: 1, label: "Cấp độ",    sub: "Gán level vào khoá",    icon: Layers   },
+  { key: 0, label: "Cấp độ",    sub: "Gán level vào khoá",    icon: Layers   },
+  { key: 1, label: "Thông tin", sub: "Tên · Mô tả · Đầu ra", icon: Sparkles },
   { key: 2, label: "Study plan",sub: "Mẫu kế hoạch áp dụng",  icon: ClipboardList },
 ];
 
@@ -146,10 +146,14 @@ export default function CourseEditorDialog({
   };
 
   // Validation
-  const step0Valid = name.trim().length > 0;
-  const canNext = step === 0 ? step0Valid : true;
+  // Step 1 (Thông tin) chứa field bắt buộc duy nhất là `name`.
+  const nameValid = name.trim().length > 0;
+  const canNext =
+    step === 0 ? true /* chọn cấp độ là tuỳ chọn — có thể bỏ qua */
+    : step === 1 ? nameValid
+    : true;
   const goNext = () => {
-    if (step === 0 && !step0Valid) {
+    if (step === 1 && !nameValid) {
       toast.error("Tên khoá học không được trống.");
       return;
     }
@@ -216,7 +220,9 @@ export default function CourseEditorDialog({
               const Icon = s.icon;
               const isActive = step === s.key;
               const isDone = step > s.key;
-              const reachable = idx === 0 || step0Valid;
+              // Step 0 (Cấp độ) & Step 1 (Thông tin) luôn vào được.
+              // Step 2 (Study plan) chỉ vào khi đã có tên khoá.
+              const reachable = idx <= 1 || nameValid;
               return (
                 <button
                   key={s.key}
@@ -257,18 +263,6 @@ export default function CourseEditorDialog({
         <ScrollArea className="flex-1">
           <div className="px-6 py-5 space-y-5">
             {step === 0 && (
-              <StepInfo
-                name={name} setName={setName}
-                description={description} setDescription={setDescription}
-                longDescription={longDescription} setLongDescription={setLongDescription}
-                outcomes={outcomes}
-                updateOutcome={updateOutcome}
-                removeOutcome={removeOutcome}
-                addOutcome={addOutcome}
-              />
-            )}
-
-            {step === 1 && (
               <StepLevels
                 levels={levels}
                 filtered={filteredLevels}
@@ -279,6 +273,18 @@ export default function CourseEditorDialog({
                 onToggleAll={toggleAllFiltered}
                 allSelected={allFilteredSelected}
                 palette={palette}
+              />
+            )}
+
+            {step === 1 && (
+              <StepInfo
+                name={name} setName={setName}
+                description={description} setDescription={setDescription}
+                longDescription={longDescription} setLongDescription={setLongDescription}
+                outcomes={outcomes}
+                updateOutcome={updateOutcome}
+                removeOutcome={removeOutcome}
+                addOutcome={addOutcome}
               />
             )}
 
@@ -323,7 +329,7 @@ export default function CourseEditorDialog({
                 Tiếp tục <ChevronRight className="h-3.5 w-3.5" />
               </Button>
             ) : (
-              <Button size="sm" onClick={handleSave} disabled={submitting || !step0Valid} className="h-8 gap-1.5">
+              <Button size="sm" onClick={handleSave} disabled={submitting || !nameValid} className="h-8 gap-1.5">
                 {submitting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                 {isEdit ? "Cập nhật" : "Tạo khoá học"}
               </Button>
