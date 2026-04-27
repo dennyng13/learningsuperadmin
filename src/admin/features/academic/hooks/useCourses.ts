@@ -89,7 +89,7 @@ const EMPTY_STATS: CourseStats = { totalClasses: 0, activeClasses: 0, uniqueStud
 async function fetchCourses(programId?: string): Promise<Course[]> {
   let q = (supabase as any)
     .from("courses")
-    .select("id, program_id, name, slug, description, long_description, outcomes, color_key, icon_key, sort_order, status, target_audience, problem_solving, price_vnd, duration_label, total_sessions, hours_per_session, max_students, cefr_range")
+    .select("id, program_id, name, slug, description, long_description, outcomes, color_key, icon_key, sort_order, status, target_audience, problem_solving, price_vnd, duration_label, total_sessions, hours_per_session, max_students, cefr_range, image_url")
     .order("sort_order", { ascending: true });
   if (programId) q = q.eq("program_id", programId);
 
@@ -143,6 +143,7 @@ async function fetchCourses(programId?: string): Promise<Course[]> {
     hours_per_session: r.hours_per_session != null ? Number(r.hours_per_session) : null,
     max_students: r.max_students != null ? Number(r.max_students) : null,
     cefr_range: r.cefr_range ?? null,
+    image_url: r.image_url ?? null,
   }));
 }
 
