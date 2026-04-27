@@ -259,14 +259,15 @@ export default function CourseCard({
 
         {/* Linked levels chips dưới stats */}
         {linkedLevelNames.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-1">
+          <div className="mt-2.5 flex flex-wrap gap-1.5">
             {linkedLevelNames.slice(0, 5).map((lv) => {
               const cfg = getLevelColorConfig(lv.color_key || lv.name);
               return (
                 <span
                   key={lv.id}
                   className={cn(
-                    "inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-md border",
+                    "inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full border shadow-sm",
+                    "transition-transform hover:-translate-y-0.5 hover:shadow-md",
                     cfg
                       ? cn(cfg.bg, cfg.text, cfg.border)
                       : cn(palette.accentSoftBg, palette.accentText, palette.accentBorder),
@@ -274,7 +275,7 @@ export default function CourseCard({
                   title={lv.target_score ? `${lv.name} • ${lv.target_score}` : lv.name}
                 >
                   <span
-                    className="h-1.5 w-1.5 rounded-full shrink-0"
+                    className="h-2 w-2 rounded-full shrink-0 ring-2 ring-white/60"
                     style={{ backgroundColor: cfg?.swatch ?? "currentColor" }}
                     aria-hidden
                   />
@@ -283,7 +284,7 @@ export default function CourseCard({
               );
             })}
             {linkedLevelNames.length > 5 && (
-              <span className="text-[10px] text-muted-foreground self-center">
+              <span className="text-[10px] font-semibold text-muted-foreground self-center px-1.5">
                 +{linkedLevelNames.length - 5}
               </span>
             )}
@@ -315,13 +316,19 @@ export default function CourseCard({
                   key={p.id}
                   to={`/study-plans/templates`}
                   className={cn(
-                    "inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-md border",
-                    "bg-background hover:bg-muted transition-colors max-w-[160px]",
-                    idx === 0 && "border-primary/40 bg-primary/5",
+                    "inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-1 rounded-md border max-w-[170px]",
+                    "transition-all hover:-translate-y-0.5 hover:shadow-md",
+                    idx === 0
+                      ? cn(
+                          "text-white shadow-md ring-1 ring-white/20 border-transparent font-bold",
+                          "bg-gradient-to-r",
+                          palette.bannerGradient,
+                        )
+                      : "bg-background hover:bg-muted",
                   )}
                   title={idx === 0 ? `${p.name} (mặc định)` : p.name}
                 >
-                  {idx === 0 && <Star className="h-2.5 w-2.5 fill-current text-primary shrink-0" />}
+                  {idx === 0 && <Star className="h-3 w-3 fill-current text-yellow-300 drop-shadow shrink-0" />}
                   <span className="truncate">{p.name}</span>
                 </Link>
               ))}
