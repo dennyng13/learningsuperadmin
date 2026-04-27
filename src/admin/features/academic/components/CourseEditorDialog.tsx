@@ -292,8 +292,14 @@ export default function CourseEditorDialog({
           </div>
         </div>
 
-        {/* ─── Body ─── */}
-        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
+        {/* ─── Body ───
+            Single scroll container cho toàn dialog. KHÔNG nested overflow ở
+            các step để wheel/trackpad/Page Up-Down hoạt động mượt, không bị
+            "kẹt" khi cuộn hết list con. */}
+        <div
+          tabIndex={0}
+          className="flex-1 min-h-0 overflow-y-auto overscroll-contain scroll-smooth focus:outline-none"
+        >
           <div className="px-6 py-5 space-y-5">
             {step === 0 && (
               <StepLevels
