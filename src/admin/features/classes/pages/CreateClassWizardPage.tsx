@@ -12,6 +12,7 @@ import {
   ScheduleMode, WizardClassInfo, WizardSlot,
 } from "../components/wizard/wizardTypes";
 import { useCreateClass } from "@shared/hooks/useCreateClass";
+import { supabase } from "@/integrations/supabase/client";
 
 const STEPS = [
   { id: 1, title: "Thông tin lớp" },
@@ -147,7 +148,41 @@ export default function CreateClassWizardPage() {
         })),
       });
       toast.success(`Đã tạo lớp "${classInfo.class_name}" với ${teachers.length} giáo viên + ${active.length} buổi`);
-      if (result?.class_id) navigate(`/classes`);
+
+      // Stage P1 — set a sensible default respond_deadline for every newly-created
+      // pending invitation: 7 days before class start, but at least 24h from now.
+      // Failures here are non-fatal (admin can still set deadline manually in
+      // ClassInvitationsDialog).
+      const newClassId = result?.class_id ?? null;
+      if (newClassId && classInfo.start_date) {
+        try {
+          const startMs = new Date(classInfo.start_date + "T00:00:00").getTime();
+          if (!Number.isNaN(startMs)) {
+            const minDeadlineMs = Date.now() + 24 * 60 * 60 * 1000;
+            const desiredDeadlineMs = startMs - 7 * 24 * 60 * 60 * 1000;
+            const deadlineMs = Math.max(minDeadlineMs, desiredDeadlineMs);
+            const deadlineIso = new Date(deadlineMs).toISOString();
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const { data: invs } = await (supabase.from as any)("class_invitations")
+              .select("id")
+              .eq("class_id", newClassId)
+              .eq("status", "pending");
+            await Promise.all(
+              (invs ?? []).map((row: { id: string }) =>
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                (supabase.rpc as any)("set_invitation_deadline", {
+                  p_invitation_id: row.id,
+                  p_deadline: deadlineIso,
+                }),
+              ),
+            );
+          }
+        } catch {
+          // best-effort; ignore
+        }
+      }
+
+      if (newClassId) navigate(`/classes`);
       else navigate("/classes");
     } catch (err: any) {
       toast.error(err?.message || "Lỗi tạo lớp", { duration: 6000 });
