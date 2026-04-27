@@ -36,6 +36,20 @@ export default function CourseCard({
   const palette = getProgramPalette(programKey);
   const isInactive = course.status === "inactive";
 
+  /** Format VND theo locale vi-VN, vd 3500000 -> "3.500.000 ₫". */
+  const formattedPrice = useMemo(() => {
+    if (course.price_vnd == null || course.price_vnd <= 0) return null;
+    try {
+      return new Intl.NumberFormat("vi-VN", {
+        style: "currency",
+        currency: "VND",
+        maximumFractionDigits: 0,
+      }).format(course.price_vnd);
+    } catch {
+      return `${course.price_vnd.toLocaleString("vi-VN")} ₫`;
+    }
+  }, [course.price_vnd]);
+
   const linkedLevelNames = useMemo(() => {
     const map = new Map(levels.map((l) => [l.id, l]));
     return course.level_ids
@@ -91,16 +105,20 @@ export default function CourseCard({
           </div>
         </div>
         {/* Price chip */}
-        {course.price_vnd != null && course.price_vnd > 0 && (
-          <div className={cn(
-            "shrink-0 text-right rounded-lg px-2 py-1 border",
-            palette.accentSoftBg, palette.accentBorder,
-          )}>
-            <p className={cn("text-[10px] uppercase tracking-wider font-bold", palette.accentText)}>
+        {formattedPrice && (
+          <div
+            className={cn(
+              "shrink-0 text-right rounded-lg px-2.5 py-1 border shadow-sm",
+              palette.accentSoftBg, palette.accentBorder,
+            )}
+            title={`Học phí: ${formattedPrice}`}
+          >
+            <p className={cn("text-[9px] uppercase tracking-wider font-bold flex items-center justify-end gap-1", palette.accentText)}>
+              <Wallet className="h-2.5 w-2.5" />
               Học phí
             </p>
-            <p className="text-xs font-display font-extrabold leading-tight">
-              {Math.round(course.price_vnd / 1000).toLocaleString("vi-VN")}K
+            <p className={cn("text-sm font-display font-extrabold leading-tight tabular-nums whitespace-nowrap", palette.accentText)}>
+              {formattedPrice}
             </p>
           </div>
         )}
