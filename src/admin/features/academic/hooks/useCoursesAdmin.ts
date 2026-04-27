@@ -159,7 +159,7 @@ export function useCoursesAdmin() {
     await fetchAll();
   };
 
-  const remove = async () => {
+  const remove = async (_id?: string) => {
     throw new Error("Không thể xoá chương trình chuẩn. Hãy dùng Chuẩn hóa dữ liệu nếu có dòng rác.");
   };
 
