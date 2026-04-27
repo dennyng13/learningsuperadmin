@@ -526,6 +526,18 @@ export default function CourseCard({
         programName={programName}
         levels={levels}
       />
+
+      {/* Dialog: Gán Study plan cho khoá này */}
+      {onAssignStudyPlans && (
+        <CourseStudyPlansDialog
+          open={showPlans}
+          onOpenChange={setShowPlans}
+          course={course}
+          programKey={programKey}
+          programName={programName}
+          onSave={onAssignStudyPlans}
+        />
+      )}
     </article>
   );
 }
