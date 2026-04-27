@@ -121,11 +121,16 @@ export function TemplateEditor({ template, onClose }: Props) {
   // Reset course_id if it does not belong to the new program
   useEffect(() => {
     if (!form.course_id) return;
+    // Program "Khác" không có khoá học → bỏ gán course_id để dữ liệu không lệch.
+    if (form.program === "other") {
+      setForm((f) => ({ ...f, course_id: "" }));
+      return;
+    }
     if (programCourses.length === 0) return;
     if (!programCourses.some((c) => c.id === form.course_id)) {
       setForm((f) => ({ ...f, course_id: "" }));
     }
-  }, [form.course_id, programCourses]);
+  }, [form.course_id, programCourses, form.program]);
 
   /**
    * Auto-persist `course_id` ngay khi user chọn khoá học — chỉ áp dụng khi
