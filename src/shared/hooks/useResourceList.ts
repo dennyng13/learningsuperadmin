@@ -72,7 +72,10 @@ export function useResourceList<T extends ResourceListItem>(
       }
 
       // Filter by course (pivot)
-      if (filters.courseIds.size > 0) {
+      // Lưu ý: program "other" (Khác) không có khoá học → không thể (và không
+      // nên) bị loại bỏ bởi courseIds filter. Coi như luôn match khi program
+      // filter đã pass.
+      if (filters.courseIds.size > 0 && r.program !== "other") {
         const courses = assignmentMap[r.id] || [];
         const isMatched = courses.some((c) => filters.courseIds.has(c));
         if (isMatched) {
@@ -87,7 +90,7 @@ export function useResourceList<T extends ResourceListItem>(
         return false;
       }
 
-      // No course filter → split by tag presence (info only)
+      // No course filter (hoặc row thuộc program "Khác") → split by tag presence (info only)
       const courses = assignmentMap[r.id] || [];
       if (courses.length === 0) untagged.push(r);
       else matched.push(r);
