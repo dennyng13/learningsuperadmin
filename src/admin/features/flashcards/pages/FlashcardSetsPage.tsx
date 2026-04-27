@@ -24,6 +24,8 @@ import {
 } from "@shared/components/ui/tabs";
 import UnsavedChangesDialog from "@admin/features/tests/components/UnsavedChangesDialog";
 import { CourseAssignmentPanel } from "@shared/components/study-plan/CourseAssignmentPanel";
+import { ResourceFilterBar } from "@shared/components/resources/ResourceFilterBar";
+import { useResourceList } from "@shared/hooks/useResourceList";
 
 
 interface FlashcardItem {
@@ -92,9 +94,11 @@ export default function FlashcardSetsPage() {
   const [listSearch, setListSearch] = useState("");
   const [showListSearch, setShowListSearch] = useState(false);
   const [filterPrograms, setFilterPrograms] = useState<Set<string>>(new Set());
+  const [filterCourses, setFilterCourses] = useState<Set<string>>(new Set());
   const [filterLevels, setFilterLevels] = useState<Set<string>>(new Set());
   const [filterStatuses, setFilterStatuses] = useState<Set<string>>(new Set());
   const [programExpanded, setProgramExpanded] = useState(false);
+  const [courseExpanded, setCourseExpanded] = useState(false);
   const [levelExpanded, setLevelExpanded] = useState(false);
   const [statusExpanded, setStatusExpanded] = useState(false);
 
@@ -659,19 +663,31 @@ export default function FlashcardSetsPage() {
 
   const usedPrograms = [...new Set(sets.map(s => (s as any).program).filter(Boolean))];
   const usedLevels = [...new Set(sets.map(s => (s as any).course_level).filter(Boolean))];
-  const hasFilters = filterPrograms.size > 0 || filterLevels.size > 0 || filterStatuses.size > 0 || listSearch.trim().length > 0;
+  const hasFilters = filterPrograms.size > 0 || filterCourses.size > 0 || filterLevels.size > 0 || filterStatuses.size > 0 || listSearch.trim().length > 0;
 
   const clearFilters = () => {
     setFilterPrograms(new Set());
+    setFilterCourses(new Set());
     setFilterLevels(new Set());
     setFilterStatuses(new Set());
     setListSearch("");
     setShowListSearch(false);
   };
 
-  const filteredSets = sets.filter(s => {
+  // Stage 1: filter Program + Course qua pivot resource_courses
+  const {
+    filtered: programCourseFiltered,
+    matched: matchedToCourse,
+    untagged: untaggedItems,
+  } = useResourceList("flashcard_set", sets as any, {
+    programIds: filterPrograms,
+    courseIds: filterCourses,
+    includeUntagged: true,
+  });
+
+  // Stage 2: search/level/status
+  const filteredSets = (programCourseFiltered as typeof sets).filter(s => {
     if (listSearch.trim() && !s.title.toLowerCase().includes(listSearch.trim().toLowerCase())) return false;
-    if (filterPrograms.size > 0 && !filterPrograms.has((s as any).program || "")) return false;
     if (filterLevels.size > 0 && !filterLevels.has((s as any).course_level || "")) return false;
     if (filterStatuses.size > 0 && !filterStatuses.has(s.status)) return false;
     return true;
@@ -763,28 +779,23 @@ export default function FlashcardSetsPage() {
             </span>
           </button>
 
-          {/* Program toggle */}
-          {usedPrograms.length > 0 && (
-            <>
-              <span className="h-5 w-px bg-border mx-0.5" />
-              <button
-                onClick={() => setProgramExpanded(!programExpanded)}
-                className={cn(
-                  "flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold transition-all cursor-pointer shadow-sm",
-                  filterPrograms.size > 0
-                    ? "bg-primary/10 text-primary border-primary/30"
-                    : "bg-card border-border text-muted-foreground hover:text-foreground hover:border-primary/40"
-                )}
-              >
-                <Tags className="h-3.5 w-3.5" />
-                Chương trình
-                {filterPrograms.size > 0 && (
-                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground">{filterPrograms.size}</span>
-                )}
-                <ChevronDown className={cn("h-3 w-3 transition-transform", programExpanded && "rotate-180")} />
-              </button>
-            </>
-          )}
+          {/* Program + Course (cascading, dùng chung component) */}
+          <span className="h-5 w-px bg-border mx-0.5" />
+          <ResourceFilterBar
+            programIds={filterPrograms}
+            courseIds={filterCourses}
+            onProgramsChange={(next) => {
+              setFilterPrograms(next);
+              if (next.size === 0) setFilterCourses(new Set());
+            }}
+            onCoursesChange={setFilterCourses}
+            programExpanded={programExpanded}
+            courseExpanded={courseExpanded}
+            onToggleProgram={() => setProgramExpanded(!programExpanded)}
+            onToggleCourse={() => setCourseExpanded(!courseExpanded)}
+            matchedCount={matchedToCourse.length}
+            untaggedCount={untaggedItems.length}
+          />
 
           {/* Level toggle */}
           {usedLevels.length > 0 && (
@@ -829,26 +840,6 @@ export default function FlashcardSetsPage() {
 
           <span className="text-xs text-muted-foreground ml-auto">{filteredSets.length} / {sets.length} bộ</span>
         </div>
-
-        {/* Program chips */}
-        {programExpanded && usedPrograms.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2 animate-in slide-in-from-top-2 duration-200 pl-1">
-            {usedPrograms.map(prog => {
-              const count = sets.filter(s => (s as any).program === prog).length;
-              const active = filterPrograms.has(prog);
-              return (
-                <button key={prog} onClick={() => toggleFilter(setFilterPrograms, prog)}
-                  className={cn(
-                    "flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-medium transition-all",
-                    active ? "bg-primary/15 text-primary border-primary/30" : "bg-card border-border text-muted-foreground hover:border-primary/40"
-                  )}
-                >
-                  {prog.toUpperCase()} <span className="text-[10px] opacity-60">({count})</span>
-                </button>
-              );
-            })}
-          </div>
-        )}
 
         {/* Level chips */}
         {levelExpanded && usedLevels.length > 0 && (
