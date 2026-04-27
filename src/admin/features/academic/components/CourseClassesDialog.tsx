@@ -314,7 +314,19 @@ export default function CourseClassesDialog({
 
         {/* Footer */}
         <div className="px-6 py-3 border-t bg-muted/20 flex items-center justify-between gap-3">
-          <MatchInfo />
+          <div className="flex items-center gap-3 flex-wrap min-w-0">
+            <MatchInfo />
+            {!isLoading && total > 0 && (
+              <span className="text-[11px] text-muted-foreground tabular-nums">
+                Hiển thị <strong className="text-foreground">{Math.min(effectiveVisible, filteredCount)}</strong>
+                {" / "}
+                <strong className="text-foreground">{filteredCount}</strong>
+                {query.trim() && total !== filteredCount && (
+                  <> (lọc từ {total})</>
+                )}
+              </span>
+            )}
+          </div>
           <div className="flex items-center gap-2">
             <Button asChild variant="outline" size="sm" className="h-8">
               <Link to={`/classes/list?program=${encodeURIComponent(programKey)}`}>
