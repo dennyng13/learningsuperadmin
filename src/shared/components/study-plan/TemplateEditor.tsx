@@ -191,6 +191,92 @@ export function TemplateEditor({ template, onClose }: Props) {
     },
   });
 
+  // ------------------------------------------------------------------
+  // Mismatch detection: when admin changes Program / Course, surface any
+  // resources already pinned in `entries` that no longer fit the new scope.
+  // ------------------------------------------------------------------
+  const allExerciseIds = useMemo(
+    () => Array.from(new Set(entries.flatMap((e) => e.exercise_ids || []))),
+    [entries],
+  );
+  const allFlashcardIds = useMemo(
+    () => Array.from(new Set(entries.flatMap((e) => e.flashcard_set_ids || []))),
+    [entries],
+  );
+  const allAssessmentIds = useMemo(
+    () => Array.from(new Set(entries.flatMap((e) => e.assessment_ids || []))),
+    [entries],
+  );
+
+  const { data: exMap = {} } = useAssignmentMapForResources("exercise", allExerciseIds);
+  const { data: fcMap = {} } = useAssignmentMapForResources("flashcard_set", allFlashcardIds);
+  const { data: asMap = {} } = useAssignmentMapForResources("assessment", allAssessmentIds);
+
+  const mismatch = useMemo(() => {
+    const exIds = new Set((exercises || []).map((r: any) => r.id));
+    const fcIds = new Set((flashcardSets || []).map((r: any) => r.id));
+    const asIds = new Set((assessments || []).map((r: any) => r.id));
+    const programOff = {
+      exercise: allExerciseIds.filter((id) => exercises && !exIds.has(id)),
+      flashcard_set: allFlashcardIds.filter((id) => flashcardSets && !fcIds.has(id)),
+      assessment: allAssessmentIds.filter((id) => assessments && !asIds.has(id)),
+    };
+    let courseOff: { exercise: string[]; flashcard_set: string[]; assessment: string[] } = {
+      exercise: [],
+      flashcard_set: [],
+      assessment: [],
+    };
+    if (form.course_id) {
+      const filt = (ids: string[], map: Record<string, string[]>) =>
+        ids.filter((id) => {
+          const courses = map[id] || [];
+          // untagged is OK; only flag if assigned to OTHER courses (not the picked one)
+          return courses.length > 0 && !courses.includes(form.course_id);
+        });
+      courseOff = {
+        exercise: filt(allExerciseIds, exMap),
+        flashcard_set: filt(allFlashcardIds, fcMap),
+        assessment: filt(allAssessmentIds, asMap),
+      };
+    }
+    const totalProgram =
+      programOff.exercise.length + programOff.flashcard_set.length + programOff.assessment.length;
+    const totalCourse =
+      courseOff.exercise.length + courseOff.flashcard_set.length + courseOff.assessment.length;
+    return { programOff, courseOff, totalProgram, totalCourse };
+  }, [
+    exercises,
+    flashcardSets,
+    assessments,
+    allExerciseIds,
+    allFlashcardIds,
+    allAssessmentIds,
+    exMap,
+    fcMap,
+    asMap,
+    form.course_id,
+  ]);
+
+  const removeMismatched = (scope: "program" | "course") => {
+    const target = scope === "program" ? mismatch.programOff : mismatch.courseOff;
+    const exSet = new Set(target.exercise);
+    const fcSet = new Set(target.flashcard_set);
+    const asSet = new Set(target.assessment);
+    setEntries((es) =>
+      es.map((e) => ({
+        ...e,
+        exercise_ids: (e.exercise_ids || []).filter((id: string) => !exSet.has(id)),
+        flashcard_set_ids: (e.flashcard_set_ids || []).filter((id: string) => !fcSet.has(id)),
+        assessment_ids: (e.assessment_ids || []).filter((id: string) => !asSet.has(id)),
+      })),
+    );
+    toast.success(
+      `Đã gỡ ${
+        target.exercise.length + target.flashcard_set.length + target.assessment.length
+      } resource lệch ${scope === "program" ? "chương trình" : "khoá học"}`,
+    );
+  };
+
   const addEntry = () => {
     setEntries(e => [...e, {
       session_order: e.length + 1,
