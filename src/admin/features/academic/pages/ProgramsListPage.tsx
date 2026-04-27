@@ -148,7 +148,7 @@ export default function ProgramsListPage() {
                   <div>
                     <h2 className="font-display text-lg font-extrabold">{preset.name}</h2>
                     <code className="text-[11px] text-muted-foreground font-mono">{preset.key}</code>
-                    <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
+                    <p className="text-sm text-muted-foreground mt-2 leading-relaxed line-clamp-2 min-h-[2.75rem]">
                       {row?.description || preset.description}
                     </p>
                   </div>
