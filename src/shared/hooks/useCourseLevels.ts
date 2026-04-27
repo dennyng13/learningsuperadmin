@@ -8,8 +8,6 @@ export interface CourseLevel {
   color_key: string | null;
   /** Điểm mục tiêu free-text (vd. "IELTS 6.5", "WRE 80/100") — col mới sau migration. */
   target_score?: string | null;
-  /** CEFR tương ứng A1..C2. */
-  cefr?: "A1" | "A2" | "B1" | "B2" | "C1" | "C2" | null;
   /** Mô tả chi tiết. */
   long_description?: string | null;
   /** Danh sách đầu ra. */
