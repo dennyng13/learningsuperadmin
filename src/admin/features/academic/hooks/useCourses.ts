@@ -28,6 +28,8 @@ export interface Course {
   status: "active" | "inactive";
   level_ids: string[];
   study_plan_ids: string[];
+  /** URL public của ảnh minh hoạ (Supabase Storage). */
+  image_url: string | null;
   // ── Rich descriptive fields (added 2026-04-27 migration) ─────────────────
   /** Markdown / multiline mô tả đối tượng phù hợp. */
   target_audience: string | null;
@@ -68,6 +70,7 @@ export interface CourseInput {
   hours_per_session?: number | null;
   max_students?: number | null;
   cefr_range?: string | null;
+  image_url?: string | null;
 }
 
 export interface CourseStats {
@@ -86,7 +89,7 @@ const EMPTY_STATS: CourseStats = { totalClasses: 0, activeClasses: 0, uniqueStud
 async function fetchCourses(programId?: string): Promise<Course[]> {
   let q = (supabase as any)
     .from("courses")
-    .select("id, program_id, name, slug, description, long_description, outcomes, color_key, icon_key, sort_order, status, target_audience, problem_solving, price_vnd, duration_label, total_sessions, hours_per_session, max_students, cefr_range")
+    .select("id, program_id, name, slug, description, long_description, outcomes, color_key, icon_key, sort_order, status, target_audience, problem_solving, price_vnd, duration_label, total_sessions, hours_per_session, max_students, cefr_range, image_url")
     .order("sort_order", { ascending: true });
   if (programId) q = q.eq("program_id", programId);
 
@@ -140,6 +143,7 @@ async function fetchCourses(programId?: string): Promise<Course[]> {
     hours_per_session: r.hours_per_session != null ? Number(r.hours_per_session) : null,
     max_students: r.max_students != null ? Number(r.max_students) : null,
     cefr_range: r.cefr_range ?? null,
+    image_url: r.image_url ?? null,
   }));
 }
 
@@ -311,6 +315,7 @@ export function useCourses(opts: { programId?: string; withStats?: boolean } = {
         hours_per_session: payload.hours_per_session ?? null,
         max_students: payload.max_students ?? null,
         cefr_range: payload.cefr_range ?? null,
+        image_url: payload.image_url ?? null,
       })
       .select("id")
       .single();
@@ -345,6 +350,7 @@ export function useCourses(opts: { programId?: string; withStats?: boolean } = {
         hours_per_session: payload.hours_per_session ?? null,
         max_students: payload.max_students ?? null,
         cefr_range: payload.cefr_range ?? null,
+        image_url: payload.image_url ?? null,
       })
       .eq("id", id);
     if (error) throw error;
