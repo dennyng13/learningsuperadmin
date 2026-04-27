@@ -35,7 +35,7 @@ export default function ProgramDetailTab({ program, levels, onChanged: _onChange
   const isInactive = program.status === "inactive";
 
   /* ─── Courses của program ─── */
-  const { courses, loading, getStats, getStudyPlanNames, create, update, remove } = useCourses({
+  const { courses, loading, getStats, getStudyPlanNames, create, update, remove, updateStudyPlans } = useCourses({
     programId: program.id,
     withStats: true,
   });
@@ -152,6 +152,7 @@ export default function ProgramDetailTab({ program, levels, onChanged: _onChange
               studyPlans={getStudyPlanNames(c.study_plan_ids)}
               onEdit={() => openEdit(c)}
               onDelete={() => handleDelete(c)}
+              onAssignStudyPlans={(ids) => updateStudyPlans(c.id, ids)}
             />
           ))}
         </div>

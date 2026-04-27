@@ -365,9 +365,19 @@ export function useCourses(opts: { programId?: string; withStats?: boolean } = {
     await refetch();
   }
 
+  /**
+   * Cập nhật riêng danh sách study plan templates cho một khoá học (không
+   * động đến các trường khác). Plan đầu tiên trong mảng = mặc định, theo
+   * convention của `syncStudyPlans` (is_default = idx === 0).
+   */
+  async function updateStudyPlans(courseId: string, templateIds: string[]) {
+    await syncStudyPlans(courseId, templateIds);
+    await refetch();
+  }
+
   return {
     courses, loading, error, refetch,
     getStats, getStudyPlanNames,
-    create, update, remove,
+    create, update, remove, updateStudyPlans,
   };
 }

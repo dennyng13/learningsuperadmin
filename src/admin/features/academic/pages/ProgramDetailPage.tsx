@@ -33,7 +33,7 @@ export default function ProgramDetailPage() {
   );
   const {
     courses, loading: coursesLoading,
-    getStats, getStudyPlanNames, create, update, remove,
+    getStats, getStudyPlanNames, create, update, remove, updateStudyPlans,
   } = useCourses({ programId: program?.id, withStats: true });
 
   /* ─── Program editor (inline) ─── */
@@ -179,6 +179,7 @@ export default function ProgramDetailPage() {
                 studyPlans={getStudyPlanNames(c.study_plan_ids)}
                 onEdit={() => openEdit(c)}
                 onDelete={() => handleDelete(c)}
+                onAssignStudyPlans={(ids) => updateStudyPlans(c.id, ids)}
               />
             ))}
           </div>

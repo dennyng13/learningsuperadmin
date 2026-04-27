@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import {
   BookOpen, CheckCircle2, Layers, Users, CalendarDays, ClipboardList,
   Pencil, Trash2, EyeOff, PlayCircle, Sparkles, Plus, Star,
-  Wallet, Clock, UserCheck, Target,
+  Wallet, Clock, UserCheck, Target, Settings2,
 } from "lucide-react";
 import { Button } from "@shared/components/ui/button";
 import {
@@ -17,6 +17,7 @@ import { getLevelColorConfig } from "@shared/utils/levelColors";
 import type { Course, CourseStats } from "@admin/features/academic/hooks/useCourses";
 import type { CourseLevel } from "@shared/hooks/useCourseLevels";
 import CourseClassesDialog from "./CourseClassesDialog";
+import CourseStudyPlansDialog from "./CourseStudyPlansDialog";
 
 interface Props {
   course: Course;
@@ -29,14 +30,17 @@ interface Props {
   studyPlans?: Array<{ id: string; name: string }>;
   onEdit: () => void;
   onDelete: () => void;
+  /** Lưu danh sách study plan template ids cho khoá này. Plan đầu = default. */
+  onAssignStudyPlans?: (templateIds: string[]) => Promise<void>;
 }
 
 export default function CourseCard({
-  course, programKey, programName, stats, levels, studyPlans, onEdit, onDelete,
+  course, programKey, programName, stats, levels, studyPlans, onEdit, onDelete, onAssignStudyPlans,
 }: Props) {
   const palette = getProgramPalette(programKey);
   const isInactive = course.status === "inactive";
   const [showClasses, setShowClasses] = useState(false);
+  const [showPlans, setShowPlans] = useState(false);
 
   /** Format VND theo locale vi-VN, vd 3500000 -> "3.500.000 ₫". */
   const formattedPrice = useMemo(() => {
@@ -352,28 +356,54 @@ export default function CourseCard({
       </Section>
 
       {/* ─── 4. Study plans đang gán (cố định min-height) ─── */}
-      <Section
-        icon={<ClipboardList className={cn("h-3 w-3", palette.iconText)} />}
-        label={`Study plan đang gán (${planCount})`}
-      >
+      <div className="px-4 pb-3">
+        <div className="flex items-center justify-between gap-1.5 mb-1.5">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <ClipboardList className={cn("h-3 w-3 shrink-0", palette.iconText)} />
+            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground truncate">
+              Study plan đang gán ({planCount})
+            </span>
+          </div>
+          {onAssignStudyPlans && (
+            <button
+              type="button"
+              onClick={() => setShowPlans(true)}
+              className={cn(
+                "inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded",
+                "transition-all hover:scale-105",
+                palette.accentSoftBg, palette.accentText,
+              )}
+              title="Mở popup tìm & gán Study plan"
+            >
+              <Settings2 className="h-2.5 w-2.5" />
+              Quản lý
+            </button>
+          )}
+        </div>
         <div className="min-h-[2.25rem]">
           {planCount === 0 ? (
-            <Link
-              to="/study-plans/templates"
+            <button
+              type="button"
+              onClick={() => onAssignStudyPlans && setShowPlans(true)}
+              disabled={!onAssignStudyPlans}
               className={cn(
-                "flex items-center gap-1.5 text-[11px] px-2 py-1.5 rounded-md border border-dashed",
-                "text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors",
+                "w-full flex items-center gap-1.5 text-[11px] px-2 py-1.5 rounded-md border border-dashed text-left",
+                "text-muted-foreground transition-colors",
+                onAssignStudyPlans
+                  ? "hover:text-foreground hover:bg-muted/40 hover:border-foreground/30 cursor-pointer"
+                  : "cursor-not-allowed opacity-60",
               )}
             >
-              <Plus className="h-3 w-3" />
-              Chưa gán plan — tạo / chọn study plan
-            </Link>
+              <Plus className="h-3 w-3 shrink-0" />
+              Chưa gán plan — bấm để chọn / tìm study plan
+            </button>
           ) : (
             <div className="flex flex-wrap gap-1">
               {plans.slice(0, 3).map((p, idx) => (
-                <Link
+                <button
                   key={p.id}
-                  to={`/study-plans/templates`}
+                  type="button"
+                  onClick={() => onAssignStudyPlans && setShowPlans(true)}
                   className={cn(
                     "inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-1 rounded-md border max-w-[170px]",
                     "transition-all hover:-translate-y-0.5 hover:shadow-md",
@@ -385,21 +415,26 @@ export default function CourseCard({
                         )
                       : "bg-background hover:bg-muted",
                   )}
-                  title={idx === 0 ? `${p.name} (mặc định)` : p.name}
+                  title={idx === 0 ? `${p.name} (mặc định) — bấm để quản lý` : `${p.name} — bấm để quản lý`}
                 >
                   {idx === 0 && <Star className="h-3 w-3 fill-current text-yellow-300 drop-shadow shrink-0" />}
                   <span className="truncate">{p.name}</span>
-                </Link>
+                </button>
               ))}
               {plans.length > 3 && (
-                <span className="text-[10px] text-muted-foreground self-center">
+                <button
+                  type="button"
+                  onClick={() => onAssignStudyPlans && setShowPlans(true)}
+                  className="text-[10px] text-muted-foreground self-center px-1 hover:text-foreground transition-colors"
+                  title="Xem tất cả"
+                >
                   +{plans.length - 3}
-                </span>
+                </button>
               )}
             </div>
           )}
         </div>
-      </Section>
+      </div>
 
       {/* Footer actions */}
       <footer
@@ -491,6 +526,18 @@ export default function CourseCard({
         programName={programName}
         levels={levels}
       />
+
+      {/* Dialog: Gán Study plan cho khoá này */}
+      {onAssignStudyPlans && (
+        <CourseStudyPlansDialog
+          open={showPlans}
+          onOpenChange={setShowPlans}
+          course={course}
+          programKey={programKey}
+          programName={programName}
+          onSave={onAssignStudyPlans}
+        />
+      )}
     </article>
   );
 }
