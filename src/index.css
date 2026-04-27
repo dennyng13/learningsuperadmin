@@ -299,6 +299,36 @@ button[disabled] {
   .overflow-y-auto::-webkit-scrollbar-thumb:hover {
     @apply bg-muted-foreground/40;
   }
+
+  /* Prominent scrollbar — dùng cho dialog/popup nhiều nội dung
+     để người dùng dễ nhận biết có thể cuộn. */
+  .scrollbar-prominent {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted-foreground) / 0.5) hsl(var(--muted) / 0.4);
+  }
+  .scrollbar-prominent::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  .scrollbar-prominent::-webkit-scrollbar-track {
+    background-color: hsl(var(--muted) / 0.4);
+    border-radius: 9999px;
+    margin-block: 6px;
+  }
+  .scrollbar-prominent::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--muted-foreground) / 0.45);
+    border: 2px solid transparent;
+    background-clip: content-box;
+    border-radius: 9999px;
+    min-height: 36px;
+    transition: background-color 0.15s ease;
+  }
+  .scrollbar-prominent::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--primary) / 0.7);
+  }
+  .scrollbar-prominent::-webkit-scrollbar-thumb:active {
+    background-color: hsl(var(--primary));
+  }
 }
 
 @keyframes note-flash {
