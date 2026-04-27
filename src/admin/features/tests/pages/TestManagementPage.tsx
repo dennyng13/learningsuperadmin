@@ -490,13 +490,33 @@ export default function TestManagementPage() {
         </div>
       ) : (
         <div className="space-y-3">
+          {filtered.length > 0 && (
+            <div className="flex items-center gap-2 px-1 text-xs text-muted-foreground">
+              <Checkbox
+                checked={bulkSel.allSelected}
+                onCheckedChange={() => bulkSel.toggleAll()}
+                aria-label="Chọn tất cả"
+              />
+              <span>
+                {bulkSel.count > 0 ? `Đã chọn ${bulkSel.count} / ${filtered.length}` : `Chọn tất cả`}
+              </span>
+            </div>
+          )}
           {filtered.map((test) => {
             const st = statusLabels[test.status] || statusLabels.draft;
             return (
               <div
                 key={test.id}
-                className="bg-card rounded-xl border p-4 flex items-center gap-4 hover:shadow-sm transition-shadow"
+                className={cn(
+                  "bg-card rounded-xl border p-4 flex items-center gap-4 hover:shadow-sm transition-shadow",
+                  bulkSel.isSelected(test.id) && "border-primary/40 bg-primary/5",
+                )}
               >
+                <Checkbox
+                  checked={bulkSel.isSelected(test.id)}
+                  onCheckedChange={() => bulkSel.toggle(test.id)}
+                  aria-label={`Chọn ${test.name}`}
+                />
                 <div className="w-10 h-10 rounded-lg bg-dark flex items-center justify-center flex-shrink-0">
                   <FileText className="h-5 w-5 text-primary" />
                 </div>
