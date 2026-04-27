@@ -22,6 +22,8 @@ import { cn } from "@shared/lib/utils";
 import ResourceTagManager from "@admin/features/settings/components/ResourceTagManager";
 import QuestionTypeBadge from "@shared/components/misc/QuestionTypeBadge";
 import { ALL_TYPE_LABELS_EN as ALL_QUESTION_TYPE_LABELS } from "@shared/utils/questionTypes";
+import { ResourceFilterBar } from "@shared/components/resources/ResourceFilterBar";
+import { useResourceList } from "@shared/hooks/useResourceList";
 
 const statusLabels: Record<string, { label: string; className: string }> = {
   published: { label: "Published", className: "bg-primary/15 text-primary" },
@@ -52,10 +54,12 @@ export default function TestManagementPage() {
   const [levelFilters, setLevelFilters] = useState<Set<string>>(new Set());
   const [sectionFilters, setSectionFilters] = useState<Set<string>>(new Set());
   const [programFilters, setProgramFilters] = useState<Set<string>>(new Set());
+  const [courseFilters, setCourseFilters] = useState<Set<string>>(new Set());
   const [levelExpanded, setLevelExpanded] = useState(false);
   const [statusExpanded, setStatusExpanded] = useState(false);
   const [sectionExpanded, setSectionExpanded] = useState(false);
   const [programExpanded, setProgramExpanded] = useState(false);
+  const [courseExpanded, setCourseExpanded] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [syncedAssessmentIds, setSyncedAssessmentIds] = useState<Set<string>>(new Set());
   const [assessmentQuestionTypes, setAssessmentQuestionTypes] = useState<Record<string, string[]>>({});
@@ -146,10 +150,21 @@ export default function TestManagementPage() {
 
   const PROGRAM_LABELS: Record<string, string> = { ielts: "IELTS", wre: "WRE", customized: "Customized", other: "Khác" };
 
-  const hasFilters = statusFilters.size > 0 || levelFilters.size > 0 || sectionFilters.size > 0 || programFilters.size > 0 || search.trim().length > 0;
-  const clearFilters = () => { setStatusFilters(new Set()); setLevelFilters(new Set()); setSectionFilters(new Set()); setProgramFilters(new Set()); setSearch(""); setShowSearch(false); };
+  const hasFilters = statusFilters.size > 0 || levelFilters.size > 0 || sectionFilters.size > 0 || programFilters.size > 0 || courseFilters.size > 0 || search.trim().length > 0;
+  const clearFilters = () => { setStatusFilters(new Set()); setLevelFilters(new Set()); setSectionFilters(new Set()); setProgramFilters(new Set()); setCourseFilters(new Set()); setSearch(""); setShowSearch(false); };
 
-  const filtered = (assessments || []).filter((t) => {
+  // Stage 1: Program + Course (pivot)
+  const {
+    filtered: programCourseFiltered,
+    matched: matchedToCourse,
+    untagged: untaggedItems,
+  } = useResourceList("assessment", (assessments || []) as any, {
+    programIds: programFilters,
+    courseIds: courseFilters,
+    includeUntagged: true,
+  });
+
+  const filtered = (programCourseFiltered as any[]).filter((t) => {
     // Content type filter
     if (contentTypeFilter !== "all" && (t as any).content_type !== contentTypeFilter) return false;
     if (search.trim()) {
@@ -159,7 +174,6 @@ export default function TestManagementPage() {
     if (statusFilters.size > 0 && !statusFilters.has(t.status)) return false;
     if (levelFilters.size > 0 && (!(t as any).course_level || !levelFilters.has((t as any).course_level))) return false;
     if (sectionFilters.size > 0 && !sectionFilters.has(t.section_type)) return false;
-    if (programFilters.size > 0 && (!(t as any).program || !programFilters.has((t as any).program))) return false;
     return true;
   });
 
@@ -326,27 +340,23 @@ export default function TestManagementPage() {
             </button>
           </>
 
-          {/* Program toggle */}
-          {usedPrograms.length > 0 && (
-            <>
-              <span className="h-5 w-px bg-border mx-0.5" />
-              <button
-                onClick={() => setProgramExpanded(!programExpanded)}
-                className={cn(
-                  "flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold transition-all cursor-pointer shadow-sm",
-                  programFilters.size > 0
-                    ? "bg-primary/10 text-primary border-primary/30"
-                    : "bg-card border-border text-muted-foreground hover:text-foreground hover:border-primary/40"
-                )}
-              >
-                Chương trình
-                {programFilters.size > 0 && (
-                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground">{programFilters.size}</span>
-                )}
-                <ChevronDown className={cn("h-3 w-3 transition-transform", programExpanded && "rotate-180")} />
-              </button>
-            </>
-          )}
+          {/* Program + Course (cascading, dùng chung component) */}
+          <span className="h-5 w-px bg-border mx-0.5" />
+          <ResourceFilterBar
+            programIds={programFilters}
+            courseIds={courseFilters}
+            onProgramsChange={(next) => {
+              setProgramFilters(next);
+              if (next.size === 0) setCourseFilters(new Set());
+            }}
+            onCoursesChange={setCourseFilters}
+            programExpanded={programExpanded}
+            courseExpanded={courseExpanded}
+            onToggleProgram={() => setProgramExpanded(!programExpanded)}
+            onToggleCourse={() => setCourseExpanded(!courseExpanded)}
+            matchedCount={matchedToCourse.length}
+            untaggedCount={untaggedItems.length}
+          />
 
           <span className="text-xs text-muted-foreground ml-auto">{filtered.length} / {(assessments || []).length} đề thi</span>
         </div>
@@ -437,35 +447,6 @@ export default function TestManagementPage() {
           </div>
         )}
 
-        {/* Program chips row */}
-        {programExpanded && usedPrograms.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2 animate-in slide-in-from-top-2 duration-200 pl-1">
-            {usedPrograms.map(prog => {
-              const count = (assessments || []).filter(t => (t as any).program === prog).length;
-              const active = programFilters.has(prog);
-              return (
-                <button
-                  key={prog}
-                  onClick={() => toggleFilter(setProgramFilters, prog)}
-                  className={cn(
-                    "flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border text-xs font-semibold transition-all cursor-pointer shadow-sm",
-                    active
-                      ? "bg-primary text-primary-foreground border-primary shadow-primary/20 scale-105"
-                      : "bg-card border-border text-foreground hover:border-primary/40 hover:shadow-md"
-                  )}
-                >
-                  {PROGRAM_LABELS[prog] || prog}
-                  <span className={cn(
-                    "text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center",
-                    active ? "bg-primary-foreground/20 text-primary-foreground" : "bg-muted text-muted-foreground"
-                  )}>
-                    {count}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        )}
       </div>
 
       {/* Test list */}
