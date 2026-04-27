@@ -293,7 +293,7 @@ export default function CourseEditorDialog({
         </div>
 
         {/* ─── Body ─── */}
-        <ScrollArea className="flex-1">
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
           <div className="px-6 py-5 space-y-5">
             {step === 0 && (
               <StepLevels
@@ -345,7 +345,7 @@ export default function CourseEditorDialog({
               />
             )}
           </div>
-        </ScrollArea>
+        </div>
 
         {/* ─── Footer với step nav ─── */}
         <div className="px-6 py-3 border-t bg-muted/20 flex items-center justify-between gap-3">
