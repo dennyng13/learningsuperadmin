@@ -177,6 +177,7 @@ export function useCourses(opts: { programId?: string; withStats?: boolean } = {
   const { programId, withStats = true } = opts;
   const [courses, setCourses] = useState<Course[]>([]);
   const [stats, setStats] = useState<Record<string, CourseStats>>({});
+  const [studyPlanNames, setStudyPlanNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -189,6 +190,23 @@ export function useCourses(opts: { programId?: string; withStats?: boolean } = {
       if (withStats) {
         const s = await fetchCourseStats(list);
         setStats(s);
+      }
+      // Resolve study plan template names cho các course đang hiển thị
+      const allTemplateIds = Array.from(
+        new Set(list.flatMap((c) => c.study_plan_ids)),
+      );
+      if (allTemplateIds.length > 0) {
+        const { data: tpls } = await (supabase as any)
+          .from("study_plan_templates")
+          .select("id, template_name")
+          .in("id", allTemplateIds);
+        const map: Record<string, string> = {};
+        for (const t of (tpls ?? []) as Array<{ id: string; template_name: string }>) {
+          map[t.id] = t.template_name;
+        }
+        setStudyPlanNames(map);
+      } else {
+        setStudyPlanNames({});
       }
     } catch (e: any) {
       setError(e?.message ?? "fetch failed");
@@ -211,6 +229,12 @@ export function useCourses(opts: { programId?: string; withStats?: boolean } = {
 
   const getStats = useMemo(() => (courseId: string): CourseStats =>
     stats[courseId] ?? EMPTY_STATS, [stats]);
+
+  const getStudyPlanNames = useMemo(
+    () => (templateIds: string[]): Array<{ id: string; name: string }> =>
+      templateIds.map((id) => ({ id, name: studyPlanNames[id] ?? "Plan" })),
+    [studyPlanNames],
+  );
 
   /* ── CRUD ─────────────────────────────────────────────────────────────── */
   async function syncLevels(courseId: string, levelIds: string[]) {
@@ -286,5 +310,9 @@ export function useCourses(opts: { programId?: string; withStats?: boolean } = {
     await refetch();
   }
 
-  return { courses, loading, error, refetch, getStats, create, update, remove };
+  return {
+    courses, loading, error, refetch,
+    getStats, getStudyPlanNames,
+    create, update, remove,
+  };
 }
