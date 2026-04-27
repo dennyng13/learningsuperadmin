@@ -283,7 +283,7 @@ export default function PracticeExercisesPage() {
     if (!editing) { editorLoadedRef.current = false; return; }
     if (!editorLoadedRef.current) { editorLoadedRef.current = true; return; }
     setIsDirty(true);
-  }, [title, description, program, skill, groups, difficulty, courseLevel, passage, audioUrl, transcript, diagramUrl, timerEnabled, timerDuration, scoringMode, allowRetake]);
+  }, [title, description, program, skill, groups, difficulty, courseLevel, passage, audioUrl, transcript, diagramUrl, timerEnabled, timerDuration, scoringMode, allowRetake, editingCourseIds]);
 
   useEffect(() => {
     if (!isDirty || !editing) return;
