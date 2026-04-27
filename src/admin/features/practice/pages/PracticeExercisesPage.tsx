@@ -1233,28 +1233,25 @@ export default function PracticeExercisesPage() {
             </>
           )}
 
-          {/* Program toggle */}
-          {usedPrograms.length > 0 && (
-            <>
-              <span className="h-5 w-px bg-border mx-0.5" />
-              <button
-                onClick={() => setProgramExpanded(!programExpanded)}
-                className={cn(
-                  "flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold transition-all cursor-pointer shadow-sm",
-                  filterPrograms.size > 0
-                    ? "bg-primary/10 text-primary border-primary/30"
-                    : "bg-card border-border text-muted-foreground hover:text-foreground hover:border-primary/40"
-                )}
-              >
-                <Tags className="h-3.5 w-3.5" />
-                Chương trình
-                {filterPrograms.size > 0 && (
-                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground">{filterPrograms.size}</span>
-                )}
-                <ChevronDown className={cn("h-3 w-3 transition-transform", programExpanded && "rotate-180")} />
-              </button>
-            </>
-          )}
+          {/* Program + Course (cascading, dùng chung component) */}
+          <span className="h-5 w-px bg-border mx-0.5" />
+          <div className="contents">
+            <ResourceFilterBar
+              programIds={filterPrograms}
+              courseIds={filterCourses}
+              onProgramsChange={(next) => {
+                setFilterPrograms(next);
+                if (next.size === 0) setFilterCourses(new Set());
+              }}
+              onCoursesChange={setFilterCourses}
+              programExpanded={programExpanded}
+              courseExpanded={courseExpanded}
+              onToggleProgram={() => setProgramExpanded(!programExpanded)}
+              onToggleCourse={() => setCourseExpanded(!courseExpanded)}
+              matchedCount={matchedToCourse.length}
+              untaggedCount={untaggedItems.length}
+            />
+          </div>
 
           {/* Skill toggle */}
           {usedSkills.length > 1 && (
