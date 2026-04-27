@@ -1,10 +1,10 @@
-import { Calendar, MapPin, Users, User, BookOpen, Clock } from "lucide-react";
+import { Calendar, MapPin, Users, User, BookOpen, Clock, GraduationCap, Wallet } from "lucide-react";
 import ClassStatusBadge from "@shared/components/admin/ClassStatusBadge";
 import type { ClassLifecycleStatus } from "@shared/components/admin/ClassStatusBadge";
 
-/* Subset of teachngo_classes columns referenced by detail page. Sử dụng
+/* Subset of v_class_full columns referenced by detail page. Sử dụng
  * `any`-like typing vì supabase types.ts (read-only) chưa có cột mới sau
- * migration (name, class_code, lifecycle_status, branch, ...). */
+ * migration P4a (course_id, price_vnd_override, course_*, ...). */
 export interface ClassDetail {
   id: string;
   // legacy column (vẫn còn trong types.ts)
@@ -22,7 +22,10 @@ export interface ClassDetail {
   room?: string | null;
   schedule?: string | null;
   teacher_name?: string | null;
+  teacher_name_legacy?: string | null;
   teacher_id?: string | null;
+  teacher_full_name?: string | null;
+  teacher_avatar_url?: string | null;
   start_date?: string | null;
   end_date?: string | null;
   default_start_time?: string | null;
@@ -31,17 +34,51 @@ export interface ClassDetail {
   max_students?: number | null;
   data_source?: string | null;
   study_plan_id?: string | null;
+  study_plan_name?: string | null;
+  study_plan_total_sessions?: number | null;
   description?: string | null;
   class_type?: string | null;
   leaderboard_enabled?: boolean | null;
+  // Course inheritance (from v_class_full)
+  course_id?: string | null;
+  course_name?: string | null;
+  course_slug?: string | null;
+  course_color_key?: string | null;
+  course_icon_key?: string | null;
+  course_price_vnd?: number | null;
+  price_vnd_override?: number | null;
+  effective_price_vnd?: number | null;
+  // Counts (from v_class_full)
+  active_student_count?: number | null;
+  total_student_count?: number | null;
+  sessions_total?: number | null;
+  sessions_completed?: number | null;
+  sessions_upcoming?: number | null;
+  pending_invitations?: number | null;
 }
 
-export function ClassInfoCard({ cls }: { cls: ClassDetail }) {
+function formatVND(amount?: number | null): string | null {
+  if (amount == null) return null;
+  return amount.toLocaleString("vi-VN") + "₫";
+}
+
+export function ClassInfoCard({
+  cls,
+  showFinancial = true,
+}: {
+  cls: ClassDetail;
+  /** Hiển thị giá lớp + course price (chỉ admin). Default true. */
+  showFinancial?: boolean;
+}) {
   const period = formatDateRange(cls.start_date, cls.end_date);
   const time =
     cls.default_start_time && cls.default_end_time
       ? `${cls.default_start_time.slice(0, 5)}–${cls.default_end_time.slice(0, 5)}`
       : null;
+
+  const teacherDisplay = cls.teacher_full_name || cls.teacher_name || cls.teacher_name_legacy;
+  const studentCount = cls.active_student_count ?? cls.student_count ?? 0;
+  const priceDisplay = formatVND(cls.effective_price_vnd ?? cls.price_vnd_override ?? cls.course_price_vnd);
 
   return (
     <div className="rounded-2xl border bg-card p-4 sm:p-5 space-y-3">
@@ -57,6 +94,15 @@ export function ClassInfoCard({ cls }: { cls: ClassDetail }) {
               <BookOpen className="h-3 w-3" />
               {cls.program}
               {cls.level && <span className="opacity-70"> · {cls.level}</span>}
+            </span>
+          )}
+          {cls.course_id && cls.course_name && (
+            <span
+              className="inline-flex items-center gap-1 rounded-full border bg-primary/5 px-2 py-0.5 text-[11px] font-medium text-primary"
+              title="Khoá học gốc"
+            >
+              <GraduationCap className="h-3 w-3" />
+              {cls.course_name}
             </span>
           )}
           {cls.mode && (
@@ -82,14 +128,24 @@ export function ClassInfoCard({ cls }: { cls: ClassDetail }) {
         <InfoRow icon={Calendar} label="Thời gian" value={period} />
         {time && <InfoRow icon={Clock} label="Khung giờ" value={time} />}
         {cls.schedule && <InfoRow icon={Calendar} label="Lịch" value={cls.schedule} />}
-        {cls.teacher_name && <InfoRow icon={User} label="GV chính" value={cls.teacher_name} />}
+        {teacherDisplay && <InfoRow icon={User} label="GV chính" value={teacherDisplay} />}
         {cls.branch && <InfoRow icon={MapPin} label="Cơ sở" value={cls.branch} />}
         {cls.room && <InfoRow icon={MapPin} label="Phòng" value={cls.room} />}
         <InfoRow
           icon={Users}
           label="Học viên"
-          value={`${cls.student_count ?? 0}${cls.max_students ? ` / ${cls.max_students}` : ""}`}
+          value={`${studentCount}${cls.max_students ? ` / ${cls.max_students}` : ""}`}
         />
+        {showFinancial && priceDisplay && (
+          <InfoRow
+            icon={Wallet}
+            label={cls.price_vnd_override != null ? "Giá lớp (override)" : "Giá lớp"}
+            value={priceDisplay}
+          />
+        )}
+        {cls.study_plan_name && (
+          <InfoRow icon={BookOpen} label="Study plan" value={cls.study_plan_name} />
+        )}
       </div>
     </div>
   );
