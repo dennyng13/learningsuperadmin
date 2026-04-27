@@ -183,6 +183,28 @@ export default function CourseCard({
         </div>
       </Section>
 
+      {/* ─── 2b. Đối tượng phù hợp + Vấn đề giải quyết ─── */}
+      {(course.target_audience || course.problem_solving) && (
+        <div className="px-4 pb-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {course.target_audience && (
+            <RichBlock
+              icon={<UserCheck className={cn("h-3 w-3", palette.iconText)} />}
+              label="Phù hợp với"
+              text={course.target_audience}
+              tone={palette}
+            />
+          )}
+          {course.problem_solving && (
+            <RichBlock
+              icon={<Target className={cn("h-3 w-3", palette.iconText)} />}
+              label="Khoá học giúp bạn"
+              text={course.problem_solving}
+              tone={palette}
+            />
+          )}
+        </div>
+      )}
+
       {/* ─── 3. Thống kê (4 ô đồng đều) ─── */}
       <Section
         icon={<Layers className={cn("h-3 w-3", palette.iconText)} />}
