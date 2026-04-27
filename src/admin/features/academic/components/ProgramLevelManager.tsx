@@ -116,7 +116,7 @@ export default function ProgramLevelManager({ program, allLevels, onChanged }: P
         <div className="flex items-center gap-2">
           <Layers className="h-4 w-4 text-primary" />
           <h3 className="font-display font-bold text-sm">
-            Cấp độ trong khóa ({display.length})
+            Khoá học/ Cấp độ trong Chương trình ({display.length})
           </h3>
         </div>
         <div className="flex items-center gap-1">
