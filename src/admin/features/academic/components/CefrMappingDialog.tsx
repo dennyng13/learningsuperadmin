@@ -11,6 +11,7 @@ import { Input } from "@shared/components/ui/input";
 import { cn } from "@shared/lib/utils";
 import type { CourseLevel } from "@shared/hooks/useCourseLevels";
 import type { CourseProgram } from "@admin/features/academic/hooks/useCoursesAdmin";
+import { refreshLevelCefrMap } from "@shared/hooks/useLevelCefrMap";
 
 /**
  * CefrMappingDialog — Map hàng loạt CEFR (A1..C2) cho từng cấp độ.
@@ -22,6 +23,19 @@ import type { CourseProgram } from "@admin/features/academic/hooks/useCoursesAdm
 
 const CEFR_VALUES = ["A1", "A2", "B1", "B2", "C1", "C2"] as const;
 type Cefr = (typeof CEFR_VALUES)[number];
+
+/**
+ * Quy đổi điểm IELTS → CEFR (theo bảng chính thức của British Council / IELTS).
+ * Dùng làm helper cho suggest CEFR khi user chỉ điền điểm hoặc khớp gợi ý.
+ */
+function ieltsToCefr(band: number): Cefr {
+  if (band >= 8.5) return "C2";
+  if (band >= 7.0) return "C1";
+  if (band >= 5.5) return "B2";
+  if (band >= 4.0) return "B1";
+  if (band >= 3.0) return "A2";
+  return "A1";
+}
 
 /**
  * IELTS chỉ chấp nhận band .0 hoặc .5 trong khoảng 0–9.
@@ -47,27 +61,26 @@ function formatBand(n: number): string {
 /** Suggest điểm IELTS theo tên cấp độ — đồng bộ với suggestCefr. */
 function suggestTargetScore(name: string): number | null {
   const n = name.toLowerCase();
-  if (n.includes("căng buồm")) return 2.5;
-  if (n.includes("đón gió 1")) return 3.5;
+  // Lộ trình IELTS chuẩn: mỗi cấp +0.5–1.0 band, kết Ra khơi 2 = 7.5 (C1).
+  if (n.includes("căng buồm")) return 3.0;
+  if (n.includes("đón gió 1")) return 4.0;
   if (n.includes("đón gió 2")) return 4.5;
-  if (n.includes("lướt sóng 1")) return 5.5;
-  if (n.includes("lướt sóng 2")) return 6.0;
+  if (n.includes("lướt sóng 1")) return 5.0;
+  if (n.includes("lướt sóng 2")) return 5.5;
   if (n.includes("ra khơi 1")) return 6.5;
   if (n.includes("ra khơi 2")) return 7.5;
   return null;
 }
 
-/** Suggest CEFR theo tên cấp độ — gợi ý mặc định cho IELTS path. */
+/**
+ * Suggest CEFR theo tên cấp độ — DERIVE từ điểm IELTS để luôn nhất quán
+ * với bảng quy đổi chính thức. Tránh tình trạng score gợi ý 5.5 (= B2) mà
+ * CEFR gợi ý lại là B1.
+ */
 function suggestCefr(name: string): Cefr[] {
-  const n = name.toLowerCase();
-  if (n.includes("căng buồm")) return ["A1"];
-  if (n.includes("đón gió 1")) return ["A1"];
-  if (n.includes("đón gió 2")) return ["A2"];
-  if (n.includes("lướt sóng 1")) return ["B1"];
-  if (n.includes("lướt sóng 2")) return ["B1"];
-  if (n.includes("ra khơi 1")) return ["B2"];
-  if (n.includes("ra khơi 2")) return ["C1"];
-  return [];
+  const score = suggestTargetScore(name);
+  if (score == null) return [];
+  return [ieltsToCefr(score)];
 }
 
 interface Props {
@@ -226,6 +239,8 @@ export default function CefrMappingDialog({ open, onOpenChange, levels, programs
       if (changed.length) parts.push(`CEFR cho ${changed.length} cấp độ`);
       if (scoreChanged.length) parts.push(`điểm cho ${scoreChanged.length} cấp độ`);
       toast.success(`Đã lưu ${parts.join(" và ")}`);
+      // Đẩy invalidate cache để mọi UI dùng useLevelCefrMap thấy ngay
+      await refreshLevelCefrMap();
       await onSaved?.();
       onOpenChange(false);
     } catch (err: any) {
