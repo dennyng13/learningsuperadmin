@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useTemplateMutations, type StudyPlanTemplate } from "@shared/hooks/useStudyPlanTemplates";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@shared/components/ui/dialog";
 import { Input } from "@shared/components/ui/input";
@@ -10,14 +10,22 @@ import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTeacherAccessScope } from "@shared/hooks/useTeacherAccessScope";
-import { Loader2, School, UserCheck, Calendar, Sparkles } from "lucide-react";
+import { Loader2, School, UserCheck, Calendar, Sparkles, Search, Filter, BookOpen, GraduationCap } from "lucide-react";
 import { Badge } from "@shared/components/ui/badge";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@shared/components/ui/breadcrumb";
+import { usePrograms } from "@shared/hooks/usePrograms";
+import { getProgramLabel } from "@shared/utils/programColors";
 
 const DAYS = [
   { value: "mon", label: "T2" }, { value: "tue", label: "T3" }, { value: "wed", label: "T4" },
   { value: "thu", label: "T5" }, { value: "fri", label: "T6" }, { value: "sat", label: "T7" }, { value: "sun", label: "CN" },
 ];
+
+/**
+ * Một số chương trình (vd. Customized) không phân khoá học → bỏ filter khoá.
+ * Có thể mở rộng danh sách này khi xuất hiện program tương tự.
+ */
+const PROGRAMS_WITHOUT_COURSE = new Set(["customized", "other"]);
 
 interface Props {
   template: StudyPlanTemplate;
@@ -28,6 +36,7 @@ interface Props {
 export function CloneTemplateDialog({ template, teacherMode = false, onClose }: Props) {
   const { cloneTemplate } = useTemplateMutations();
   const { data: scope } = useTeacherAccessScope();
+  const { programs } = usePrograms();
 
   const [tab, setTab] = useState<"class" | "student">("class");
   const [selectedClassIds, setSelectedClassIds] = useState<string[]>([]);
@@ -38,20 +47,69 @@ export function CloneTemplateDialog({ template, teacherMode = false, onClose }: 
   const [days, setDays] = useState<string[]>(template.schedule_pattern?.days || ["mon", "wed", "fri"]);
   const [autoFromClass, setAutoFromClass] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [searchClass, setSearchClass] = useState("");
+  const [searchStudent, setSearchStudent] = useState("");
+
+  // Resolve chương trình của template từ DB (an toàn hơn hardcode "IELTS"/"WRE"/"Customized")
+  const tplProgramKey = (template.program || "").toLowerCase();
+  const tplProgram = useMemo(
+    () => programs.find((p) => p.key.toLowerCase() === tplProgramKey),
+    [programs, tplProgramKey],
+  );
+  const programDbName = tplProgram?.name; // tên chuẩn ở cột classes.program
+  const programHasCourse = tplProgramKey && !PROGRAMS_WITHOUT_COURSE.has(tplProgramKey);
+
+  // Filters trong dialog: cho phép tắt từng filter để mở rộng phạm vi nếu cần
+  const [filterByCourse, setFilterByCourse] = useState<boolean>(!!(template as any).course_id && programHasCourse);
+  const [filterByLevel, setFilterByLevel] = useState<boolean>(!!template.assigned_level);
+
+  // Levels thuộc course của template — dùng để OR-match `classes.level`
+  // (vì classes hiện chưa có cột course_id, ta map qua course_level_links → course_levels.name).
+  const { data: courseLevelNames = [] } = useQuery({
+    queryKey: ["clone-course-level-names", (template as any).course_id],
+    enabled: !!(template as any).course_id && programHasCourse,
+    queryFn: async () => {
+      const courseId = (template as any).course_id as string;
+      const { data: links } = await (supabase as any)
+        .from("course_level_links")
+        .select("level_id")
+        .eq("course_id", courseId);
+      const levelIds = (links || []).map((l: any) => l.level_id);
+      if (levelIds.length === 0) return [] as string[];
+      const { data: lvs } = await (supabase as any)
+        .from("course_levels")
+        .select("name")
+        .in("id", levelIds);
+      return (lvs || []).map((l: any) => l.name as string);
+    },
+  });
 
   const { data: classes } = useQuery({
-    queryKey: ["classes-clone", template.program, teacherMode, scope?.teacherId, scope?.canViewAllClasses],
+    queryKey: ["classes-clone", programDbName, teacherMode, scope?.teacherId, scope?.canViewAllClasses],
     queryFn: async () => {
       let q = (supabase as any).from("classes" as any).select("id, class_name, program, level, start_date, end_date, schedule").order("class_name");
-      if (template.program) {
-        const programNorm = template.program === "customized" ? "Customized" : template.program === "wre" ? "WRE" : "IELTS";
-        q = q.eq("program", programNorm);
-      }
+      // Lọc theo program qua tên chuẩn từ bảng `programs` (không hardcode)
+      if (programDbName) q = q.eq("program", programDbName);
       if (teacherMode && !scope?.canViewAllClasses && scope?.teacherId) q = q.eq("teacher_id", scope.teacherId);
       const { data } = await q;
       return data || [];
     },
   });
+
+  // Lọc client-side theo course / level / search
+  const filteredClasses = useMemo(() => {
+    let arr = classes || [];
+    if (filterByCourse && programHasCourse && courseLevelNames.length > 0) {
+      const set = new Set(courseLevelNames);
+      arr = arr.filter((c: any) => c.level && set.has(c.level));
+    }
+    if (filterByLevel && template.assigned_level) {
+      arr = arr.filter((c: any) => c.level === template.assigned_level);
+    }
+    const q = searchClass.trim().toLowerCase();
+    if (q) arr = arr.filter((c: any) => (c.class_name || "").toLowerCase().includes(q));
+    return arr;
+  }, [classes, filterByCourse, filterByLevel, programHasCourse, courseLevelNames, template.assigned_level, searchClass]);
 
   const { data: students } = useQuery({
     queryKey: ["students-clone", teacherMode, scope?.teacherId, scope?.canViewAllClasses],
@@ -69,6 +127,13 @@ export function CloneTemplateDialog({ template, teacherMode = false, onClose }: 
       return data || [];
     },
   });
+
+  const filteredStudents = useMemo(() => {
+    const arr = students || [];
+    const q = searchStudent.trim().toLowerCase();
+    if (!q) return arr;
+    return arr.filter((s: any) => (s.full_name || "").toLowerCase().includes(q));
+  }, [students, searchStudent]);
 
   // When user picks a class with start/end date, auto-fill (if autoFromClass)
   const onPickClass = (id: string) => {
