@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { Link, useParams, Navigate } from "react-router-dom";
 import {
-  ArrowLeft, EyeOff, Layers, Loader2, Pencil,
+  ArrowLeft, BookOpen, EyeOff, Layers, Loader2, Pencil,
 } from "lucide-react";
 import { Button } from "@shared/components/ui/button";
 import { useCoursesAdmin } from "@admin/features/academic/hooks/useCoursesAdmin";
