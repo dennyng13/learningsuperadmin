@@ -113,7 +113,6 @@ export default function CoursesPage() {
               <ProgramDetailTab
                 program={p}
                 levels={levels}
-                onEdit={() => undefined}
                 onChanged={handleProgramChanged}
               />
             </TabsContent>
