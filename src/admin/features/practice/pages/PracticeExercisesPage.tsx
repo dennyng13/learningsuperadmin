@@ -207,6 +207,35 @@ export default function PracticeExercisesPage() {
     }
   }, [editing, existingResourceCourses.length]);
 
+  // Lookup program → resolve programId cho useCourses
+  const { programs: allPrograms } = usePrograms();
+  const editingProgramId = useMemo(
+    () => allPrograms.find((p) => p.key.toLowerCase() === program?.toLowerCase())?.id,
+    [allPrograms, program],
+  );
+  const { courses: programCoursesForEditor } = useCourses({
+    programId: editingProgramId,
+    withStats: false,
+  });
+
+  /**
+   * Khi đổi program: drop các course không thuộc program mới (tránh dữ liệu mồ
+   * côi). Chỉ chạy khi đã load xong courses (length>0 hoặc programId trống).
+   */
+  useEffect(() => {
+    if (!editing) return;
+    if (editingCourseIds.length === 0) return;
+    if (!editingProgramId) {
+      setEditingCourseIds([]);
+      return;
+    }
+    if (programCoursesForEditor.length === 0) return;
+    const validIds = new Set(programCoursesForEditor.map((c) => c.id));
+    const next = editingCourseIds.filter((id) => validIds.has(id));
+    if (next.length !== editingCourseIds.length) setEditingCourseIds(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editingProgramId, programCoursesForEditor.length]);
+
   // Expanded groups
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const toggleGroup = (id: string) => {
