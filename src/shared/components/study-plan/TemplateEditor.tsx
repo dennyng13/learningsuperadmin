@@ -8,7 +8,7 @@ import { Button } from "@shared/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@shared/components/ui/select";
 import { Badge } from "@shared/components/ui/badge";
 import { toast } from "sonner";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, AlertTriangle } from "lucide-react";
 import { SessionCard, SESSION_TYPES } from "./SessionCard";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,6 +17,8 @@ import { usePrograms } from "@shared/hooks/usePrograms";
 import { getProgramIcon, getProgramLabel } from "@shared/utils/programColors";
 import { useCourses } from "@/admin/features/academic/hooks/useCourses";
 import { GraduationCap } from "lucide-react";
+import { useAssignmentMapForResources } from "@shared/hooks/useResourceCourses";
+import { Alert, AlertDescription, AlertTitle } from "@shared/components/ui/alert";
 
 interface Props {
   template: Partial<StudyPlanTemplate> | {};
@@ -188,6 +190,92 @@ export function TemplateEditor({ template, onClose }: Props) {
       return data || [];
     },
   });
+
+  // ------------------------------------------------------------------
+  // Mismatch detection: when admin changes Program / Course, surface any
+  // resources already pinned in `entries` that no longer fit the new scope.
+  // ------------------------------------------------------------------
+  const allExerciseIds = useMemo(
+    () => Array.from(new Set(entries.flatMap((e) => e.exercise_ids || []))),
+    [entries],
+  );
+  const allFlashcardIds = useMemo(
+    () => Array.from(new Set(entries.flatMap((e) => e.flashcard_set_ids || []))),
+    [entries],
+  );
+  const allAssessmentIds = useMemo(
+    () => Array.from(new Set(entries.flatMap((e) => e.assessment_ids || []))),
+    [entries],
+  );
+
+  const { data: exMap = {} } = useAssignmentMapForResources("exercise", allExerciseIds);
+  const { data: fcMap = {} } = useAssignmentMapForResources("flashcard_set", allFlashcardIds);
+  const { data: asMap = {} } = useAssignmentMapForResources("assessment", allAssessmentIds);
+
+  const mismatch = useMemo(() => {
+    const exIds = new Set((exercises || []).map((r: any) => r.id));
+    const fcIds = new Set((flashcardSets || []).map((r: any) => r.id));
+    const asIds = new Set((assessments || []).map((r: any) => r.id));
+    const programOff = {
+      exercise: allExerciseIds.filter((id) => exercises && !exIds.has(id)),
+      flashcard_set: allFlashcardIds.filter((id) => flashcardSets && !fcIds.has(id)),
+      assessment: allAssessmentIds.filter((id) => assessments && !asIds.has(id)),
+    };
+    let courseOff: { exercise: string[]; flashcard_set: string[]; assessment: string[] } = {
+      exercise: [],
+      flashcard_set: [],
+      assessment: [],
+    };
+    if (form.course_id) {
+      const filt = (ids: string[], map: Record<string, string[]>) =>
+        ids.filter((id) => {
+          const courses = map[id] || [];
+          // untagged is OK; only flag if assigned to OTHER courses (not the picked one)
+          return courses.length > 0 && !courses.includes(form.course_id);
+        });
+      courseOff = {
+        exercise: filt(allExerciseIds, exMap),
+        flashcard_set: filt(allFlashcardIds, fcMap),
+        assessment: filt(allAssessmentIds, asMap),
+      };
+    }
+    const totalProgram =
+      programOff.exercise.length + programOff.flashcard_set.length + programOff.assessment.length;
+    const totalCourse =
+      courseOff.exercise.length + courseOff.flashcard_set.length + courseOff.assessment.length;
+    return { programOff, courseOff, totalProgram, totalCourse };
+  }, [
+    exercises,
+    flashcardSets,
+    assessments,
+    allExerciseIds,
+    allFlashcardIds,
+    allAssessmentIds,
+    exMap,
+    fcMap,
+    asMap,
+    form.course_id,
+  ]);
+
+  const removeMismatched = (scope: "program" | "course") => {
+    const target = scope === "program" ? mismatch.programOff : mismatch.courseOff;
+    const exSet = new Set(target.exercise);
+    const fcSet = new Set(target.flashcard_set);
+    const asSet = new Set(target.assessment);
+    setEntries((es) =>
+      es.map((e) => ({
+        ...e,
+        exercise_ids: (e.exercise_ids || []).filter((id: string) => !exSet.has(id)),
+        flashcard_set_ids: (e.flashcard_set_ids || []).filter((id: string) => !fcSet.has(id)),
+        assessment_ids: (e.assessment_ids || []).filter((id: string) => !asSet.has(id)),
+      })),
+    );
+    toast.success(
+      `Đã gỡ ${
+        target.exercise.length + target.flashcard_set.length + target.assessment.length
+      } resource lệch ${scope === "program" ? "chương trình" : "khoá học"}`,
+    );
+  };
 
   const addEntry = () => {
     setEntries(e => [...e, {
@@ -395,6 +483,57 @@ export function TemplateEditor({ template, onClose }: Props) {
               <Label className="text-base font-bold">Các buổi học ({entries.length})</Label>
               <Button size="sm" onClick={addEntry}><Plus className="w-3.5 h-3.5 mr-1" /> Thêm buổi</Button>
             </div>
+
+            {(mismatch.totalProgram > 0 || mismatch.totalCourse > 0) && (
+              <div className="space-y-2 mb-3">
+                {mismatch.totalProgram > 0 && (
+                  <Alert variant="destructive" className="border-amber-300 bg-amber-50 text-amber-900">
+                    <AlertTriangle className="h-4 w-4 !text-amber-600" />
+                    <AlertTitle className="text-sm">
+                      {mismatch.totalProgram} resource không thuộc chương trình{" "}
+                      <b>{getProgramLabel(form.program)}</b>
+                    </AlertTitle>
+                    <AlertDescription className="text-xs flex items-center justify-between gap-3 mt-1">
+                      <span>
+                        Các bài tập / flashcard / đề thi đã gán trước đây nay không còn xuất hiện trong danh sách của
+                        chương trình mới. Học viên sẽ không thấy chúng.
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-amber-400 text-amber-900 hover:bg-amber-100"
+                        onClick={() => removeMismatched("program")}
+                      >
+                        Gỡ {mismatch.totalProgram} resource lệch
+                      </Button>
+                    </AlertDescription>
+                  </Alert>
+                )}
+                {mismatch.totalCourse > 0 && (
+                  <Alert className="border-orange-300 bg-orange-50 text-orange-900">
+                    <AlertTriangle className="h-4 w-4 !text-orange-600" />
+                    <AlertTitle className="text-sm">
+                      {mismatch.totalCourse} resource đã gán cho khoá khác
+                    </AlertTitle>
+                    <AlertDescription className="text-xs flex items-center justify-between gap-3 mt-1">
+                      <span>
+                        Resource này được tag cho khoá học khác — không khớp khoá hiện tại. Bạn có thể gỡ hoặc giữ lại
+                        nếu muốn dùng chéo khoá.
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-orange-400 text-orange-900 hover:bg-orange-100"
+                        onClick={() => removeMismatched("course")}
+                      >
+                        Gỡ {mismatch.totalCourse} resource lệch khoá
+                      </Button>
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </div>
+            )}
+
             <div className="space-y-2">
               {entries.map((entry, idx) => (
                 <div key={idx} className="relative group">
