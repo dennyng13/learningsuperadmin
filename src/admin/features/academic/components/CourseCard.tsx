@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import {
   BookOpen, CheckCircle2, Layers, Users, CalendarDays, ClipboardList,
   Pencil, Trash2, EyeOff, PlayCircle, Sparkles, Plus, Star,
-  Wallet, Clock, UserCheck, Target,
+  Wallet, Clock, UserCheck, Target, Settings2,
 } from "lucide-react";
 import { Button } from "@shared/components/ui/button";
 import {
@@ -17,6 +17,7 @@ import { getLevelColorConfig } from "@shared/utils/levelColors";
 import type { Course, CourseStats } from "@admin/features/academic/hooks/useCourses";
 import type { CourseLevel } from "@shared/hooks/useCourseLevels";
 import CourseClassesDialog from "./CourseClassesDialog";
+import CourseStudyPlansDialog from "./CourseStudyPlansDialog";
 
 interface Props {
   course: Course;
@@ -29,14 +30,17 @@ interface Props {
   studyPlans?: Array<{ id: string; name: string }>;
   onEdit: () => void;
   onDelete: () => void;
+  /** Lưu danh sách study plan template ids cho khoá này. Plan đầu = default. */
+  onAssignStudyPlans?: (templateIds: string[]) => Promise<void>;
 }
 
 export default function CourseCard({
-  course, programKey, programName, stats, levels, studyPlans, onEdit, onDelete,
+  course, programKey, programName, stats, levels, studyPlans, onEdit, onDelete, onAssignStudyPlans,
 }: Props) {
   const palette = getProgramPalette(programKey);
   const isInactive = course.status === "inactive";
   const [showClasses, setShowClasses] = useState(false);
+  const [showPlans, setShowPlans] = useState(false);
 
   /** Format VND theo locale vi-VN, vd 3500000 -> "3.500.000 ₫". */
   const formattedPrice = useMemo(() => {
