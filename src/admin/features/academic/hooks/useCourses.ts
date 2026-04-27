@@ -28,6 +28,8 @@ export interface Course {
   status: "active" | "inactive";
   level_ids: string[];
   study_plan_ids: string[];
+  /** URL public của ảnh minh hoạ (Supabase Storage). */
+  image_url: string | null;
   // ── Rich descriptive fields (added 2026-04-27 migration) ─────────────────
   /** Markdown / multiline mô tả đối tượng phù hợp. */
   target_audience: string | null;
@@ -68,6 +70,7 @@ export interface CourseInput {
   hours_per_session?: number | null;
   max_students?: number | null;
   cefr_range?: string | null;
+  image_url?: string | null;
 }
 
 export interface CourseStats {
