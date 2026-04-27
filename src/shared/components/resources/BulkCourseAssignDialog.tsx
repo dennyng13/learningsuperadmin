@@ -22,11 +22,6 @@ import {
 import { Button } from "@shared/components/ui/button";
 import { Input } from "@shared/components/ui/input";
 import { Badge } from "@shared/components/ui/badge";
-import {
-  RadioGroup,
-  RadioGroupItem,
-} from "@shared/components/ui/radio-group";
-import { Label } from "@shared/components/ui/label";
 import { cn } from "@shared/lib/utils";
 import { GraduationCap, Loader2, Search, Check, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
@@ -200,11 +195,7 @@ export function BulkCourseAssignDialog({
         </DialogHeader>
 
         {/* Mode selector */}
-        <RadioGroup
-          value={mode}
-          onValueChange={(v) => setMode(v as Mode)}
-          className="grid grid-cols-3 gap-2"
-        >
+        <div className="grid grid-cols-3 gap-2">
           {(
             [
               { v: "add", label: "Thêm", desc: "Giữ khoá cũ, thêm khoá mới" },
@@ -212,24 +203,22 @@ export function BulkCourseAssignDialog({
               { v: "remove", label: "Gỡ", desc: "Bỏ các khoá đã chọn" },
             ] as { v: Mode; label: string; desc: string }[]
           ).map((opt) => (
-            <Label
+            <button
               key={opt.v}
-              htmlFor={`mode-${opt.v}`}
+              type="button"
+              onClick={() => setMode(opt.v)}
               className={cn(
-                "flex flex-col gap-0.5 rounded-md border p-2 cursor-pointer text-xs",
+                "flex flex-col items-start gap-0.5 rounded-md border p-2 text-xs text-left transition-colors",
                 mode === opt.v
-                  ? "border-primary bg-primary/5"
+                  ? "border-primary bg-primary/10"
                   : "border-border hover:border-primary/40",
               )}
             >
-              <div className="flex items-center gap-1.5">
-                <RadioGroupItem id={`mode-${opt.v}`} value={opt.v} />
-                <span className="font-semibold">{opt.label}</span>
-              </div>
+              <span className="font-semibold">{opt.label}</span>
               <span className="text-[10px] text-muted-foreground">{opt.desc}</span>
-            </Label>
+            </button>
           ))}
-        </RadioGroup>
+        </div>
 
         {mode === "replace" && (
           <div className="flex items-start gap-1.5 text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">
