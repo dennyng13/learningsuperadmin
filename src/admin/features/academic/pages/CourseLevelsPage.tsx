@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
   Plus, Pencil, Trash2, Loader2, Layers, ArrowLeft, AlertTriangle, Search, GripVertical,
-  Sparkles, Target,
+  Sparkles, Target, Languages,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,6 +18,7 @@ import { useCoursesAdmin, type CourseProgram } from "@admin/features/academic/ho
 import { useCourseLevels, type CourseLevel } from "@shared/hooks/useCourseLevels";
 import { getProgramIcon, getProgramPalette } from "@shared/utils/programColors";
 import LevelEditorDialog from "@admin/features/academic/components/LevelEditorDialog";
+import CefrMappingDialog from "@admin/features/academic/components/CefrMappingDialog";
 
 /**
  * /courses/levels — Trang quản lý "Khoá học (Cấp độ)" tập trung.
@@ -201,6 +202,7 @@ export default function CourseLevelsPage() {
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingLevel, setEditingLevel] = useState<CourseLevel | null>(null);
   const focusedRef = useRef(false);
+  const [cefrDialogOpen, setCefrDialogOpen] = useState(false);
 
   const openCreate = () => {
     setEditingLevel(null);
@@ -259,9 +261,19 @@ export default function CourseLevelsPage() {
             Mô tả đầu ra, điểm mục tiêu, CEFR, và Study Plan Template được khai báo ở đây.
           </p>
         </div>
-        <Button onClick={openCreate} size="sm" className="h-8 gap-1.5 shrink-0">
-          <Plus className="h-3.5 w-3.5" /> Tạo cấp độ
-        </Button>
+        <div className="flex items-center gap-2 shrink-0">
+          <Button
+            onClick={() => setCefrDialogOpen(true)}
+            size="sm"
+            variant="outline"
+            className="h-8 gap-1.5"
+          >
+            <Languages className="h-3.5 w-3.5" /> Map CEFR
+          </Button>
+          <Button onClick={openCreate} size="sm" className="h-8 gap-1.5">
+            <Plus className="h-3.5 w-3.5" /> Tạo cấp độ
+          </Button>
+        </div>
       </header>
 
       {/* Filters */}
@@ -428,6 +440,14 @@ export default function CourseLevelsPage() {
         level={editingLevel}
         programs={programs}
         initialProgramId={filterProgramId || null}
+        onSaved={handleSaved}
+      />
+
+      <CefrMappingDialog
+        open={cefrDialogOpen}
+        onOpenChange={setCefrDialogOpen}
+        levels={levels}
+        programs={programs}
         onSaved={handleSaved}
       />
 
