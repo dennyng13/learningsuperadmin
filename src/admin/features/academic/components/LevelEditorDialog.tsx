@@ -35,7 +35,6 @@ import { getProgramIcon, getProgramPalette } from "@shared/utils/programColors";
  */
 
 const COLOR_KEYS = Object.keys(COLOR_PRESETS);
-const CEFR_OPTIONS = ["A1", "A2", "B1", "B2", "C1", "C2"] as const;
 
 interface Props {
   open: boolean;
@@ -62,7 +61,6 @@ export default function LevelEditorDialog({
   const [colorKey, setColorKey] = useState<string | null>(null);
   const [programId, setProgramId] = useState<string>("");
   const [targetScore, setTargetScore] = useState("");
-  const [cefr, setCefr] = useState<string>("");
   const [longDescription, setLongDescription] = useState("");
   const [outcomes, setOutcomes] = useState<string[]>([]);
   const [outcomeInput, setOutcomeInput] = useState("");
@@ -76,7 +74,6 @@ export default function LevelEditorDialog({
       setName(level.name ?? "");
       setColorKey(level.color_key ?? null);
       setTargetScore(level.target_score ?? "");
-      setCefr(level.cefr ?? "");
       setLongDescription(level.long_description ?? "");
       setOutcomes(Array.isArray(level.outcomes) ? level.outcomes : []);
       setTemplateId(level.study_plan_template_id ?? "");
@@ -87,7 +84,6 @@ export default function LevelEditorDialog({
       setName("");
       setColorKey(null);
       setTargetScore("");
-      setCefr("");
       setLongDescription("");
       setOutcomes([]);
       setTemplateId("");
@@ -115,7 +111,6 @@ export default function LevelEditorDialog({
         name: name.trim(),
         color_key: colorKey,
         target_score: targetScore.trim() || null,
-        cefr: cefr || null,
         long_description: longDescription.trim() || null,
         outcomes,
         study_plan_template_id: templateId || null,
@@ -226,31 +221,19 @@ export default function LevelEditorDialog({
             </p>
           </div>
 
-          {/* Row 3: Target score + CEFR */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label className="text-xs">Điểm mục tiêu</Label>
-              <Input
-                value={targetScore}
-                onChange={(e) => setTargetScore(e.target.value)}
-                placeholder="vd. IELTS 6.5, WRE 80/100…"
-                className="h-9 text-sm"
-              />
-            </div>
-            <div>
-              <Label className="text-xs">CEFR tương ứng</Label>
-              <Select value={cefr || "__none"} onValueChange={(v) => setCefr(v === "__none" ? "" : v)}>
-                <SelectTrigger className="h-9 text-sm">
-                  <SelectValue placeholder="—" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none">Không xác định</SelectItem>
-                  {CEFR_OPTIONS.map((c) => (
-                    <SelectItem key={c} value={c}>{c}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          {/* Row 3: Target score (CEFR quản lý ở dialog "Map CEFR") */}
+          <div>
+            <Label className="text-xs">Điểm mục tiêu</Label>
+            <Input
+              value={targetScore}
+              onChange={(e) => setTargetScore(e.target.value)}
+              placeholder="vd. IELTS 6.5, WRE 80/100…"
+              className="h-9 text-sm"
+            />
+            <p className="text-[10px] text-muted-foreground mt-1">
+              CEFR (A1–C2) được quản lý tập trung ở nút <strong>"Map CEFR"</strong> trên trang Cấp độ —
+              1 cấp có thể map nhiều CEFR.
+            </p>
           </div>
 
           {/* Mô tả dài */}
