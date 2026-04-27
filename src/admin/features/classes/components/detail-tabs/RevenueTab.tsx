@@ -2,7 +2,24 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@shared/components/ui/card";
 import { Skeleton } from "@shared/components/ui/skeleton";
-import { Wallet, TrendingUp, TrendingDown, Receipt, AlertCircle } from "lucide-react";
+import { Button } from "@shared/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@shared/components/ui/select";
+import {
+  Wallet,
+  TrendingUp,
+  TrendingDown,
+  Receipt,
+  AlertCircle,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
+import { useState } from "react";
 
 interface RevenueRow {
   class_id: string;
@@ -28,6 +45,8 @@ interface PaymentRow {
   created_at: string;
 }
 
+const PAGE_SIZE_OPTIONS = [25, 50, 100] as const;
+
 /**
  * Tab "Doanh thu" — admin-only.
  * Đọc từ view `v_class_revenue` (P4a) + bảng `student_payments` filter theo
@@ -37,6 +56,9 @@ interface PaymentRow {
  * khỏi non-admin. Gating ở UI là phụ.
  */
 export function RevenueTab({ classId }: { classId: string }) {
+  const [pageSize, setPageSize] = useState<number>(25);
+  const [page, setPage] = useState<number>(0); // 0-indexed
+
   const revenueQ = useQuery({
     queryKey: ["admin-class-revenue", classId],
     queryFn: async (): Promise<RevenueRow | null> => {
@@ -53,19 +75,25 @@ export function RevenueTab({ classId }: { classId: string }) {
   });
 
   const paymentsQ = useQuery({
-    queryKey: ["admin-class-payments", classId],
-    queryFn: async (): Promise<PaymentRow[]> => {
-      const { data, error } = await (supabase as any)
+    queryKey: ["admin-class-payments", classId, page, pageSize],
+    queryFn: async (): Promise<{ rows: PaymentRow[]; total: number }> => {
+      const from = page * pageSize;
+      const to = from + pageSize - 1;
+      const { data, error, count } = await (supabase as any)
         .from("student_payments")
-        .select("id, student_id, amount, payment_date, payment_method, description, invoice_number, status, notes, created_at")
+        .select(
+          "id, student_id, amount, payment_date, payment_method, description, invoice_number, status, notes, created_at",
+          { count: "exact" },
+        )
         .eq("class_id", classId)
         .order("payment_date", { ascending: false })
-        .limit(100);
+        .range(from, to);
       if (error) throw error;
-      return (data as PaymentRow[]) ?? [];
+      return { rows: (data as PaymentRow[]) ?? [], total: count ?? 0 };
     },
     enabled: !!classId,
     staleTime: 30_000,
+    placeholderData: (prev) => prev,
   });
 
   if (revenueQ.isLoading) {
@@ -94,6 +122,12 @@ export function RevenueTab({ classId }: { classId: string }) {
   const collected = Number(r.collected_revenue_vnd ?? 0);
   const outstanding = Number(r.outstanding_revenue_vnd ?? 0);
   const collectedPct = expected > 0 ? Math.min(100, (collected / expected) * 100) : 0;
+
+  const total = paymentsQ.data?.total ?? 0;
+  const rows = paymentsQ.data?.rows ?? [];
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const fromIdx = total === 0 ? 0 : page * pageSize + 1;
+  const toIdx = Math.min(total, page * pageSize + rows.length);
 
   return (
     <div className="space-y-4">
@@ -134,8 +168,30 @@ export function RevenueTab({ classId }: { classId: string }) {
 
       {/* Transactions table */}
       <Card className="overflow-hidden">
-        <div className="border-b bg-muted/30 px-4 py-2.5">
-          <h3 className="text-sm font-semibold">Giao dịch ({paymentsQ.data?.length ?? 0})</h3>
+        <div className="border-b bg-muted/30 px-4 py-2.5 flex items-center justify-between gap-3 flex-wrap">
+          <h3 className="text-sm font-semibold">Giao dịch ({total})</h3>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span>Hiển thị</span>
+            <Select
+              value={String(pageSize)}
+              onValueChange={(v) => {
+                setPageSize(Number(v));
+                setPage(0);
+              }}
+            >
+              <SelectTrigger className="h-7 w-[72px] text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PAGE_SIZE_OPTIONS.map((n) => (
+                  <SelectItem key={n} value={String(n)} className="text-xs">
+                    {n}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <span>dòng / trang</span>
+          </div>
         </div>
         {paymentsQ.isLoading ? (
           <div className="p-4 space-y-2">
@@ -143,7 +199,8 @@ export function RevenueTab({ classId }: { classId: string }) {
               <Skeleton key={i} className="h-10 rounded-lg" />
             ))}
           </div>
-        ) : paymentsQ.data && paymentsQ.data.length > 0 ? (
+        ) : rows.length > 0 ? (
+          <>
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead className="text-left text-muted-foreground bg-muted/20 border-b">
@@ -157,7 +214,7 @@ export function RevenueTab({ classId }: { classId: string }) {
                 </tr>
               </thead>
               <tbody className="divide-y">
-                {paymentsQ.data.map((p) => (
+                {rows.map((p) => (
                   <tr key={p.id} className="hover:bg-muted/30">
                     <td className="px-4 py-2 tabular-nums">
                       {new Date(p.payment_date).toLocaleDateString("vi-VN")}
@@ -184,6 +241,37 @@ export function RevenueTab({ classId }: { classId: string }) {
               </tbody>
             </table>
           </div>
+          <div className="border-t bg-muted/20 px-4 py-2 flex items-center justify-between gap-3 text-xs text-muted-foreground">
+            <span className="tabular-nums">
+              {fromIdx}–{toIdx} / {total}
+            </span>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2"
+                disabled={page === 0 || paymentsQ.isFetching}
+                onClick={() => setPage((p) => Math.max(0, p - 1))}
+              >
+                <ChevronLeft className="h-3.5 w-3.5" />
+                Trước
+              </Button>
+              <span className="px-2 tabular-nums">
+                {page + 1} / {totalPages}
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2"
+                disabled={page + 1 >= totalPages || paymentsQ.isFetching}
+                onClick={() => setPage((p) => p + 1)}
+              >
+                Sau
+                <ChevronRight className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          </div>
+          </>
         ) : (
           <div className="p-6 text-center text-sm text-muted-foreground">
             Chưa có giao dịch nào được ghi nhận cho lớp này.
