@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useTemplateMutations, useStudyPlanTemplate, type StudyPlanTemplate } from "@shared/hooks/useStudyPlanTemplates";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@shared/components/ui/dialog";
 import { Input } from "@shared/components/ui/input";
@@ -9,17 +9,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@shared/components/ui/badge";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@shared/components/ui/breadcrumb";
 import { toast } from "sonner";
-import { Plus, Trash2, ChevronDown, ChevronUp, BookOpen, GraduationCap, Sparkles } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { SessionCard, SESSION_TYPES } from "./SessionCard";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useCourseLevels } from "@shared/hooks/useCourseLevels";
-
-const PROGRAMS = [
-  { value: "ielts", label: "IELTS", icon: <GraduationCap className="h-4 w-4" /> },
-  { value: "wre", label: "WRE", icon: <BookOpen className="h-4 w-4" /> },
-  { value: "customized", label: "Customized", icon: <Sparkles className="h-4 w-4" /> },
-];
+import { usePrograms } from "@shared/hooks/usePrograms";
+import { getProgramIcon, getProgramLabel } from "@shared/utils/programColors";
 
 interface Props {
   template: Partial<StudyPlanTemplate> | {};
@@ -31,11 +27,12 @@ export function TemplateEditor({ template, onClose }: Props) {
   const isNew = !tplId;
   const { upsertTemplate, bulkUpsertEntries } = useTemplateMutations();
   const { data: loaded } = useStudyPlanTemplate(tplId || null);
+  const { programs } = usePrograms();
 
   const [form, setForm] = useState({
     template_name: (template as any)?.template_name || "",
     description: (template as any)?.description || "",
-    program: ((template as any)?.program || "ielts").toLowerCase(),
+    program: ((template as any)?.program || "").toLowerCase(),
     assigned_level: (template as any)?.assigned_level || "",
     plan_type: (template as any)?.plan_type || "structured",
     total_sessions: (template as any)?.total_sessions || 10,
@@ -85,6 +82,65 @@ export function TemplateEditor({ template, onClose }: Props) {
 
   // Chỉ lấy levels thuộc program đang ACTIVE — tránh lộ level của program đã ẩn.
   const { levels: courseLevels = [] } = useCourseLevels();
+
+  /**
+   * Default program selection.
+   * - Khi đang tạo mới và chưa có `program` từ caller, ưu tiên program đầu tiên
+   *   trong danh sách động (`programs`) để dropdown không hiển thị "—".
+   * - Tránh ghi đè khi user đã chủ động chọn / hoặc khi đang edit (loaded sẽ
+   *   set lại ở effect bên dưới).
+   */
+  useEffect(() => {
+    if (isNew && !form.program && programs.length > 0) {
+      setForm((f) => ({ ...f, program: programs[0].key.toLowerCase() }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [programs, isNew]);
+
+  /**
+   * Levels filtered theo program đang chọn — qua bảng `program_levels`.
+   * Ngăn admin gán nhầm level của program khác (vd. chọn IELTS nhưng pick
+   * "WRE Beginner"). Trả về tên level (vì `assigned_level` lưu dạng text).
+   */
+  const selectedProgram = useMemo(
+    () => programs.find((p) => p.key.toLowerCase() === form.program),
+    [programs, form.program],
+  );
+
+  const { data: programLevelLinks = [] } = useQuery({
+    queryKey: ["program-levels-for-template", selectedProgram?.id],
+    enabled: !!selectedProgram?.id,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("program_levels")
+        .select("level_id, sort_order")
+        .eq("program_id", selectedProgram!.id)
+        .order("sort_order", { ascending: true });
+      if (error) throw error;
+      return (data || []) as Array<{ level_id: string; sort_order: number }>;
+    },
+  });
+
+  const programLevels = useMemo(() => {
+    if (!form.program) return courseLevels;
+    const order = new Map(programLevelLinks.map((l, i) => [l.level_id, l.sort_order ?? i]));
+    return courseLevels
+      .filter((l: any) => order.has(l.id))
+      .sort((a: any, b: any) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
+  }, [courseLevels, programLevelLinks, form.program]);
+
+  /**
+   * Khi đổi program, nếu `assigned_level` hiện tại không nằm trong danh sách
+   * level của program mới → reset để tránh dữ liệu mồ côi.
+   */
+  useEffect(() => {
+    if (!form.assigned_level || !form.program) return;
+    if (programLevels.length === 0) return;
+    const has = programLevels.some((l: any) => l.name === form.assigned_level);
+    if (!has) {
+      setForm((f) => ({ ...f, assigned_level: "" }));
+    }
+  }, [form.program, programLevels, form.assigned_level]);
 
   // Resources by program
   const { data: exercises } = useQuery({
@@ -185,7 +241,19 @@ export function TemplateEditor({ template, onClose }: Props) {
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
-          <DialogTitle>{isNew ? "Tạo mẫu kế hoạch mới" : "Chỉnh sửa mẫu"}</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            {selectedProgram &&
+              (() => {
+                const Icon = getProgramIcon(selectedProgram.key);
+                return <Icon className="h-5 w-5 text-primary" />;
+              })()}
+            {isNew ? "Tạo mẫu kế hoạch mới" : "Chỉnh sửa mẫu"}
+            {selectedProgram && (
+              <Badge variant="outline" className="ml-1 text-[10px]">
+                {selectedProgram.name}
+              </Badge>
+            )}
+          </DialogTitle>
           <DialogDescription>
             Mẫu là khuôn chung. Khi gán cho lớp/học viên, hệ thống sẽ tự sao chép thành kế hoạch độc lập.
           </DialogDescription>
@@ -204,26 +272,62 @@ export function TemplateEditor({ template, onClose }: Props) {
             </div>
             <div>
               <Label>Chương trình</Label>
-              <Select value={form.program} onValueChange={v => setForm(f => ({ ...f, program: v }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+              <Select
+                value={form.program || "__none"}
+                onValueChange={(v) => setForm((f) => ({ ...f, program: v === "__none" ? "" : v }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Chọn chương trình" />
+                </SelectTrigger>
                 <SelectContent>
-                  {PROGRAMS.map(p => (
-                    <SelectItem key={p.value} value={p.value}>
-                      <span className="flex items-center gap-2">{p.icon} {p.label}</span>
-                    </SelectItem>
-                  ))}
+                  {programs.length === 0 && (
+                    <SelectItem value="__none">— Không có chương trình —</SelectItem>
+                  )}
+                  {programs.map((p) => {
+                    const Icon = getProgramIcon(p.key);
+                    return (
+                      <SelectItem key={p.id} value={p.key.toLowerCase()}>
+                        <span className="flex items-center gap-2">
+                          <Icon className="h-4 w-4" /> {p.name}
+                        </span>
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label>Level</Label>
-              <Select value={form.assigned_level || "__none"} onValueChange={v => setForm(f => ({ ...f, assigned_level: v === "__none" ? "" : v }))}>
-                <SelectTrigger><SelectValue placeholder="Chưa gán" /></SelectTrigger>
+              <Label>
+                Level
+                {form.program && (
+                  <span className="ml-1 text-[10px] text-muted-foreground font-normal">
+                    (theo chương trình {getProgramLabel(form.program)})
+                  </span>
+                )}
+              </Label>
+              <Select
+                value={form.assigned_level || "__none"}
+                onValueChange={(v) =>
+                  setForm((f) => ({ ...f, assigned_level: v === "__none" ? "" : v }))
+                }
+                disabled={!form.program}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={form.program ? "Chưa gán" : "Chọn chương trình trước"} />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__none">Chưa gán</SelectItem>
-                  {(courseLevels || []).map((l: any) => (
-                    <SelectItem key={l.id} value={l.name}>{l.name}</SelectItem>
+                  {programLevels.map((l: any) => (
+                    <SelectItem key={l.id} value={l.name}>
+                      {l.name}
+                      {l.cefr ? ` · ${l.cefr}` : ""}
+                    </SelectItem>
                   ))}
+                  {form.program && programLevels.length === 0 && (
+                    <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                      Chương trình này chưa có level nào.
+                    </div>
+                  )}
                 </SelectContent>
               </Select>
             </div>
