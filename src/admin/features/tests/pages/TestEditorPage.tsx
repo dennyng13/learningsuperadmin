@@ -1136,6 +1136,16 @@ export default function TestEditorPage() {
         )}
       </div>
 
+      {/* Course assignments — drives global Study Plan filtering */}
+      {!isNew && id && id !== "new" && (
+        <div className="bg-card border rounded-xl p-3">
+          <CourseAssignmentPanel
+            kind={contentType === "exercise" ? "exercise" : "assessment"}
+            resourceId={id}
+          />
+        </div>
+      )}
+
       {/* Stepper */}
       <div className="flex items-center gap-1">
         {[
