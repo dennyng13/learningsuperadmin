@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import {
   BookOpen, CheckCircle2, Layers, Users, CalendarDays, ClipboardList,
   Pencil, Trash2, EyeOff, PlayCircle, Sparkles, Plus, Star,
+  Wallet, Clock,
 } from "lucide-react";
 import { Button } from "@shared/components/ui/button";
 import {
@@ -75,10 +76,34 @@ export default function CourseCard({
             </h3>
             {isInactive && <EyeOff className="h-3 w-3 text-muted-foreground shrink-0" />}
           </div>
-          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mt-0.5">
-            {programName}
-          </p>
+          <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              {programName}
+            </p>
+            {course.cefr_range && (
+              <span className={cn(
+                "inline-flex items-center text-[10px] font-bold px-1.5 py-0.5 rounded border",
+                palette.accentSoftBg, palette.accentText, palette.accentBorder,
+              )}>
+                {course.cefr_range}
+              </span>
+            )}
+          </div>
         </div>
+        {/* Price chip */}
+        {course.price_vnd != null && course.price_vnd > 0 && (
+          <div className={cn(
+            "shrink-0 text-right rounded-lg px-2 py-1 border",
+            palette.accentSoftBg, palette.accentBorder,
+          )}>
+            <p className={cn("text-[10px] uppercase tracking-wider font-bold", palette.accentText)}>
+              Học phí
+            </p>
+            <p className="text-xs font-display font-extrabold leading-tight">
+              {Math.round(course.price_vnd / 1000).toLocaleString("vi-VN")}K
+            </p>
+          </div>
+        )}
       </header>
 
       {/* ─── 1. Mô tả khoá học (cố định 2 dòng để đồng cao) ─── */}
@@ -91,6 +116,24 @@ export default function CourseCard({
             <span className="italic text-muted-foreground/60">Chưa có mô tả ngắn.</span>
           )}
         </p>
+        {/* Quick facts strip — duration · sessions · hours · max students */}
+        {(course.duration_label || course.total_sessions != null
+          || course.hours_per_session != null || course.max_students != null) && (
+          <div className="mt-2 flex flex-wrap gap-1">
+            {course.duration_label && (
+              <Fact icon={<CalendarDays className="h-3 w-3" />} text={course.duration_label} tone={palette.iconText} />
+            )}
+            {course.total_sessions != null && (
+              <Fact icon={<ClipboardList className="h-3 w-3" />} text={`${course.total_sessions} buổi`} tone={palette.iconText} />
+            )}
+            {course.hours_per_session != null && (
+              <Fact icon={<Clock className="h-3 w-3" />} text={`${course.hours_per_session}h / buổi`} tone={palette.iconText} />
+            )}
+            {course.max_students != null && (
+              <Fact icon={<Users className="h-3 w-3" />} text={`Tối đa ${course.max_students} HV`} tone={palette.iconText} />
+            )}
+          </div>
+        )}
       </Section>
 
       {/* ─── 2. Đầu ra khoá học (cố định 3 dòng) ─── */}
