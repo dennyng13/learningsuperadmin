@@ -153,9 +153,9 @@ export default function CourseEditorDialog({
       toast.error("Tên khoá học không được trống.");
       return;
     }
-    setStep((s) => Math.min(2, (s + 1) as Step));
+    setStep((s) => Math.min(2, s + 1) as Step);
   };
-  const goPrev = () => setStep((s) => Math.max(0, (s - 1) as Step));
+  const goPrev = () => setStep((s) => Math.max(0, s - 1) as Step);
 
   const handleSave = async () => {
     if (!name.trim()) { toast.error("Tên khoá học không được trống."); return; }
@@ -184,7 +184,7 @@ export default function CourseEditorDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
         {/* ─── Header với program preview ─── */}
-        <div className={cn("relative px-6 pt-5 pb-4 border-b", palette.surfaceSoft)}>
+        <div className={cn("relative px-6 pt-5 pb-4 border-b", palette.accentSoftBg)}>
           <div className="flex items-start gap-3">
             <div className={cn("h-11 w-11 rounded-xl flex items-center justify-center shrink-0", palette.iconBg)}>
               <ProgramIcon className={cn("h-5 w-5", palette.iconText)} />
