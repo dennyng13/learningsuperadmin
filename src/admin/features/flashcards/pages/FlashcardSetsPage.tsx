@@ -94,9 +94,11 @@ export default function FlashcardSetsPage() {
   const [listSearch, setListSearch] = useState("");
   const [showListSearch, setShowListSearch] = useState(false);
   const [filterPrograms, setFilterPrograms] = useState<Set<string>>(new Set());
+  const [filterCourses, setFilterCourses] = useState<Set<string>>(new Set());
   const [filterLevels, setFilterLevels] = useState<Set<string>>(new Set());
   const [filterStatuses, setFilterStatuses] = useState<Set<string>>(new Set());
   const [programExpanded, setProgramExpanded] = useState(false);
+  const [courseExpanded, setCourseExpanded] = useState(false);
   const [levelExpanded, setLevelExpanded] = useState(false);
   const [statusExpanded, setStatusExpanded] = useState(false);
 
@@ -661,19 +663,31 @@ export default function FlashcardSetsPage() {
 
   const usedPrograms = [...new Set(sets.map(s => (s as any).program).filter(Boolean))];
   const usedLevels = [...new Set(sets.map(s => (s as any).course_level).filter(Boolean))];
-  const hasFilters = filterPrograms.size > 0 || filterLevels.size > 0 || filterStatuses.size > 0 || listSearch.trim().length > 0;
+  const hasFilters = filterPrograms.size > 0 || filterCourses.size > 0 || filterLevels.size > 0 || filterStatuses.size > 0 || listSearch.trim().length > 0;
 
   const clearFilters = () => {
     setFilterPrograms(new Set());
+    setFilterCourses(new Set());
     setFilterLevels(new Set());
     setFilterStatuses(new Set());
     setListSearch("");
     setShowListSearch(false);
   };
 
-  const filteredSets = sets.filter(s => {
+  // Stage 1: filter Program + Course qua pivot resource_courses
+  const {
+    filtered: programCourseFiltered,
+    matched: matchedToCourse,
+    untagged: untaggedItems,
+  } = useResourceList("flashcard_set", sets as any, {
+    programIds: filterPrograms,
+    courseIds: filterCourses,
+    includeUntagged: true,
+  });
+
+  // Stage 2: search/level/status
+  const filteredSets = (programCourseFiltered as typeof sets).filter(s => {
     if (listSearch.trim() && !s.title.toLowerCase().includes(listSearch.trim().toLowerCase())) return false;
-    if (filterPrograms.size > 0 && !filterPrograms.has((s as any).program || "")) return false;
     if (filterLevels.size > 0 && !filterLevels.has((s as any).course_level || "")) return false;
     if (filterStatuses.size > 0 && !filterStatuses.has(s.status)) return false;
     return true;
