@@ -14,7 +14,7 @@ export interface WizardClassInfo {
   leaderboard_enabled: boolean;
 }
 
-export type ScheduleMode = "by-slot" | "by-teacher";
+export type ScheduleMode = "by-slot" | "by-revenue" | "by-teacher";
 export type DeliveryMode = "online" | "offline" | "hybrid";
 export type TeacherRole = "primary" | "ta";
 
