@@ -14,7 +14,6 @@ import { Loader2, School, UserCheck, Calendar, Sparkles, Search, Filter, BookOpe
 import { Badge } from "@shared/components/ui/badge";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@shared/components/ui/breadcrumb";
 import { usePrograms } from "@shared/hooks/usePrograms";
-import { getProgramLabel } from "@shared/utils/programColors";
 
 const DAYS = [
   { value: "mon", label: "T2" }, { value: "tue", label: "T3" }, { value: "wed", label: "T4" },
