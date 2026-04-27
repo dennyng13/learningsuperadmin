@@ -504,6 +504,130 @@ function StepInfo({
           ))}
         </div>
       </div>
+
+      {/* ── Đối tượng phù hợp ── */}
+      <div className="space-y-1.5">
+        <Label htmlFor="course-audience" className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+          <Users className="h-3.5 w-3.5" /> Đối tượng phù hợp
+        </Label>
+        <Textarea
+          id="course-audience"
+          value={targetAudience}
+          onChange={(e) => setTargetAudience(e.target.value)}
+          placeholder="vd. - Có vốn từ A2&#10;- Mong muốn thi IELTS trong 1 năm tới"
+          rows={4}
+          className="resize-none text-sm"
+        />
+        <p className="text-[10px] text-muted-foreground">Mỗi dòng là một tiêu chí. Hỗ trợ markdown đơn giản (xuống dòng).</p>
+      </div>
+
+      {/* ── Khoá học giải quyết vấn đề gì ── */}
+      <div className="space-y-1.5">
+        <Label htmlFor="course-problem" className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+          <Target className="h-3.5 w-3.5" /> Khoá học giải quyết vấn đề gì
+        </Label>
+        <Textarea
+          id="course-problem"
+          value={problemSolving}
+          onChange={(e) => setProblemSolving(e.target.value)}
+          placeholder="Giải pháp / phương pháp khoá học giúp học viên vượt qua rào cản gì."
+          rows={4}
+          className="resize-none text-sm"
+        />
+      </div>
+
+      {/* ── Thông số khoá học (giá, thời lượng, sĩ số, CEFR) ── */}
+      <div className="rounded-xl border bg-muted/20 p-3 space-y-3">
+        <div className="flex items-center gap-1.5">
+          <Wallet className="h-3.5 w-3.5 text-muted-foreground" />
+          <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+            Thông số khoá học
+          </span>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="space-y-1">
+            <Label htmlFor="course-price" className="text-[11px] flex items-center gap-1">
+              <Wallet className="h-3 w-3" /> Giá (VND)
+            </Label>
+            <Input
+              id="course-price"
+              inputMode="numeric"
+              value={priceVnd}
+              onChange={(e) => setPriceVnd(e.target.value.replace(/[^0-9]/g, ""))}
+              placeholder="3490000"
+              className="h-8 text-sm"
+            />
+            {priceVnd && (
+              <p className="text-[10px] text-muted-foreground">
+                {Number(priceVnd).toLocaleString("vi-VN")} ₫
+              </p>
+            )}
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="course-duration" className="text-[11px] flex items-center gap-1">
+              <Calendar className="h-3 w-3" /> Thời gian
+            </Label>
+            <Input
+              id="course-duration"
+              value={durationLabel}
+              onChange={(e) => setDurationLabel(e.target.value)}
+              placeholder="vd. 1.5 tháng"
+              className="h-8 text-sm"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="course-sessions" className="text-[11px] flex items-center gap-1">
+              <ClipboardList className="h-3 w-3" /> Số buổi
+            </Label>
+            <Input
+              id="course-sessions"
+              inputMode="numeric"
+              value={totalSessions}
+              onChange={(e) => setTotalSessions(e.target.value.replace(/[^0-9]/g, ""))}
+              placeholder="12"
+              className="h-8 text-sm"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="course-hours" className="text-[11px] flex items-center gap-1">
+              <Clock className="h-3 w-3" /> Giờ / buổi
+            </Label>
+            <Input
+              id="course-hours"
+              inputMode="decimal"
+              value={hoursPerSession}
+              onChange={(e) => setHoursPerSession(e.target.value.replace(/[^0-9.]/g, ""))}
+              placeholder="2"
+              className="h-8 text-sm"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="course-max" className="text-[11px] flex items-center gap-1">
+              <Users className="h-3 w-3" /> Sĩ số tối đa
+            </Label>
+            <Input
+              id="course-max"
+              inputMode="numeric"
+              value={maxStudents}
+              onChange={(e) => setMaxStudents(e.target.value.replace(/[^0-9]/g, ""))}
+              placeholder="12"
+              className="h-8 text-sm"
+            />
+          </div>
+          <div className="space-y-1 col-span-2 md:col-span-3">
+            <Label htmlFor="course-cefr" className="text-[11px] flex items-center gap-1">
+              <Layers className="h-3 w-3" /> CEFR khoá học
+            </Label>
+            <Input
+              id="course-cefr"
+              value={cefrRange}
+              onChange={(e) => setCefrRange(e.target.value)}
+              placeholder="vd. A2 - B1"
+              className="h-8 text-sm"
+            />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
