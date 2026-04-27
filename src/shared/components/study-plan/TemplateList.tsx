@@ -145,16 +145,11 @@ export function TemplateList({ teacherMode = false }: Props) {
               className={cn(
                 "flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border text-xs font-semibold transition-all",
                 active
-                  ? "ring-1 ring-offset-1"
+                  ? palette
+                    ? `${palette.badge} ring-1 ring-offset-1 ${palette.ring}`
+                    : "bg-primary text-primary-foreground border-primary"
                   : "bg-card border-border hover:border-primary/40 text-foreground",
               )}
-              style={
-                active && palette
-                  ? { backgroundColor: palette.tint, borderColor: palette.solid, color: palette.solid }
-                  : active
-                    ? undefined
-                    : undefined
-              }
             >
               <Icon className="h-3.5 w-3.5" />
               {p.label}
@@ -179,19 +174,21 @@ export function TemplateList({ teacherMode = false }: Props) {
           return (
             <Card
               key={tpl.id}
-              className="hover:shadow-md transition-shadow border-l-4"
-              style={palette ? { borderLeftColor: palette.solid } : undefined}
+              className={cn(
+                "hover:shadow-md transition-shadow border-l-4",
+                palette ? palette.borderLeft : "border-l-muted",
+              )}
             >
               <CardContent className="p-4">
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex items-center gap-3 min-w-0">
                     <div
-                      className="w-10 h-10 rounded-xl flex items-center justify-center text-white shrink-0"
-                      style={
+                      className={cn(
+                        "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
                         palette
-                          ? { background: `linear-gradient(135deg, ${palette.solid}, ${palette.gradientTo})` }
-                          : { background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary) / 0.7))" }
-                      }
+                          ? `${palette.iconBg} ${palette.iconText}`
+                          : "bg-primary/15 text-primary",
+                      )}
                     >
                       <FileStack className="w-5 h-5" />
                     </div>
@@ -201,12 +198,7 @@ export function TemplateList({ teacherMode = false }: Props) {
                         {tpl.program && (
                           <Badge
                             variant="outline"
-                            className="text-[10px]"
-                            style={
-                              palette
-                                ? { backgroundColor: palette.tint, color: palette.solid, borderColor: palette.solid }
-                                : undefined
-                            }
+                            className={cn("text-[10px]", palette?.badge)}
                           >
                             {programLabel}
                           </Badge>
