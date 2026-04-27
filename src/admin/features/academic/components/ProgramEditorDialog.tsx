@@ -3,7 +3,6 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@shared/components/ui/dialog";
 import { Input } from "@shared/components/ui/input";
-import { Textarea } from "@shared/components/ui/textarea";
 import { Label } from "@shared/components/ui/label";
 import { Button } from "@shared/components/ui/button";
 import { Switch } from "@shared/components/ui/switch";
@@ -40,9 +39,6 @@ export default function ProgramEditorDialog({ open, onOpenChange, initial, onSub
   const [key, setKey] = useState("");
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [longDescription, setLongDescription] = useState("");
-  const [outcomes, setOutcomes] = useState<string[]>([]);
-  const [outcomeDraft, setOutcomeDraft] = useState("");
   const [colorKey, setColorKey] = useState<string | null>("teal");
   const [iconKey, setIconKey] = useState<string | null>("graduation-cap");
   const [sortOrder, setSortOrder] = useState(0);
@@ -55,31 +51,17 @@ export default function ProgramEditorDialog({ open, onOpenChange, initial, onSub
       setKey(initial.key);
       setName(initial.name);
       setDescription(initial.description ?? "");
-      setLongDescription(initial.long_description ?? "");
-      setOutcomes(initial.outcomes ?? []);
       setColorKey(initial.color_key ?? "teal");
       setIconKey(initial.icon_key ?? "graduation-cap");
       setSortOrder(initial.sort_order ?? 0);
       setActive(initial.status === "active");
       setLevelIds(initial.level_ids ?? []);
     } else {
-      setKey(""); setName(""); setDescription(""); setLongDescription("");
-      setOutcomes([]); setOutcomeDraft("");
+      setKey(""); setName(""); setDescription("");
       setColorKey("teal"); setIconKey("graduation-cap");
       setSortOrder(0); setActive(true); setLevelIds([]);
     }
-    setOutcomeDraft("");
   }, [open, initial]);
-
-  const addOutcome = () => {
-    const v = outcomeDraft.trim();
-    if (!v) return;
-    setOutcomes((prev) => [...prev, v]);
-    setOutcomeDraft("");
-  };
-
-  const removeOutcome = (idx: number) =>
-    setOutcomes((prev) => prev.filter((_, i) => i !== idx));
 
   const toggleLevel = (id: string) =>
     setLevelIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -103,8 +85,6 @@ export default function ProgramEditorDialog({ open, onOpenChange, initial, onSub
         key: key.trim().toLowerCase(),
         name: name.trim(),
         description: description.trim() || null,
-        long_description: longDescription.trim() || null,
-        outcomes,
         color_key: colorKey,
         icon_key: iconKey,
         sort_order: sortOrder,
