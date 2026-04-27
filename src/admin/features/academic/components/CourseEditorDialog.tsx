@@ -467,6 +467,7 @@ export default function CourseEditorDialog({
 /* ──────────────────────────── Step 0: Info ─────────────────────────── */
 
 function StepInfo({
+  courseId, imageUrl, setImageUrl,
   name, setName, description, setDescription,
   longDescription, setLongDescription, outcomes,
   updateOutcome, removeOutcome, addOutcome,
@@ -479,6 +480,9 @@ function StepInfo({
   maxStudents, setMaxStudents,
   cefrRange, setCefrRange,
 }: {
+  courseId: string | null;
+  imageUrl: string | null;
+  setImageUrl: (v: string | null) => void;
   name: string; setName: (v: string) => void;
   description: string; setDescription: (v: string) => void;
   longDescription: string; setLongDescription: (v: string) => void;
@@ -497,6 +501,21 @@ function StepInfo({
 }) {
   return (
     <div className="space-y-4">
+      {/* ── Ảnh minh hoạ (đặt đầu form) ── */}
+      <div className="space-y-1.5">
+        <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+          Ảnh minh hoạ
+        </Label>
+        <CourseImageUploader
+          courseId={courseId}
+          imageUrl={imageUrl}
+          onChange={setImageUrl}
+        />
+        <p className="text-[10px] text-muted-foreground">
+          Hiển thị trên thẻ khoá học và trang chi tiết. Tỉ lệ khuyến nghị 3:2.
+        </p>
+      </div>
+
       {/* Tên */}
       <div className="space-y-1.5">
         <Label htmlFor="course-name" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
