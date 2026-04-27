@@ -56,7 +56,6 @@ import MaxQuotesPage from "@admin/features/max-quotes/pages/MaxQuotesPage";
 import BandDescriptorsPage from "@admin/features/academic/pages/BandDescriptorsPage";
 import FeedbackTemplatesPage from "@admin/features/academic/pages/FeedbackTemplatesPage";
 import CoursesPage from "@admin/features/academic/pages/CoursesPage";
-import CourseEditorPage from "@admin/features/academic/pages/CourseEditorPage";
 import CourseLevelsPage from "@admin/features/academic/pages/CourseLevelsPage";
 import ProgramsListPage from "@admin/features/academic/pages/ProgramsListPage";
 import LibraryHubPage from "@admin/features/library/pages/LibraryHubPage";
@@ -174,8 +173,8 @@ export default function AppRoutes() {
           <Route path="courses" element={<CoursesPage />} />
           <Route path="courses/programs" element={<ProgramsListPage />} />
           <Route path="courses/levels" element={<CourseLevelsPage />} />
-          <Route path="courses/new" element={<CourseEditorPage />} />
-          <Route path="courses/:id/edit" element={<CourseEditorPage />} />
+          <Route path="courses/new" element={<Navigate to="/courses/programs" replace />} />
+          <Route path="courses/:id/edit" element={<Navigate to="/courses/programs" replace />} />
           {/* Legacy redirects — bookmark cũ /settings/<id> → trang riêng */}
           <Route path="settings/ai-grading"       element={<Navigate to="/permissions?tab=ai-grading" replace />} />
           <Route path="settings/band-descriptors" element={<Navigate to="/band-descriptors" replace />} />

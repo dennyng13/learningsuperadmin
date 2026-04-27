@@ -27,7 +27,6 @@ import ProgramLevelManager from "@admin/features/academic/components/ProgramLeve
 interface Props {
   program: CourseProgram;
   levels: CourseLevel[];
-  onEdit: () => void;
   onChanged: () => void | Promise<void>;
 }
 
@@ -44,7 +43,7 @@ interface ClassRow {
   student_ids: any;
 }
 
-export default function ProgramDetailTab({ program, levels, onEdit, onChanged }: Props) {
+export default function ProgramDetailTab({ program, levels, onChanged }: Props) {
   const Icon = getProgramIcon(program.key);
   const palette = getProgramPalette(program.key);
   const isInactive = program.status === "inactive";
@@ -122,8 +121,8 @@ export default function ProgramDetailTab({ program, levels, onEdit, onChanged }:
               <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{program.description}</p>
             )}
           </div>
-          <Button size="sm" variant="outline" onClick={onEdit} className="shrink-0">
-            Sửa khóa học
+          <Button asChild size="sm" variant="outline" className="shrink-0">
+            <Link to="/courses/programs">Quản trị chương trình</Link>
           </Button>
         </div>
       </section>
