@@ -481,6 +481,16 @@ export default function CourseCard({
           </AlertDialogContent>
         </AlertDialog>
       </footer>
+
+      {/* Dialog: Lớp đang dùng khoá này */}
+      <CourseClassesDialog
+        open={showClasses}
+        onOpenChange={setShowClasses}
+        course={course}
+        programKey={programKey}
+        programName={programName}
+        levels={levels}
+      />
     </article>
   );
 }
