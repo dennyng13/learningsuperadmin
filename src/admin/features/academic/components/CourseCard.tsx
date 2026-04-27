@@ -63,40 +63,58 @@ export default function CourseCard({
   return (
     <article
       className={cn(
-        "group relative rounded-2xl border bg-card overflow-hidden flex flex-col h-full transition-all",
-        "hover:shadow-lg hover:-translate-y-0.5 hover:border-primary/30",
+        "group relative rounded-2xl border bg-card overflow-hidden flex flex-col h-full transition-all duration-300",
+        "hover:shadow-2xl hover:-translate-y-1",
+        "hover:ring-2 hover:ring-offset-1",
+        palette.accentBorder,
+        "hover:" + palette.accentBorder,
         isInactive && "opacity-70",
       )}
+      style={{ ['--tw-ring-color' as any]: 'currentColor' }}
     >
-      {/* Top accent strip + soft tint */}
-      <div className={cn("h-1.5 w-full", palette.progressFill)} />
+      {/* Top accent strip dày hơn + glow */}
+      <div className={cn("h-2 w-full shadow-md", palette.progressFill)} />
+      {/* Banner gradient mạnh hơn */}
       <div
         className={cn(
-          "absolute inset-x-0 top-1.5 h-20 pointer-events-none bg-gradient-to-b to-transparent",
+          "absolute inset-x-0 top-2 h-32 pointer-events-none bg-gradient-to-b to-transparent opacity-90",
           palette.bannerGradient,
+        )}
+        aria-hidden
+      />
+      {/* Decorative blob bên phải để bold hơn */}
+      <div
+        className={cn(
+          "absolute -top-8 -right-8 h-32 w-32 rounded-full pointer-events-none blur-2xl opacity-30",
+          palette.progressFill,
         )}
         aria-hidden
       />
 
       {/* Header */}
-      <header className="relative p-4 pb-2 flex items-start gap-3">
-        <div className={cn("h-10 w-10 rounded-lg flex items-center justify-center shrink-0", palette.iconBg)}>
-          <BookOpen className={cn("h-5 w-5", palette.iconText)} />
+      <header className="relative p-4 pb-3 flex items-start gap-3">
+        <div
+          className={cn(
+            "h-12 w-12 rounded-xl flex items-center justify-center shrink-0 shadow-lg ring-2 ring-background",
+            palette.progressFill,
+          )}
+        >
+          <BookOpen className="h-6 w-6 text-white drop-shadow" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 flex-wrap">
-            <h3 className="font-display font-bold text-base leading-tight truncate">
+            <h3 className="font-display font-extrabold text-lg leading-tight truncate tracking-tight">
               {course.name}
             </h3>
             {isInactive && <EyeOff className="h-3 w-3 text-muted-foreground shrink-0" />}
           </div>
           <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+            <p className={cn("text-[10px] font-extrabold uppercase tracking-widest", palette.accentText)}>
               {programName}
             </p>
             {course.cefr_range && (
               <span className={cn(
-                "inline-flex items-center text-[10px] font-bold px-1.5 py-0.5 rounded border",
+                "inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full border shadow-sm",
                 palette.accentSoftBg, palette.accentText, palette.accentBorder,
               )}>
                 {course.cefr_range}
@@ -104,20 +122,21 @@ export default function CourseCard({
             )}
           </div>
         </div>
-        {/* Price chip */}
+        {/* Price chip — N\u1ed4I B\u1eacT */}
         {formattedPrice && (
           <div
             className={cn(
-              "shrink-0 text-right rounded-lg px-2.5 py-1 border shadow-sm",
-              palette.accentSoftBg, palette.accentBorder,
+              "shrink-0 text-right rounded-xl px-3 py-1.5 shadow-lg ring-1 ring-white/20",
+              "bg-gradient-to-br text-white",
+              palette.bannerGradient,
             )}
             title={`Học phí: ${formattedPrice}`}
           >
-            <p className={cn("text-[9px] uppercase tracking-wider font-bold flex items-center justify-end gap-1", palette.accentText)}>
+            <p className="text-[9px] uppercase tracking-widest font-bold flex items-center justify-end gap-1 text-white/90">
               <Wallet className="h-2.5 w-2.5" />
               Học phí
             </p>
-            <p className={cn("text-sm font-display font-extrabold leading-tight tabular-nums whitespace-nowrap", palette.accentText)}>
+            <p className="text-sm font-display font-extrabold leading-tight tabular-nums whitespace-nowrap drop-shadow-sm">
               {formattedPrice}
             </p>
           </div>
