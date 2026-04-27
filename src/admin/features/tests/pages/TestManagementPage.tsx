@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@shared/components/ui/button";
 import { Input } from "@shared/components/ui/input";
 import {
-  Plus, Search, MoreVertical, FileText, Trash2, Eye, Pencil, Copy, Loader2, BookOpen, Cloud, ChevronDown, Tags, X, Layers, Upload,
+  Plus, Search, MoreVertical, FileText, Trash2, Eye, Pencil, Copy, Loader2, BookOpen, Cloud, ChevronDown, Tags, X, Layers, Upload, GraduationCap,
 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
@@ -24,6 +24,9 @@ import QuestionTypeBadge from "@shared/components/misc/QuestionTypeBadge";
 import { ALL_TYPE_LABELS_EN as ALL_QUESTION_TYPE_LABELS } from "@shared/utils/questionTypes";
 import { ResourceFilterBar } from "@shared/components/resources/ResourceFilterBar";
 import { useResourceList } from "@shared/hooks/useResourceList";
+import { BulkCourseAssignDialog } from "@shared/components/resources/BulkCourseAssignDialog";
+import { useBulkSelection } from "@shared/hooks/useBulkSelection";
+import { Checkbox } from "@shared/components/ui/checkbox";
 
 const statusLabels: Record<string, { label: string; className: string }> = {
   published: { label: "Published", className: "bg-primary/15 text-primary" },
