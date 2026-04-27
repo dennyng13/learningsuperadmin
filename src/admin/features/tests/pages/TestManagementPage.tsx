@@ -616,6 +616,15 @@ export default function TestManagementPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <BulkCourseAssignDialog
+        open={bulkDialogOpen}
+        onOpenChange={setBulkDialogOpen}
+        kind="assessment"
+        resourceIds={bulkSel.selectedIds}
+        resourceLabel="đề thi"
+        onDone={() => bulkSel.clear()}
+      />
     </div>
   );
 }
