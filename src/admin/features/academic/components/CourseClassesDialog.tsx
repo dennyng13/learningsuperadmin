@@ -289,3 +289,31 @@ function EmptyState({ title, hint }: { title: string; hint: string }) {
     </div>
   );
 }
+
+/**
+ * Hiển thị nguồn match (course_id vs level) để admin biết cơ chế hiện hành.
+ * Dùng `useQuery` với staleTime vô hạn để chỉ probe đúng 1 lần / phiên.
+ */
+function MatchInfo() {
+  const { data: useCourseId } = useQuery({
+    queryKey: ["classes-course-id-support"],
+    queryFn: () => hasClassesCourseIdColumn(),
+    staleTime: Infinity,
+    gcTime: Infinity,
+  });
+  const codeCls = "text-[10px] bg-background px-1 py-0.5 rounded border";
+  return (
+    <p className="text-[11px] text-muted-foreground">
+      Lớp được match qua{" "}
+      {useCourseId ? (
+        <code className={codeCls}>classes.course_id</code>
+      ) : (
+        <>
+          <code className={codeCls}>classes.level</code>{" "}
+          <span className="text-muted-foreground/70">(fallback)</span>
+        </>
+      )}
+      .
+    </p>
+  );
+}
