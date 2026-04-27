@@ -59,9 +59,9 @@ export default function CoursesPage() {
               <Settings2 className="h-3.5 w-3.5" /> Chương trình
             </Link>
           </Button>
-          <Button asChild size="sm" className="h-8 gap-1.5">
+          <Button asChild size="sm" variant="outline" className="h-8 gap-1.5">
             <Link to="/courses/levels">
-              <Layers className="h-3.5 w-3.5" /> Khoá học/ Cấp độ
+              <Layers className="h-3.5 w-3.5" /> Cấp độ
             </Link>
           </Button>
         </div>
