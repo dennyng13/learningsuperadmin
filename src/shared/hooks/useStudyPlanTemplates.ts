@@ -8,6 +8,7 @@ export interface StudyPlanTemplate {
   description: string | null;
   program: string | null;
   assigned_level: string | null;
+  course_id: string | null;
   plan_type: string;
   skills: string[];
   total_sessions: number;
