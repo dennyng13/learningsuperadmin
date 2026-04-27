@@ -476,6 +476,13 @@ export default function FlashcardSetsPage() {
           </div>
         </div>
 
+        {/* Course assignments — drives global Study Plan filtering */}
+        {editingSet && (
+          <div className="bg-card border rounded-xl p-4">
+            <CourseAssignmentPanel kind="flashcard_set" resourceId={editingSet} />
+          </div>
+        )}
+
         {/* Linking */}
         <div className="bg-card border rounded-xl p-4 space-y-3">
           <h3 className="font-bold text-sm flex items-center gap-2"><Link2 className="h-4 w-4 text-primary" /> Liên kết</h3>
