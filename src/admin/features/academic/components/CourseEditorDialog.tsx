@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import {
   Loader2, Plus, Trash2, Info, ExternalLink, ClipboardList, Star, AlertCircle,
   Search, X, Check, ChevronLeft, ChevronRight, BookOpen, Layers, Sparkles,
-  CircleCheck,
+  CircleCheck, Users, Clock, Calendar, Wallet, Target, MessageSquare,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@shared/components/ui/button";
@@ -55,6 +55,15 @@ export default function CourseEditorDialog({
   const [levelIds, setLevelIds] = useState<string[]>([]);
   const [studyPlanIds, setStudyPlanIds] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  // Rich descriptive fields
+  const [targetAudience, setTargetAudience] = useState("");
+  const [problemSolving, setProblemSolving] = useState("");
+  const [priceVnd, setPriceVnd] = useState<string>("");
+  const [durationLabel, setDurationLabel] = useState("");
+  const [totalSessions, setTotalSessions] = useState<string>("");
+  const [hoursPerSession, setHoursPerSession] = useState<string>("");
+  const [maxStudents, setMaxStudents] = useState<string>("");
+  const [cefrRange, setCefrRange] = useState("");
 
   // Search state
   const [levelQuery, setLevelQuery] = useState("");
@@ -104,6 +113,14 @@ export default function CourseEditorDialog({
       setOutcomes(course.outcomes.length ? course.outcomes : [""]);
       setLevelIds(course.level_ids);
       setStudyPlanIds(course.study_plan_ids);
+      setTargetAudience(course.target_audience ?? "");
+      setProblemSolving(course.problem_solving ?? "");
+      setPriceVnd(course.price_vnd != null ? String(course.price_vnd) : "");
+      setDurationLabel(course.duration_label ?? "");
+      setTotalSessions(course.total_sessions != null ? String(course.total_sessions) : "");
+      setHoursPerSession(course.hours_per_session != null ? String(course.hours_per_session) : "");
+      setMaxStudents(course.max_students != null ? String(course.max_students) : "");
+      setCefrRange(course.cefr_range ?? "");
     } else {
       setName("");
       setDescription("");
@@ -111,6 +128,14 @@ export default function CourseEditorDialog({
       setOutcomes([""]);
       setLevelIds([]);
       setStudyPlanIds([]);
+      setTargetAudience("");
+      setProblemSolving("");
+      setPriceVnd("");
+      setDurationLabel("");
+      setTotalSessions("");
+      setHoursPerSession("");
+      setMaxStudents("");
+      setCefrRange("");
     }
   }, [open, course]);
 
@@ -174,6 +199,14 @@ export default function CourseEditorDialog({
         level_ids: levelIds,
         study_plan_ids: studyPlanIds,
         status: "active",
+        target_audience: targetAudience.trim() || null,
+        problem_solving: problemSolving.trim() || null,
+        price_vnd: priceVnd.trim() ? Math.max(0, parseInt(priceVnd.replace(/\D/g, ""), 10) || 0) : null,
+        duration_label: durationLabel.trim() || null,
+        total_sessions: totalSessions.trim() ? Math.max(0, parseInt(totalSessions, 10) || 0) : null,
+        hours_per_session: hoursPerSession.trim() ? Math.max(0, parseFloat(hoursPerSession) || 0) : null,
+        max_students: maxStudents.trim() ? Math.max(0, parseInt(maxStudents, 10) || 0) : null,
+        cefr_range: cefrRange.trim() || null,
       });
       toast.success(isEdit ? "Đã cập nhật khoá học." : "Đã tạo khoá học.");
       onOpenChange(false);
@@ -285,6 +318,14 @@ export default function CourseEditorDialog({
                 updateOutcome={updateOutcome}
                 removeOutcome={removeOutcome}
                 addOutcome={addOutcome}
+                targetAudience={targetAudience} setTargetAudience={setTargetAudience}
+                problemSolving={problemSolving} setProblemSolving={setProblemSolving}
+                priceVnd={priceVnd} setPriceVnd={setPriceVnd}
+                durationLabel={durationLabel} setDurationLabel={setDurationLabel}
+                totalSessions={totalSessions} setTotalSessions={setTotalSessions}
+                hoursPerSession={hoursPerSession} setHoursPerSession={setHoursPerSession}
+                maxStudents={maxStudents} setMaxStudents={setMaxStudents}
+                cefrRange={cefrRange} setCefrRange={setCefrRange}
               />
             )}
 
