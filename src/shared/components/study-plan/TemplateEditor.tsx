@@ -171,6 +171,10 @@ export function TemplateEditor({ template, onClose }: Props) {
 
   const programLevels = useMemo(() => {
     if (!form.program) return courseLevels;
+    // "Khác" (other) không nằm trong bảng `programs` / `program_levels` →
+    // không có pivot để filter. Cho phép admin chọn TOÀN BỘ levels để tránh
+    // dropdown rỗng khi gán template ngoài 3 chương trình chính.
+    if (form.program === "other") return courseLevels;
     const order = new Map(programLevelLinks.map((l, i) => [l.level_id, l.sort_order ?? i]));
     return courseLevels
       .filter((l: any) => order.has(l.id))
