@@ -13,6 +13,7 @@ import { SessionCard, SESSION_TYPES } from "./SessionCard";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useCourseLevels } from "@shared/hooks/useCourseLevels";
+import { useLevelCefrMap } from "@shared/hooks/useLevelCefrMap";
 import { usePrograms } from "@shared/hooks/usePrograms";
 import { getProgramIcon, getProgramLabel } from "@shared/utils/programColors";
 import { useCourses } from "@/admin/features/academic/hooks/useCourses";
@@ -31,6 +32,7 @@ export function TemplateEditor({ template, onClose }: Props) {
   const { upsertTemplate, bulkUpsertEntries } = useTemplateMutations();
   const { data: loaded } = useStudyPlanTemplate(tplId || null);
   const { programs } = usePrograms();
+  const { formatCefr } = useLevelCefrMap();
 
   const [form, setForm] = useState({
     template_name: (template as any)?.template_name || "",
@@ -453,7 +455,7 @@ export function TemplateEditor({ template, onClose }: Props) {
                   {programLevels.map((l: any) => (
                     <SelectItem key={l.id} value={l.name}>
                       {l.name}
-                      {l.cefr ? ` · ${l.cefr}` : ""}
+                      {(() => { const c = formatCefr(l.id); return c ? ` · ${c}` : ""; })()}
                     </SelectItem>
                   ))}
                   {form.program && programLevels.length === 0 && (
