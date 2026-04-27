@@ -370,6 +370,9 @@ export default function CourseEditorDialog({
 
             {step === 1 && (
               <StepInfo
+                courseId={course?.id ?? null}
+                imageUrl={imageUrl}
+                setImageUrl={setImageUrl}
                 name={name} setName={setName}
                 description={description} setDescription={setDescription}
                 longDescription={longDescription} setLongDescription={setLongDescription}
