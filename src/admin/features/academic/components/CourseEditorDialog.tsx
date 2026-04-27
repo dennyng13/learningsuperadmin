@@ -264,7 +264,7 @@ export default function CourseEditorDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="max-w-3xl h-[92vh] sm:h-[min(92vh,760px)] max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
         {/* ─── Header với program preview ─── */}
         <div className={cn("relative px-6 pt-5 pb-4 border-b", palette.accentSoftBg)}>
           <div className="flex items-start gap-3">
@@ -341,7 +341,7 @@ export default function CourseEditorDialog({
             Single scroll container cho toàn dialog. KHÔNG nested overflow ở
             các step để wheel/trackpad/Page Up-Down hoạt động mượt, không bị
             "kẹt" khi cuộn hết list con. */}
-        <div className="flex-1 min-h-0 relative">
+        <div className="flex-1 min-h-[18rem] relative">
           <div
             ref={bodyRef}
             tabIndex={0}
