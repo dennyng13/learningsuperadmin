@@ -24,6 +24,8 @@ import {
 } from "@shared/components/ui/tabs";
 import UnsavedChangesDialog from "@admin/features/tests/components/UnsavedChangesDialog";
 import { CourseAssignmentPanel } from "@shared/components/study-plan/CourseAssignmentPanel";
+import { ResourceFilterBar } from "@shared/components/resources/ResourceFilterBar";
+import { useResourceList } from "@shared/hooks/useResourceList";
 
 
 interface FlashcardItem {
