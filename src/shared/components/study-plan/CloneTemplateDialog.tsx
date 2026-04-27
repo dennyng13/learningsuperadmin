@@ -205,6 +205,53 @@ export function CloneTemplateDialog({ template, teacherMode = false, onClose }: 
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Template scope summary */}
+          <div className="rounded-lg border bg-muted/30 p-2.5 text-[11px] flex flex-wrap items-center gap-2">
+            <Filter className="w-3.5 h-3.5 text-muted-foreground" />
+            <span className="text-muted-foreground">Mẫu đang gắn:</span>
+            {tplProgram ? (
+              <Badge variant="outline" className="gap-1 text-[10px]">
+                <BookOpen className="w-3 h-3" /> {tplProgram.name}
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="text-[10px] text-muted-foreground">Không gắn chương trình</Badge>
+            )}
+            {(template as any).course_id && programHasCourse && (
+              <button
+                type="button"
+                onClick={() => setFilterByCourse((v) => !v)}
+                className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border transition-colors ${
+                  filterByCourse
+                    ? "bg-emerald-50 text-emerald-700 border-emerald-300"
+                    : "bg-background text-muted-foreground border-dashed"
+                }`}
+                title="Bật/tắt lọc lớp theo khoá học của mẫu"
+              >
+                <GraduationCap className="w-3 h-3" />
+                Khoá học {filterByCourse ? "✓" : "—"}
+              </button>
+            )}
+            {template.assigned_level && (
+              <button
+                type="button"
+                onClick={() => setFilterByLevel((v) => !v)}
+                className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border transition-colors ${
+                  filterByLevel
+                    ? "bg-sky-50 text-sky-700 border-sky-300"
+                    : "bg-background text-muted-foreground border-dashed"
+                }`}
+                title="Bật/tắt lọc lớp theo cấp độ của mẫu"
+              >
+                {template.assigned_level} {filterByLevel ? "✓" : "—"}
+              </button>
+            )}
+            {!programHasCourse && tplProgram && (
+              <span className="text-[10px] text-muted-foreground italic">
+                ({tplProgram.name} không phân khoá học → bỏ qua filter khoá)
+              </span>
+            )}
+          </div>
+
           <div>
             <Label>Tên kế hoạch (tuỳ chọn)</Label>
             <Input value={planNameOverride} onChange={e => setPlanNameOverride(e.target.value)} placeholder={template.template_name} />
@@ -216,10 +263,29 @@ export function CloneTemplateDialog({ template, teacherMode = false, onClose }: 
               <TabsTrigger value="student"><UserCheck className="w-3.5 h-3.5 mr-1" /> Theo học viên</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="class" className="space-y-2 max-h-60 overflow-y-auto pr-1">
-              <p className="text-xs text-muted-foreground">Tất cả học viên trong lớp sẽ thấy kế hoạch này</p>
-              {classes?.length === 0 && <p className="text-sm text-muted-foreground italic">Không có lớp phù hợp</p>}
-              {classes?.map(c => (
+            <TabsContent value="class" className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs text-muted-foreground">Tất cả học viên trong lớp sẽ thấy kế hoạch này</p>
+                <span className="text-[10px] text-muted-foreground">
+                  {filteredClasses.length}/{classes?.length || 0} lớp
+                </span>
+              </div>
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={searchClass}
+                  onChange={(e) => setSearchClass(e.target.value)}
+                  placeholder="Tìm lớp theo tên..."
+                  className="h-8 pl-8 text-xs"
+                />
+              </div>
+              <div className="space-y-1.5 max-h-60 overflow-y-auto pr-1">
+                {filteredClasses.length === 0 && (
+                  <p className="text-sm text-muted-foreground italic py-4 text-center">
+                    Không có lớp phù hợp với bộ lọc hiện tại
+                  </p>
+                )}
+                {filteredClasses.map((c: any) => (
                 <label key={c.id} className="flex items-center gap-2 p-2 rounded-lg border hover:bg-muted/50 cursor-pointer">
                   <Checkbox checked={selectedClassIds.includes(c.id)} onCheckedChange={() => onPickClass(c.id)} />
                   <div className="flex-1 min-w-0">
@@ -230,12 +296,28 @@ export function CloneTemplateDialog({ template, teacherMode = false, onClose }: 
                     </p>
                   </div>
                 </label>
-              ))}
+                ))}
+              </div>
             </TabsContent>
 
-            <TabsContent value="student" className="space-y-2 max-h-60 overflow-y-auto pr-1">
-              <p className="text-xs text-muted-foreground">Chỉ các học viên được chọn mới thấy kế hoạch</p>
-              {students?.map(s => (
+            <TabsContent value="student" className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs text-muted-foreground">Chỉ các học viên được chọn mới thấy kế hoạch</p>
+                <span className="text-[10px] text-muted-foreground">
+                  {filteredStudents.length}/{students?.length || 0} HV
+                </span>
+              </div>
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={searchStudent}
+                  onChange={(e) => setSearchStudent(e.target.value)}
+                  placeholder="Tìm học viên theo tên..."
+                  className="h-8 pl-8 text-xs"
+                />
+              </div>
+              <div className="space-y-1.5 max-h-60 overflow-y-auto pr-1">
+                {filteredStudents.map((s: any) => (
                 <label key={s.teachngo_id} className="flex items-center gap-2 p-2 rounded-lg border hover:bg-muted/50 cursor-pointer">
                   <Checkbox
                     checked={selectedStudentIds.includes(s.teachngo_id)}
@@ -243,7 +325,11 @@ export function CloneTemplateDialog({ template, teacherMode = false, onClose }: 
                   />
                   <span className="text-sm">{s.full_name}</span>
                 </label>
-              ))}
+                ))}
+                {filteredStudents.length === 0 && (
+                  <p className="text-sm text-muted-foreground italic py-4 text-center">Không có học viên phù hợp</p>
+                )}
+              </div>
             </TabsContent>
           </Tabs>
 
