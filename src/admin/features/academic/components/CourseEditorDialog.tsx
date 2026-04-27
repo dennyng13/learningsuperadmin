@@ -146,10 +146,14 @@ export default function CourseEditorDialog({
   };
 
   // Validation
-  const step0Valid = name.trim().length > 0;
-  const canNext = step === 0 ? step0Valid : true;
+  // Step 1 (Thông tin) chứa field bắt buộc duy nhất là `name`.
+  const nameValid = name.trim().length > 0;
+  const canNext =
+    step === 0 ? true /* chọn cấp độ là tuỳ chọn — có thể bỏ qua */
+    : step === 1 ? nameValid
+    : true;
   const goNext = () => {
-    if (step === 0 && !step0Valid) {
+    if (step === 1 && !nameValid) {
       toast.error("Tên khoá học không được trống.");
       return;
     }
