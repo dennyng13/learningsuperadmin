@@ -12,6 +12,7 @@ import {
 } from "@shared/components/ui/alert-dialog";
 import { cn } from "@shared/lib/utils";
 import { getProgramPalette } from "@shared/utils/programColors";
+import { getLevelColorConfig } from "@shared/utils/levelColors";
 import type { Course, CourseStats } from "@admin/features/academic/hooks/useCourses";
 import type { CourseLevel } from "@shared/hooks/useCourseLevels";
 
@@ -35,8 +36,10 @@ export default function CourseCard({
   const isInactive = course.status === "inactive";
 
   const linkedLevelNames = useMemo(() => {
-    const map = new Map(levels.map((l) => [l.id, l.name]));
-    return course.level_ids.map((id) => map.get(id)).filter(Boolean) as string[];
+    const map = new Map(levels.map((l) => [l.id, l]));
+    return course.level_ids
+      .map((id) => map.get(id))
+      .filter(Boolean) as CourseLevel[];
   }, [course.level_ids, levels]);
 
   const plans = studyPlans ?? course.study_plan_ids.map((id) => ({ id, name: "Plan" }));
@@ -46,12 +49,19 @@ export default function CourseCard({
     <article
       className={cn(
         "group rounded-2xl border bg-card overflow-hidden flex flex-col h-full transition-all",
-        "hover:shadow-md hover:border-primary/30",
+        "hover:shadow-lg hover:-translate-y-0.5 hover:border-primary/30",
         isInactive && "opacity-70",
       )}
     >
-      {/* Top accent strip */}
-      <div className={cn("h-1 w-full", palette.progressFill)} />
+      {/* Top accent strip + soft tint */}
+      <div className={cn("h-1.5 w-full", palette.progressFill)} />
+      <div
+        className={cn(
+          "absolute inset-x-0 top-1.5 h-16 pointer-events-none bg-gradient-to-b to-transparent",
+          palette.bannerGradient,
+        )}
+        aria-hidden
+      />
 
       {/* Header */}
       <header className="p-4 pb-2 flex items-start gap-3">
