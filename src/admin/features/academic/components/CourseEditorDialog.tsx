@@ -35,8 +35,8 @@ interface Props {
 
 type Step = 0 | 1 | 2;
 const STEPS: Array<{ key: Step; label: string; sub: string; icon: typeof BookOpen }> = [
-  { key: 0, label: "Thông tin", sub: "Tên · Mô tả · Đầu ra", icon: Sparkles },
-  { key: 1, label: "Cấp độ",    sub: "Gán level vào khoá",    icon: Layers   },
+  { key: 0, label: "Cấp độ",    sub: "Gán level vào khoá",    icon: Layers   },
+  { key: 1, label: "Thông tin", sub: "Tên · Mô tả · Đầu ra", icon: Sparkles },
   { key: 2, label: "Study plan",sub: "Mẫu kế hoạch áp dụng",  icon: ClipboardList },
 ];
 
