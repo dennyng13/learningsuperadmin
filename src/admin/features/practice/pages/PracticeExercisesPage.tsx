@@ -699,6 +699,99 @@ export default function PracticeExercisesPage() {
             </div>
           </div>
 
+          {/* Course assignments — gắn bài tập vào nhiều khoá học để Study Plan
+              tự động lọc đúng resource theo khoá. */}
+          <div>
+            <label className="text-xs font-bold text-muted-foreground mb-1 flex items-center gap-1.5">
+              <GraduationCap className="h-3.5 w-3.5 text-emerald-600" />
+              Khoá học áp dụng
+              {!program && (
+                <span className="text-[10px] font-normal text-muted-foreground">
+                  — Chọn chương trình trước
+                </span>
+              )}
+              {program && programCoursesForEditor.length === 0 && (
+                <span className="text-[10px] font-normal text-muted-foreground">
+                  — Chương trình này chưa có khoá học
+                </span>
+              )}
+            </label>
+            <Popover>
+              <PopoverTrigger asChild disabled={!program || programCoursesForEditor.length === 0}>
+                <button
+                  type="button"
+                  disabled={!program || programCoursesForEditor.length === 0}
+                  className={cn(
+                    "w-full min-h-[40px] flex items-center justify-between gap-2 px-3 py-2 rounded-md border bg-background text-sm transition-colors",
+                    "hover:border-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed",
+                    editingCourseIds.length > 0 && "border-emerald-300 bg-emerald-50/50",
+                  )}
+                >
+                  {editingCourseIds.length === 0 ? (
+                    <span className="text-muted-foreground text-xs">
+                      {program
+                        ? "Chưa gán khoá nào — bài tập sẽ hiện ở mục 'Chưa phân loại'"
+                        : "—"}
+                    </span>
+                  ) : (
+                    <div className="flex flex-wrap gap-1">
+                      {editingCourseIds.map((cid) => {
+                        const c = programCoursesForEditor.find((x) => x.id === cid);
+                        if (!c) return null;
+                        return (
+                          <Badge
+                            key={cid}
+                            variant="secondary"
+                            className="bg-emerald-100 text-emerald-800 border border-emerald-200 gap-1"
+                          >
+                            <GraduationCap className="h-3 w-3" /> {c.name}
+                          </Badge>
+                        );
+                      })}
+                    </div>
+                  )}
+                  <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[320px] p-2" align="start">
+                <div className="text-[11px] font-bold text-muted-foreground uppercase px-2 py-1">
+                  Chọn khoá học
+                </div>
+                <div className="max-h-64 overflow-y-auto space-y-0.5">
+                  {programCoursesForEditor.map((c) => {
+                    const checked = editingCourseIds.includes(c.id);
+                    return (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() =>
+                          setEditingCourseIds((prev) =>
+                            checked ? prev.filter((x) => x !== c.id) : [...prev, c.id],
+                          )
+                        }
+                        className={cn(
+                          "w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm hover:bg-muted transition-colors text-left",
+                          checked && "bg-emerald-50",
+                        )}
+                      >
+                        <div
+                          className={cn(
+                            "w-4 h-4 rounded border flex items-center justify-center shrink-0",
+                            checked ? "bg-emerald-600 border-emerald-600" : "border-muted-foreground/30",
+                          )}
+                        >
+                          {checked && <Check className="h-3 w-3 text-white" />}
+                        </div>
+                        <GraduationCap className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                        <span className="truncate">{c.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+
           {/* Auto-derived type labels */}
           {derivedTypes.length > 0 && (
             <div className="flex items-center gap-2 flex-wrap">
