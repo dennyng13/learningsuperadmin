@@ -111,18 +111,67 @@ export default function CourseClassesDialog({
     staleTime: 30_000,
   });
 
+  /* ── Quick search + phân trang client-side ───────────────────────────
+     Lý do làm client-side: dialog chỉ mở cho 1 course nên dữ liệu
+     thường < 1000 dòng, fetch một lần rẻ hơn nhiều round-trip. Hiển thị
+     dần dần để DOM không phình khi có vài trăm lớp. */
+  const PAGE_OPTIONS = [20, 50, 100] as const;
+  type PageSize = (typeof PAGE_OPTIONS)[number] | "all";
+
+  const [query, setQuery] = useState("");
+  const [pageSize, setPageSize] = useState<PageSize>(20);
+  const [visibleCount, setVisibleCount] = useState<number>(20);
+
+  // Reset paging mỗi lần mở dialog hoặc đổi course.
+  useEffect(() => {
+    if (!open) return;
+    setQuery("");
+    setPageSize(20);
+    setVisibleCount(20);
+  }, [open, course.id]);
+
+  // Khi đổi pageSize hoặc query, reset cửa sổ hiển thị.
+  useEffect(() => {
+    setVisibleCount(pageSize === "all" ? Number.MAX_SAFE_INTEGER : pageSize);
+  }, [pageSize, query]);
+
+  const total = classes?.length ?? 0;
+
+  /** Lọc theo query (tên / code / teacher / level / room / branch). */
+  const filtered = useMemo(() => {
+    const list = classes ?? [];
+    const q = query.trim().toLowerCase();
+    if (!q) return list;
+    return list.filter((c) => {
+      const blob = [
+        c.name, c.class_name, c.class_code, c.level, c.teacher_name, c.room, c.branch,
+      ].filter(Boolean).join(" ").toLowerCase();
+      return blob.includes(q);
+    });
+  }, [classes, query]);
+
+  const filteredCount = filtered.length;
+  const effectiveVisible = Math.min(visibleCount, filteredCount);
+  /** Lát theo cửa sổ hiển thị TRƯỚC khi group, để cap tổng dòng render. */
+  const sliced = useMemo(
+    () => filtered.slice(0, effectiveVisible),
+    [filtered, effectiveVisible],
+  );
+
   const grouped = useMemo(() => {
     const map = new Map<string, ClassRow[]>();
-    for (const c of classes ?? []) {
+    for (const c of sliced) {
       const k = c.level ?? "(chưa rõ cấp độ)";
       const arr = map.get(k) ?? [];
       arr.push(c);
       map.set(k, arr);
     }
     return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b, "vi"));
-  }, [classes]);
+  }, [sliced]);
 
-  const total = classes?.length ?? 0;
+  const hasMore = effectiveVisible < filteredCount;
+  const remaining = filteredCount - effectiveVisible;
+  const loadMoreStep = pageSize === "all" ? filteredCount : (pageSize as number);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
