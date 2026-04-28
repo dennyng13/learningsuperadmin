@@ -514,8 +514,78 @@ export default function RichTextEditor({
   if (!editor) return null;
 
   return (
-    <div ref={containerRef} className={cn("rounded-xl border bg-card overflow-hidden", className)}>
+    <div
+      ref={containerRef}
+      className={cn(
+        // overflow-visible so the sticky toolbar can stay pinned while the
+        // outer page scrolls past the editor (long Reading passages).
+        "rounded-xl border bg-card overflow-visible",
+        className,
+      )}
+    >
       <Toolbar editor={editor} showHeadings={showHeadings} onBlankCreated={onBlankCreated} blankStart={blankStart} />
+      {/* Floating quick-action menu when text is highlighted */}
+      <BubbleMenu
+        editor={editor}
+        options={{ placement: "top" }}
+        shouldShow={({ editor, from, to }) => from !== to && editor.isEditable}
+        className="flex items-center gap-0.5 rounded-lg border bg-popover px-1 py-1 shadow-lg"
+      >
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().toggleBold().run()}
+          title="Bold (Cmd+B)"
+          className={cn(
+            "h-7 w-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted",
+            editor.isActive("bold") && "bg-primary/10 text-primary",
+          )}
+        >
+          <Bold className="h-3.5 w-3.5" />
+        </button>
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().toggleItalic().run()}
+          title="Italic"
+          className={cn(
+            "h-7 w-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted",
+            editor.isActive("italic") && "bg-primary/10 text-primary",
+          )}
+        >
+          <Italic className="h-3.5 w-3.5" />
+        </button>
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().toggleUnderline().run()}
+          title="Underline"
+          className={cn(
+            "h-7 w-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted",
+            editor.isActive("underline") && "bg-primary/10 text-primary",
+          )}
+        >
+          <UnderlineIcon className="h-3.5 w-3.5" />
+        </button>
+        <div className="w-px h-5 bg-border mx-0.5" />
+        <button
+          type="button"
+          title="Tạo ô trống từ chữ đã chọn"
+          onClick={() => {
+            const html = editor.getHTML();
+            const markNums = (html.match(/data-blank-num="(\d+)"/g) || []).map(m => parseInt(m.match(/\d+/)?.[0] || "0"));
+            const shortcodeNums = (html.match(/\[blank_(\d+)\]/g) || []).map(m => parseInt(m.match(/\d+/)?.[0] || "0"));
+            const next = Math.max(...markNums, ...shortcodeNums, blankStart - 1) + 1;
+            const { from, to } = editor.state.selection;
+            const selectedText = editor.state.doc.textBetween(from, to, " ");
+            editor.chain().focus().setMark("blankMark", { "data-blank-num": String(next) }).run();
+            if (selectedText.trim() && onBlankCreated) onBlankCreated(next, selectedText.trim());
+          }}
+          className={cn(
+            "h-7 px-2 flex items-center gap-1 rounded-md text-[10px] font-bold text-muted-foreground hover:text-primary hover:bg-primary/10",
+            editor.isActive("blankMark") && "bg-primary/10 text-primary",
+          )}
+        >
+          <Highlighter className="h-3.5 w-3.5" /> Blank
+        </button>
+      </BubbleMenu>
       <div className="relative" onClick={handleEditorClick}>
         <EditorContent editor={editor} />
         {placeholder && editor.isEmpty && (
