@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@shared/components/ui/button";
 import { Input } from "@shared/components/ui/input";
 import {
-  Plus, Search, MoreVertical, FileText, Trash2, Eye, Pencil, Copy, Loader2, BookOpen, Cloud, ChevronDown, Tags, X, Layers, Upload, GraduationCap,
+  Plus, Search, MoreVertical, FileText, Trash2, Eye, Pencil, Copy, Loader2, BookOpen, Cloud, ChevronDown, Tags, X, Layers, Upload, GraduationCap, Library, ClipboardList, Sparkles, Headphones, PenLine, Mic,
 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
@@ -28,10 +28,22 @@ import { BulkCourseAssignDialog } from "@shared/components/resources/BulkCourseA
 import { useBulkSelection } from "@shared/hooks/useBulkSelection";
 import { Checkbox } from "@shared/components/ui/checkbox";
 
-const statusLabels: Record<string, { label: string; className: string }> = {
-  published: { label: "Published", className: "bg-primary/15 text-primary" },
-  draft: { label: "Draft", className: "bg-accent/15 text-accent" },
-  archived: { label: "Archived", className: "bg-muted text-muted-foreground" },
+const statusLabels: Record<string, { label: string; className: string; dot: string }> = {
+  published: {
+    label: "Đã xuất bản",
+    className: "bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border-emerald-500/30",
+    dot: "bg-emerald-500",
+  },
+  draft: {
+    label: "Nháp",
+    className: "bg-amber-100 text-amber-700 border border-amber-200 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/30",
+    dot: "bg-amber-500",
+  },
+  archived: {
+    label: "Đã lưu trữ",
+    className: "bg-slate-100 text-slate-600 border border-slate-200 dark:bg-slate-500/15 dark:text-slate-300 dark:border-slate-500/30",
+    dot: "bg-slate-400",
+  },
 };
 
 const sectionTypeLabels: Record<string, string> = {
@@ -41,11 +53,11 @@ const sectionTypeLabels: Record<string, string> = {
   SPEAKING: "Speaking",
 };
 
-const SECTION_COLORS: Record<string, { bg: string; text: string; border: string; active: string }> = {
-  READING: { bg: "bg-blue-50", text: "text-blue-700", border: "border-blue-200", active: "bg-blue-200 text-blue-800 border-blue-300" },
-  LISTENING: { bg: "bg-purple-50", text: "text-purple-700", border: "border-purple-200", active: "bg-purple-200 text-purple-800 border-purple-300" },
-  WRITING: { bg: "bg-amber-50", text: "text-amber-700", border: "border-amber-200", active: "bg-amber-200 text-amber-800 border-amber-300" },
-  SPEAKING: { bg: "bg-rose-50", text: "text-rose-700", border: "border-rose-200", active: "bg-rose-200 text-rose-800 border-rose-300" },
+const SECTION_COLORS: Record<string, { bg: string; text: string; border: string; active: string; gradient: string; icon: any }> = {
+  READING:   { bg: "bg-sky-50",     text: "text-sky-700",     border: "border-sky-200",     active: "bg-sky-500 text-white border-sky-500",        gradient: "from-sky-500 to-blue-600",       icon: BookOpen },
+  LISTENING: { bg: "bg-violet-50",  text: "text-violet-700",  border: "border-violet-200",  active: "bg-violet-500 text-white border-violet-500",  gradient: "from-violet-500 to-purple-600",  icon: Headphones },
+  WRITING:   { bg: "bg-amber-50",   text: "text-amber-700",   border: "border-amber-200",   active: "bg-amber-500 text-white border-amber-500",    gradient: "from-amber-500 to-orange-500",   icon: PenLine },
+  SPEAKING:  { bg: "bg-rose-50",    text: "text-rose-700",    border: "border-rose-200",    active: "bg-rose-500 text-white border-rose-500",      gradient: "from-rose-500 to-pink-600",      icon: Mic },
 };
 
 export default function TestManagementPage() {
@@ -190,50 +202,101 @@ export default function TestManagementPage() {
   const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
 
   return (
-    <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-4 md:space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="font-display text-xl md:text-2xl font-extrabold">Ngân hàng đề</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {isLoading ? "Đang tải..." : `${assessments?.length || 0} đề · ${testCount} bài thi · ${exerciseCount} bài tập`}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => navigate("/tests/import")} className="gap-2 rounded-xl">
-            <Upload className="h-4 w-4" /> Import
-          </Button>
-          <Button onClick={() => navigate("/tests/new")} className="gap-2 rounded-xl">
-            <Plus className="h-4 w-4" /> Tạo mới
-          </Button>
+    <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-5 md:space-y-6">
+      {/* ===== Hero header ===== */}
+      <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 via-primary/5 to-accent/10 p-5 md:p-6">
+        <div className="absolute -top-20 -right-20 h-56 w-56 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-16 -left-16 h-48 w-48 rounded-full bg-accent/10 blur-3xl pointer-events-none" />
+        <div className="relative flex flex-col sm:flex-row sm:items-end sm:justify-between gap-5">
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-primary/80 mb-1.5 flex items-center gap-1.5">
+              <Sparkles className="h-3.5 w-3.5" /> Học thuật
+            </p>
+            <h1 className="font-display text-2xl md:text-3xl font-extrabold flex items-center gap-2.5">
+              <Library className="h-7 w-7 md:h-8 md:w-8 text-primary" />
+              Ngân hàng đề
+            </h1>
+            <p className="text-sm text-muted-foreground mt-2 max-w-xl">
+              Tạo và quản lý kho đề thi, bài tập theo từng kỹ năng IELTS — gắn vào khoá học, đồng bộ WorkDrive, gán flashcard.
+            </p>
+
+            {/* Inline mini-stats */}
+            <div className="flex flex-wrap items-center gap-2 mt-4">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-card/80 backdrop-blur border border-border/60 px-3 py-1 text-xs font-semibold shadow-sm">
+                <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                {isLoading ? "Đang tải..." : `${assessments?.length || 0} mục`}
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 px-3 py-1 text-xs font-semibold">
+                <ClipboardList className="h-3 w-3" /> {testCount} bài thi
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-violet-500/10 text-violet-700 dark:text-violet-300 border border-violet-500/30 px-3 py-1 text-xs font-semibold">
+                <Layers className="h-3 w-3" /> {exerciseCount} bài tập
+              </span>
+            </div>
+          </div>
+
+          <div className="flex gap-2 shrink-0">
+            <Button
+              variant="outline"
+              onClick={() => navigate("/tests/import")}
+              className="gap-2 rounded-xl bg-card/80 backdrop-blur border-border/60 hover:bg-card"
+            >
+              <Upload className="h-4 w-4" /> Import
+            </Button>
+            <Button
+              onClick={() => navigate("/tests/new")}
+              className="gap-2 rounded-xl shadow-md shadow-primary/30 bg-gradient-to-br from-primary to-primary/80 hover:shadow-lg hover:shadow-primary/40 transition-shadow"
+            >
+              <Plus className="h-4 w-4" /> Tạo mới
+            </Button>
+          </div>
         </div>
       </div>
 
-      {/* Content type tabs */}
-      <div className="flex gap-1 bg-muted/50 p-1 rounded-xl w-fit">
+      {/* ===== Content type tabs — vivid segmented ===== */}
+      <div className="inline-flex items-center gap-1.5 rounded-2xl border border-border/60 bg-card p-1.5 shadow-sm">
         {[
-          { value: "all", label: "Tất cả", count: (assessments || []).length },
-          { value: "test", label: "Bài thi", count: testCount },
-          { value: "exercise", label: "Bài tập", count: exerciseCount },
-        ].map(tab => (
-          <button
-            key={tab.value}
-            onClick={() => setContentTypeFilter(tab.value)}
-            className={cn(
-              "flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-medium transition-all",
-              contentTypeFilter === tab.value
-                ? "bg-card text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            {tab.label}
-            <span className={cn(
-              "text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center",
-              contentTypeFilter === tab.value ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
-            )}>
-              {tab.count}
-            </span>
-          </button>
-        ))}
+          {
+            value: "all", label: "Tất cả", count: (assessments || []).length, icon: Library,
+            activeClass: "bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-md shadow-primary/30",
+            inactiveHover: "hover:text-primary",
+          },
+          {
+            value: "test", label: "Bài thi", count: testCount, icon: ClipboardList,
+            activeClass: "bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-500/30",
+            inactiveHover: "hover:text-emerald-600 dark:hover:text-emerald-400",
+          },
+          {
+            value: "exercise", label: "Bài tập", count: exerciseCount, icon: Layers,
+            activeClass: "bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-md shadow-violet-500/30",
+            inactiveHover: "hover:text-violet-600 dark:hover:text-violet-400",
+          },
+        ].map(tab => {
+          const active = contentTypeFilter === tab.value;
+          const Icon = tab.icon;
+          return (
+            <button
+              key={tab.value}
+              type="button"
+              onClick={() => setContentTypeFilter(tab.value)}
+              className={cn(
+                "group relative flex items-center gap-2 px-4 md:px-5 py-2 rounded-xl text-sm font-bold transition-all",
+                active
+                  ? `${tab.activeClass} scale-[1.03]`
+                  : `text-muted-foreground ${tab.inactiveHover} hover:bg-muted/60`,
+              )}
+            >
+              <Icon className="h-4 w-4" />
+              {tab.label}
+              <span className={cn(
+                "text-[10px] font-extrabold px-1.5 py-0.5 rounded-full min-w-[22px] text-center",
+                active ? "bg-white/25 text-white" : "bg-muted text-muted-foreground group-hover:bg-card",
+              )}>
+                {tab.count}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Chip-based filters */}
@@ -483,10 +546,12 @@ export default function TestManagementPage() {
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-20 text-muted-foreground">
-          <FileText className="h-12 w-12 mx-auto mb-3 opacity-30" />
-          <p className="font-medium">Chưa có đề thi nào</p>
-          <p className="text-sm mt-1">Bấm "Tạo đề mới" để bắt đầu</p>
+        <div className="text-center py-20 rounded-2xl border border-dashed border-border bg-muted/30">
+          <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/15 to-accent/10 border border-primary/20 mb-4">
+            <Library className="h-8 w-8 text-primary" />
+          </div>
+          <p className="font-display font-bold text-base text-foreground">Chưa có đề thi nào khớp bộ lọc</p>
+          <p className="text-sm text-muted-foreground mt-1">Thử bỏ bớt bộ lọc, hoặc bấm <span className="font-semibold text-foreground">"Tạo mới"</span> để bắt đầu.</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -504,40 +569,67 @@ export default function TestManagementPage() {
           )}
           {filtered.map((test) => {
             const st = statusLabels[test.status] || statusLabels.draft;
+            const sec = SECTION_COLORS[test.section_type];
+            const SecIcon = sec?.icon || FileText;
             return (
               <div
                 key={test.id}
                 className={cn(
-                  "bg-card rounded-xl border p-4 flex items-center gap-4 hover:shadow-sm transition-shadow",
-                  bulkSel.isSelected(test.id) && "border-primary/40 bg-primary/5",
+                  "group relative bg-card rounded-2xl border border-border/70 p-4 flex items-center gap-4 transition-all duration-200",
+                  "hover:shadow-lg hover:shadow-foreground/5 hover:border-primary/40 hover:-translate-y-0.5",
+                  bulkSel.isSelected(test.id) && "border-primary/60 bg-primary/[0.04] shadow-md shadow-primary/10",
                 )}
               >
+                {/* Color strip theo skill */}
+                {sec && (
+                  <span className={cn(
+                    "absolute left-0 top-3 bottom-3 w-1 rounded-r-full bg-gradient-to-b",
+                    sec.gradient,
+                  )} />
+                )}
                 <Checkbox
                   checked={bulkSel.isSelected(test.id)}
                   onCheckedChange={() => bulkSel.toggle(test.id)}
                   aria-label={`Chọn ${test.name}`}
                 />
-                <div className="w-10 h-10 rounded-lg bg-dark flex items-center justify-center flex-shrink-0">
-                  <FileText className="h-5 w-5 text-primary" />
+                <div
+                  className={cn(
+                    "h-12 w-12 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md ring-1 ring-white/20",
+                    sec
+                      ? `bg-gradient-to-br ${sec.gradient} text-white`
+                      : "bg-gradient-to-br from-primary to-primary/70 text-primary-foreground",
+                  )}
+                >
+                  <SecIcon className="h-5 w-5" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <p className="font-bold text-sm">{test.name}</p>
-                    <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${st.className}`}>
+                    <p className="font-display font-bold text-sm md:text-[15px] text-foreground group-hover:text-primary transition-colors">
+                      {test.name}
+                    </p>
+                    <span className={cn(
+                      "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider",
+                      st.className,
+                    )}>
+                      <span className={cn("h-1.5 w-1.5 rounded-full", st.dot, test.status === "published" && "animate-pulse")} />
                       {st.label}
                     </span>
                   </div>
                   {test.book_name && <p className="text-xs text-muted-foreground mt-0.5">{test.book_name}</p>}
                   <div className="flex gap-2 mt-1 flex-wrap items-center">
-                    <span className="text-[10px] bg-secondary text-secondary-foreground px-2 py-0.5 rounded-md font-medium">
+                    <span className={cn(
+                      "inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md font-bold border",
+                      sec ? `${sec.bg} ${sec.text} ${sec.border}` : "bg-secondary text-secondary-foreground border-transparent",
+                    )}>
+                      <SecIcon className="h-3 w-3" />
                       {sectionTypeLabels[test.section_type] || test.section_type}
                     </span>
                     <span className="text-[10px] text-muted-foreground">
-                      {test.total_questions} questions • {Math.floor(test.duration / 60)}min
+                      {test.total_questions} câu • {Math.floor(test.duration / 60)} phút
                     </span>
                     {syncedAssessmentIds.has(test.id) && (
-                      <span className="inline-flex items-center gap-0.5 text-[10px] text-green-600 font-medium">
-                        <Cloud className="h-3 w-3" /> WorkDrive
+                      <span className="inline-flex items-center gap-1 text-[10px] text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 border border-emerald-500/30 rounded-md px-1.5 py-0.5 font-bold">
+                        <Cloud className="h-3 w-3" /> Đã đồng bộ
                       </span>
                     )}
                   </div>
@@ -552,36 +644,36 @@ export default function TestManagementPage() {
                 </div>
                 <div className="hidden sm:block text-xs text-muted-foreground text-right">
                   {test.available_from && (
-                    <p>From: {new Date(test.available_from).toLocaleDateString()}</p>
+                    <p>Từ: {new Date(test.available_from).toLocaleDateString("vi-VN")}</p>
                   )}
                   {test.available_until && (
-                    <p>Until: {new Date(test.available_until).toLocaleDateString()}</p>
+                    <p>Đến: {new Date(test.available_until).toLocaleDateString("vi-VN")}</p>
                   )}
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button className="p-2 rounded-lg hover:bg-muted transition-colors">
+                    <button className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors opacity-60 group-hover:opacity-100">
                       <MoreVertical className="h-4 w-4" />
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem onClick={() => navigate(`/tests/${test.id}`)}>
-                      <Pencil className="h-4 w-4 mr-2" /> Edit
+                      <Pencil className="h-4 w-4 mr-2" /> Chỉnh sửa
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => navigate(`/tests/${test.id}/preview`)}>
-                      <Eye className="h-4 w-4 mr-2" /> Preview
+                      <Eye className="h-4 w-4 mr-2" /> Xem trước
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => duplicateMutation.mutate(test.id)}
                       disabled={duplicateMutation.isPending}
                     >
-                      <Copy className="h-4 w-4 mr-2" /> Duplicate
+                      <Copy className="h-4 w-4 mr-2" /> Nhân bản
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => createFlashcardForTest(test.id, test.name)}>
                       <BookOpen className="h-4 w-4 mr-2" /> Tạo Flashcard
                     </DropdownMenuItem>
                     <DropdownMenuItem className="text-destructive" onClick={() => setDeleteId(test.id)}>
-                      <Trash2 className="h-4 w-4 mr-2" /> Delete
+                      <Trash2 className="h-4 w-4 mr-2" /> Xoá
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
