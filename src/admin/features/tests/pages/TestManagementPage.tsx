@@ -202,50 +202,93 @@ export default function TestManagementPage() {
   const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
 
   return (
-    <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-4 md:space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="font-display text-xl md:text-2xl font-extrabold">Ngân hàng đề</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {isLoading ? "Đang tải..." : `${assessments?.length || 0} đề · ${testCount} bài thi · ${exerciseCount} bài tập`}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => navigate("/tests/import")} className="gap-2 rounded-xl">
-            <Upload className="h-4 w-4" /> Import
-          </Button>
-          <Button onClick={() => navigate("/tests/new")} className="gap-2 rounded-xl">
-            <Plus className="h-4 w-4" /> Tạo mới
-          </Button>
+    <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-5 md:space-y-6">
+      {/* ===== Hero header ===== */}
+      <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 via-primary/5 to-accent/10 p-5 md:p-6">
+        <div className="absolute -top-20 -right-20 h-56 w-56 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-16 -left-16 h-48 w-48 rounded-full bg-accent/10 blur-3xl pointer-events-none" />
+        <div className="relative flex flex-col sm:flex-row sm:items-end sm:justify-between gap-5">
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-primary/80 mb-1.5 flex items-center gap-1.5">
+              <Sparkles className="h-3.5 w-3.5" /> Học thuật
+            </p>
+            <h1 className="font-display text-2xl md:text-3xl font-extrabold flex items-center gap-2.5">
+              <Library className="h-7 w-7 md:h-8 md:w-8 text-primary" />
+              Ngân hàng đề
+            </h1>
+            <p className="text-sm text-muted-foreground mt-2 max-w-xl">
+              Tạo và quản lý kho đề thi, bài tập theo từng kỹ năng IELTS — gắn vào khoá học, đồng bộ WorkDrive, gán flashcard.
+            </p>
+
+            {/* Inline mini-stats */}
+            <div className="flex flex-wrap items-center gap-2 mt-4">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-card/80 backdrop-blur border border-border/60 px-3 py-1 text-xs font-semibold shadow-sm">
+                <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                {isLoading ? "Đang tải..." : `${assessments?.length || 0} mục`}
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 px-3 py-1 text-xs font-semibold">
+                <ClipboardList className="h-3 w-3" /> {testCount} bài thi
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-violet-500/10 text-violet-700 dark:text-violet-300 border border-violet-500/30 px-3 py-1 text-xs font-semibold">
+                <Layers className="h-3 w-3" /> {exerciseCount} bài tập
+              </span>
+            </div>
+          </div>
+
+          <div className="flex gap-2 shrink-0">
+            <Button
+              variant="outline"
+              onClick={() => navigate("/tests/import")}
+              className="gap-2 rounded-xl bg-card/80 backdrop-blur border-border/60 hover:bg-card"
+            >
+              <Upload className="h-4 w-4" /> Import
+            </Button>
+            <Button
+              onClick={() => navigate("/tests/new")}
+              className="gap-2 rounded-xl shadow-md shadow-primary/30 bg-gradient-to-br from-primary to-primary/80 hover:shadow-lg hover:shadow-primary/40 transition-shadow"
+            >
+              <Plus className="h-4 w-4" /> Tạo mới
+            </Button>
+          </div>
         </div>
       </div>
 
-      {/* Content type tabs */}
-      <div className="flex gap-1 bg-muted/50 p-1 rounded-xl w-fit">
+      {/* ===== Content type tabs — vivid segmented ===== */}
+      <div className="inline-flex items-center gap-1.5 rounded-2xl border border-border/60 bg-card p-1.5 shadow-sm">
         {[
-          { value: "all", label: "Tất cả", count: (assessments || []).length },
-          { value: "test", label: "Bài thi", count: testCount },
-          { value: "exercise", label: "Bài tập", count: exerciseCount },
-        ].map(tab => (
-          <button
-            key={tab.value}
-            onClick={() => setContentTypeFilter(tab.value)}
-            className={cn(
-              "flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-medium transition-all",
-              contentTypeFilter === tab.value
-                ? "bg-card text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            {tab.label}
-            <span className={cn(
-              "text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center",
-              contentTypeFilter === tab.value ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
-            )}>
-              {tab.count}
-            </span>
-          </button>
-        ))}
+          { value: "all",      label: "Tất cả",   count: (assessments || []).length, icon: Library,       tone: "from-primary to-primary/70 shadow-primary/30 text-primary" },
+          { value: "test",     label: "Bài thi",  count: testCount,                  icon: ClipboardList, tone: "from-emerald-500 to-teal-600 shadow-emerald-500/30 text-emerald-600 dark:text-emerald-400" },
+          { value: "exercise", label: "Bài tập",  count: exerciseCount,              icon: Layers,        tone: "from-violet-500 to-purple-600 shadow-violet-500/30 text-violet-600 dark:text-violet-400" },
+        ].map(tab => {
+          const active = contentTypeFilter === tab.value;
+          const Icon = tab.icon;
+          const [gradient, ...rest] = tab.tone.split(" ");
+          const inactiveText = rest[rest.length - 1];
+          return (
+            <button
+              key={tab.value}
+              type="button"
+              onClick={() => setContentTypeFilter(tab.value)}
+              className={cn(
+                "group relative flex items-center gap-2 px-4 md:px-5 py-2 rounded-xl text-sm font-bold transition-all",
+                active
+                  ? `bg-gradient-to-br ${tab.tone.split(" ").slice(0, 3).join(" ")} text-white shadow-md scale-[1.02]`
+                  : `text-muted-foreground hover:${inactiveText} hover:bg-muted/60`,
+              )}
+            >
+              <Icon className={cn("h-4 w-4", active ? "text-white" : "")} />
+              {tab.label}
+              <span className={cn(
+                "text-[10px] font-extrabold px-1.5 py-0.5 rounded-full min-w-[22px] text-center",
+                active
+                  ? "bg-white/25 text-white"
+                  : "bg-muted text-muted-foreground group-hover:bg-card",
+              )}>
+                {tab.count}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Chip-based filters */}
