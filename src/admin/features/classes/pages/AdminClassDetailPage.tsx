@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
   GraduationCap, Calendar, Users, BarChart3, Activity, Megaphone,
-  History, Settings, MoreVertical, RefreshCw, Loader2, AlertTriangle,
+  Settings, MoreVertical, RefreshCw, AlertTriangle,
   LayoutDashboard, Wallet, Banknote, Clock,
 } from "lucide-react";
 import { DetailPageLayout } from "@shared/components/layouts/DetailPageLayout";
@@ -41,7 +41,7 @@ import {
 import RequestReplacementTeacherButton from "@admin/features/classes/components/RequestReplacementTeacherButton";
 import {
   SessionsTab, StudentsTab, PlanProgressTab, ActivityTab,
-  AnnouncementsTab, HistoryTab, SettingsTab,
+  AnnouncementsTab, SettingsTab,
   OverviewTab, RevenueTab, PayrollTab, LifecycleTab,
 } from "@admin/features/classes/components/detail-tabs";
 import { useAuth } from "@shared/hooks/useAuth";
@@ -66,7 +66,6 @@ const TABS = [
   { value: "revenue",        label: "Doanh thu",  icon: Wallet      },
   { value: "payroll",        label: "Lương GV",   icon: Banknote    },
   { value: "lifecycle",      label: "Vòng đời",   icon: Clock       },
-  { value: "history",        label: "Lịch sử",    icon: History     },
   { value: "settings",       label: "Cấu hình",   icon: Settings    },
 ] as const;
 
@@ -385,9 +384,6 @@ export default function AdminClassDetailPage() {
         </TabsContent>
         <TabsContent value="lifecycle" className="mt-4">
           <LifecycleTab cls={cls} />
-        </TabsContent>
-        <TabsContent value="history" className="mt-4">
-          <HistoryTab cls={cls} />
         </TabsContent>
         <TabsContent value="settings" className="mt-4">
           <SettingsTab cls={cls} onSaved={() => qc.invalidateQueries({ queryKey: ["admin-class-detail", classId] })} />

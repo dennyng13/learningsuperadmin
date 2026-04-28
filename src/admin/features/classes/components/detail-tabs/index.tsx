@@ -2,7 +2,6 @@ import { Calendar, BarChart3, Activity, Trophy, ClipboardList } from "lucide-rea
 import { BackendPendingTab } from "./PlaceholderTab";
 
 export { AnnouncementsTab } from "./AnnouncementsTab";
-export { HistoryTab } from "./HistoryTab";
 export { SettingsTab } from "./SettingsTab";
 export { StudentsTab } from "./StudentsTab";
 export { OverviewTab } from "./OverviewTab";
