@@ -61,7 +61,7 @@ export default function ContractsListPage() {
             variant="outline"
           >
             <Settings2 className="h-4 w-4 mr-1" />
-            Quản lý template
+            Quản lý mẫu hợp đồng
           </Button>
           <Button onClick={() => navigate("/contracts/new")} size="sm">
             <Plus className="h-4 w-4 mr-1" />
