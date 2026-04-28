@@ -451,13 +451,10 @@ export default function RichTextEditor({
         return true;
       },
       handleKeyDown: (_view, event) => {
-        // Cmd/Ctrl+B: prevent browser's default (toggle bookmarks bar)
-        // and run TipTap toggleBold ourselves so the chain doesn't double-fire.
+        // Block browser's default for Cmd/Ctrl+B (bookmarks bar) but
+        // let TipTap's bold keymap continue via return false.
         if ((event.metaKey || event.ctrlKey) && (event.key === "b" || event.key === "B")) {
           event.preventDefault();
-          event.stopPropagation();
-          editorRef.current?.chain().focus().toggleBold().run();
-          return true; // mark as handled — TipTap won't process again
         }
         return false;
       },
