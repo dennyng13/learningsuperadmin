@@ -487,7 +487,9 @@ export default function AdminBandDescriptorsTab() {
           <div className="grid gap-3">
             {BANDS.map(band => {
               const raw = descriptors[makeKey(activeCriteria, band)] || "";
-              const bullets = raw ? raw.split("\n").filter(l => l.trim()) : [];
+              // Giữ nguyên dòng rỗng để user vừa bấm "Thêm mục" thấy ngay
+              // input mới. Chỉ filter dòng trống ở bước save.
+              const bullets = raw ? raw.split("\n") : [];
               const hasFill = bullets.length > 0;
 
               const setBullets = (newBullets: string[]) => {
@@ -506,6 +508,13 @@ export default function AdminBandDescriptorsTab() {
 
               const addBullet = () => {
                 setBullets([...bullets, ""]);
+                // Auto-focus input vừa thêm
+                setTimeout(() => {
+                  const inputs = document.querySelectorAll(
+                    `[data-band-input="${activeCriteria}-${band}"]`,
+                  );
+                  (inputs[inputs.length - 1] as HTMLInputElement)?.focus();
+                }, 50);
               };
 
               const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>, idx: number) => {
