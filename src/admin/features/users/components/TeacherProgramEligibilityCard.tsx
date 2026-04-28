@@ -87,44 +87,53 @@ export default function TeacherProgramEligibilityCard({ teacherId }: Props) {
 
   const toggleProgram = (key: string, levelObjs: { id: string }[]) => {
     setTouched(true);
-    setProgKeys((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) {
-        next.delete(key);
-        // bỏ chọn cả level con
-        setLevelIds((prevL) => {
-          const nl = new Set(prevL);
-          for (const lv of levelObjs) nl.delete(lv.id);
-          return nl;
-        });
-      } else {
-        next.add(key);
-      }
-      return next;
-    });
+    const isOn = progKeys.has(key);
+    const nextProg = new Set(progKeys);
+    if (isOn) {
+      nextProg.delete(key);
+      // Bỏ chương trình → bỏ luôn các level con thuộc CT đó
+      const nextLvl = new Set(levelIds);
+      for (const lv of levelObjs) nextLvl.delete(lv.id);
+      setLevelIds(nextLvl);
+    } else {
+      nextProg.add(key);
+    }
+    setProgKeys(nextProg);
   };
 
   const toggleLevel = (id: string, programKey: string) => {
     setTouched(true);
-    setLevelIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      // tự động bật program nếu đang tick level con
-      if (next.has(id)) setProgKeys((p) => new Set(p).add(programKey));
-      return next;
-    });
+    const willBeOn = !levelIds.has(id);
+    const nextLvl = new Set(levelIds);
+    if (willBeOn) {
+      nextLvl.add(id);
+      // Tick level con → đảm bảo chương trình tương ứng được bật
+      if (!progKeys.has(programKey)) {
+        const nextProg = new Set(progKeys);
+        nextProg.add(programKey);
+        setProgKeys(nextProg);
+      }
+    } else {
+      // Bỏ tick level con → CHỈ bỏ level con, KHÔNG động vào program
+      // (program vẫn bật dù không còn level nào được tick — user tự quyết)
+      nextLvl.delete(id);
+    }
+    setLevelIds(nextLvl);
   };
 
   const toggleAllLevelsInProgram = (programKey: string, levelObjs: { id: string }[], on: boolean) => {
     setTouched(true);
-    setLevelIds((prev) => {
-      const next = new Set(prev);
-      for (const lv of levelObjs) {
-        if (on) next.add(lv.id); else next.delete(lv.id);
-      }
-      return next;
-    });
-    if (on) setProgKeys((p) => new Set(p).add(programKey));
+    const nextLvl = new Set(levelIds);
+    for (const lv of levelObjs) {
+      if (on) nextLvl.add(lv.id); else nextLvl.delete(lv.id);
+    }
+    setLevelIds(nextLvl);
+    // Bật all → bật program. Bỏ all → KHÔNG tự xoá program (giữ nguyên trạng thái).
+    if (on && !progKeys.has(programKey)) {
+      const nextProg = new Set(progKeys);
+      nextProg.add(programKey);
+      setProgKeys(nextProg);
+    }
   };
 
   const handleSave = async () => {
