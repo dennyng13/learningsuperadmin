@@ -1273,7 +1273,12 @@ export default function PracticeExercisesPage() {
   const filtered = (programCourseFiltered as Exercise[]).filter(ex => {
     if (filterSkills.size > 0 && !filterSkills.has(ex.skill)) return false;
     if (filterStatuses.size > 0 && !filterStatuses.has(ex.status)) return false;
-    if (filterLevels.size > 0 && (!ex.course_level || !filterLevels.has(ex.course_level))) return false;
+    if (filterLevels.size > 0) {
+      const wantsUnclassified = filterLevels.has("__unclassified__");
+      const matchesLevel = ex.course_level && filterLevels.has(ex.course_level);
+      const matchesUnclassified = wantsUnclassified && !ex.course_level;
+      if (!matchesLevel && !matchesUnclassified) return false;
+    }
     if (filterTypes.size > 0) {
       const types = getEffectiveTypes(ex);
       if (!types.some(t => filterTypes.has(t))) return false;
