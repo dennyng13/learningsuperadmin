@@ -59,9 +59,21 @@ export default function TabPerformance({ teacherId }: Props) {
         .select("*")
         .eq("teacher_id", teacherId)
         .maybeSingle();
-      if (error) throw error;
+      if (error) {
+        // View chưa được provision (migration hiệu suất chưa chạy) → coi như chưa có dữ liệu
+        const msg = (error as { message?: string; code?: string }).message ?? "";
+        const code = (error as { code?: string }).code ?? "";
+        if (
+          code === "PGRST205" ||
+          /Could not find the table|schema cache|does not exist/i.test(msg)
+        ) {
+          return null;
+        }
+        throw error;
+      }
       return (data as PerfRow | null) ?? null;
     },
+    retry: false,
   });
 
   const upsertTarget = useMutation({
@@ -107,8 +119,12 @@ export default function TabPerformance({ teacherId }: Props) {
   }
   if (!data) {
     return (
-      <div className="rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground">
-        Chưa có dữ liệu hiệu quả cho giáo viên này.
+      <div className="rounded-2xl border border-dashed border-border bg-card p-6 text-sm text-muted-foreground space-y-1">
+        <p className="font-medium text-foreground">Chưa có dữ liệu hiệu quả</p>
+        <p>
+          Module đo hiệu suất giáo viên (v_teacher_performance) chưa được kích hoạt
+          cho dự án này, hoặc giáo viên chưa có lớp/điểm danh nào để tổng hợp.
+        </p>
       </div>
     );
   }
