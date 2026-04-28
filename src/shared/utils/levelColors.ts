@@ -61,3 +61,64 @@ export const getLevelColor = (colorKeyOrName: string | null): string => {
 export const LEVEL_COLORS: Record<string, LevelColorConfig> = Object.fromEntries(
   Object.entries(LEGACY_NAME_MAP).map(([name, key]) => [name, COLOR_PRESETS[key]])
 );
+
+/**
+ * Map level `color_key` (sky/emerald/...) sang shape `ProgramPalette` để có thể
+ * thay thế palette program ở các UI surface (CourseCard, banner, chip...).
+ * Trả về `null` nếu key không hợp lệ → caller fallback về palette program.
+ *
+ * Lưu ý: tất cả Tailwind color names dưới đây đều nằm trong safelist của
+ * `tailwind.config.ts` (vì programColors.ts cũng dùng cùng pool).
+ */
+const LEVEL_COLOR_TO_TW: Record<string, string> = {
+  sky: "sky",
+  emerald: "emerald",
+  green: "green",
+  amber: "amber",
+  orange: "orange",
+  violet: "violet",
+  purple: "purple",
+  fuchsia: "fuchsia",
+  rose: "rose",
+  teal: "teal",
+  cyan: "cyan",
+  indigo: "indigo",
+  lime: "lime",
+  pink: "pink",
+  // 'gray' cố tình KHÔNG map → fallback về program palette để tránh card xám.
+};
+
+export interface LevelTonePalette {
+  iconBg: string;
+  iconText: string;
+  bannerGradient: string;
+  progressFill: string;
+  borderTop: string;
+  accentSoftBg: string;
+  accentSoftHover: string;
+  accentText: string;
+  accentBorder: string;
+  accentBorderHover: string;
+  ring: string;
+}
+
+export function getLevelTonePalette(colorKeyOrName: string | null | undefined): LevelTonePalette | null {
+  if (!colorKeyOrName) return null;
+  const direct = LEVEL_COLOR_TO_TW[colorKeyOrName];
+  const legacy = !direct ? LEGACY_NAME_MAP[colorKeyOrName] : undefined;
+  const c = direct ?? (legacy ? LEVEL_COLOR_TO_TW[legacy] : undefined);
+  if (!c) return null;
+  return {
+    iconBg: `bg-${c}-500/15`,
+    iconText: `text-${c}-600 dark:text-${c}-400`,
+    bannerGradient: `from-${c}-500/15 via-${c}-500/5 to-card`,
+    progressFill: `bg-${c}-500`,
+    borderTop: `border-t-${c}-500`,
+    accentSoftBg: `bg-${c}-500/10`,
+    accentSoftHover: `hover:bg-${c}-500/15`,
+    accentText: `text-${c}-600 dark:text-${c}-400`,
+    accentBorder: `border-${c}-500/20`,
+    accentBorderHover: `hover:border-${c}-500/50`,
+    ring: `ring-${c}-500/40`,
+  };
+}
