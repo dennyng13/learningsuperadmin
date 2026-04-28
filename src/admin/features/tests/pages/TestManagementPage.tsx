@@ -586,10 +586,10 @@ export default function TestManagementPage() {
                 />
                 <div
                   className={cn(
-                    "h-12 w-12 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md",
+                    "h-12 w-12 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md ring-1 ring-white/20",
                     sec
-                      ? `bg-gradient-to-br ${sec.gradient} text-white shadow-${sec.gradient.split("-")[1]}-500/30`
-                      : "bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-primary/30",
+                      ? `bg-gradient-to-br ${sec.gradient} text-white`
+                      : "bg-gradient-to-br from-primary to-primary/70 text-primary-foreground",
                   )}
                 >
                   <SecIcon className="h-5 w-5" />
