@@ -256,14 +256,24 @@ export default function TestManagementPage() {
       {/* ===== Content type tabs — vivid segmented ===== */}
       <div className="inline-flex items-center gap-1.5 rounded-2xl border border-border/60 bg-card p-1.5 shadow-sm">
         {[
-          { value: "all",      label: "Tất cả",   count: (assessments || []).length, icon: Library,       tone: "from-primary to-primary/70 shadow-primary/30 text-primary" },
-          { value: "test",     label: "Bài thi",  count: testCount,                  icon: ClipboardList, tone: "from-emerald-500 to-teal-600 shadow-emerald-500/30 text-emerald-600 dark:text-emerald-400" },
-          { value: "exercise", label: "Bài tập",  count: exerciseCount,              icon: Layers,        tone: "from-violet-500 to-purple-600 shadow-violet-500/30 text-violet-600 dark:text-violet-400" },
+          {
+            value: "all", label: "Tất cả", count: (assessments || []).length, icon: Library,
+            activeClass: "bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-md shadow-primary/30",
+            inactiveHover: "hover:text-primary",
+          },
+          {
+            value: "test", label: "Bài thi", count: testCount, icon: ClipboardList,
+            activeClass: "bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-500/30",
+            inactiveHover: "hover:text-emerald-600 dark:hover:text-emerald-400",
+          },
+          {
+            value: "exercise", label: "Bài tập", count: exerciseCount, icon: Layers,
+            activeClass: "bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-md shadow-violet-500/30",
+            inactiveHover: "hover:text-violet-600 dark:hover:text-violet-400",
+          },
         ].map(tab => {
           const active = contentTypeFilter === tab.value;
           const Icon = tab.icon;
-          const [gradient, ...rest] = tab.tone.split(" ");
-          const inactiveText = rest[rest.length - 1];
           return (
             <button
               key={tab.value}
@@ -272,17 +282,15 @@ export default function TestManagementPage() {
               className={cn(
                 "group relative flex items-center gap-2 px-4 md:px-5 py-2 rounded-xl text-sm font-bold transition-all",
                 active
-                  ? `bg-gradient-to-br ${tab.tone.split(" ").slice(0, 3).join(" ")} text-white shadow-md scale-[1.02]`
-                  : `text-muted-foreground hover:${inactiveText} hover:bg-muted/60`,
+                  ? `${tab.activeClass} scale-[1.03]`
+                  : `text-muted-foreground ${tab.inactiveHover} hover:bg-muted/60`,
               )}
             >
-              <Icon className={cn("h-4 w-4", active ? "text-white" : "")} />
+              <Icon className="h-4 w-4" />
               {tab.label}
               <span className={cn(
                 "text-[10px] font-extrabold px-1.5 py-0.5 rounded-full min-w-[22px] text-center",
-                active
-                  ? "bg-white/25 text-white"
-                  : "bg-muted text-muted-foreground group-hover:bg-card",
+                active ? "bg-white/25 text-white" : "bg-muted text-muted-foreground group-hover:bg-card",
               )}>
                 {tab.count}
               </span>
