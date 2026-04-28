@@ -13,7 +13,7 @@ import {
 } from "@shared/components/ui/alert-dialog";
 import { cn } from "@shared/lib/utils";
 import { getProgramPalette } from "@shared/utils/programColors";
-import { getLevelColorConfig } from "@shared/utils/levelColors";
+import { getLevelColorConfig, getLevelTonePalette } from "@shared/utils/levelColors";
 import type { Course, CourseStats } from "@admin/features/academic/hooks/useCourses";
 import type { CourseLevel } from "@shared/hooks/useCourseLevels";
 import CourseClassesDialog from "./CourseClassesDialog";
@@ -62,6 +62,22 @@ export default function CourseCard({
       .map((id) => map.get(id))
       .filter(Boolean) as CourseLevel[];
   }, [course.level_ids, levels]);
+
+  /**
+   * Tone màu của card — ưu tiên level CHỦ ĐẠO (level đầu tiên gán cho khoá),
+   * fallback về palette program nếu khoá chưa gán level hoặc level không có
+   * `color_key` hợp lệ. Điều này giúp các thẻ trong cùng một program vẫn có
+   * sắc màu khác nhau, đỡ nhàm mắt — trong khi tab program và badge program
+   * vẫn giữ màu chương trình để nhận diện.
+   */
+  const levelTone = useMemo(() => {
+    const primary = linkedLevelNames[0];
+    if (!primary) return null;
+    return getLevelTonePalette(primary.color_key || primary.name);
+  }, [linkedLevelNames]);
+
+  /** Tone hiệu dụng — merge level tone (nếu có) lên palette program. */
+  const tone = useMemo(() => ({ ...palette, ...(levelTone ?? {}) }), [palette, levelTone]);
 
   const plans = studyPlans ?? course.study_plan_ids.map((id) => ({ id, name: "Plan" }));
   const planCount = plans.length;
