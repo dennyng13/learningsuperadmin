@@ -417,9 +417,9 @@ export default function PracticeExercisesPage() {
       return;
     }
     if (!title.trim()) { toast.error("Vui lòng nhập tiêu đề"); return; }
-    // "unclassified" là sentinel cho chương trình "Chưa phân loại" → lưu null vào DB
-    const isUnclassifiedProgram = program === "unclassified";
-    if (!program) { toast.error("Vui lòng chọn chương trình"); return; }
+    // "unclassified" là sentinel cho chương trình "Chưa phân loại" → lưu null vào DB.
+    // Cho phép program rỗng (xem như chưa phân loại) để giảm ma sát khi tạo bài speaking/writing.
+    const isUnclassifiedProgram = !program || program === "unclassified";
     setSaving(true);
 
     const effectiveStatus = statusOverride || exerciseStatus;
