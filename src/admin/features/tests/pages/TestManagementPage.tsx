@@ -538,10 +538,12 @@ export default function TestManagementPage() {
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-20 text-muted-foreground">
-          <FileText className="h-12 w-12 mx-auto mb-3 opacity-30" />
-          <p className="font-medium">Chưa có đề thi nào</p>
-          <p className="text-sm mt-1">Bấm "Tạo đề mới" để bắt đầu</p>
+        <div className="text-center py-20 rounded-2xl border border-dashed border-border bg-muted/30">
+          <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/15 to-accent/10 border border-primary/20 mb-4">
+            <Library className="h-8 w-8 text-primary" />
+          </div>
+          <p className="font-display font-bold text-base text-foreground">Chưa có đề thi nào khớp bộ lọc</p>
+          <p className="text-sm text-muted-foreground mt-1">Thử bỏ bớt bộ lọc, hoặc bấm <span className="font-semibold text-foreground">"Tạo mới"</span> để bắt đầu.</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -559,40 +561,67 @@ export default function TestManagementPage() {
           )}
           {filtered.map((test) => {
             const st = statusLabels[test.status] || statusLabels.draft;
+            const sec = SECTION_COLORS[test.section_type];
+            const SecIcon = sec?.icon || FileText;
             return (
               <div
                 key={test.id}
                 className={cn(
-                  "bg-card rounded-xl border p-4 flex items-center gap-4 hover:shadow-sm transition-shadow",
-                  bulkSel.isSelected(test.id) && "border-primary/40 bg-primary/5",
+                  "group relative bg-card rounded-2xl border border-border/70 p-4 flex items-center gap-4 transition-all duration-200",
+                  "hover:shadow-lg hover:shadow-foreground/5 hover:border-primary/40 hover:-translate-y-0.5",
+                  bulkSel.isSelected(test.id) && "border-primary/60 bg-primary/[0.04] shadow-md shadow-primary/10",
                 )}
               >
+                {/* Color strip theo skill */}
+                {sec && (
+                  <span className={cn(
+                    "absolute left-0 top-3 bottom-3 w-1 rounded-r-full bg-gradient-to-b",
+                    sec.gradient,
+                  )} />
+                )}
                 <Checkbox
                   checked={bulkSel.isSelected(test.id)}
                   onCheckedChange={() => bulkSel.toggle(test.id)}
                   aria-label={`Chọn ${test.name}`}
                 />
-                <div className="w-10 h-10 rounded-lg bg-dark flex items-center justify-center flex-shrink-0">
-                  <FileText className="h-5 w-5 text-primary" />
+                <div
+                  className={cn(
+                    "h-12 w-12 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md",
+                    sec
+                      ? `bg-gradient-to-br ${sec.gradient} text-white shadow-${sec.gradient.split("-")[1]}-500/30`
+                      : "bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-primary/30",
+                  )}
+                >
+                  <SecIcon className="h-5 w-5" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <p className="font-bold text-sm">{test.name}</p>
-                    <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${st.className}`}>
+                    <p className="font-display font-bold text-sm md:text-[15px] text-foreground group-hover:text-primary transition-colors">
+                      {test.name}
+                    </p>
+                    <span className={cn(
+                      "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider",
+                      st.className,
+                    )}>
+                      <span className={cn("h-1.5 w-1.5 rounded-full", st.dot, test.status === "published" && "animate-pulse")} />
                       {st.label}
                     </span>
                   </div>
                   {test.book_name && <p className="text-xs text-muted-foreground mt-0.5">{test.book_name}</p>}
                   <div className="flex gap-2 mt-1 flex-wrap items-center">
-                    <span className="text-[10px] bg-secondary text-secondary-foreground px-2 py-0.5 rounded-md font-medium">
+                    <span className={cn(
+                      "inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md font-bold border",
+                      sec ? `${sec.bg} ${sec.text} ${sec.border}` : "bg-secondary text-secondary-foreground border-transparent",
+                    )}>
+                      <SecIcon className="h-3 w-3" />
                       {sectionTypeLabels[test.section_type] || test.section_type}
                     </span>
                     <span className="text-[10px] text-muted-foreground">
-                      {test.total_questions} questions • {Math.floor(test.duration / 60)}min
+                      {test.total_questions} câu • {Math.floor(test.duration / 60)} phút
                     </span>
                     {syncedAssessmentIds.has(test.id) && (
-                      <span className="inline-flex items-center gap-0.5 text-[10px] text-green-600 font-medium">
-                        <Cloud className="h-3 w-3" /> WorkDrive
+                      <span className="inline-flex items-center gap-1 text-[10px] text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 border border-emerald-500/30 rounded-md px-1.5 py-0.5 font-bold">
+                        <Cloud className="h-3 w-3" /> Đã đồng bộ
                       </span>
                     )}
                   </div>
@@ -607,36 +636,36 @@ export default function TestManagementPage() {
                 </div>
                 <div className="hidden sm:block text-xs text-muted-foreground text-right">
                   {test.available_from && (
-                    <p>From: {new Date(test.available_from).toLocaleDateString()}</p>
+                    <p>Từ: {new Date(test.available_from).toLocaleDateString("vi-VN")}</p>
                   )}
                   {test.available_until && (
-                    <p>Until: {new Date(test.available_until).toLocaleDateString()}</p>
+                    <p>Đến: {new Date(test.available_until).toLocaleDateString("vi-VN")}</p>
                   )}
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button className="p-2 rounded-lg hover:bg-muted transition-colors">
+                    <button className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors opacity-60 group-hover:opacity-100">
                       <MoreVertical className="h-4 w-4" />
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem onClick={() => navigate(`/tests/${test.id}`)}>
-                      <Pencil className="h-4 w-4 mr-2" /> Edit
+                      <Pencil className="h-4 w-4 mr-2" /> Chỉnh sửa
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => navigate(`/tests/${test.id}/preview`)}>
-                      <Eye className="h-4 w-4 mr-2" /> Preview
+                      <Eye className="h-4 w-4 mr-2" /> Xem trước
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => duplicateMutation.mutate(test.id)}
                       disabled={duplicateMutation.isPending}
                     >
-                      <Copy className="h-4 w-4 mr-2" /> Duplicate
+                      <Copy className="h-4 w-4 mr-2" /> Nhân bản
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => createFlashcardForTest(test.id, test.name)}>
                       <BookOpen className="h-4 w-4 mr-2" /> Tạo Flashcard
                     </DropdownMenuItem>
                     <DropdownMenuItem className="text-destructive" onClick={() => setDeleteId(test.id)}>
-                      <Trash2 className="h-4 w-4 mr-2" /> Delete
+                      <Trash2 className="h-4 w-4 mr-2" /> Xoá
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
