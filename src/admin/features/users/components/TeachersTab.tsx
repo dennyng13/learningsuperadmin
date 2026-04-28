@@ -466,9 +466,6 @@ export default function TeachersTab() {
             </Button>
           )}
 
-          <Button onClick={syncStaff} disabled={syncing} size="sm" variant="outline" className="h-8 text-xs px-3 text-sky-600 border-sky-200 hover:bg-sky-600 hover:text-white hover:border-sky-600 dark:text-sky-400 dark:border-sky-800 dark:hover:bg-sky-600 dark:hover:text-white dark:hover:border-sky-600 transition-colors">
-            {syncing ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5 mr-1" />}Đồng bộ TnG
-          </Button>
           <Button onClick={autoLinkTeachers} disabled={autoLinking} size="sm" variant="outline" className="h-8 text-xs px-3 text-amber-600 border-amber-200 hover:bg-amber-600 hover:text-white hover:border-amber-600 dark:text-amber-400 dark:border-amber-800 dark:hover:bg-amber-600 dark:hover:text-white dark:hover:border-amber-600 transition-colors">
             {autoLinking ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Link2 className="h-3.5 w-3.5 mr-1" />}Tự động liên kết
           </Button>
@@ -477,9 +474,6 @@ export default function TeachersTab() {
           </Button>
         </div>
       </div>
-      <p className="text-[11px] text-muted-foreground/60 mt-1 flex items-center gap-1">
-        <Clock className="h-3 w-3" /> Tự động đồng bộ mỗi ngày lúc 00:00
-      </p>
 
       <div className="bg-card rounded-xl border overflow-hidden">
         <div className="overflow-x-auto max-h-[70vh]">
