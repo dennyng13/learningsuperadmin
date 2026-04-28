@@ -471,6 +471,27 @@ export default function RichTextEditor({
     }
   }, [value, editor]);
 
+  /**
+   * Hard-block Cmd/Ctrl+B at the capture phase so the browser never sees it
+   * (some browsers / extensions toggle the bookmarks bar before TipTap's
+   * handleKeyDown gets a chance to preventDefault). TipTap still bolds
+   * because we manually invoke its command.
+   */
+  useEffect(() => {
+    if (!editor) return;
+    const node = containerRef.current;
+    if (!node) return;
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && (e.key === "b" || e.key === "B")) {
+        e.preventDefault();
+        e.stopPropagation();
+        editor.chain().focus().toggleBold().run();
+      }
+    };
+    node.addEventListener("keydown", onKey, true);
+    return () => node.removeEventListener("keydown", onKey, true);
+  }, [editor]);
+
   const handleEditorClick = useCallback((e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
     const blankEl = target.closest("[data-blank-num]");
