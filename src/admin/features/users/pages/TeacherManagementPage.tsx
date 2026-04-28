@@ -1,9 +1,10 @@
 import { lazy, Suspense, useEffect, useMemo, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Clock3, GraduationCap, Receipt, TrendingUp, Users } from "lucide-react";
+import { Clock3, GraduationCap, Receipt, Sparkles, TrendingUp, Users } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@shared/components/ui/tabs";
 import { TabSkeleton } from "@shared/components/ui/tab-skeleton";
 import TeacherTabErrorBoundary from "@admin/features/users/components/TeacherTabErrorBoundary";
+import { cn } from "@shared/lib/utils";
 
 function logImportError(name: string, err: unknown): never {
   // eslint-disable-next-line no-console
@@ -125,31 +126,57 @@ export default function TeacherManagementPage() {
 
   return (
     <div data-teachers-page-root="true" className="p-4 md:p-6 max-w-6xl mx-auto space-y-4 md:space-y-6">
-      <div>
-        <h1 className="font-display text-xl md:text-2xl font-extrabold flex items-center gap-2">
-          <GraduationCap className="h-5 w-5 md:h-6 md:w-6 text-primary" />
-          Quản lý giáo viên
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Gom hồ sơ, lịch rảnh, hiệu suất và tính lương vào một module giáo viên thống nhất
-        </p>
-      </div>
+      {/* ─── Hero header ─── */}
+      <header className="relative overflow-hidden rounded-2xl border bg-card">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-violet-500/5 to-transparent pointer-events-none" aria-hidden />
+        <div className="absolute -top-10 -right-10 h-36 w-36 rounded-full bg-primary/15 blur-3xl pointer-events-none" aria-hidden />
+        <div className="absolute -bottom-12 -left-8 h-32 w-32 rounded-full bg-violet-500/10 blur-3xl pointer-events-none" aria-hidden />
+        <div className="relative p-4 md:p-6 flex items-start justify-between gap-3 flex-wrap">
+          <div className="flex items-start gap-3 min-w-0">
+            <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary to-violet-500 text-primary-foreground flex items-center justify-center shrink-0 shadow-lg shadow-primary/30">
+              <GraduationCap className="h-6 w-6" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-primary/80 mb-0.5 inline-flex items-center gap-1">
+                <Sparkles className="h-3 w-3" /> Nhân sự giảng dạy
+              </p>
+              <h1 className="font-display text-xl md:text-2xl font-extrabold leading-tight">
+                Quản lý giáo viên
+              </h1>
+              <p className="text-xs md:text-sm text-muted-foreground mt-1 max-w-2xl">
+                Một module duy nhất gom hồ sơ, lịch rảnh, hiệu suất và tính lương — đồng bộ với{" "}
+                <strong>Quản lý khoá học</strong> để cấp đúng level/khoá cho từng giáo viên.
+              </p>
+            </div>
+          </div>
+        </div>
+      </header>
 
       <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
         <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
-          <TabsList className="bg-muted/60 p-1 rounded-xl h-auto gap-1 w-max md:w-auto">
-            <TabsTrigger value="directory" className="gap-1.5 px-3 md:px-4 py-2 md:py-2.5 rounded-lg text-xs md:text-sm font-semibold">
-              <Users className="h-3.5 w-3.5 md:h-4 md:w-4" />Danh sách
-            </TabsTrigger>
-            <TabsTrigger value="availability" className="gap-1.5 px-3 md:px-4 py-2 md:py-2.5 rounded-lg text-xs md:text-sm font-semibold">
-              <Clock3 className="h-3.5 w-3.5 md:h-4 md:w-4" />Lịch rảnh
-            </TabsTrigger>
-            <TabsTrigger value="performance" className="gap-1.5 px-3 md:px-4 py-2 md:py-2.5 rounded-lg text-xs md:text-sm font-semibold">
-              <TrendingUp className="h-3.5 w-3.5 md:h-4 md:w-4" />Hiệu suất
-            </TabsTrigger>
-            <TabsTrigger value="income" className="gap-1.5 px-3 md:px-4 py-2 md:py-2.5 rounded-lg text-xs md:text-sm font-semibold">
-              <Receipt className="h-3.5 w-3.5 md:h-4 md:w-4" />Tính lương
-            </TabsTrigger>
+          <TabsList className="bg-muted/50 p-1.5 rounded-2xl h-auto gap-1 w-max md:w-auto border border-border/60 shadow-sm">
+            {[
+              { v: "directory", icon: Users, label: "Danh sách", grad: "from-primary to-blue-500" },
+              { v: "availability", icon: Clock3, label: "Lịch rảnh", grad: "from-emerald-500 to-teal-500" },
+              { v: "performance", icon: TrendingUp, label: "Hiệu suất", grad: "from-violet-500 to-fuchsia-500" },
+              { v: "income", icon: Receipt, label: "Tính lương", grad: "from-amber-500 to-orange-500" },
+            ].map(({ v, icon: Icon, label, grad }) => (
+              <TabsTrigger
+                key={v}
+                value={v}
+                className={cn(
+                  "gap-1.5 px-3 md:px-4 py-2 md:py-2.5 rounded-xl text-xs md:text-sm font-semibold transition-all",
+                  "data-[state=active]:bg-gradient-to-br data-[state=active]:text-white data-[state=active]:shadow-lg",
+                  "data-[state=active]:scale-[1.02]",
+                  `data-[state=active]:${grad.split(" ")[0]} data-[state=active]:${grad.split(" ")[1]}`,
+                  // tailwind doesn't pick dynamic — explicit:
+                )}
+                style={undefined}
+              >
+                <Icon className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                {label}
+              </TabsTrigger>
+            ))}
           </TabsList>
         </div>
 
