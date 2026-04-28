@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { SyncPreviewDialog, SyncPreviewData } from "@admin/features/tests/components/SyncPreviewDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@shared/lib/utils";
 import { Button } from "@shared/components/ui/button";
@@ -18,7 +17,7 @@ import {
   Tooltip, TooltipContent, TooltipTrigger,
 } from "@shared/components/ui/tooltip";
 import {
-  Search, Plus, Pencil, Trash2, Link2, Unlink, ChevronLeft, ChevronRight, ArrowUpDown, RefreshCw, Loader2, Check, X, Copy, ExternalLink, Users, Clock, Shield, ShieldCheck, UserCog,
+  Search, Plus, Pencil, Trash2, Link2, Unlink, ChevronLeft, ChevronRight, ArrowUpDown, Loader2, Check, X, Copy, ExternalLink, Users, Shield, ShieldCheck, UserCog,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -71,10 +70,6 @@ export default function TeachersTab() {
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [linkedRoleMap, setLinkedRoleMap] = useState<Record<string, LinkedAccountRole | null>>({});
   const [loading, setLoading] = useState(true);
-  const [syncing, setSyncing] = useState(false);
-  const [syncPreview, setSyncPreview] = useState<SyncPreviewData | null>(null);
-  const [syncPreviewOpen, setSyncPreviewOpen] = useState(false);
-  const [syncConfirming, setSyncConfirming] = useState(false);
   const [autoLinking, setAutoLinking] = useState(false);
   const [search, setSearch] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
@@ -101,19 +96,6 @@ export default function TeachersTab() {
   const [linkEmail, setLinkEmail] = useState("");
   const [linkAccountId, setLinkAccountId] = useState("");
   const [linking, setLinking] = useState(false);
-
-  // P5a: sync-teachngo-staff edge function archived. Sync feature disabled.
-  const syncStaff = async () => {
-    toast.info("Tính năng đồng bộ Teach'n Go đã bị vô hiệu hoá (P5).");
-  };
-
-  // P5a: sync-teachngo-staff edge function archived.
-  const confirmSyncStaff = async () => {
-    toast.info("Tính năng đồng bộ Teach'n Go đã bị vô hiệu hoá (P5).");
-    setSyncConfirming(false);
-    setSyncPreviewOpen(false);
-    setSyncPreview(null);
-  };
 
   const autoLinkTeachers = async () => {
     setAutoLinking(true);
@@ -466,9 +448,6 @@ export default function TeachersTab() {
             </Button>
           )}
 
-          <Button onClick={syncStaff} disabled={syncing} size="sm" variant="outline" className="h-8 text-xs px-3 text-sky-600 border-sky-200 hover:bg-sky-600 hover:text-white hover:border-sky-600 dark:text-sky-400 dark:border-sky-800 dark:hover:bg-sky-600 dark:hover:text-white dark:hover:border-sky-600 transition-colors">
-            {syncing ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5 mr-1" />}Đồng bộ TnG
-          </Button>
           <Button onClick={autoLinkTeachers} disabled={autoLinking} size="sm" variant="outline" className="h-8 text-xs px-3 text-amber-600 border-amber-200 hover:bg-amber-600 hover:text-white hover:border-amber-600 dark:text-amber-400 dark:border-amber-800 dark:hover:bg-amber-600 dark:hover:text-white dark:hover:border-amber-600 transition-colors">
             {autoLinking ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Link2 className="h-3.5 w-3.5 mr-1" />}Tự động liên kết
           </Button>
@@ -477,9 +456,6 @@ export default function TeachersTab() {
           </Button>
         </div>
       </div>
-      <p className="text-[11px] text-muted-foreground/60 mt-1 flex items-center gap-1">
-        <Clock className="h-3 w-3" /> Tự động đồng bộ mỗi ngày lúc 00:00
-      </p>
 
       <div className="bg-card rounded-xl border overflow-hidden">
         <div className="overflow-x-auto max-h-[70vh]">
@@ -792,14 +768,6 @@ export default function TeachersTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      <SyncPreviewDialog
-        open={syncPreviewOpen}
-        onOpenChange={setSyncPreviewOpen}
-        preview={syncPreview}
-        onConfirm={confirmSyncStaff}
-        confirming={syncConfirming}
-        entityLabel="giáo viên"
-      />
     </div>
   );
 }

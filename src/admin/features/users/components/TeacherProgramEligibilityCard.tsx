@@ -1,170 +1,156 @@
+/**
+ * TeacherProgramEligibilityCard
+ *
+ * Cấu hình "Chương trình & Cấp độ được phép giảng dạy" cho 1 giáo viên.
+ *
+ * Nguồn dữ liệu DUY NHẤT: trang "Quản lý khoá học" (`/courses`) — đọc qua
+ *   - `useCoursesAdmin()`  → 3 chương trình chuẩn (IELTS / WRE / Customized)
+ *   - `useCourseLevels()`  → các cấp độ con đã gắn vào program (program_levels)
+ *
+ * Lưu vào bảng `teacher_capabilities`:
+ *   - `eligible_program_keys`  → keys của program (vd. ["ielts","wre"])
+ *   - `level_keys`             → ids của course_levels được tick
+ */
 import { useEffect, useMemo, useState } from "react";
-import { BookCheck, Loader2, Save, GraduationCap, PenLine, Sparkles, AlertTriangle } from "lucide-react";
+import { Loader2, Save, GraduationCap, AlertTriangle, Layers, BookCheck } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@shared/components/ui/button";
 import { Checkbox } from "@shared/components/ui/checkbox";
-import { Label } from "@shared/components/ui/label";
 import { Badge } from "@shared/components/ui/badge";
 import { cn } from "@shared/lib/utils";
-
-interface ProgramRow {
-  id: string;
-  key: string;
-  name: string;
-  program_key: string | null;
-  level: string | null;
-  sort_order: number;
-  is_active: boolean;
-}
+import { useCoursesAdmin } from "@admin/features/academic/hooks/useCoursesAdmin";
+import { useCourseLevels } from "@shared/hooks/useCourseLevels";
+import { getProgramIcon, getProgramPalette } from "@shared/utils/programColors";
 
 interface CapabilityRow {
   id: string;
   teacher_id: string;
   eligible_program_keys: string[] | null;
+  level_keys: string[] | null;
 }
 
-interface Props {
-  teacherId: string;
-}
-
-type GroupKey = "ielts" | "wre" | "customized" | "other";
-
-const GROUP_META: Record<GroupKey, { label: string; description: string; Icon: typeof GraduationCap; accent: string }> = {
-  ielts: {
-    label: "IELTS",
-    description: "8 cấp độ theo lộ trình band",
-    Icon: GraduationCap,
-    accent: "bg-primary/10 text-primary border-primary/30",
-  },
-  wre: {
-    label: "WRE",
-    description: "Writing & Reading Exam",
-    Icon: PenLine,
-    accent: "bg-violet-500/10 text-violet-700 border-violet-300 dark:text-violet-300",
-  },
-  customized: {
-    label: "Customized",
-    description: "Lớp 1-1 / thiết kế riêng",
-    Icon: Sparkles,
-    accent: "bg-amber-500/10 text-amber-700 border-amber-300 dark:text-amber-300",
-  },
-  other: {
-    label: "Khác",
-    description: "Chương trình ngoài catalog chính",
-    Icon: BookCheck,
-    accent: "bg-muted text-muted-foreground border-border",
-  },
-};
-
-const GROUP_ORDER: GroupKey[] = ["ielts", "wre", "customized", "other"];
-
-function normalizeGroup(p: ProgramRow): GroupKey {
-  const raw = (p.program_key || "").toLowerCase().trim();
-  if (raw === "ielts" || raw === "wre" || raw === "customized") return raw;
-  const k = (p.key || "").toLowerCase();
-  if (k.startsWith("ielts")) return "ielts";
-  if (k.startsWith("wre")) return "wre";
-  if (k.startsWith("custom")) return "customized";
-  return "other";
-}
+interface Props { teacherId: string }
 
 export default function TeacherProgramEligibilityCard({ teacherId }: Props) {
-  const [loading, setLoading] = useState(true);
+  const { programs, loading: progLoading } = useCoursesAdmin();
+  const { levels } = useCourseLevels({ includeOrphans: false });
+
+  const [capLoading, setCapLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [programs, setPrograms] = useState<ProgramRow[]>([]);
   const [capability, setCapability] = useState<CapabilityRow | null>(null);
-  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
+  const [progKeys, setProgKeys] = useState<Set<string>>(new Set());
+  const [levelIds, setLevelIds] = useState<Set<string>>(new Set());
   const [touched, setTouched] = useState(false);
 
+  // Load capability for this teacher
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      setLoading(true);
-      const [progsRes, capRes] = await Promise.all([
-        (supabase.from as any)("programs")
-          .select("id, key, name, program_key, level, sort_order, is_active")
-          .eq("is_active", true)
-          .order("program_key", { ascending: true })
-          .order("sort_order", { ascending: true }),
-        (supabase.from as any)("teacher_capabilities")
-          .select("id, teacher_id, eligible_program_keys")
-          .eq("teacher_id", teacherId)
-          .maybeSingle(),
-      ]);
+      setCapLoading(true);
+      const { data, error } = await (supabase.from as any)("teacher_capabilities")
+        .select("id, teacher_id, eligible_program_keys, level_keys")
+        .eq("teacher_id", teacherId)
+        .maybeSingle();
       if (cancelled) return;
-
-      if (progsRes.error) {
-        toast.error("Không tải được danh sách chương trình", { description: progsRes.error.message });
+      if (error) {
+        toast.error("Không tải được capability", { description: error.message });
       }
-      const rows: ProgramRow[] = Array.isArray(progsRes.data) ? (progsRes.data as ProgramRow[]) : [];
-      setPrograms(rows);
-
-      const cap = (capRes.data as CapabilityRow | null) ?? null;
+      const cap = (data as CapabilityRow | null) ?? null;
       setCapability(cap);
-      const initial = new Set<string>(cap?.eligible_program_keys ?? []);
-      setSelectedKeys(initial);
+      setProgKeys(new Set(cap?.eligible_program_keys ?? []));
+      setLevelIds(new Set(cap?.level_keys ?? []));
       setTouched(false);
-      setLoading(false);
+      setCapLoading(false);
     })();
     return () => { cancelled = true; };
   }, [teacherId]);
 
-  const grouped = useMemo(() => {
-    const map: Record<GroupKey, ProgramRow[]> = { ielts: [], wre: [], customized: [], other: [] };
-    for (const p of programs) map[normalizeGroup(p)].push(p);
-    for (const g of GROUP_ORDER) map[g].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
-    return map;
-  }, [programs]);
+  // Group: 1 program → list level objects (resolved from level_ids)
+  const groups = useMemo(() => {
+    const lvlMap = new Map(levels.map((l) => [l.id, l]));
+    return programs.map((p) => ({
+      program: p,
+      levelObjs: (p.level_ids ?? [])
+        .map((id) => lvlMap.get(id))
+        .filter((x): x is NonNullable<typeof x> => Boolean(x))
+        .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)),
+    }));
+  }, [programs, levels]);
 
-  const visibleGroups = GROUP_ORDER.filter((g) => grouped[g].length > 0);
+  const totalLevels = useMemo(
+    () => groups.reduce((acc, g) => acc + g.levelObjs.length, 0),
+    [groups],
+  );
+  const selectedLevelCount = levelIds.size;
+  const selectedProgramCount = progKeys.size;
 
-  const total = programs.length;
-  const selectedCount = selectedKeys.size;
-
-  const toggleProgram = (key: string) => {
+  const toggleProgram = (key: string, levelObjs: { id: string }[]) => {
     setTouched(true);
-    setSelectedKeys((prev) => {
+    setProgKeys((prev) => {
       const next = new Set(prev);
-      if (next.has(key)) next.delete(key); else next.add(key);
+      if (next.has(key)) {
+        next.delete(key);
+        // bỏ chọn cả level con
+        setLevelIds((prevL) => {
+          const nl = new Set(prevL);
+          for (const lv of levelObjs) nl.delete(lv.id);
+          return nl;
+        });
+      } else {
+        next.add(key);
+      }
       return next;
     });
   };
 
-  const toggleGroupAll = (g: GroupKey, on: boolean) => {
+  const toggleLevel = (id: string, programKey: string) => {
     setTouched(true);
-    setSelectedKeys((prev) => {
+    setLevelIds((prev) => {
       const next = new Set(prev);
-      for (const p of grouped[g]) {
-        if (on) next.add(p.key); else next.delete(p.key);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      // tự động bật program nếu đang tick level con
+      if (next.has(id)) setProgKeys((p) => new Set(p).add(programKey));
+      return next;
+    });
+  };
+
+  const toggleAllLevelsInProgram = (programKey: string, levelObjs: { id: string }[], on: boolean) => {
+    setTouched(true);
+    setLevelIds((prev) => {
+      const next = new Set(prev);
+      for (const lv of levelObjs) {
+        if (on) next.add(lv.id); else next.delete(lv.id);
       }
       return next;
     });
+    if (on) setProgKeys((p) => new Set(p).add(programKey));
   };
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      const keysArr = [...selectedKeys];
+      const payload = {
+        eligible_program_keys: [...progKeys],
+        level_keys: [...levelIds],
+        updated_at: new Date().toISOString(),
+      };
       if (capability?.id) {
         const { error } = await (supabase.from as any)("teacher_capabilities")
-          .update({ eligible_program_keys: keysArr, updated_at: new Date().toISOString() })
-          .eq("id", capability.id);
+          .update(payload).eq("id", capability.id);
         if (error) throw error;
-        setCapability({ ...capability, eligible_program_keys: keysArr });
+        setCapability({ ...capability, ...payload } as CapabilityRow);
       } else {
-        const { data: inserted, error } = await (supabase.from as any)("teacher_capabilities")
-          .insert({ teacher_id: teacherId, eligible_program_keys: keysArr })
-          .select("id, teacher_id, eligible_program_keys")
+        const { data, error } = await (supabase.from as any)("teacher_capabilities")
+          .insert({ teacher_id: teacherId, ...payload })
+          .select("id, teacher_id, eligible_program_keys, level_keys")
           .single();
         if (error) throw error;
-        setCapability(inserted as CapabilityRow);
+        setCapability(data as CapabilityRow);
       }
       setTouched(false);
-      toast.success(`Đã lưu ${keysArr.length} chương trình`, {
-        description: keysArr.length === 0
-          ? "Giáo viên hiện chưa có chương trình nào được cấp"
-          : "Giáo viên có thể chọn các chương trình này khi đăng ký lịch rảnh",
+      toast.success("Đã lưu phân quyền giảng dạy", {
+        description: `${progKeys.size} chương trình · ${levelIds.size} cấp độ`,
       });
     } catch (e: any) {
       toast.error("Lưu thất bại", { description: e?.message ?? String(e) });
@@ -173,135 +159,164 @@ export default function TeacherProgramEligibilityCard({ teacherId }: Props) {
     }
   };
 
+  const loading = progLoading || capLoading;
+
   if (loading) {
     return (
       <section className="rounded-2xl bg-card border border-border p-6 shadow-card">
         <div className="flex items-center gap-2 text-muted-foreground text-sm">
-          <Loader2 className="h-4 w-4 animate-spin" /> Đang tải dữ liệu chương trình…
+          <Loader2 className="h-4 w-4 animate-spin" /> Đang tải dữ liệu khoá học…
         </div>
       </section>
     );
   }
 
-  const isFresh = capability?.eligible_program_keys === null || capability?.eligible_program_keys === undefined;
+  const isFresh = !capability;
 
   return (
-    <section className="rounded-2xl bg-card border border-border p-6 shadow-card space-y-5">
-      <header className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
-        <div className="flex items-start gap-3 min-w-0">
-          <div className="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-            <BookCheck className="h-5 w-5" />
+    <section className="rounded-2xl bg-card border border-border overflow-hidden shadow-card">
+      {/* Header */}
+      <header className="relative p-5 md:p-6 border-b bg-gradient-to-br from-primary/5 via-violet-500/5 to-transparent">
+        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+          <div className="flex items-start gap-3 min-w-0">
+            <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-primary to-violet-500 text-primary-foreground flex items-center justify-center shrink-0 shadow-lg shadow-primary/30">
+              <BookCheck className="h-5 w-5" />
+            </div>
+            <div className="min-w-0">
+              <h3 className="font-display text-lg font-bold leading-tight">
+                Chương trình &amp; Cấp độ được phép giảng dạy
+              </h3>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                Đồng bộ với <strong>Quản lý khoá học</strong> · Tick cấp độ tương ứng để giáo viên có thể nhận lớp đúng phân quyền.
+              </p>
+            </div>
           </div>
-          <div className="min-w-0">
-            <h3 className="font-display text-lg font-bold leading-tight">Chương trình được phép nhận</h3>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              Setup theo hợp đồng / phụ lục hợp đồng. Giáo viên chỉ chọn được các chương trình được cấp khi đăng ký lịch rảnh.
-            </p>
+          <div className="flex items-center gap-2 shrink-0">
+            <Badge variant="outline" className="text-xs font-medium gap-1">
+              <GraduationCap className="h-3 w-3" />
+              {selectedProgramCount} CT
+            </Badge>
+            <Badge variant="outline" className="text-xs font-medium gap-1">
+              <Layers className="h-3 w-3" />
+              {selectedLevelCount}/{totalLevels} cấp độ
+            </Badge>
+            <Button onClick={handleSave} disabled={saving || !touched} size="sm" className="gap-2">
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              Lưu
+            </Button>
           </div>
         </div>
-        <div className="flex items-center gap-3 shrink-0">
-          <Badge variant="outline" className="text-xs font-medium">
-            {selectedCount}/{total} đã chọn
-          </Badge>
-          <Button onClick={handleSave} disabled={saving || !touched} size="sm" className="gap-2">
-            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-            Lưu
-          </Button>
-        </div>
+
+        {isFresh && (
+          <div className="mt-3 rounded-lg border border-amber-300/60 bg-amber-50/60 dark:bg-amber-500/10 px-3 py-2 text-xs text-amber-800 dark:text-amber-200 flex items-start gap-2">
+            <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+            <span>
+              Giáo viên này <b>chưa được cấu hình</b>. Tick các chương trình &amp; cấp độ rồi bấm <b>Lưu</b> để bắt đầu phân lớp.
+            </span>
+          </div>
+        )}
       </header>
 
-      {isFresh && (
-        <div className="rounded-lg border border-amber-300/60 bg-amber-50/60 dark:bg-amber-500/10 px-3 py-2 text-xs text-amber-800 dark:text-amber-200 flex items-start gap-2">
-          <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
-          <span>
-            Giáo viên này <b>chưa được cấu hình</b>. Hệ thống đang fallback hiển thị toàn bộ chương trình cho đến khi bạn lưu lần đầu.
-          </span>
-        </div>
-      )}
-
-      {programs.length === 0 ? (
-        <p className="text-sm text-muted-foreground italic">
-          Chưa có chương trình nào trong catalog. Vui lòng tạo programs trước.
-        </p>
-      ) : (
-        <div className="space-y-3">
-          {visibleGroups.map((g) => {
-            const meta = GROUP_META[g];
-            const items = grouped[g];
-            const groupSelected = items.filter((p) => selectedKeys.has(p.key)).length;
-            const allOn = groupSelected === items.length;
-            const partOn = groupSelected > 0 && !allOn;
-            const Icon = meta.Icon;
-            return (
-              <div key={g} className="rounded-xl border border-border overflow-hidden">
-                <header className="flex items-center justify-between gap-3 p-3 bg-muted/30 border-b border-border">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className={cn("flex items-center justify-center h-8 w-8 rounded-md border shrink-0", meta.accent)}>
+      {/* Body */}
+      <div className="p-4 md:p-5">
+        {groups.length === 0 ? (
+          <p className="text-sm text-muted-foreground italic">
+            Chưa có chương trình nào. Vào <a href="/courses" className="text-primary underline">Quản lý khoá học</a> để tạo trước.
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            {groups.map(({ program, levelObjs }) => {
+              const palette = getProgramPalette(program.key);
+              const Icon = getProgramIcon(program.icon_key);
+              const progChecked = progKeys.has(program.key);
+              const ownLevelCount = levelObjs.filter((l) => levelIds.has(l.id)).length;
+              const allLevelsOn = levelObjs.length > 0 && ownLevelCount === levelObjs.length;
+              return (
+                <div
+                  key={program.id}
+                  className={cn(
+                    "relative rounded-xl border overflow-hidden transition-all",
+                    progChecked
+                      ? "border-primary/40 shadow-sm shadow-primary/10"
+                      : "border-border hover:border-border/80",
+                  )}
+                >
+                  {/* Accent strip */}
+                  <div className={cn("absolute left-0 top-0 bottom-0 w-1", palette.progressFill)} aria-hidden />
+                  <header className="flex items-center gap-3 p-3 bg-muted/20 border-b">
+                    <div className={cn("h-9 w-9 rounded-lg flex items-center justify-center shrink-0 border", palette.iconBg, palette.iconText, palette.accentBorder)}>
                       <Icon className="h-4 w-4" />
                     </div>
-                    <div className="min-w-0">
-                      <p className="font-semibold text-sm truncate">{meta.label}</p>
-                      <p className="text-xs text-muted-foreground truncate">{meta.description}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 shrink-0">
-                    <span className="text-xs text-muted-foreground">{groupSelected}/{items.length}</span>
-                    <button
-                      type="button"
-                      onClick={() => toggleGroupAll(g, !allOn)}
-                      className={cn(
-                        "text-xs font-medium px-2 py-1 rounded-md border transition-colors",
-                        allOn
-                          ? "border-primary/40 bg-primary/10 text-primary"
-                          : partOn
-                            ? "border-primary/30 bg-primary/5 text-primary"
+                    <label className="flex items-center gap-2 cursor-pointer flex-1 min-w-0">
+                      <Checkbox
+                        checked={progChecked}
+                        onCheckedChange={() => toggleProgram(program.key, levelObjs)}
+                      />
+                      <div className="min-w-0">
+                        <p className="font-semibold text-sm truncate">{program.name}</p>
+                        <p className="text-[11px] text-muted-foreground truncate">
+                          {levelObjs.length} cấp độ · key <code className="font-mono">{program.key}</code>
+                        </p>
+                      </div>
+                    </label>
+                    {levelObjs.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => toggleAllLevelsInProgram(program.key, levelObjs, !allLevelsOn)}
+                        className={cn(
+                          "text-[10px] font-semibold px-2 py-1 rounded-md border transition-colors shrink-0",
+                          allLevelsOn
+                            ? "border-primary/40 bg-primary/10 text-primary"
                             : "border-border hover:bg-accent",
-                      )}
-                    >
-                      {allOn ? "Bỏ chọn nhóm" : "Chọn cả nhóm"}
-                    </button>
-                  </div>
-                </header>
-                <ul className="divide-y divide-border">
-                  {items.map((p) => {
-                    const checked = selectedKeys.has(p.key);
-                    return (
-                      <li key={p.id}>
-                        <label
-                          htmlFor={`elig-${p.key}`}
-                          className={cn(
-                            "flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-accent/50 transition-colors",
-                            checked && "bg-primary/5",
-                          )}
-                        >
-                          <Checkbox
-                            id={`elig-${p.key}`}
-                            checked={checked}
-                            onCheckedChange={() => toggleProgram(p.key)}
-                          />
-                          <span className="flex-1 min-w-0 flex items-center gap-2">
-                            <span className="text-sm font-medium truncate">{p.name}</span>
-                            {p.level && (
-                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{p.level}</Badge>
-                            )}
-                          </span>
-                          <span className="text-[10px] font-mono text-muted-foreground/70 shrink-0">{p.key}</span>
-                        </label>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            );
-          })}
-        </div>
-      )}
+                        )}
+                      >
+                        {allLevelsOn ? "Bỏ tất cả" : "Chọn tất cả"}
+                      </button>
+                    )}
+                  </header>
 
-      {touched && (
-        <p className="text-xs text-muted-foreground">
-          * Có thay đổi chưa lưu — bấm <b>Lưu</b> để áp dụng.
-        </p>
-      )}
+                  {levelObjs.length === 0 ? (
+                    <p className="text-xs text-muted-foreground italic px-3 py-3">
+                      Chương trình này chưa có cấp độ nào trong catalog.
+                    </p>
+                  ) : (
+                    <ul className="grid grid-cols-2 gap-1 p-2">
+                      {levelObjs.map((lv) => {
+                        const checked = levelIds.has(lv.id);
+                        return (
+                          <li key={lv.id}>
+                            <label
+                              className={cn(
+                                "flex items-center gap-2 px-2.5 py-2 rounded-md cursor-pointer text-xs transition-colors",
+                                checked
+                                  ? "bg-primary/10 text-primary font-semibold"
+                                  : "hover:bg-accent",
+                              )}
+                            >
+                              <Checkbox
+                                checked={checked}
+                                onCheckedChange={() => toggleLevel(lv.id, program.key)}
+                                className="h-3.5 w-3.5"
+                              />
+                              <span className="truncate">{lv.name}</span>
+                            </label>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {touched && (
+          <p className="text-xs text-muted-foreground mt-3">
+            * Có thay đổi chưa lưu — bấm <b>Lưu</b> để áp dụng.
+          </p>
+        )}
+      </div>
     </section>
   );
 }
