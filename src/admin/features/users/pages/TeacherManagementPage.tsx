@@ -155,28 +155,30 @@ export default function TeacherManagementPage() {
       <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
         <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
           <TabsList className="bg-muted/50 p-1.5 rounded-2xl h-auto gap-1 w-max md:w-auto border border-border/60 shadow-sm">
-            {[
-              { v: "directory", icon: Users, label: "Danh sách", grad: "from-primary to-blue-500" },
-              { v: "availability", icon: Clock3, label: "Lịch rảnh", grad: "from-emerald-500 to-teal-500" },
-              { v: "performance", icon: TrendingUp, label: "Hiệu suất", grad: "from-violet-500 to-fuchsia-500" },
-              { v: "income", icon: Receipt, label: "Tính lương", grad: "from-amber-500 to-orange-500" },
-            ].map(({ v, icon: Icon, label, grad }) => (
-              <TabsTrigger
-                key={v}
-                value={v}
-                className={cn(
-                  "gap-1.5 px-3 md:px-4 py-2 md:py-2.5 rounded-xl text-xs md:text-sm font-semibold transition-all",
-                  "data-[state=active]:bg-gradient-to-br data-[state=active]:text-white data-[state=active]:shadow-lg",
-                  "data-[state=active]:scale-[1.02]",
-                  `data-[state=active]:${grad.split(" ")[0]} data-[state=active]:${grad.split(" ")[1]}`,
-                  // tailwind doesn't pick dynamic — explicit:
-                )}
-                style={undefined}
-              >
-                <Icon className="h-3.5 w-3.5 md:h-4 md:w-4" />
-                {label}
-              </TabsTrigger>
-            ))}
+            <TabsTrigger
+              value="directory"
+              className="gap-1.5 px-3 md:px-4 py-2 md:py-2.5 rounded-xl text-xs md:text-sm font-semibold transition-all data-[state=active]:bg-gradient-to-br data-[state=active]:from-primary data-[state=active]:to-blue-500 data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-primary/30 data-[state=active]:scale-[1.02]"
+            >
+              <Users className="h-3.5 w-3.5 md:h-4 md:w-4" />Danh sách
+            </TabsTrigger>
+            <TabsTrigger
+              value="availability"
+              className="gap-1.5 px-3 md:px-4 py-2 md:py-2.5 rounded-xl text-xs md:text-sm font-semibold transition-all data-[state=active]:bg-gradient-to-br data-[state=active]:from-emerald-500 data-[state=active]:to-teal-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-emerald-500/30 data-[state=active]:scale-[1.02]"
+            >
+              <Clock3 className="h-3.5 w-3.5 md:h-4 md:w-4" />Lịch rảnh
+            </TabsTrigger>
+            <TabsTrigger
+              value="performance"
+              className="gap-1.5 px-3 md:px-4 py-2 md:py-2.5 rounded-xl text-xs md:text-sm font-semibold transition-all data-[state=active]:bg-gradient-to-br data-[state=active]:from-violet-500 data-[state=active]:to-fuchsia-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-violet-500/30 data-[state=active]:scale-[1.02]"
+            >
+              <TrendingUp className="h-3.5 w-3.5 md:h-4 md:w-4" />Hiệu suất
+            </TabsTrigger>
+            <TabsTrigger
+              value="income"
+              className="gap-1.5 px-3 md:px-4 py-2 md:py-2.5 rounded-xl text-xs md:text-sm font-semibold transition-all data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-500 data-[state=active]:to-orange-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-amber-500/30 data-[state=active]:scale-[1.02]"
+            >
+              <Receipt className="h-3.5 w-3.5 md:h-4 md:w-4" />Tính lương
+            </TabsTrigger>
           </TabsList>
         </div>
 
