@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@shared/components/ui/button";
 import { Input } from "@shared/components/ui/input";
 import {
-  Plus, Search, MoreVertical, FileText, Trash2, Eye, Pencil, Copy, Loader2, BookOpen, Cloud, ChevronDown, Tags, X, Layers, Upload, GraduationCap,
+  Plus, Search, MoreVertical, FileText, Trash2, Eye, Pencil, Copy, Loader2, BookOpen, Cloud, ChevronDown, Tags, X, Layers, Upload, GraduationCap, Library, ClipboardList, Sparkles, Headphones, PenLine, Mic,
 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
@@ -28,10 +28,22 @@ import { BulkCourseAssignDialog } from "@shared/components/resources/BulkCourseA
 import { useBulkSelection } from "@shared/hooks/useBulkSelection";
 import { Checkbox } from "@shared/components/ui/checkbox";
 
-const statusLabels: Record<string, { label: string; className: string }> = {
-  published: { label: "Published", className: "bg-primary/15 text-primary" },
-  draft: { label: "Draft", className: "bg-accent/15 text-accent" },
-  archived: { label: "Archived", className: "bg-muted text-muted-foreground" },
+const statusLabels: Record<string, { label: string; className: string; dot: string }> = {
+  published: {
+    label: "Đã xuất bản",
+    className: "bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border-emerald-500/30",
+    dot: "bg-emerald-500",
+  },
+  draft: {
+    label: "Nháp",
+    className: "bg-amber-100 text-amber-700 border border-amber-200 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/30",
+    dot: "bg-amber-500",
+  },
+  archived: {
+    label: "Đã lưu trữ",
+    className: "bg-slate-100 text-slate-600 border border-slate-200 dark:bg-slate-500/15 dark:text-slate-300 dark:border-slate-500/30",
+    dot: "bg-slate-400",
+  },
 };
 
 const sectionTypeLabels: Record<string, string> = {
@@ -41,11 +53,11 @@ const sectionTypeLabels: Record<string, string> = {
   SPEAKING: "Speaking",
 };
 
-const SECTION_COLORS: Record<string, { bg: string; text: string; border: string; active: string }> = {
-  READING: { bg: "bg-blue-50", text: "text-blue-700", border: "border-blue-200", active: "bg-blue-200 text-blue-800 border-blue-300" },
-  LISTENING: { bg: "bg-purple-50", text: "text-purple-700", border: "border-purple-200", active: "bg-purple-200 text-purple-800 border-purple-300" },
-  WRITING: { bg: "bg-amber-50", text: "text-amber-700", border: "border-amber-200", active: "bg-amber-200 text-amber-800 border-amber-300" },
-  SPEAKING: { bg: "bg-rose-50", text: "text-rose-700", border: "border-rose-200", active: "bg-rose-200 text-rose-800 border-rose-300" },
+const SECTION_COLORS: Record<string, { bg: string; text: string; border: string; active: string; gradient: string; icon: any }> = {
+  READING:   { bg: "bg-sky-50",     text: "text-sky-700",     border: "border-sky-200",     active: "bg-sky-500 text-white border-sky-500",        gradient: "from-sky-500 to-blue-600",       icon: BookOpen },
+  LISTENING: { bg: "bg-violet-50",  text: "text-violet-700",  border: "border-violet-200",  active: "bg-violet-500 text-white border-violet-500",  gradient: "from-violet-500 to-purple-600",  icon: Headphones },
+  WRITING:   { bg: "bg-amber-50",   text: "text-amber-700",   border: "border-amber-200",   active: "bg-amber-500 text-white border-amber-500",    gradient: "from-amber-500 to-orange-500",   icon: PenLine },
+  SPEAKING:  { bg: "bg-rose-50",    text: "text-rose-700",    border: "border-rose-200",    active: "bg-rose-500 text-white border-rose-500",      gradient: "from-rose-500 to-pink-600",      icon: Mic },
 };
 
 export default function TestManagementPage() {
