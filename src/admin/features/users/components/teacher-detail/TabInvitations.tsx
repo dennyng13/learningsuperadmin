@@ -16,7 +16,6 @@ interface Row {
   responded_at: string | null;
   response_note: string | null;
   respond_deadline: string | null;
-  expired_at: string | null;
   cancelled_at: string | null;
   reassigned_to: string | null;
   negotiation_status: string | null;
@@ -50,7 +49,7 @@ export default function TabInvitations({ teacherId }: Props) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase.from as any)("class_invitations")
         .select(
-          "id, class_id, status, role, invited_at, responded_at, response_note, respond_deadline, expired_at, cancelled_at, reassigned_to, negotiation_status, " +
+          "id, class_id, status, role, invited_at, responded_at, response_note, respond_deadline, cancelled_at, reassigned_to, negotiation_status, " +
           "classes:class_id (id, class_name)",
         )
         .eq("teacher_id", teacherId)
@@ -114,7 +113,6 @@ export default function TabInvitations({ teacherId }: Props) {
                 {r.invited_at && <span>Mời: {new Date(r.invited_at).toLocaleString("vi-VN")}</span>}
                 {r.respond_deadline && <span>Hạn: {new Date(r.respond_deadline).toLocaleString("vi-VN")}</span>}
                 {r.responded_at && <span>Phản hồi: {new Date(r.responded_at).toLocaleString("vi-VN")}</span>}
-                {r.expired_at && <span>Hết hạn: {new Date(r.expired_at).toLocaleString("vi-VN")}</span>}
                 {r.cancelled_at && <span>Hủy: {new Date(r.cancelled_at).toLocaleString("vi-VN")}</span>}
               </div>
               {r.response_note && (
