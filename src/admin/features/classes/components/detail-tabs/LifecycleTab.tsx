@@ -10,6 +10,7 @@ import ClassStatusBadge, {
 } from "@shared/components/admin/ClassStatusBadge";
 import { Button } from "@shared/components/ui/button";
 import { Badge } from "@shared/components/ui/badge";
+import { Skeleton } from "@shared/components/ui/skeleton";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter,
   DialogHeader, DialogTitle,
@@ -190,9 +191,17 @@ export function LifecycleTab({ cls }: { cls: ClassDetail }) {
         </div>
 
         {invitesQ.isLoading ? (
-          <div className="flex items-center justify-center py-6 text-xs text-muted-foreground">
-            <Loader2 className="h-3.5 w-3.5 animate-spin mr-2" /> Đang tải…
-          </div>
+          <ul className="divide-y divide-border/60 -mx-2" aria-label="Đang tải lời mời">
+            {[0, 1, 2].map((i) => (
+              <li key={i} className="px-2 py-2 flex items-center gap-3">
+                <div className="flex-1 min-w-0 space-y-1.5">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-3 w-24" />
+                </div>
+                <Skeleton className="h-5 w-20 rounded-full" />
+              </li>
+            ))}
+          </ul>
         ) : invites.length === 0 ? (
           <div className="rounded-lg border border-dashed bg-muted/20 p-4 text-center text-xs text-muted-foreground">
             Lớp chưa có lời mời giảng viên nào.
@@ -246,9 +255,16 @@ export function LifecycleTab({ cls }: { cls: ClassDetail }) {
           <HistoryIcon className="h-4 w-4" /> Lịch sử thay đổi
         </h3>
         {historyQ.isLoading ? (
-          <div className="flex items-center justify-center py-8 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin mr-2" /> Đang tải…
-          </div>
+          <ol className="relative border-l border-border ml-3 space-y-4" aria-label="Đang tải lịch sử">
+            {[0, 1, 2].map((i) => (
+              <li key={i} className="ml-4 space-y-1.5">
+                <div className="absolute -left-[5px] mt-1.5 h-2.5 w-2.5 rounded-full bg-muted" />
+                <Skeleton className="h-3 w-28" />
+                <Skeleton className="h-5 w-48 rounded-full" />
+                <Skeleton className="h-3 w-40" />
+              </li>
+            ))}
+          </ol>
         ) : historyQ.error ? (
           <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
             {(historyQ.error as Error).message}
