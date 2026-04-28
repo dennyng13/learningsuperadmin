@@ -40,27 +40,9 @@ export default function ClassManagementPage() {
     setAutoAssigning(false);
   };
 
+  // P5a: sync-teachngo-students edge function archived.
   const syncClasses = async () => {
-    setSyncing(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { toast.error("Bạn cần đăng nhập"); setSyncing(false); return; }
-      const res = await supabase.functions.invoke("sync-teachngo-students", {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
-      if (res.error) toast.error(`Lỗi đồng bộ: ${res.error.message}`);
-      else {
-        const d = res.data;
-        const lines = [` Đồng bộ thành công! ${d.classes_synced || 0} lớp học`];
-        if (d.levels_assigned) lines.push(` Gán level tự động cho ${d.levels_assigned} lớp`);
-        if (d.programs_assigned) lines.push(` Gán program tự động cho ${d.programs_assigned} lớp`);
-        if (d.teachers_linked) lines.push(` Liên kết ${d.teachers_linked} lớp với giáo viên`);
-        if (d.students_linked) lines.push(` Liên kết ${d.students_linked} học viên với tài khoản`);
-        toast.success(lines.join("\n"), { duration: 5000 });
-        window.location.reload();
-      }
-    } catch (err: any) { toast.error(`Lỗi: ${err.message}`); }
-    setSyncing(false);
+    toast.info("Tính năng đồng bộ Teach'n Go đã bị vô hiệu hoá (P5).");
   };
 
   const handleAutoLinkTeachers = async () => {
@@ -81,7 +63,7 @@ export default function ClassManagementPage() {
       <div className="flex items-center justify-between gap-3">
         <div>
           <h1 className="font-display text-xl md:text-2xl font-extrabold">Quản lý lớp học</h1>
-          <p className="text-xs text-muted-foreground mt-0.5">Teach'n Go</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Lớp học</p>
         </div>
       <TooltipProvider delayDuration={300}>
           <div className="flex items-center gap-1 rounded-lg border border-border/60 bg-card p-1 shadow-sm">

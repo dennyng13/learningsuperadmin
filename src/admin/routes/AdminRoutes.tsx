@@ -23,7 +23,7 @@ import PermissionsPage from "@admin/features/permissions/pages/PermissionsPage";
 import FlashcardSetsPage from "@admin/features/flashcards/pages/FlashcardSetsPage";
 import PracticeExerciseDetailPage from "@admin/features/practice/pages/PracticeExerciseDetailPage";
 import BadgeManagementPage from "@admin/features/badges/pages/BadgeManagementPage";
-import AttendancePage from "@admin/features/attendance/pages/AttendancePage";
+import AttendanceMonitorPage from "@admin/features/attendance/pages/AttendanceMonitorPage";
 import StudentPerformancePage from "@admin/features/performance/pages/StudentPerformancePage";
 import TeacherPerformancePage from "@admin/features/performance/pages/TeacherPerformancePage";
 import AdminSettingsPage from "@admin/features/settings/pages/AdminSettingsPage";
@@ -116,7 +116,9 @@ export default function AppRoutes() {
           <Route path="classes/new" element={<CreateClassWizardPage />} />
           <Route path="classes/:id" element={<AdminClassDetailPage />} />
           <Route path="schedule" element={<AdminSchedulePage />} />
-          <Route path="attendance" element={<AttendancePage />} />
+          {/* P5d: replaces deleted P5a teachngo-coupled AttendancePage. */}
+          <Route path="attendance" element={<AttendanceMonitorPage />} />
+          <Route path="attendance/monitor" element={<AttendanceMonitorPage />} />
 
           {/* ─── Legacy Teachngo* slug redirects (bookmark compat) ─── */}
           <Route path="teachngo-attendance"     element={<Navigate to="/attendance" replace />} />

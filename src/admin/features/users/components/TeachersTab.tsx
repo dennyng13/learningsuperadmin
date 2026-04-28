@@ -102,48 +102,14 @@ export default function TeachersTab() {
   const [linkAccountId, setLinkAccountId] = useState("");
   const [linking, setLinking] = useState(false);
 
+  // P5a: sync-teachngo-staff edge function archived. Sync feature disabled.
   const syncStaff = async () => {
-    setSyncing(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { toast.error("Bạn cần đăng nhập"); setSyncing(false); return; }
-      const res = await supabase.functions.invoke("sync-teachngo-staff", {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-        body: { mode: "preview" },
-      });
-      if (res.error) toast.error(`Lỗi đồng bộ: ${res.error.message}`);
-      else {
-        setSyncPreview(res.data as SyncPreviewData);
-        setSyncPreviewOpen(true);
-      }
-    } catch (err: any) { toast.error(`Lỗi: ${err.message}`); }
-    setSyncing(false);
+    toast.info("Tính năng đồng bộ Teach'n Go đã bị vô hiệu hoá (P5).");
   };
 
+  // P5a: sync-teachngo-staff edge function archived.
   const confirmSyncStaff = async () => {
-    setSyncConfirming(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { toast.error("Bạn cần đăng nhập"); setSyncConfirming(false); return; }
-      const res = await supabase.functions.invoke("sync-teachngo-staff", {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-        body: { mode: "apply" },
-      });
-      if (res.error) toast.error(`Lỗi đồng bộ: ${res.error.message}`);
-      else {
-        const d = res.data;
-        const lines = [
-          ` ${d.teachers_found || 0} giáo viên`,
-          d.summary?.added ?` ${d.summary.added} mới` : null,
-          d.summary?.updated ?` ${d.summary.updated} cập nhật` : null,
-          d.summary?.archived ?` ${d.summary.archived} archived` : null,
-          d.classes_linked ?` Liên kết ${d.classes_linked} lớp` : null,
-          d.users_linked ?` Liên kết ${d.users_linked} tài khoản` : null,
-        ].filter(Boolean).join("\n");
-        toast.success(lines, { duration: 6000 });
-        await fetchTeachers();
-      }
-    } catch (err: any) { toast.error(`Lỗi: ${err.message}`); }
+    toast.info("Tính năng đồng bộ Teach'n Go đã bị vô hiệu hoá (P5).");
     setSyncConfirming(false);
     setSyncPreviewOpen(false);
     setSyncPreview(null);

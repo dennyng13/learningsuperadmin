@@ -36,11 +36,12 @@ const EXPECTED_ROUTES: Array<{
     component: "ClassesListPage",
     importPath: "admin/features/classes/pages/ClassesListPage",
   },
+  // P5d: re-introduces /attendance route, now mapped to AttendanceMonitorPage.
   {
-    label: "Attendance",
+    label: "Attendance Monitor",
     routePath: "attendance",
-    component: "AttendancePage",
-    importPath: "admin/features/attendance/pages/AttendancePage",
+    component: "AttendanceMonitorPage",
+    importPath: "admin/features/attendance/pages/AttendanceMonitorPage",
   },
 ];
 
