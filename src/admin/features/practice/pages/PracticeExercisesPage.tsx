@@ -1568,6 +1568,33 @@ export default function PracticeExercisesPage() {
                 </button>
               );
             })}
+            {/* Chip "Chưa phân loại" — gộp các bài chưa gắn level */}
+            {(() => {
+              const unclassifiedCount = exercises.filter(e => !e.course_level).length;
+              if (unclassifiedCount === 0) return null;
+              const active = filterLevels.has("__unclassified__");
+              return (
+                <button
+                  key="__unclassified__"
+                  type="button"
+                  onClick={() => toggleFilter(setFilterLevels, "__unclassified__")}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-dashed text-xs font-semibold transition-all cursor-pointer",
+                    active
+                      ? "bg-muted-foreground/10 text-foreground border-muted-foreground/40 shadow-md scale-105"
+                      : "bg-card text-muted-foreground border-muted-foreground/30 hover:border-muted-foreground/60 hover:text-foreground hover:shadow-sm",
+                  )}
+                >
+                  Chưa phân loại
+                  <span className={cn(
+                    "text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center",
+                    active ? "bg-foreground/10 text-foreground" : "bg-muted text-muted-foreground",
+                  )}>
+                    {unclassifiedCount}
+                  </span>
+                </button>
+              );
+            })()}
           </div>
         )}
 
