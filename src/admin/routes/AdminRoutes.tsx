@@ -104,6 +104,7 @@ export default function AppRoutes() {
           {/* Users (with nested performance) */}
           <Route path="users" element={<UserManagementPage />} />
           <Route path="teachers" element={<TeacherManagementPage />} />
+          <Route path="teachers/directory" element={<TeacherManagementPage />} />
           <Route path="teachers/availability" element={<TeacherManagementPage />} />
           <Route path="teachers/performance" element={<TeacherManagementPage />} />
           <Route path="teachers/income" element={<TeacherManagementPage />} />
