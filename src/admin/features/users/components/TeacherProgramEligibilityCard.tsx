@@ -242,20 +242,9 @@ export default function TeacherProgramEligibilityCard({ teacherId }: Props) {
                   )}
                 >
                   {/* Accent strip */}
-                  <div
-                    className="absolute left-0 top-0 bottom-0 w-1"
-                    style={{ background: `hsl(var(--${palette.dotVar}))` }}
-                    aria-hidden
-                  />
+                  <div className={cn("absolute left-0 top-0 bottom-0 w-1", palette.progressFill)} aria-hidden />
                   <header className="flex items-center gap-3 p-3 bg-muted/20 border-b">
-                    <div
-                      className="h-9 w-9 rounded-lg flex items-center justify-center shrink-0 border"
-                      style={{
-                        background: `hsl(var(--${palette.dotVar}) / 0.12)`,
-                        color: `hsl(var(--${palette.dotVar}))`,
-                        borderColor: `hsl(var(--${palette.dotVar}) / 0.3)`,
-                      }}
-                    >
+                    <div className={cn("h-9 w-9 rounded-lg flex items-center justify-center shrink-0 border", palette.iconBg, palette.iconText, palette.accentBorder)}>
                       <Icon className="h-4 w-4" />
                     </div>
                     <label className="flex items-center gap-2 cursor-pointer flex-1 min-w-0">
