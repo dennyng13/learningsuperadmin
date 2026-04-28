@@ -1,10 +1,13 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { Wallet, ExternalLink, Banknote, Clock, TrendingUp } from "lucide-react";
+import { Wallet, ExternalLink, Banknote, Clock, TrendingUp, CalendarRange, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@shared/components/ui/button";
 import { Card } from "@shared/components/ui/card";
 import { Skeleton } from "@shared/components/ui/skeleton";
+import { Input } from "@shared/components/ui/input";
+import { Label } from "@shared/components/ui/label";
 
 const fmtVND = (n: number | null | undefined) =>
   new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 })
@@ -22,61 +25,126 @@ type PayrollRow = {
 };
 
 export function PayrollTab({ classId }: { classId: string }) {
-  const { data, isLoading, error } = useQuery({
-    queryKey: ["class-payroll", classId],
+  const [dateFrom, setDateFrom] = useState<string>("");
+  const [dateTo, setDateTo] = useState<string>("");
+
+  const { data, isLoading, isFetching, error } = useQuery({
+    // classId + date range tham gia queryKey → mỗi lần đổi sẽ refetch.
+    // placeholderData = keepPreviousData → giữ rows cũ, hiện skeleton overlay
+    // thay vì xoá sạch UI gây nhảy layout.
+    queryKey: ["class-payroll", classId, dateFrom, dateTo],
     queryFn: async (): Promise<PayrollRow[]> => {
-      const { data, error } = await (supabase as any)
+      let q = (supabase as any)
         .from("v_class_teacher_payroll" as any)
         .select("*")
         .eq("class_id", classId);
+      if (dateFrom) q = q.gte("last_session_at", dateFrom);
+      if (dateTo) q = q.lte("last_session_at", `${dateTo}T23:59:59`);
+      const { data, error } = await q;
       if (error) throw error;
       return (data ?? []) as PayrollRow[];
     },
     enabled: !!classId,
     staleTime: 30_000,
+    placeholderData: keepPreviousData,
   });
 
+  const hasFilter = !!(dateFrom || dateTo);
+  const clearFilter = () => { setDateFrom(""); setDateTo(""); };
+
+  /* ─── Filter bar (luôn render, kể cả khi loading lần đầu) ─── */
+  const filterBar = (
+    <Card className="p-3">
+      <div className="flex items-end gap-2 flex-wrap">
+        <div className="space-y-1">
+          <Label className="text-[10px] uppercase tracking-wide text-muted-foreground flex items-center gap-1">
+            <CalendarRange className="h-3 w-3" /> Từ ngày
+          </Label>
+          <Input
+            type="date"
+            value={dateFrom}
+            onChange={(e) => setDateFrom(e.target.value)}
+            max={dateTo || undefined}
+            disabled={isFetching && !data}
+            className="h-8 w-[150px] text-xs"
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">Đến ngày</Label>
+          <Input
+            type="date"
+            value={dateTo}
+            onChange={(e) => setDateTo(e.target.value)}
+            min={dateFrom || undefined}
+            disabled={isFetching && !data}
+            className="h-8 w-[150px] text-xs"
+          />
+        </div>
+        {hasFilter && (
+          <Button variant="ghost" size="sm" onClick={clearFilter} className="h-8 gap-1 text-xs">
+            <X className="h-3 w-3" /> Xoá lọc
+          </Button>
+        )}
+        {isFetching && data && (
+          <span className="text-[11px] text-muted-foreground ml-auto animate-pulse">
+            Đang tải lại…
+          </span>
+        )}
+      </div>
+    </Card>
+  );
+
+  /* ─── Skeleton results (3 cards + 3 rows) ─── */
+  const resultsSkeleton = (
+    <>
+      <div className="grid gap-3 grid-cols-3">
+        {[0, 1, 2].map((i) => (
+          <Card key={i} className="p-3 space-y-1.5">
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-7 w-7 rounded-lg" />
+              <Skeleton className="h-3 w-20" />
+            </div>
+            <Skeleton className="h-6 w-24" />
+          </Card>
+        ))}
+      </div>
+      <div className="rounded-2xl border bg-card overflow-hidden">
+        <div className="bg-muted/40 px-4 py-2.5 flex gap-4">
+          {[0, 1, 2, 3, 4, 5].map((i) => (
+            <Skeleton key={i} className="h-3 flex-1" />
+          ))}
+        </div>
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="border-t px-4 py-3 flex items-center gap-4">
+            <Skeleton className="h-4 flex-1" />
+            <Skeleton className="h-4 w-12" />
+            <Skeleton className="h-4 w-14" />
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-4 w-20" />
+          </div>
+        ))}
+      </div>
+    </>
+  );
+
+  // Lần fetch đầu (chưa có data nào) → full skeleton.
   if (isLoading) {
     return (
       <div className="space-y-4" aria-busy="true" aria-label="Đang tải bảng lương">
-        {/* Summary cards skeleton */}
-        <div className="grid gap-3 grid-cols-3">
-          {[0, 1, 2].map((i) => (
-            <Card key={i} className="p-3 space-y-1.5">
-              <div className="flex items-center gap-2">
-                <Skeleton className="h-7 w-7 rounded-lg" />
-                <Skeleton className="h-3 w-20" />
-              </div>
-              <Skeleton className="h-6 w-24" />
-            </Card>
-          ))}
-        </div>
-        {/* Table skeleton */}
-        <div className="rounded-2xl border bg-card overflow-hidden">
-          <div className="bg-muted/40 px-4 py-2.5 flex gap-4">
-            {[0, 1, 2, 3, 4, 5].map((i) => (
-              <Skeleton key={i} className="h-3 flex-1" />
-            ))}
-          </div>
-          {[0, 1, 2].map((i) => (
-            <div key={i} className="border-t px-4 py-3 flex items-center gap-4">
-              <Skeleton className="h-4 flex-1" />
-              <Skeleton className="h-4 w-12" />
-              <Skeleton className="h-4 w-14" />
-              <Skeleton className="h-4 w-20" />
-              <Skeleton className="h-4 w-24" />
-              <Skeleton className="h-4 w-20" />
-            </div>
-          ))}
-        </div>
+        {filterBar}
+        {resultsSkeleton}
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
-        Không tải được dữ liệu lương: {(error as Error).message}
+      <div className="space-y-4">
+        {filterBar}
+        <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+          Không tải được dữ liệu lương: {(error as Error).message}
+        </div>
       </div>
     );
   }
@@ -85,11 +153,16 @@ export function PayrollTab({ classId }: { classId: string }) {
 
   if (rows.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed bg-muted/20 p-8 text-center space-y-2">
-        <Wallet className="h-8 w-8 mx-auto text-muted-foreground" />
-        <p className="text-sm text-muted-foreground">
-          Chưa có dữ liệu lương — lớp chưa có buổi học hoàn thành.
-        </p>
+      <div className="space-y-4">
+        {filterBar}
+        <div className="rounded-2xl border border-dashed bg-muted/20 p-8 text-center space-y-2">
+          <Wallet className="h-8 w-8 mx-auto text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">
+            {hasFilter
+              ? "Không có dữ liệu lương trong khoảng thời gian đã chọn."
+              : "Chưa có dữ liệu lương — lớp chưa có buổi học hoàn thành."}
+          </p>
+        </div>
       </div>
     );
   }
@@ -100,6 +173,13 @@ export function PayrollTab({ classId }: { classId: string }) {
 
   return (
     <div className="space-y-4">
+      {filterBar}
+      {/* Khi đang refetch (đổi filter) — fade nhẹ + pulse để báo hiệu data sắp đổi.
+          aria-busy giúp screen reader nhận biết. */}
+      <div
+        className={`space-y-4 transition-opacity ${isFetching ? "opacity-60 animate-pulse" : "opacity-100"}`}
+        aria-busy={isFetching}
+      >
       {/* Summary cards */}
       <div className="grid gap-3 grid-cols-3">
         <Card className="p-3 space-y-1.5">
@@ -184,6 +264,7 @@ export function PayrollTab({ classId }: { classId: string }) {
             Mở trang Payroll đầy đủ
           </Link>
         </Button>
+      </div>
       </div>
     </div>
   );
