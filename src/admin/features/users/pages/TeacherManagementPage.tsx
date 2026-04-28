@@ -4,7 +4,6 @@ import { Clock3, GraduationCap, Receipt, Sparkles, TrendingUp, Users } from "luc
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@shared/components/ui/tabs";
 import { TabSkeleton } from "@shared/components/ui/tab-skeleton";
 import TeacherTabErrorBoundary from "@admin/features/users/components/TeacherTabErrorBoundary";
-import { cn } from "@shared/lib/utils";
 
 function logImportError(name: string, err: unknown): never {
   // eslint-disable-next-line no-console
