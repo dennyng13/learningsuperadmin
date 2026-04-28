@@ -1,9 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { Wallet, Loader2, ExternalLink, Banknote, Clock, TrendingUp } from "lucide-react";
+import { Wallet, ExternalLink, Banknote, Clock, TrendingUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@shared/components/ui/button";
 import { Card } from "@shared/components/ui/card";
+import { Skeleton } from "@shared/components/ui/skeleton";
 
 const fmtVND = (n: number | null | undefined) =>
   new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 })
@@ -37,8 +38,37 @@ export function PayrollTab({ classId }: { classId: string }) {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12 text-muted-foreground text-sm">
-        <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Đang tải bảng lương…
+      <div className="space-y-4" aria-busy="true" aria-label="Đang tải bảng lương">
+        {/* Summary cards skeleton */}
+        <div className="grid gap-3 grid-cols-3">
+          {[0, 1, 2].map((i) => (
+            <Card key={i} className="p-3 space-y-1.5">
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-7 w-7 rounded-lg" />
+                <Skeleton className="h-3 w-20" />
+              </div>
+              <Skeleton className="h-6 w-24" />
+            </Card>
+          ))}
+        </div>
+        {/* Table skeleton */}
+        <div className="rounded-2xl border bg-card overflow-hidden">
+          <div className="bg-muted/40 px-4 py-2.5 flex gap-4">
+            {[0, 1, 2, 3, 4, 5].map((i) => (
+              <Skeleton key={i} className="h-3 flex-1" />
+            ))}
+          </div>
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="border-t px-4 py-3 flex items-center gap-4">
+              <Skeleton className="h-4 flex-1" />
+              <Skeleton className="h-4 w-12" />
+              <Skeleton className="h-4 w-14" />
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-4 w-20" />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
