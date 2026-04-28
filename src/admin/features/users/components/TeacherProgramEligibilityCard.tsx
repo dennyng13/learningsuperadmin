@@ -237,15 +237,23 @@ export default function TeacherProgramEligibilityCard({ teacherId }: Props) {
             {groups.map(({ program, levelObjs }) => {
               const palette = getProgramPalette(program.key);
               const Icon = getProgramIcon(program.icon_key);
-              const progChecked = progKeys.has(program.key);
               const ownLevelCount = levelObjs.filter((l) => levelIds.has(l.id)).length;
               const allLevelsOn = levelObjs.length > 0 && ownLevelCount === levelObjs.length;
+              const someLevelsOn = ownLevelCount > 0 && !allLevelsOn;
+              const progManuallyOn = progKeys.has(program.key);
+              // Program được coi là "bật" nếu user tick checkbox CT, hoặc có ít nhất 1 level con được tick
+              const progEffectiveOn = progManuallyOn || ownLevelCount > 0;
+              // Indeterminate: CT đang bật nhưng chỉ một phần level con được tick (và có >0 level)
+              const progCheckedState: boolean | "indeterminate" =
+                levelObjs.length > 0 && someLevelsOn
+                  ? "indeterminate"
+                  : progEffectiveOn;
               return (
                 <div
                   key={program.id}
                   className={cn(
                     "relative rounded-xl border overflow-hidden transition-all",
-                    progChecked
+                    progEffectiveOn
                       ? "border-primary/40 shadow-sm shadow-primary/10"
                       : "border-border hover:border-border/80",
                   )}
@@ -258,13 +266,13 @@ export default function TeacherProgramEligibilityCard({ teacherId }: Props) {
                     </div>
                     <label className="flex items-center gap-2 cursor-pointer flex-1 min-w-0">
                       <Checkbox
-                        checked={progChecked}
+                        checked={progCheckedState}
                         onCheckedChange={() => toggleProgram(program.key, levelObjs)}
                       />
                       <div className="min-w-0">
                         <p className="font-semibold text-sm truncate">{program.name}</p>
                         <p className="text-[11px] text-muted-foreground truncate">
-                          {levelObjs.length} cấp độ · key <code className="font-mono">{program.key}</code>
+                          {ownLevelCount}/{levelObjs.length} cấp độ · key <code className="font-mono">{program.key}</code>
                         </p>
                       </div>
                     </label>
