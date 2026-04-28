@@ -408,9 +408,18 @@ export default function PracticeExercisesPage() {
   // ---- Save ----
 
   const saveExercise = async (statusOverride?: string) => {
-    if (!editing || !user) return;
+    if (!editing) {
+      toast.error("Không xác định được bài tập đang chỉnh");
+      return;
+    }
+    if (!user) {
+      toast.error("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại");
+      return;
+    }
     if (!title.trim()) { toast.error("Vui lòng nhập tiêu đề"); return; }
-    if (!program) { toast.error("Vui lòng chọn chương trình"); return; }
+    // "unclassified" là sentinel cho chương trình "Chưa phân loại" → lưu null vào DB.
+    // Cho phép program rỗng (xem như chưa phân loại) để giảm ma sát khi tạo bài speaking/writing.
+    const isUnclassifiedProgram = !program || program === "unclassified";
     setSaving(true);
 
     const effectiveStatus = statusOverride || exerciseStatus;
@@ -423,7 +432,7 @@ export default function PracticeExercisesPage() {
       title, description: description || null,
       skill, question_type: primaryType, question_types: derivedTypes,
       difficulty, course_level: courseLevel || null,
-      program: program || null,
+      program: isUnclassifiedProgram ? null : program,
       scoring_mode: scoringMode,
       content: {
         passage,
@@ -442,7 +451,12 @@ export default function PracticeExercisesPage() {
         .from("practice_exercises")
         .insert({ ...payload, created_by: user.id, status: effectiveStatus } as any)
         .select().single();
-      if (error) { toast.error("Lỗi tạo bài tập"); setSaving(false); return; }
+      if (error) {
+        console.error("[saveExercise] insert error", error);
+        toast.error(`Lỗi tạo bài tập: ${error.message}`);
+        setSaving(false);
+        return;
+      }
       toast.success("Đã lưu!");
       const newId = (data as any).id as string;
       setEditing(newId);
@@ -456,7 +470,12 @@ export default function PracticeExercisesPage() {
       }
     } else {
       const { error } = await supabase.from("practice_exercises").update({ ...payload, status: effectiveStatus } as any).eq("id", editing);
-      if (error) { toast.error("Lỗi lưu"); setSaving(false); return; }
+      if (error) {
+        console.error("[saveExercise] update error", error);
+        toast.error(`Lỗi lưu: ${error.message}`);
+        setSaving(false);
+        return;
+      }
       toast.success(statusOverride === "published" ? "Đã xuất bản!" : statusOverride === "draft" ? "Đã chuyển về nháp!" : "Đã lưu!");
       // Sync course assignments
       await setResourceCourses.mutateAsync({
@@ -661,12 +680,18 @@ export default function PracticeExercisesPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
               <label className="text-xs font-bold text-muted-foreground mb-1 block">
-                Chương trình <span className="text-destructive">*</span>
+                Chương trình
               </label>
-              <Select value={program || "_none"} onValueChange={v => setProgram(v === "_none" ? "" : v)}>
-                <SelectTrigger className={cn(!program && "border-destructive")}><SelectValue placeholder="Chọn..." /></SelectTrigger>
+              <Select
+                value={program || "_none"}
+                onValueChange={v => setProgram(v === "_none" ? "" : v)}
+              >
+                <SelectTrigger className={cn(!program && "border-destructive/50")}>
+                  <SelectValue placeholder="Chọn..." />
+                </SelectTrigger>
                 <SelectContent>
                   {PROGRAMS.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
+                  <SelectItem value="unclassified">— Chưa phân loại —</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -675,7 +700,7 @@ export default function PracticeExercisesPage() {
               <Select value={courseLevel || "_none"} onValueChange={v => setCourseLevel(v === "_none" ? "" : v)}>
                 <SelectTrigger><SelectValue placeholder="Chọn level..." /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="_none">— Không chọn —</SelectItem>
+                  <SelectItem value="_none">— Chưa phân loại —</SelectItem>
                   {courseLevels.map(cl => <SelectItem key={cl.id} value={cl.name}>{cl.name}</SelectItem>)}
                 </SelectContent>
               </Select>
@@ -1248,7 +1273,12 @@ export default function PracticeExercisesPage() {
   const filtered = (programCourseFiltered as Exercise[]).filter(ex => {
     if (filterSkills.size > 0 && !filterSkills.has(ex.skill)) return false;
     if (filterStatuses.size > 0 && !filterStatuses.has(ex.status)) return false;
-    if (filterLevels.size > 0 && (!ex.course_level || !filterLevels.has(ex.course_level))) return false;
+    if (filterLevels.size > 0) {
+      const wantsUnclassified = filterLevels.has("__unclassified__");
+      const matchesLevel = ex.course_level && filterLevels.has(ex.course_level);
+      const matchesUnclassified = wantsUnclassified && !ex.course_level;
+      if (!matchesLevel && !matchesUnclassified) return false;
+    }
     if (filterTypes.size > 0) {
       const types = getEffectiveTypes(ex);
       if (!types.some(t => filterTypes.has(t))) return false;
@@ -1538,6 +1568,33 @@ export default function PracticeExercisesPage() {
                 </button>
               );
             })}
+            {/* Chip "Chưa phân loại" — gộp các bài chưa gắn level */}
+            {(() => {
+              const unclassifiedCount = exercises.filter(e => !e.course_level).length;
+              if (unclassifiedCount === 0) return null;
+              const active = filterLevels.has("__unclassified__");
+              return (
+                <button
+                  key="__unclassified__"
+                  type="button"
+                  onClick={() => toggleFilter(setFilterLevels, "__unclassified__")}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-dashed text-xs font-semibold transition-all cursor-pointer",
+                    active
+                      ? "bg-muted-foreground/10 text-foreground border-muted-foreground/40 shadow-md scale-105"
+                      : "bg-card text-muted-foreground border-muted-foreground/30 hover:border-muted-foreground/60 hover:text-foreground hover:shadow-sm",
+                  )}
+                >
+                  Chưa phân loại
+                  <span className={cn(
+                    "text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center",
+                    active ? "bg-foreground/10 text-foreground" : "bg-muted text-muted-foreground",
+                  )}>
+                    {unclassifiedCount}
+                  </span>
+                </button>
+              );
+            })()}
           </div>
         )}
 

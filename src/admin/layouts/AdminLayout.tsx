@@ -5,9 +5,14 @@ import { AdminBreadcrumb } from "./AdminBreadcrumb";
 import { GlobalBackButton } from "./GlobalBackButton";
 import { Outlet } from "react-router-dom";
 import { useIsMobile } from "@shared/hooks/use-mobile";
-import { Bell, Search } from "lucide-react";
+import { Bell, Search, BellOff } from "lucide-react";
 import { useAuth } from "@shared/hooks/useAuth";
 import { useMemo } from "react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@shared/components/ui/popover";
 
 function getGreeting() {
   const h = new Date().getHours();
@@ -64,14 +69,42 @@ export default function AdminLayout() {
             <div className="hidden lg:block ml-auto" />
 
             {/* Notification bell */}
-            <button
-              type="button"
-              aria-label="Thông báo"
-              className="relative h-10 w-10 rounded-full bg-secondary/60 hover:bg-secondary text-foreground/70 hover:text-primary flex items-center justify-center transition-colors"
-            >
-              <Bell className="h-4.5 w-4.5" strokeWidth={2.2} />
-              <span className="absolute top-1.5 right-1.5 inline-flex h-2 w-2 rounded-full bg-accent ring-2 ring-card" />
-            </button>
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  aria-label="Thông báo"
+                  className="relative h-10 w-10 rounded-full bg-secondary/60 hover:bg-secondary text-foreground/70 hover:text-primary flex items-center justify-center transition-colors"
+                >
+                  <Bell className="h-[18px] w-[18px]" strokeWidth={2.2} />
+                  <span className="absolute top-1.5 right-1.5 inline-flex h-2 w-2 rounded-full bg-accent ring-2 ring-card" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent
+                align="end"
+                sideOffset={10}
+                className="w-80 p-0 overflow-hidden"
+              >
+                <div className="flex items-center justify-between px-4 py-3 border-b bg-card/60">
+                  <p className="font-display text-sm font-bold">Thông báo</p>
+                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+                    Sắp ra mắt
+                  </span>
+                </div>
+                <div className="px-5 py-8 flex flex-col items-center text-center gap-2">
+                  <div className="h-10 w-10 rounded-full bg-muted/60 flex items-center justify-center">
+                    <BellOff className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                  <p className="text-sm font-semibold text-foreground">
+                    Chưa có thông báo mới
+                  </p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Trung tâm thông báo đang được hoàn thiện. Các sự kiện về lớp,
+                    duyệt lịch, payroll và đồng bộ sẽ hiển thị tại đây.
+                  </p>
+                </div>
+              </PopoverContent>
+            </Popover>
 
             {/* Avatar */}
             <button

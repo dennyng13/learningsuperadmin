@@ -261,8 +261,14 @@ export default function AdminBandDescriptorsTab() {
     for (const c of currentSkill.criteria) {
       for (const band of BANDS) {
         const desc = descriptors[makeKey(c.key, band)] || "";
-        if (desc.trim()) {
-          rows.push({ skill, criteria: c.key, band, description: desc.trim(), task_type: taskType });
+        // Loại bullets trống trước khi lưu để DB sạch sẽ.
+        const cleaned = desc
+          .split("\n")
+          .map((l) => l.trim())
+          .filter(Boolean)
+          .join("\n");
+        if (cleaned) {
+          rows.push({ skill, criteria: c.key, band, description: cleaned, task_type: taskType });
         }
       }
     }
@@ -487,7 +493,9 @@ export default function AdminBandDescriptorsTab() {
           <div className="grid gap-3">
             {BANDS.map(band => {
               const raw = descriptors[makeKey(activeCriteria, band)] || "";
-              const bullets = raw ? raw.split("\n").filter(l => l.trim()) : [];
+              // Giữ nguyên dòng rỗng để user vừa bấm "Thêm mục" thấy ngay
+              // input mới. Chỉ filter dòng trống ở bước save.
+              const bullets = raw ? raw.split("\n") : [];
               const hasFill = bullets.length > 0;
 
               const setBullets = (newBullets: string[]) => {
@@ -506,6 +514,13 @@ export default function AdminBandDescriptorsTab() {
 
               const addBullet = () => {
                 setBullets([...bullets, ""]);
+                // Auto-focus input vừa thêm
+                setTimeout(() => {
+                  const inputs = document.querySelectorAll(
+                    `[data-band-input="${activeCriteria}-${band}"]`,
+                  );
+                  (inputs[inputs.length - 1] as HTMLInputElement)?.focus();
+                }, 50);
               };
 
               const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>, idx: number) => {
@@ -566,6 +581,7 @@ export default function AdminBandDescriptorsTab() {
                             className="h-7 text-xs border-transparent bg-transparent hover:bg-muted/30 focus:bg-background focus:border-input px-2 py-1"
                           />
                           <button
+                            type="button"
                             onClick={() => removeBullet(idx)}
                             className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive shrink-0"
                           >
@@ -576,6 +592,7 @@ export default function AdminBandDescriptorsTab() {
                     </div>
 
                     <button
+                      type="button"
                       onClick={addBullet}
                       className="flex items-center gap-1 text-[11px] text-primary/70 hover:text-primary transition-colors pl-4"
                     >
