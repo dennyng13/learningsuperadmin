@@ -13,7 +13,7 @@ import {
 } from "@shared/components/ui/alert-dialog";
 import { cn } from "@shared/lib/utils";
 import { getProgramPalette } from "@shared/utils/programColors";
-import { getLevelColorConfig } from "@shared/utils/levelColors";
+import { getLevelColorConfig, getLevelTonePalette } from "@shared/utils/levelColors";
 import type { Course, CourseStats } from "@admin/features/academic/hooks/useCourses";
 import type { CourseLevel } from "@shared/hooks/useCourseLevels";
 import CourseClassesDialog from "./CourseClassesDialog";
@@ -63,6 +63,22 @@ export default function CourseCard({
       .filter(Boolean) as CourseLevel[];
   }, [course.level_ids, levels]);
 
+  /**
+   * Tone màu của card — ưu tiên level CHỦ ĐẠO (level đầu tiên gán cho khoá),
+   * fallback về palette program nếu khoá chưa gán level hoặc level không có
+   * `color_key` hợp lệ. Điều này giúp các thẻ trong cùng một program vẫn có
+   * sắc màu khác nhau, đỡ nhàm mắt — trong khi tab program và badge program
+   * vẫn giữ màu chương trình để nhận diện.
+   */
+  const levelTone = useMemo(() => {
+    const primary = linkedLevelNames[0];
+    if (!primary) return null;
+    return getLevelTonePalette(primary.color_key || primary.name);
+  }, [linkedLevelNames]);
+
+  /** Tone hiệu dụng — merge level tone (nếu có) lên palette program. */
+  const tone = useMemo(() => ({ ...palette, ...(levelTone ?? {}) }), [palette, levelTone]);
+
   const plans = studyPlans ?? course.study_plan_ids.map((id) => ({ id, name: "Plan" }));
   const planCount = plans.length;
 
@@ -76,11 +92,11 @@ export default function CourseCard({
         "shadow-sm",
         // Hover: lift + shadow + viền theo MÀU CHỦ ĐẠO của program (không dùng đen)
         "hover:shadow-xl hover:-translate-y-1.5",
-        palette.accentBorderHover,
+        tone.accentBorderHover,
         // Focus visible (bàn phím): ring rõ ràng theo accent program
         "focus-visible:-translate-y-1.5 focus-visible:shadow-xl",
         "focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:ring-primary/60",
-        palette.accentBorder,
+        tone.accentBorder,
         isInactive && "opacity-70 grayscale-[0.3]",
       )}
     >
@@ -89,7 +105,7 @@ export default function CourseCard({
         className={cn(
           "h-1.5 w-full transition-all duration-300 ease-out",
           "group-hover:h-2 group-focus-visible:h-2",
-          palette.progressFill,
+          tone.progressFill,
         )}
       />
       {/* Soft tint banner — đậm hơn khi hover */}
@@ -97,7 +113,7 @@ export default function CourseCard({
         className={cn(
           "absolute inset-x-0 top-1.5 h-24 pointer-events-none bg-gradient-to-b",
           "opacity-100 transition-opacity duration-500 group-hover:opacity-100",
-          palette.bannerGradient,
+          tone.bannerGradient,
         )}
         aria-hidden
       />
@@ -108,7 +124,7 @@ export default function CourseCard({
           "opacity-20 transition-all duration-500 ease-out",
           "group-hover:opacity-40 group-hover:scale-125",
           "group-focus-visible:opacity-40 group-focus-visible:scale-125",
-          palette.progressFill,
+          tone.progressFill,
         )}
         aria-hidden
       />
@@ -118,7 +134,7 @@ export default function CourseCard({
           "absolute inset-0 rounded-2xl pointer-events-none opacity-0 transition-opacity duration-300",
           "group-hover:opacity-100",
           "ring-1 ring-inset",
-          palette.accentBorder,
+          tone.accentBorder,
         )}
         aria-hidden
       />
@@ -134,7 +150,7 @@ export default function CourseCard({
               "transition-all duration-300 ease-out",
               "group-hover:scale-110 group-hover:rotate-[-4deg] group-hover:shadow-lg",
               "group-focus-visible:scale-110 group-focus-visible:rotate-[-4deg]",
-              palette.progressFill,
+              tone.progressFill,
             )}
           >
             <BookOpen className="h-5 w-5 text-white" />
@@ -154,7 +170,7 @@ export default function CourseCard({
                 "hidden sm:block shrink-0 text-right rounded-xl px-3 py-1.5 text-white",
                 "shadow-lg shadow-black/10 ring-1 ring-white/20",
                 "bg-gradient-to-br",
-                palette.progressFill,
+                tone.progressFill,
               )}
               title={`Học phí: ${formattedPrice}`}
             >
@@ -176,7 +192,7 @@ export default function CourseCard({
           <span className={cn(
             "inline-flex items-center max-w-full text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded",
             "truncate",
-            palette.accentSoftBg, palette.accentText,
+            tone.accentSoftBg, tone.accentText,
           )}>
             <span className="truncate">{programName}</span>
           </span>
@@ -184,7 +200,7 @@ export default function CourseCard({
             <span className={cn(
               "inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full border whitespace-nowrap",
               "bg-background/80 backdrop-blur-sm",
-              palette.accentText, palette.accentBorder,
+              tone.accentText, tone.accentBorder,
             )}>
               {course.cefr_range}
             </span>
@@ -195,7 +211,7 @@ export default function CourseCard({
               className={cn(
                 "sm:hidden inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded-full text-white whitespace-nowrap shadow-sm tabular-nums",
                 "bg-gradient-to-r ring-1 ring-white/20",
-                palette.progressFill,
+                tone.progressFill,
               )}
               title={`Học phí: ${formattedPrice}`}
             >
@@ -208,7 +224,7 @@ export default function CourseCard({
 
       {/* ─── 1. Mô tả khoá học (cố định 2 dòng để đồng cao) ─── */}
       <Section
-        icon={<Sparkles className={cn("h-3 w-3", palette.iconText)} />}
+        icon={<Sparkles className={cn("h-3 w-3", tone.iconText)} />}
         label="Mô tả khoá học"
       >
         <p className="text-xs text-foreground/80 line-clamp-2 min-h-[2rem] leading-relaxed">
@@ -221,16 +237,16 @@ export default function CourseCard({
           || course.hours_per_session != null || course.max_students != null) && (
           <div className="mt-2 flex flex-wrap gap-1">
             {course.duration_label && (
-              <Fact icon={<CalendarDays className="h-3 w-3" />} text={course.duration_label} tone={palette.iconText} />
+              <Fact icon={<CalendarDays className="h-3 w-3" />} text={course.duration_label} tone={tone.iconText} />
             )}
             {course.total_sessions != null && (
-              <Fact icon={<ClipboardList className="h-3 w-3" />} text={`${course.total_sessions} buổi`} tone={palette.iconText} />
+              <Fact icon={<ClipboardList className="h-3 w-3" />} text={`${course.total_sessions} buổi`} tone={tone.iconText} />
             )}
             {course.hours_per_session != null && (
-              <Fact icon={<Clock className="h-3 w-3" />} text={`${course.hours_per_session}h / buổi`} tone={palette.iconText} />
+              <Fact icon={<Clock className="h-3 w-3" />} text={`${course.hours_per_session}h / buổi`} tone={tone.iconText} />
             )}
             {course.max_students != null && (
-              <Fact icon={<Users className="h-3 w-3" />} text={`Tối đa ${course.max_students} HV`} tone={palette.iconText} />
+              <Fact icon={<Users className="h-3 w-3" />} text={`Tối đa ${course.max_students} HV`} tone={tone.iconText} />
             )}
           </div>
         )}
@@ -238,7 +254,7 @@ export default function CourseCard({
 
       {/* ─── 2. Đầu ra khoá học (cố định 3 dòng) ─── */}
       <Section
-        icon={<CheckCircle2 className={cn("h-3 w-3", palette.iconText)} />}
+        icon={<CheckCircle2 className={cn("h-3 w-3", tone.iconText)} />}
         label={`Đầu ra khoá học (${course.outcomes.length})`}
       >
         <div className="rounded-lg bg-muted/40 p-2.5 min-h-[5.25rem]">
@@ -251,7 +267,7 @@ export default function CourseCard({
                   key={i}
                   className="text-[11px] text-foreground/85 leading-snug flex items-start gap-1.5"
                 >
-                  <span className={cn("mt-1 h-1 w-1 rounded-full shrink-0", palette.progressFill)} />
+                  <span className={cn("mt-1 h-1 w-1 rounded-full shrink-0", tone.progressFill)} />
                   <span className="truncate">{o}</span>
                 </li>
               ))}
@@ -270,18 +286,18 @@ export default function CourseCard({
         <div className="px-4 pb-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
           {course.target_audience && (
             <RichBlock
-              icon={<UserCheck className={cn("h-3 w-3", palette.iconText)} />}
+              icon={<UserCheck className={cn("h-3 w-3", tone.iconText)} />}
               label="Phù hợp với"
               text={course.target_audience}
-              tone={palette}
+              tone={tone}
             />
           )}
           {course.problem_solving && (
             <RichBlock
-              icon={<Target className={cn("h-3 w-3", palette.iconText)} />}
+              icon={<Target className={cn("h-3 w-3", tone.iconText)} />}
               label="Khoá học giúp bạn"
               text={course.problem_solving}
-              tone={palette}
+              tone={tone}
             />
           )}
         </div>
@@ -289,7 +305,7 @@ export default function CourseCard({
 
       {/* ─── 3. Thống kê (4 ô đồng đều) ─── */}
       <Section
-        icon={<Layers className={cn("h-3 w-3", palette.iconText)} />}
+        icon={<Layers className={cn("h-3 w-3", tone.iconText)} />}
         label="Thống kê"
       >
         <div className="grid grid-cols-4 gap-1.5">
@@ -297,26 +313,26 @@ export default function CourseCard({
             icon={<Layers className="h-3 w-3" />}
             value={course.level_ids.length}
             label="Cấp độ"
-            tone={palette.iconText}
+            tone={tone.iconText}
           />
           <BigStat
             icon={<CalendarDays className="h-3 w-3" />}
             value={stats.totalClasses}
             label="Lớp"
-            tone={palette.iconText}
+            tone={tone.iconText}
           />
           <BigStat
             icon={<PlayCircle className="h-3 w-3" />}
             value={stats.activeClasses}
             label="Đang chạy"
-            tone={palette.iconText}
+            tone={tone.iconText}
             highlight
           />
           <BigStat
             icon={<Users className="h-3 w-3" />}
             value={stats.uniqueStudents}
             label="Học viên"
-            tone={palette.iconText}
+            tone={tone.iconText}
           />
         </div>
 
@@ -333,7 +349,7 @@ export default function CourseCard({
                     "transition-all hover:shadow-sm hover:-translate-y-0.5",
                     cfg
                       ? cn(cfg.bg, cfg.text, cfg.border)
-                      : cn(palette.accentSoftBg, palette.accentText, palette.accentBorder),
+                      : cn(tone.accentSoftBg, tone.accentText, tone.accentBorder),
                   )}
                   title={lv.target_score ? `${lv.name} • ${lv.target_score}` : lv.name}
                 >
@@ -359,7 +375,7 @@ export default function CourseCard({
       <div className="px-4 pb-3">
         <div className="flex items-center justify-between gap-1.5 mb-1.5">
           <div className="flex items-center gap-1.5 min-w-0">
-            <ClipboardList className={cn("h-3 w-3 shrink-0", palette.iconText)} />
+            <ClipboardList className={cn("h-3 w-3 shrink-0", tone.iconText)} />
             <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground truncate">
               Study plan đang gán ({planCount})
             </span>
@@ -371,7 +387,7 @@ export default function CourseCard({
               className={cn(
                 "inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded",
                 "transition-all hover:scale-105",
-                palette.accentSoftBg, palette.accentText,
+                tone.accentSoftBg, tone.accentText,
               )}
               title="Mở popup tìm & gán Study plan"
             >
@@ -411,7 +427,7 @@ export default function CourseCard({
                       ? cn(
                           "text-white shadow-md ring-1 ring-white/20 border-transparent font-bold",
                           "bg-gradient-to-r",
-                          palette.bannerGradient,
+                          tone.bannerGradient,
                         )
                       : "bg-background hover:bg-muted",
                   )}
@@ -451,7 +467,7 @@ export default function CourseCard({
             "h-7 text-xs flex-1 justify-start font-semibold gap-1",
             "transition-all duration-200",
             "hover:translate-x-0.5",
-            palette.accentText,
+            tone.accentText,
           )}
           onClick={() => setShowClasses(true)}
         >
@@ -459,7 +475,7 @@ export default function CourseCard({
           {stats.totalClasses > 0 && (
             <span className={cn(
               "ml-0.5 inline-flex items-center justify-center text-[10px] font-bold px-1.5 py-0 rounded-full min-w-[18px]",
-              palette.accentSoftBg,
+              tone.accentSoftBg,
             )}>
               {stats.totalClasses}
             </span>
