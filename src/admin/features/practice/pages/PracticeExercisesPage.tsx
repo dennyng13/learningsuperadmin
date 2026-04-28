@@ -680,12 +680,18 @@ export default function PracticeExercisesPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
               <label className="text-xs font-bold text-muted-foreground mb-1 block">
-                Chương trình <span className="text-destructive">*</span>
+                Chương trình
               </label>
-              <Select value={program || "_none"} onValueChange={v => setProgram(v === "_none" ? "" : v)}>
-                <SelectTrigger className={cn(!program && "border-destructive")}><SelectValue placeholder="Chọn..." /></SelectTrigger>
+              <Select
+                value={program || "_none"}
+                onValueChange={v => setProgram(v === "_none" ? "" : v)}
+              >
+                <SelectTrigger className={cn(!program && "border-destructive/50")}>
+                  <SelectValue placeholder="Chọn..." />
+                </SelectTrigger>
                 <SelectContent>
                   {PROGRAMS.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
+                  <SelectItem value="unclassified">— Chưa phân loại —</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -694,7 +700,7 @@ export default function PracticeExercisesPage() {
               <Select value={courseLevel || "_none"} onValueChange={v => setCourseLevel(v === "_none" ? "" : v)}>
                 <SelectTrigger><SelectValue placeholder="Chọn level..." /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="_none">— Không chọn —</SelectItem>
+                  <SelectItem value="_none">— Chưa phân loại —</SelectItem>
                   {courseLevels.map(cl => <SelectItem key={cl.id} value={cl.name}>{cl.name}</SelectItem>)}
                 </SelectContent>
               </Select>
