@@ -1,13 +1,18 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { Wallet, ExternalLink, Banknote, Clock, TrendingUp, CalendarRange, X } from "lucide-react";
+import { Wallet, ExternalLink, Banknote, Clock, TrendingUp, CalendarRange, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@shared/components/ui/button";
 import { Card } from "@shared/components/ui/card";
 import { Skeleton } from "@shared/components/ui/skeleton";
 import { Input } from "@shared/components/ui/input";
 import { Label } from "@shared/components/ui/label";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@shared/components/ui/select";
+
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const;
 
 const fmtVND = (n: number | null | undefined) =>
   new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 })
@@ -27,6 +32,8 @@ type PayrollRow = {
 export function PayrollTab({ classId }: { classId: string }) {
   const [dateFrom, setDateFrom] = useState<string>("");
   const [dateTo, setDateTo] = useState<string>("");
+  const [pageSize, setPageSize] = useState<number>(25);
+  const [page, setPage] = useState<number>(0); // 0-indexed
 
   const { data, isLoading, isFetching, error } = useQuery({
     // classId + date range tham gia queryKey → mỗi lần đổi sẽ refetch.
@@ -48,6 +55,11 @@ export function PayrollTab({ classId }: { classId: string }) {
     staleTime: 30_000,
     placeholderData: keepPreviousData,
   });
+
+  // Reset về trang 0 khi đổi filter / class — tránh "trang 5 của 1 trang".
+  useEffect(() => {
+    setPage(0);
+  }, [classId, dateFrom, dateTo, pageSize]);
 
   const hasFilter = !!(dateFrom || dateTo);
   const clearFilter = () => { setDateFrom(""); setDateTo(""); };
@@ -171,6 +183,20 @@ export function PayrollTab({ classId }: { classId: string }) {
   const totalSessions = rows.reduce((s, r) => s + Number(r.sessions_taught ?? 0), 0);
   const totalHours = rows.reduce((s, r) => s + Number(r.hours_taught ?? 0), 0);
 
+  /* ─── Pagination (client-side) ─── */
+  const totalRows = rows.length;
+  const totalPages = Math.max(1, Math.ceil(totalRows / pageSize));
+  const safePage = Math.min(page, totalPages - 1);
+  const fromIdx = totalRows === 0 ? 0 : safePage * pageSize + 1;
+  const toIdx = Math.min(totalRows, safePage * pageSize + pageSize);
+  const pagedRows = useMemo(
+    () => rows.slice(safePage * pageSize, safePage * pageSize + pageSize),
+    [rows, safePage, pageSize],
+  );
+  // Reserve chiều cao tbody = pageSize × ~41px để layout không nhảy khi
+  // trang cuối thiếu rows hoặc khi đổi pageSize.
+  const reservedMinHeight = pageSize * 41;
+
   return (
     <div className="space-y-4">
       {filterBar}
@@ -224,8 +250,8 @@ export function PayrollTab({ classId }: { classId: string }) {
               <th className="text-left px-4 py-2.5">Buổi gần nhất</th>
             </tr>
           </thead>
-          <tbody>
-            {rows.map((r) => (
+          <tbody style={{ minHeight: reservedMinHeight }}>
+            {pagedRows.map((r) => (
               <tr key={r.teacher_id} className="border-t">
                 <td className="px-4 py-2.5 font-medium">{r.teacher_name ?? "(Không tên)"}</td>
                 <td className="px-4 py-2.5 text-right tabular-nums">{r.sessions_taught ?? 0}</td>
@@ -245,15 +271,63 @@ export function PayrollTab({ classId }: { classId: string }) {
                 </td>
               </tr>
             ))}
+            {/* Filler rows giữ chiều cao bảng cố định khi trang cuối ít hơn pageSize. */}
+            {pagedRows.length < pageSize &&
+              Array.from({ length: pageSize - pagedRows.length }).map((_, i) => (
+                <tr key={`filler-${i}`} className="border-t" aria-hidden>
+                  <td className="px-4 py-2.5">&nbsp;</td>
+                  <td /><td /><td /><td /><td />
+                </tr>
+              ))}
           </tbody>
           <tfoot>
             <tr className="border-t bg-muted/30 font-semibold">
-              <td className="px-4 py-2.5" colSpan={4}>Tổng cộng</td>
+              <td className="px-4 py-2.5" colSpan={4}>
+                Tổng cộng <span className="font-normal text-muted-foreground">(toàn bộ)</span>
+              </td>
               <td className="px-4 py-2.5 text-right tabular-nums">{fmtVND(total)}</td>
               <td />
             </tr>
           </tfoot>
         </table>
+      </div>
+      {/* Pagination footer */}
+      <div className="border-t bg-muted/20 px-4 py-2 flex items-center justify-between gap-3 text-xs text-muted-foreground flex-wrap">
+        <div className="flex items-center gap-2">
+          <span className="tabular-nums">
+            {fromIdx}–{toIdx} / {totalRows}
+          </span>
+          <span className="opacity-50">·</span>
+          <span>Hiển thị</span>
+          <Select value={String(pageSize)} onValueChange={(v) => setPageSize(Number(v))}>
+            <SelectTrigger className="h-7 w-[68px] text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {PAGE_SIZE_OPTIONS.map((n) => (
+                <SelectItem key={n} value={String(n)} className="text-xs">{n}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <span>dòng / trang</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost" size="sm" className="h-7 px-2"
+            disabled={safePage === 0}
+            onClick={() => setPage((p) => Math.max(0, p - 1))}
+          >
+            <ChevronLeft className="h-3.5 w-3.5" /> Trước
+          </Button>
+          <span className="px-2 tabular-nums">{safePage + 1} / {totalPages}</span>
+          <Button
+            variant="ghost" size="sm" className="h-7 px-2"
+            disabled={safePage + 1 >= totalPages}
+            onClick={() => setPage((p) => p + 1)}
+          >
+            Sau <ChevronRight className="h-3.5 w-3.5" />
+          </Button>
+        </div>
       </div>
       </div>
 
