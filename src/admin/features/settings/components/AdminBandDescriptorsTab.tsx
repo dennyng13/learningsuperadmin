@@ -261,8 +261,14 @@ export default function AdminBandDescriptorsTab() {
     for (const c of currentSkill.criteria) {
       for (const band of BANDS) {
         const desc = descriptors[makeKey(c.key, band)] || "";
-        if (desc.trim()) {
-          rows.push({ skill, criteria: c.key, band, description: desc.trim(), task_type: taskType });
+        // Loại bullets trống trước khi lưu để DB sạch sẽ.
+        const cleaned = desc
+          .split("\n")
+          .map((l) => l.trim())
+          .filter(Boolean)
+          .join("\n");
+        if (cleaned) {
+          rows.push({ skill, criteria: c.key, band, description: cleaned, task_type: taskType });
         }
       }
     }
