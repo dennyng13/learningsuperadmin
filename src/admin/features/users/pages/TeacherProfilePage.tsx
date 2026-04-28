@@ -5,7 +5,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
-  Award, Calendar, GraduationCap, Loader2, Mail, ShieldCheck, Sparkles, User, Wallet,
+  Award, BarChart3, Calendar, GraduationCap, Loader2, Mail, ShieldCheck, Sparkles, User, Wallet,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@shared/hooks/useAuth";
@@ -19,6 +19,7 @@ import TabCapabilities from "@admin/features/users/components/teacher-detail/Tab
 import TabCertifications from "@admin/features/users/components/teacher-detail/TabCertifications";
 import TabAvailability from "@admin/features/users/components/teacher-detail/TabAvailability";
 import TabIncome from "@admin/features/users/components/teacher-detail/TabIncome";
+import TabPerformance from "@admin/features/users/components/teacher-detail/TabPerformance";
 import TabInvitations from "@admin/features/users/components/teacher-detail/TabInvitations";
 
 interface TeacherHeader {
@@ -40,6 +41,7 @@ const TABS = [
   { value: "certifications",label: "Chứng chỉ",   icon: Award },
   { value: "availability",  label: "Lịch rảnh",   icon: Calendar },
   { value: "income",        label: "Lương",       icon: Wallet },
+  { value: "performance",   label: "Hiệu quả",    icon: BarChart3 },
   { value: "invitations",   label: "Lời mời",     icon: Mail },
 ] as const;
 
@@ -174,6 +176,9 @@ export default function TeacherProfilePage() {
           </TabsContent>
           <TabsContent value="income" className="mt-4">
             <TabIncome teacherId={teacherId} />
+          </TabsContent>
+          <TabsContent value="performance" className="mt-4">
+            <TabPerformance teacherId={teacherId} />
           </TabsContent>
           <TabsContent value="invitations" className="mt-4">
             <TabInvitations teacherId={teacherId} />

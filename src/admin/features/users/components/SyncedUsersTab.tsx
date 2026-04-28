@@ -413,80 +413,22 @@ export default function SyncedUsersTab({ roleCategory = "students" }: { roleCate
     fetchUsers();
   }, []);
 
+  // P5a: sync-teachngo-students edge function archived. Sync feature disabled.
   const syncStudents = async () => {
-    setSyncing(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { toast.error("Bạn cần đăng nhập"); setSyncing(false); return; }
-      const res = await supabase.functions.invoke("sync-teachngo-students", {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-        body: { mode: "preview" },
-      });
-      if (res.error) { toast.error(`Lỗi đồng bộ: ${res.error.message}`); }
-      else {
-        setSyncPreview(res.data as SyncPreviewData);
-        setSyncPreviewOpen(true);
-      }
-    } catch (err: any) { toast.error(`Lỗi: ${err.message}`); }
-    setSyncing(false);
+    toast.info("Tính năng đồng bộ Teach'n Go đã bị vô hiệu hoá (P5).");
   };
 
+  // P5a: sync-teachngo-students edge function archived.
   const confirmSync = async () => {
-    setSyncConfirming(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { toast.error("Bạn cần đăng nhập"); setSyncConfirming(false); return; }
-      const res = await supabase.functions.invoke("sync-teachngo-students", {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-        body: { mode: "apply" },
-      });
-      if (res.error) toast.error(`Lỗi đồng bộ: ${res.error.message}`);
-      else {
-        const d = res.data;
-        const lines = [` Đồng bộ thành công! ${d.total_fetched} học viên`];
-        if (d.summary?.added) lines.push(` ${d.summary.added} mới`);
-        if (d.summary?.updated) lines.push(` ${d.summary.updated} cập nhật`);
-        if (d.summary?.archived) lines.push(` ${d.summary.archived} archived`);
-        if (d.teachers_linked) lines.push(` Liên kết ${d.teachers_linked} lớp với giáo viên`);
-        if (d.students_linked) lines.push(` Liên kết ${d.students_linked} học viên với tài khoản`);
-        toast.success(lines.join("\n"), { duration: 6000 });
-        if (d.demoted_to_guest > 0) {
-          const nameList = Array.isArray(d.demoted_names) && d.demoted_names.length > 0 ? d.demoted_names.join(", ") : `${d.demoted_to_guest} học viên`;
-          toast.warning(` Chuyển sang Khách: ${nameList}`, { duration: 10000 });
-        }
-        if (d.restored_to_user > 0) toast.info(` Khôi phục quyền User: ${d.restored_to_user} học viên`, { duration: 8000 });
-        await fetchStudents();
-      }
-    } catch (err: any) { toast.error(`Lỗi: ${err.message}`); }
+    toast.info("Tính năng đồng bộ Teach'n Go đã bị vô hiệu hoá (P5).");
     setSyncConfirming(false);
     setSyncPreviewOpen(false);
     setSyncPreview(null);
   };
 
+  // P5a: invite-teachngo-students edge function archived.
   const createAccountsForStudents = async () => {
-    const unlinkedWithEmail = students.filter(s => s.source === "tng" && !s.linked_user_id && s.email);
-    if (unlinkedWithEmail.length === 0) { toast.info("Tất cả học viên có email đã được liên kết hoặc không có email"); return; }
-    setInviting(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { toast.error("Bạn cần đăng nhập"); setInviting(false); return; }
-      const res = await supabase.functions.invoke("invite-teachngo-students", {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-        body: { role: createRole },
-      });
-      if (res.error) toast.error(`Lỗi: ${res.error.message}`);
-      else {
-        const { created, linked, errors, created_accounts } = res.data;
-        if (created > 0) {
-          toast.success(`Đã tạo ${created} tài khoản mới${linked > 0 ? `, liên kết ${linked} tài khoản có sẵn` : ""}`);
-          if (created_accounts?.length > 0) { setCreatedAccounts(created_accounts); setCreatedAccountsDialog(true); }
-        } else if (linked > 0) toast.success(`Đã liên kết ${linked} tài khoản có sẵn`);
-        else toast.info("Không có tài khoản nào cần tạo");
-        if (errors?.length > 0) toast.warning(`${errors.length} lỗi: ${errors[0]}`);
-        await fetchStudents();
-      }
-    } catch (err: any) { toast.error(`Lỗi: ${err.message}`); }
-    setInviting(false);
+    toast.info("Tính năng mời hàng loạt qua Teach'n Go đã bị vô hiệu hoá (P5).");
   };
 
   const toggleSelect = (id: string) => {
@@ -497,32 +439,9 @@ export default function SyncedUsersTab({ roleCategory = "students" }: { roleCate
     else setSelectedIds(new Set(filtered.map(s => s.id)));
   };
 
+  // P5a: invite-teachngo-students edge function archived.
   const createSelectedAccounts = async () => {
-    // Only TnG students can have accounts created
-    const tngSelectedIds = Array.from(selectedIds).filter(id => !id.startsWith("sys_"));
-    if (tngSelectedIds.length === 0) { toast.info("Chọn học viên TnG cần tạo tài khoản"); return; }
-    setInviting(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { toast.error("Bạn cần đăng nhập"); setInviting(false); return; }
-      const res = await supabase.functions.invoke("invite-teachngo-students", {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-        body: { student_ids: tngSelectedIds, role: createRole },
-      });
-      if (res.error) toast.error(`Lỗi: ${res.error.message}`);
-      else {
-        const { created, linked, errors, created_accounts } = res.data;
-        if (created > 0) {
-          toast.success(`Đã tạo ${created} tài khoản${linked > 0 ? `, liên kết ${linked}` : ""}`);
-          if (created_accounts?.length > 0) { setCreatedAccounts(created_accounts); setCreatedAccountsDialog(true); }
-        } else if (linked > 0) toast.success(`Đã liên kết ${linked} tài khoản có sẵn`);
-        else toast.info("Không có tài khoản nào cần tạo");
-        if (errors?.length > 0) toast.warning(`${errors.length} lỗi: ${errors[0]}`);
-        setSelectedIds(new Set());
-        await fetchStudents();
-      }
-    } catch (err: any) { toast.error(`Lỗi: ${err.message}`); }
-    setInviting(false);
+    toast.info("Tính năng tạo tài khoản hàng loạt qua Teach'n Go đã bị vô hiệu hoá (P5).");
   };
 
   const deleteSelected = () => {
@@ -540,18 +459,9 @@ export default function SyncedUsersTab({ roleCategory = "students" }: { roleCate
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { toast.error("Bạn cần đăng nhập"); setDeleting(false); return; }
 
-      // Delete TnG students
+      // P5a: delete-teachngo-students edge function archived.
       if (tngIds.length > 0) {
-        const res = await supabase.functions.invoke("delete-teachngo-students", {
-          headers: { Authorization: `Bearer ${session.access_token}` },
-          body: { student_ids: tngIds },
-        });
-        if (res.error) toast.error(`Lỗi TnG: ${res.error.message}`);
-        else {
-          const { deleted_students, deleted_users, errors } = res.data;
-          toast.success(`Đã xóa ${deleted_students} học viên TnG${deleted_users > 0 ? ` và ${deleted_users} tài khoản` : ""}`);
-          if (errors?.length > 0) toast.warning(`${errors.length} lỗi: ${errors[0]}`);
-        }
+        toast.info(`Tính năng xóa học viên Teach'n Go đã bị vô hiệu hoá (P5). Bỏ qua ${tngIds.length} học viên.`);
       }
 
       // Delete system users
@@ -626,29 +536,9 @@ export default function SyncedUsersTab({ roleCategory = "students" }: { roleCate
     setRestoringAccess(false);
   };
 
-  const quickCreateAccount = async (student: UnifiedUser) => {
-    if (!student.email) { toast.error("Học viên chưa có email"); return; }
-    if (student.linked_user_id) { toast.info("Học viên đã được liên kết"); return; }
-    setCreatingForId(student.id);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { toast.error("Bạn cần đăng nhập"); setCreatingForId(null); return; }
-      const res = await supabase.functions.invoke("invite-teachngo-students", {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-        body: { student_ids: [student.id], role: createRole },
-      });
-      if (res.error) toast.error(`Lỗi: ${res.error.message}`);
-      else {
-        const { created, linked, created_accounts } = res.data;
-        if (created > 0) {
-          toast.success(`Đã tạo tài khoản cho ${student.full_name}`);
-          if (created_accounts?.length > 0) { setCreatedAccounts(created_accounts); setCreatedAccountsDialog(true); }
-        } else if (linked > 0) toast.success(`Đã liên kết ${student.full_name} với tài khoản có sẵn`);
-        else toast.info("Không thể tạo tài khoản");
-        await fetchStudents();
-      }
-    } catch (err: any) { toast.error(`Lỗi: ${err.message}`); }
-    setCreatingForId(null);
+  // P5a: invite-teachngo-students edge function archived.
+  const quickCreateAccount = async (_student: UnifiedUser) => {
+    toast.info("Tính năng tạo tài khoản nhanh qua Teach'n Go đã bị vô hiệu hoá (P5).");
   };
 
   const createExternalAccount = async () => {

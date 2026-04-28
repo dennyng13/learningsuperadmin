@@ -53,7 +53,8 @@ export const adminNavItems: NavItem[] = [
   { id: "classes",      label: "Lớp học",           icon: School,          route: "/classes/list",               group: "classes",  order: 11,
     aliasPaths: ["/classes"] },
   { id: "placement",    label: "Sắp lớp",           icon: UserSearch,      route: "/placement",                  group: "classes",  order: 12 },
-  { id: "attendance",   label: "Điểm danh",         icon: CalendarCheck,   route: "/attendance",                 group: "classes",  order: 13 },
+  { id: "attendance",   label: "Theo dõi điểm danh", icon: CalendarCheck,   route: "/attendance",                 group: "classes",  order: 13,
+    aliasPaths: ["/attendance/monitor"] },
   { id: "availability-drafts", label: "Duyệt lịch rảnh", icon: CalendarCheck, route: "/availability-drafts",     group: "classes",  order: 14 },
 
   // ─── Người dùng ───
