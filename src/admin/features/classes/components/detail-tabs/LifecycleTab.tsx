@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
-import { History as HistoryIcon, Loader2, Ban, Mail, ExternalLink, Clock } from "lucide-react";
+import { History as HistoryIcon, Ban, Mail, ExternalLink, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import ClassStatusBadge, {
