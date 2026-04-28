@@ -1,6 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
-import { Wallet, Loader2 } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Wallet, Loader2, ExternalLink, Banknote, Clock, TrendingUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@shared/components/ui/button";
+import { Card } from "@shared/components/ui/card";
 
 const fmtVND = (n: number | null | undefined) =>
   new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 })
@@ -62,9 +65,43 @@ export function PayrollTab({ classId }: { classId: string }) {
   }
 
   const total = rows.reduce((s, r) => s + Number(r.total_payable_vnd ?? 0), 0);
+  const totalSessions = rows.reduce((s, r) => s + Number(r.sessions_taught ?? 0), 0);
+  const totalHours = rows.reduce((s, r) => s + Number(r.hours_taught ?? 0), 0);
 
   return (
-    <div className="rounded-2xl border bg-card overflow-hidden">
+    <div className="space-y-4">
+      {/* Summary cards */}
+      <div className="grid gap-3 grid-cols-3">
+        <Card className="p-3 space-y-1.5">
+          <div className="flex items-center gap-2">
+            <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/10 ring-1 ring-emerald-500/20">
+              <Banknote className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+            </span>
+            <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium">Tổng phải trả</p>
+          </div>
+          <p className="text-lg font-bold tabular-nums">{fmtVND(total)}</p>
+        </Card>
+        <Card className="p-3 space-y-1.5">
+          <div className="flex items-center gap-2">
+            <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-blue-500/10 ring-1 ring-blue-500/20">
+              <TrendingUp className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+            </span>
+            <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium">Sessions</p>
+          </div>
+          <p className="text-lg font-bold tabular-nums">{totalSessions}</p>
+        </Card>
+        <Card className="p-3 space-y-1.5">
+          <div className="flex items-center gap-2">
+            <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-violet-500/10 ring-1 ring-violet-500/20">
+              <Clock className="h-3.5 w-3.5 text-violet-600 dark:text-violet-400" />
+            </span>
+            <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium">Tổng giờ</p>
+          </div>
+          <p className="text-lg font-bold tabular-nums">{totalHours.toFixed(1)}h</p>
+        </Card>
+      </div>
+
+      <div className="rounded-2xl border bg-card overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
@@ -107,6 +144,16 @@ export function PayrollTab({ classId }: { classId: string }) {
             </tr>
           </tfoot>
         </table>
+      </div>
+      </div>
+
+      <div className="flex justify-end">
+        <Button asChild variant="outline" size="sm" className="gap-1.5">
+          <Link to="/payroll/list">
+            <ExternalLink className="h-3.5 w-3.5" />
+            Mở trang Payroll đầy đủ
+          </Link>
+        </Button>
       </div>
     </div>
   );
