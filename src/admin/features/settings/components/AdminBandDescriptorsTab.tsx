@@ -575,6 +575,7 @@ export default function AdminBandDescriptorsTab() {
                             className="h-7 text-xs border-transparent bg-transparent hover:bg-muted/30 focus:bg-background focus:border-input px-2 py-1"
                           />
                           <button
+                            type="button"
                             onClick={() => removeBullet(idx)}
                             className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive shrink-0"
                           >
@@ -585,6 +586,7 @@ export default function AdminBandDescriptorsTab() {
                     </div>
 
                     <button
+                      type="button"
                       onClick={addBullet}
                       className="flex items-center gap-1 text-[11px] text-primary/70 hover:text-primary transition-colors pl-4"
                     >
