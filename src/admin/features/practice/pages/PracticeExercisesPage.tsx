@@ -408,8 +408,17 @@ export default function PracticeExercisesPage() {
   // ---- Save ----
 
   const saveExercise = async (statusOverride?: string) => {
-    if (!editing || !user) return;
+    if (!editing) {
+      toast.error("Không xác định được bài tập đang chỉnh");
+      return;
+    }
+    if (!user) {
+      toast.error("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại");
+      return;
+    }
     if (!title.trim()) { toast.error("Vui lòng nhập tiêu đề"); return; }
+    // "unclassified" là sentinel cho chương trình "Chưa phân loại" → lưu null vào DB
+    const isUnclassifiedProgram = program === "unclassified";
     if (!program) { toast.error("Vui lòng chọn chương trình"); return; }
     setSaving(true);
 
@@ -423,7 +432,7 @@ export default function PracticeExercisesPage() {
       title, description: description || null,
       skill, question_type: primaryType, question_types: derivedTypes,
       difficulty, course_level: courseLevel || null,
-      program: program || null,
+      program: isUnclassifiedProgram ? null : program,
       scoring_mode: scoringMode,
       content: {
         passage,
@@ -442,7 +451,12 @@ export default function PracticeExercisesPage() {
         .from("practice_exercises")
         .insert({ ...payload, created_by: user.id, status: effectiveStatus } as any)
         .select().single();
-      if (error) { toast.error("Lỗi tạo bài tập"); setSaving(false); return; }
+      if (error) {
+        console.error("[saveExercise] insert error", error);
+        toast.error(`Lỗi tạo bài tập: ${error.message}`);
+        setSaving(false);
+        return;
+      }
       toast.success("Đã lưu!");
       const newId = (data as any).id as string;
       setEditing(newId);
@@ -456,7 +470,12 @@ export default function PracticeExercisesPage() {
       }
     } else {
       const { error } = await supabase.from("practice_exercises").update({ ...payload, status: effectiveStatus } as any).eq("id", editing);
-      if (error) { toast.error("Lỗi lưu"); setSaving(false); return; }
+      if (error) {
+        console.error("[saveExercise] update error", error);
+        toast.error(`Lỗi lưu: ${error.message}`);
+        setSaving(false);
+        return;
+      }
       toast.success(statusOverride === "published" ? "Đã xuất bản!" : statusOverride === "draft" ? "Đã chuyển về nháp!" : "Đã lưu!");
       // Sync course assignments
       await setResourceCourses.mutateAsync({
