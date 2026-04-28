@@ -289,7 +289,7 @@ export default function CourseCard({
               icon={<UserCheck className={cn("h-3 w-3", tone.iconText)} />}
               label="Phù hợp với"
               text={course.target_audience}
-              tone={palette}
+              tone={tone}
             />
           )}
           {course.problem_solving && (
@@ -297,7 +297,7 @@ export default function CourseCard({
               icon={<Target className={cn("h-3 w-3", tone.iconText)} />}
               label="Khoá học giúp bạn"
               text={course.problem_solving}
-              tone={palette}
+              tone={tone}
             />
           )}
         </div>
