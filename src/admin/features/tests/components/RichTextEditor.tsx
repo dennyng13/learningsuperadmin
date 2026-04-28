@@ -1,4 +1,5 @@
 import { useEditor, EditorContent, Editor, Extension, Mark, mergeAttributes } from "@tiptap/react";
+import { BubbleMenu } from "@tiptap/react/menus";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import Superscript from "@tiptap/extension-superscript";
