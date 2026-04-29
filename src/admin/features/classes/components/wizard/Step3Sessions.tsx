@@ -71,9 +71,10 @@ export default function Step3Sessions({ sessions, setSessions, teachers }: Props
                   </td>
                   <td className="px-3 py-2">
                     <Select value={s.teacher_id} onValueChange={(v) => updateSession(s.id, { teacher_id: v })}>
-                      <SelectTrigger className="h-8 w-44"><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="h-8 w-44">
+                        <SelectValue placeholder="— Chọn giáo viên —" />
+                      </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="" disabled>— Chọn giáo viên —</SelectItem>
                         {teachers.map((t) => (
                           <SelectItem key={t.teacher_id} value={t.teacher_id}>{t.full_name} ({t.role})</SelectItem>
                         ))}
