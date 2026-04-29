@@ -215,6 +215,19 @@ export default function CreateClassWizardPage() {
         }
       }
 
+      // Stage P1 — best-effort auto-send invitation emails. Cron at 07:05 ICT
+      // serves as safety net for any failures here. Admin can also manually
+      // resend via LifecycleTab > "Quản lý lời mời".
+      if (newClassId) {
+        try {
+          await supabase.functions.invoke("send-class-invitations", {
+            body: { class_id: newClassId },
+          });
+        } catch {
+          // best-effort; ignore
+        }
+      }
+
       navigate("/classes");
     } catch (err: any) {
       toast.error(err?.message || "Lỗi tạo lớp", { duration: 6000 });
