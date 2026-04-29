@@ -42,12 +42,23 @@ const MODE_META: Record<Room["mode"], { label: string; icon: typeof Building2; c
   hybrid: { label: "Hybrid", icon: Layers, cls: "border-violet-500/30 text-violet-700 dark:text-violet-400" },
 };
 
-/** Returns true if a room of `roomMode` can host a class with `slotMode`. */
+/** Display labels — vocabulary bridge: wizard internal "offline" → user-facing
+ *  "Onsite (cơ sở vật lý)" để khớp với rooms.mode='onsite'. */
+const MODE_LABELS: Record<string, string> = {
+  offline: "Onsite (cơ sở vật lý)",
+  online: "Online",
+  hybrid: "Hybrid",
+};
+
+/** Returns true if a room of `roomMode` can host a class with `slotMode`.
+ *  Bridges vocabulary: WizardSlot dùng "offline" (matches teacher_availability_*),
+ *  rooms.mode dùng "onsite" (Phase F1). 2 từ đồng nghĩa cho lớp tại cơ sở vật lý. */
 function modeCompatible(roomMode: Room["mode"], slotMode: string | null): boolean {
   if (!slotMode) return true;
-  if (slotMode === "onsite") return roomMode === "onsite" || roomMode === "hybrid";
-  if (slotMode === "online") return roomMode === "online" || roomMode === "hybrid";
-  if (slotMode === "hybrid") return roomMode === "hybrid";
+  const normalized = slotMode === "offline" ? "onsite" : slotMode;
+  if (normalized === "onsite") return roomMode === "onsite" || roomMode === "hybrid";
+  if (normalized === "online") return roomMode === "online" || roomMode === "hybrid";
+  if (normalized === "hybrid") return roomMode === "hybrid";
   return true;
 }
 
@@ -157,7 +168,7 @@ export default function Step3RoomPicker({ value, onChange, slot, sessions }: Pro
         </p>
         <ul className="text-xs text-muted-foreground space-y-0.5 ml-1">
           <li>• Sĩ số: <strong className="text-foreground">{value.max_students ?? "—"}</strong> học viên</li>
-          <li>• Hình thức: <strong className="text-foreground">{effectiveMode}</strong></li>
+          <li>• Hình thức: <strong className="text-foreground">{MODE_LABELS[effectiveMode] ?? effectiveMode}</strong></li>
           <li>
             • Lịch:{" "}
             <strong className="text-foreground">
@@ -176,7 +187,7 @@ export default function Step3RoomPicker({ value, onChange, slot, sessions }: Pro
       {/* Mode display — read-only, single source of truth = slot.mode (Step 2) */}
       <div className="flex items-center gap-2 flex-wrap">
         <Label className="text-xs">Hình thức:</Label>
-        <Badge variant="outline" className="text-xs">{effectiveMode}</Badge>
+        <Badge variant="outline" className="text-xs">{MODE_LABELS[effectiveMode] ?? effectiveMode}</Badge>
         <span className="text-xs text-muted-foreground">
           (Đổi ở Step 2 Lịch &amp; Giáo viên)
         </span>
