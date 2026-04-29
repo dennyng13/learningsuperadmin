@@ -297,19 +297,34 @@ function SessionListItem({
             <MoreHorizontal className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-52">
+        <DropdownMenuContent align="end" className="w-56">
+          {/* Group 1 — Teacher actions */}
           <DropdownMenuItem onClick={onChangeTeacher} className="text-xs gap-1.5">
             <RefreshCw className="h-3.5 w-3.5" />
-            Đổi giáo viên
+            Đổi GV chính (vĩnh viễn)
           </DropdownMenuItem>
           <DropdownMenuItem onClick={onMarkSubstituted} className="text-xs gap-1.5">
             <UserPlus className="h-3.5 w-3.5" />
-            Đánh dấu dạy thế
+            GV dạy thế (1 buổi)
           </DropdownMenuItem>
+
+          <DropdownMenuSeparator />
+
+          {/* Group 2 — Edit + conditional unlock */}
           <DropdownMenuItem onClick={onEdit} className="text-xs gap-1.5">
             <Pencil className="h-3.5 w-3.5" />
-            Sửa thông tin
+            Sửa thông tin buổi
           </DropdownMenuItem>
+          {row.is_late_locked && (
+            <DropdownMenuItem onClick={onUnlock} className="text-xs gap-1.5">
+              <Unlock className="h-3.5 w-3.5" />
+              Mở khoá điểm danh…
+            </DropdownMenuItem>
+          )}
+
+          <DropdownMenuSeparator />
+
+          {/* Group 3 — Destructive */}
           <DropdownMenuItem
             onClick={onCancel}
             className="text-xs text-destructive focus:text-destructive gap-1.5"
@@ -317,15 +332,6 @@ function SessionListItem({
             <X className="h-3.5 w-3.5" />
             Huỷ buổi
           </DropdownMenuItem>
-          {row.is_late_locked && (
-            <>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={onUnlock} className="text-xs gap-1.5">
-                <Unlock className="h-3.5 w-3.5" />
-                Mở khoá điểm danh…
-              </DropdownMenuItem>
-            </>
-          )}
         </DropdownMenuContent>
       </DropdownMenu>
     </li>
