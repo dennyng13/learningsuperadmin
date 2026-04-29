@@ -29,6 +29,7 @@ const FlashcardSetsPage = lazy(() => import("@admin/features/flashcards/pages/Fl
 const PracticeExerciseDetailPage = lazy(() => import("@admin/features/practice/pages/PracticeExerciseDetailPage"));
 const BadgeManagementPage = lazy(() => import("@admin/features/badges/pages/BadgeManagementPage"));
 const AttendanceMonitorPage = lazy(() => import("@admin/features/attendance/pages/AttendanceMonitorPage"));
+const RoomsPage = lazy(() => import("@admin/features/rooms/pages/RoomsPage"));
 const StudentPerformancePage = lazy(() => import("@admin/features/performance/pages/StudentPerformancePage"));
 const AdminSettingsPage = lazy(() => import("@admin/features/settings/pages/AdminSettingsPage"));
 const EmailTemplatePreviewPage = lazy(() => import("@admin/features/settings/pages/EmailTemplatePreviewPage"));
@@ -119,6 +120,9 @@ export default function AppRoutes() {
           {/* P5d: replaces deleted P5a teachngo-coupled AttendancePage. */}
           <Route path="attendance" element={<AttendanceMonitorPage />} />
           <Route path="attendance/monitor" element={<AttendanceMonitorPage />} />
+
+          {/* Rooms (Phase F1) */}
+          <Route path="rooms" element={<RoomsPage />} />
 
           {/* ─── Legacy Teachngo* slug redirects (bookmark compat) ─── */}
           <Route path="teachngo-attendance"     element={<Navigate to="/attendance" replace />} />

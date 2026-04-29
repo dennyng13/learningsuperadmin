@@ -2,7 +2,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   LayoutDashboard, FileText, Award, Users, School,
   CalendarDays, UserSearch, Settings, ShieldCheck, BarChart3,
-  BookOpen, ClipboardList, Flag, GraduationCap, CalendarCheck,
+  BookOpen, ClipboardList, Flag, GraduationCap, CalendarCheck, MapPin,
   FileSignature, Wallet, BookTemplate, Library, Activity,
 } from "lucide-react";
 
@@ -56,9 +56,7 @@ export const adminNavItems: NavItem[] = [
   { id: "attendance",   label: "Theo dõi điểm danh", icon: CalendarCheck,   route: "/attendance",                 group: "classes",  order: 13,
     aliasPaths: ["/attendance/monitor"] },
   { id: "availability-drafts", label: "Duyệt lịch rảnh", icon: CalendarCheck, route: "/availability-drafts",     group: "classes",  order: 14 },
-  // TODO Phase F1: Enable "Phòng học" nav after Lovable Sub-step 1B (rooms RPCs)
-  // ready. Icon will be `MapPin` from lucide-react. Group `classes`, order 15.
-  // { id: "rooms", label: "Phòng học", icon: MapPin, route: "/rooms", group: "classes", order: 15 },
+  { id: "rooms",        label: "Phòng học",         icon: MapPin,          route: "/rooms",                      group: "classes",  order: 15 },
 
   // ─── Người dùng ───
   { id: "users",        label: "Học viên",          icon: Users,           route: "/users",                      group: "users",    order: 20 },
