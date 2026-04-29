@@ -19,10 +19,10 @@ export interface ProgramLite {
   id: string;
   key: string;
   name: string;
-  program_key: string | null;
   level: string | null;
   color_key: string | null;
   sort_order: number;
+  status?: string | null;
 }
 
 interface AvailabilityDraftsData {
@@ -42,7 +42,7 @@ async function loadDrafts(): Promise<AvailabilityDraftsData> {
     (supabase.from as any)("teacher_capabilities").select("*"),
     (supabase as any).from("classes" as any).select("id, class_name, teacher_id, status, level, program, schedule, class_type, room, default_start_time, default_end_time"),
     (supabase.from as any)("class_sessions").select("*").gte("session_date", today),
-    (supabase.from as any)("programs").select("id, key, name, program_key, level, color_key, sort_order").eq("is_active", true).order("sort_order", { ascending: true }),
+    (supabase.from as any)("programs").select("id, key, name, level, color_key, sort_order, status").eq("status", "active").order("sort_order", { ascending: true }),
   ]);
 
   if (draftsRes.error) {

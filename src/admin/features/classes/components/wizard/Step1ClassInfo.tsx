@@ -40,15 +40,15 @@ export default function Step1ClassInfo({ value, onChange, errors }: Props) {
     queryKey: ["wizard-programs"],
     queryFn: async () => {
       const { data, error } = await (supabase.from as any)("programs")
-        .select("program_key, sort_order, is_active")
-        .eq("is_active", true)
+        .select("key, sort_order, status")
+        .eq("status", "active")
         .order("sort_order", { ascending: true });
       if (error) return PROGRAM_FALLBACK;
-      const list = (data || []) as Array<{ program_key: string | null }>;
+      const list = (data || []) as Array<{ key: string | null }>;
       const seen = new Set<string>();
       const unique: { program_key: string; label: string }[] = [];
       for (const row of list) {
-        const key = (row.program_key || "").trim().toLowerCase();
+        const key = (row.key || "").trim().toLowerCase();
         if (!key || seen.has(key)) continue;
         seen.add(key);
         unique.push({ program_key: key, label: PROGRAM_GROUP_LABEL[key] || key.toUpperCase() });
