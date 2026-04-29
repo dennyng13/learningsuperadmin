@@ -5,6 +5,7 @@ import { ArrowLeft, ArrowRight, Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import Step1ClassInfo from "../components/wizard/Step1ClassInfo";
 import Step2Schedule from "../components/wizard/Step2Schedule";
+import Step3RoomPicker from "../components/wizard/Step3RoomPicker";
 import Step3Sessions from "../components/wizard/Step3Sessions";
 import Step4Confirm from "../components/wizard/Step4Confirm";
 import {
@@ -18,13 +19,14 @@ import { supabase } from "@/integrations/supabase/client";
 const STEPS = [
   { id: 1, title: "Thông tin lớp" },
   { id: 2, title: "Lịch & Giáo viên" },
-  { id: 3, title: "Preview buổi học" },
-  { id: 4, title: "Xác nhận" },
+  { id: 3, title: "Phòng học" },
+  { id: 4, title: "Preview buổi học" },
+  { id: 5, title: "Xác nhận" },
 ];
 
 export default function CreateClassWizardPage() {
   const navigate = useNavigate();
-  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
+  const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1);
   const [classInfo, setClassInfo] = useState<WizardClassInfo>(EMPTY_CLASS_INFO);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -43,7 +45,9 @@ export default function CreateClassWizardPage() {
     );
   }, [classInfo, teachers, sessions]);
 
-  /* Auto-generate sessions when entering Step 3 */
+  /* Auto-generate sessions when entering Step 3 (Room Picker). Step 3 needs
+     sessions to run batch conflict check against rooms. Step 4 (Sessions
+     Preview) reuses already-generated array. */
   useEffect(() => {
     if (step !== 3) return;
     if (teachers.length === 0) return;
@@ -91,7 +95,10 @@ export default function CreateClassWizardPage() {
     return true;
   };
 
-  const validateStep3 = () => {
+  // Step 3 (room picker) — room is optional, skipping is allowed.
+  const validateStep3 = () => true;
+
+  const validateStep4 = () => {
     const active = sessions.filter((s) => !s.cancelled);
     if (active.length === 0) {
       toast.error("Cần ít nhất 1 buổi học");
@@ -108,10 +115,11 @@ export default function CreateClassWizardPage() {
     if (step === 1 && !validateStep1()) return;
     if (step === 2 && !validateStep2()) return;
     if (step === 3 && !validateStep3()) return;
-    setStep((s) => (Math.min(4, s + 1) as 1 | 2 | 3 | 4));
+    if (step === 4 && !validateStep4()) return;
+    setStep((s) => (Math.min(5, s + 1) as 1 | 2 | 3 | 4 | 5));
   };
 
-  const goBack = () => setStep((s) => (Math.max(1, s - 1) as 1 | 2 | 3 | 4));
+  const goBack = () => setStep((s) => (Math.max(1, s - 1) as 1 | 2 | 3 | 4 | 5));
 
   const handleCancel = () => {
     if (isDirty && !confirm("Bạn có dữ liệu chưa lưu. Hủy?")) return;
@@ -297,8 +305,17 @@ export default function CreateClassWizardPage() {
             setSelectedSlotKeys={setSelectedSlotKeys}
           />
         )}
-        {step === 3 && <Step3Sessions sessions={sessions} setSessions={setSessions} teachers={teachers} />}
-        {step === 4 && <Step4Confirm classInfo={classInfo} teachers={teachers} sessions={sessions} />}
+        {step === 3 && (
+          <Step3RoomPicker
+            value={classInfo}
+            onChange={setClassInfo}
+            slot={slot}
+            sessions={sessions}
+            errors={errors}
+          />
+        )}
+        {step === 4 && <Step3Sessions sessions={sessions} setSessions={setSessions} teachers={teachers} />}
+        {step === 5 && <Step4Confirm classInfo={classInfo} teachers={teachers} sessions={sessions} />}
       </div>
 
       {/* Nav */}
@@ -306,7 +323,7 @@ export default function CreateClassWizardPage() {
         <Button type="button" variant="outline" onClick={goBack} disabled={step === 1 || createMutation.isPending || createWithTemplateMutation.isPending}>
           <ArrowLeft className="h-4 w-4" /> Quay lại
         </Button>
-        {step < 4 ? (
+        {step < 5 ? (
           <Button type="button" onClick={goNext}>
             Tiếp tục <ArrowRight className="h-4 w-4" />
           </Button>

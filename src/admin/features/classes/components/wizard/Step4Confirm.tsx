@@ -5,7 +5,8 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Wallet } from "lucide-react";
+import { Loader2, Wallet, AlertTriangle } from "lucide-react";
+import { useRoom } from "@shared/hooks/useRooms";
 import { AssignedTeacher, DraftSession, WizardClassInfo } from "./wizardTypes";
 
 interface Props {
@@ -74,6 +75,32 @@ function useTeacherPayrollAvg(teacher_ids: string[]) {
   });
 }
 
+function RoomConfirmDisplay({ roomId, forceConflict }: { roomId: string; forceConflict: boolean }) {
+  const { data: room, isLoading } = useRoom(roomId);
+  if (isLoading) {
+    return (
+      <span className="text-muted-foreground inline-flex items-center gap-1">
+        <Loader2 className="h-3 w-3 animate-spin" /> Đang tải phòng…
+      </span>
+    );
+  }
+  if (!room) {
+    return <span className="text-muted-foreground italic">Phòng không tồn tại (id: {roomId.slice(0, 8)}…)</span>;
+  }
+  return (
+    <span>
+      <span className="text-muted-foreground">Phòng: </span>
+      <strong>{room.code}</strong>
+      <span className="text-muted-foreground"> · {room.name} · {room.mode} · cap {room.capacity}</span>
+      {forceConflict && (
+        <span className="ml-2 inline-flex items-center gap-1 text-amber-600 dark:text-amber-400 text-xs">
+          <AlertTriangle className="h-3 w-3" /> Override conflict
+        </span>
+      )}
+    </span>
+  );
+}
+
 export default function Step4Confirm({ classInfo, teachers, sessions }: Props) {
   const active = sessions.filter((s) => !s.cancelled);
   const primaries = teachers.filter((t) => t.role === "primary");
@@ -98,7 +125,13 @@ export default function Step4Confirm({ classInfo, teachers, sessions }: Props) {
           {classInfo.level && <div><dt className="inline text-muted-foreground">Level: </dt><dd className="inline">{classInfo.level}</dd></div>}
           <div><dt className="inline text-muted-foreground">Type: </dt><dd className="inline">{classInfo.class_type}</dd></div>
           <div><dt className="inline text-muted-foreground">Thời gian: </dt><dd className="inline">{classInfo.start_date} → {classInfo.end_date}</dd></div>
-          {classInfo.room && <div><dt className="inline text-muted-foreground">Phòng: </dt><dd className="inline">{classInfo.room}</dd></div>}
+          {classInfo.room_id ? (
+            <div className="md:col-span-2"><RoomConfirmDisplay roomId={classInfo.room_id} forceConflict={classInfo.room_force_conflict} /></div>
+          ) : classInfo.room ? (
+            <div><dt className="inline text-muted-foreground">Phòng (text): </dt><dd className="inline">{classInfo.room}</dd></div>
+          ) : (
+            <div><dt className="inline text-muted-foreground">Phòng: </dt><dd className="inline text-muted-foreground italic">— Không gán —</dd></div>
+          )}
           {classInfo.max_students != null && <div><dt className="inline text-muted-foreground">Max HV: </dt><dd className="inline">{classInfo.max_students}</dd></div>}
         </dl>
       </section>
