@@ -44,12 +44,10 @@ export interface SessionRow {
   mode: string | null;
   room: string | null;
   teacher_id: string | null;
-  substitute_teacher_id: string | null;
   status: SessionStatus | null;
   is_late_locked: boolean | null;
   notes: string | null;
   teacher: { id: string; full_name: string | null } | null;
-  substitute_teacher: { id: string; full_name: string | null } | null;
 }
 
 const STATUS_META: Record<SessionStatus, { label: string; cls: string }> = {
@@ -92,9 +90,8 @@ export function SessionsTab({ classId }: { classId: string }) {
         .from("class_sessions")
         .select(`
           id, class_id, session_date, start_time, end_time, session_number,
-          mode, room, teacher_id, substitute_teacher_id, status, is_late_locked, notes,
-          teacher:teachers!class_sessions_teacher_id_fkey (id, full_name),
-          substitute_teacher:teachers!class_sessions_substitute_teacher_id_fkey (id, full_name)
+          mode, room, teacher_id, status, is_late_locked, notes,
+          teacher:teachers!class_sessions_teacher_id_fkey (id, full_name)
         `)
         .eq("class_id", classId)
         .order("session_number", { ascending: true });
@@ -112,8 +109,7 @@ export function SessionsTab({ classId }: { classId: string }) {
     return rows.filter((r) => {
       const num = r.session_number != null ? String(r.session_number) : "";
       const tName = r.teacher?.full_name?.toLowerCase() ?? "";
-      const sName = r.substitute_teacher?.full_name?.toLowerCase() ?? "";
-      return num.includes(q) || tName.includes(q) || sName.includes(q);
+      return num.includes(q) || tName.includes(q);
     });
   }, [sessionsQ.data, search]);
 
@@ -338,6 +334,10 @@ function SessionListItem({
 
 /* ────────────────────────────────────────────────────────────────────────── */
 
+/* Note: Substitute teacher name not displayed here. Source of truth for
+   substitute is timesheet_entries.substitute_teacher_id, not class_sessions.
+   Display will be added in future iteration after admin_mark_session_substituted
+   RPC is deployed and timesheet_entries fetch wired up. */
 function TeacherDisplay({
   row, onTeacherClick,
 }: {
@@ -345,44 +345,31 @@ function TeacherDisplay({
   onTeacherClick: (teacherId: string) => void;
 }) {
   const orig = row.teacher;
-  const sub = row.substitute_teacher;
-  const isSubstituted = row.status === "substituted" && sub;
-
-  if (isSubstituted) {
-    return (
-      <div className="text-xs text-right leading-tight">
-        <span className="text-muted-foreground line-through">
-          {orig?.full_name ?? "—"}
-        </span>
-        <span className="mx-1 text-muted-foreground">→</span>
-        {sub.id ? (
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); onTeacherClick(sub.id); }}
-            className="font-medium text-foreground hover:underline"
-          >
-            {sub.full_name ?? "—"}
-          </button>
-        ) : (
-          <span className="font-medium">{sub.full_name ?? "—"}</span>
-        )}
-        <span className="ml-1 text-[9px] text-amber-600 dark:text-amber-400">(dạy thế)</span>
-      </div>
-    );
-  }
+  const isSubstituted = row.status === "substituted";
 
   if (!orig) {
     return <span className="text-xs text-muted-foreground">— Chưa có GV —</span>;
   }
 
   return (
-    <button
-      type="button"
-      onClick={(e) => { e.stopPropagation(); onTeacherClick(orig.id); }}
-      className="text-xs font-medium hover:underline truncate max-w-[180px]"
-      title={orig.full_name ?? ""}
-    >
-      {orig.full_name ?? "—"}
-    </button>
+    <div className="text-xs leading-tight flex items-center gap-1.5 justify-end flex-wrap">
+      {orig.id ? (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onTeacherClick(orig.id); }}
+          className="font-medium hover:underline truncate max-w-[140px]"
+          title={orig.full_name ?? ""}
+        >
+          {orig.full_name ?? "—"}
+        </button>
+      ) : (
+        <span className="font-medium">{orig.full_name ?? "—"}</span>
+      )}
+      {isSubstituted && (
+        <Badge variant="outline" className="text-[9px] px-1 py-0 h-3.5 border-amber-500/30 text-amber-600 dark:text-amber-400">
+          Có dạy thế
+        </Badge>
+      )}
+    </div>
   );
 }
