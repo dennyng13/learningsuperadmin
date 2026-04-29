@@ -6,6 +6,7 @@ import { Label } from "@shared/components/ui/label";
 import { Textarea } from "@shared/components/ui/textarea";
 import { Checkbox } from "@shared/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@shared/components/ui/select";
+import { useStudyPlanTemplates, type StudyPlanTemplate } from "@shared/hooks/useStudyPlanTemplates";
 import type { WizardClassInfo } from "./wizardTypes";
 
 interface Props {
@@ -69,7 +70,13 @@ export default function Step1ClassInfo({ value, onChange, errors }: Props) {
           .eq("status", "active")
           .eq("key", value.program),
         (supabase as any).from("program_levels").select("level_id, program_id"),
-        supabase.from("course_levels").select("id, name, sort_order").order("sort_order", { ascending: true }),
+        // Select study_plan_template_id (cast as any vì types.ts chưa regen sau
+        // migration mới của Lovable) — dùng cho L3 hybrid recommendation bên
+        // dropdown Study plan template.
+        (supabase as any)
+          .from("course_levels")
+          .select("id, name, sort_order, study_plan_template_id")
+          .order("sort_order", { ascending: true }),
       ]);
       const programId: string | undefined = Array.isArray(progRows) && progRows[0]?.id;
       if (!programId) return [];
@@ -82,17 +89,35 @@ export default function Step1ClassInfo({ value, onChange, errors }: Props) {
     },
   });
 
-  const studyPlansQ = useQuery({
-    queryKey: ["wizard-study-plans", value.program, value.level],
-    enabled: !!value.program,
-    queryFn: async () => {
-      let query = supabase.from("study_plans").select("id, plan_name, program, assigned_level").eq("plan_type", "template").limit(50);
-      if (value.program) query = query.eq("program", value.program);
-      const { data, error } = await query;
-      if (error) return [];
-      return data || [];
-    },
-  });
+  /* Phase 1 refactor: templates đã chuyển sang `study_plan_templates`. Dùng
+     shared hook + filter client-side theo `program` (case-insensitive vì
+     dữ liệu mixed-case 'IELTS'/'WRE'/'customized'). L3 hybrid: nếu user đã
+     chọn level và level đó có study_plan_template_id → đặt template đó lên
+     đầu list. Phase 2 sẽ adapt RPC create_class_atomic để nhận template_id. */
+  const { data: allTemplates } = useStudyPlanTemplates();
+
+  const templateOptions = useMemo(() => {
+    if (!value.program) return { items: [] as StudyPlanTemplate[], hasRecommended: false };
+    const want = value.program.toLowerCase();
+    const programMatches = (allTemplates || []).filter(
+      (t) => (t.program || "").toLowerCase() === want,
+    );
+    if (value.level && levelsQ.data) {
+      const levelRow = (levelsQ.data as Array<{ name: string; study_plan_template_id?: string | null }>)
+        .find((l) => l.name === value.level);
+      const recId = levelRow?.study_plan_template_id;
+      if (recId) {
+        const rec = programMatches.find((t) => t.id === recId);
+        if (rec) {
+          return {
+            items: [rec, ...programMatches.filter((t) => t.id !== rec.id)],
+            hasRecommended: true,
+          };
+        }
+      }
+    }
+    return { items: programMatches, hasRecommended: false };
+  }, [allTemplates, value.program, value.level, levelsQ.data]);
 
   const set = <K extends keyof WizardClassInfo>(k: K, v: WizardClassInfo[K]) => onChange({ ...value, [k]: v });
 
@@ -193,9 +218,10 @@ export default function Step1ClassInfo({ value, onChange, errors }: Props) {
           <SelectTrigger><SelectValue placeholder={value.program ? "Chọn study plan (optional)" : "Chọn program trước"} /></SelectTrigger>
           <SelectContent>
             <SelectItem value="none">— Không gán —</SelectItem>
-            {(studyPlansQ.data || []).map((sp: any) => (
-              <SelectItem key={sp.id} value={sp.id}>
-                {sp.plan_name || "(no name)"}{sp.assigned_level ? ` · ${sp.assigned_level}` : ""}
+            {templateOptions.items.map((t, idx) => (
+              <SelectItem key={t.id} value={t.id}>
+                {idx === 0 && templateOptions.hasRecommended ? "⭐ " : ""}
+                {t.template_name} · {t.total_sessions} buổi · {t.session_duration}'
               </SelectItem>
             ))}
           </SelectContent>

@@ -69,6 +69,19 @@ export const WEEKDAY_LABELS: { value: number; label: string }[] = [
   { value: 0, label: "CN" },
 ];
 
+// Convert wizard numeric weekday (Sun=0..Sat=6) → key string ('sun'/'mon'/...)
+// matching study_plan_templates.schedule_pattern.days format used by the
+// create_class_with_template_atomic RPC and CloneTemplateDialog.
+export const WEEKDAY_KEY_MAP: Record<number, string> = {
+  0: "sun",
+  1: "mon",
+  2: "tue",
+  3: "wed",
+  4: "thu",
+  5: "fri",
+  6: "sat",
+};
+
 /** Generate sessions between start..end for given weekdays + times, default teacher = first primary */
 export function generateSessions(
   startDate: string,

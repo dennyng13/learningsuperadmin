@@ -9,9 +9,10 @@ import Step3Sessions from "../components/wizard/Step3Sessions";
 import Step4Confirm from "../components/wizard/Step4Confirm";
 import {
   AssignedTeacher, DraftSession, EMPTY_CLASS_INFO, generateSessions,
-  ScheduleMode, WizardClassInfo, WizardSlot,
+  ScheduleMode, WEEKDAY_KEY_MAP, WizardClassInfo, WizardSlot,
 } from "../components/wizard/wizardTypes";
 import { useCreateClass } from "@shared/hooks/useCreateClass";
+import { useCreateClassWithTemplate } from "@shared/hooks/useCreateClassWithTemplate";
 import { supabase } from "@/integrations/supabase/client";
 
 const STEPS = [
@@ -34,6 +35,7 @@ export default function CreateClassWizardPage() {
   const [sessions, setSessions] = useState<DraftSession[]>([]);
 
   const createMutation = useCreateClass();
+  const createWithTemplateMutation = useCreateClassWithTemplate();
 
   const isDirty = useMemo(() => {
     return (
@@ -116,44 +118,75 @@ export default function CreateClassWizardPage() {
     navigate("/classes");
   };
 
+  /* Build p_class_data common to both submission paths. study_plan_id is
+     intentionally excluded — with-template path leaves the wrapper RPC to set
+     it; without-template path adds it back as null below. */
+  const buildClassData = () => ({
+    class_name: classInfo.class_name,
+    course_title: classInfo.course_title || null,
+    program: classInfo.program,
+    level: classInfo.level || null,
+    class_type: classInfo.class_type,
+    start_date: classInfo.start_date,
+    end_date: classInfo.end_date,
+    default_start_time: slot.start_time,
+    default_end_time: slot.end_time,
+    room: classInfo.room || null,
+    max_students: classInfo.max_students,
+    description: classInfo.description || null,
+    leaderboard_enabled: classInfo.leaderboard_enabled,
+  });
+
   const handleSubmit = async () => {
     const active = sessions.filter((s) => !s.cancelled);
+    const primaryIds = teachers.filter((t) => t.role === "primary").map((t) => t.teacher_id);
+    const taIds      = teachers.filter((t) => t.role === "ta").map((t) => t.teacher_id);
+    const sessionsPayload = active.map((s) => ({
+      session_date: s.session_date,
+      start_time: s.start_time,
+      end_time: s.end_time,
+      mode: s.mode,
+      room: s.room || null,
+      teacher_id: s.teacher_id,
+    }));
+
     try {
-      const result = await createMutation.mutateAsync({
-        p_class_data: {
-          class_name: classInfo.class_name,
-          course_title: classInfo.course_title || null,
-          program: classInfo.program,
-          level: classInfo.level || null,
-          class_type: classInfo.class_type,
-          start_date: classInfo.start_date,
-          end_date: classInfo.end_date,
-          default_start_time: slot.start_time,
-          default_end_time: slot.end_time,
-          room: classInfo.room || null,
-          max_students: classInfo.max_students,
-          description: classInfo.description || null,
-          study_plan_id: classInfo.study_plan_id,
-          leaderboard_enabled: classInfo.leaderboard_enabled,
-        },
-        p_primary_teacher_ids: teachers.filter((t) => t.role === "primary").map((t) => t.teacher_id),
-        p_ta_teacher_ids: teachers.filter((t) => t.role === "ta").map((t) => t.teacher_id),
-        p_sessions: active.map((s) => ({
-          session_date: s.session_date,
-          start_time: s.start_time,
-          end_time: s.end_time,
-          mode: s.mode,
-          room: s.room || null,
-          teacher_id: s.teacher_id,
-        })),
-      });
+      let newClassId: string | null = null;
+
+      if (classInfo.study_plan_id) {
+        // WITH TEMPLATE — atomic wrapper (creates class + clones template + links).
+        const days = slot.weekdays.map((n) => WEEKDAY_KEY_MAP[n]).filter(Boolean);
+        if (days.length === 0) {
+          toast.error("Vui lòng chọn ít nhất 1 ngày trong tuần");
+          return;
+        }
+        newClassId = await createWithTemplateMutation.mutateAsync({
+          p_class_data: buildClassData(),
+          p_template_id: classInfo.study_plan_id,
+          p_start_date: classInfo.start_date,
+          p_end_date: classInfo.end_date,
+          p_schedule_pattern: { type: "weekly", days },
+          p_primary_teacher_ids: primaryIds,
+          p_ta_teacher_ids: taIds,
+          p_sessions: sessionsPayload,
+        });
+      } else {
+        // WITHOUT TEMPLATE — Customized fallback to original RPC.
+        const result = await createMutation.mutateAsync({
+          p_class_data: { ...buildClassData(), study_plan_id: null },
+          p_primary_teacher_ids: primaryIds,
+          p_ta_teacher_ids: taIds,
+          p_sessions: sessionsPayload,
+        });
+        newClassId = result?.class_id ?? null;
+      }
+
       toast.success(`Đã tạo lớp "${classInfo.class_name}" với ${teachers.length} giáo viên + ${active.length} buổi`);
 
       // Stage P1 — set a sensible default respond_deadline for every newly-created
       // pending invitation: 7 days before class start, but at least 24h from now.
       // Failures here are non-fatal (admin can still set deadline manually in
       // ClassInvitationsDialog).
-      const newClassId = result?.class_id ?? null;
       if (newClassId && classInfo.start_date) {
         try {
           const startMs = new Date(classInfo.start_date + "T00:00:00").getTime();
@@ -182,8 +215,7 @@ export default function CreateClassWizardPage() {
         }
       }
 
-      if (newClassId) navigate(`/classes`);
-      else navigate("/classes");
+      navigate("/classes");
     } catch (err: any) {
       toast.error(err?.message || "Lỗi tạo lớp", { duration: 6000 });
     }
@@ -241,7 +273,7 @@ export default function CreateClassWizardPage() {
 
       {/* Nav */}
       <div className="flex items-center justify-between">
-        <Button type="button" variant="outline" onClick={goBack} disabled={step === 1 || createMutation.isPending}>
+        <Button type="button" variant="outline" onClick={goBack} disabled={step === 1 || createMutation.isPending || createWithTemplateMutation.isPending}>
           <ArrowLeft className="h-4 w-4" /> Quay lại
         </Button>
         {step < 4 ? (
@@ -249,8 +281,8 @@ export default function CreateClassWizardPage() {
             Tiếp tục <ArrowRight className="h-4 w-4" />
           </Button>
         ) : (
-          <Button type="button" onClick={handleSubmit} disabled={createMutation.isPending}>
-            {createMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+          <Button type="button" onClick={handleSubmit} disabled={createMutation.isPending || createWithTemplateMutation.isPending}>
+            {(createMutation.isPending || createWithTemplateMutation.isPending) ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
             Tạo lớp
           </Button>
         )}
