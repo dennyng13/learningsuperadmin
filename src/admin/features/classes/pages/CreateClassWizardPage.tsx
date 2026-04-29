@@ -155,6 +155,7 @@ export default function CreateClassWizardPage() {
       end_time: s.end_time,
       mode: s.mode,
       room: s.room || null,
+      room_id: classInfo.room_id,
       teacher_id: s.teacher_id,
     }));
 
