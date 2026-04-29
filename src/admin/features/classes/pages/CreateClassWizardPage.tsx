@@ -54,7 +54,7 @@ export default function CreateClassWizardPage() {
     const primary = teachers.find((t) => t.role === "primary") ?? teachers[0];
     const generated = generateSessions(
       classInfo.start_date, classInfo.end_date, slot.weekdays,
-      slot.start_time, slot.end_time, slot.mode, classInfo.room,
+      slot.start_time, slot.end_time, slot.mode,
       primary.teacher_id,
     );
     setSessions(generated);
@@ -139,7 +139,6 @@ export default function CreateClassWizardPage() {
     end_date: classInfo.end_date,
     default_start_time: slot.start_time,
     default_end_time: slot.end_time,
-    room: classInfo.room || null,
     max_students: classInfo.max_students,
     description: classInfo.description || null,
     leaderboard_enabled: classInfo.leaderboard_enabled,

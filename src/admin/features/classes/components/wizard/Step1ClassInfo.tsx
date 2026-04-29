@@ -220,16 +220,17 @@ export default function Step1ClassInfo({ value, onChange, errors }: Props) {
       </div>
 
       <div>
-        <Label>Class type</Label>
+        <Label>Loại lớp</Label>
         <Select value={value.class_type} onValueChange={(v) => set("class_type", v as WizardClassInfo["class_type"])}>
           <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="standard">Standard</SelectItem>
-            <SelectItem value="online">Online</SelectItem>
-            <SelectItem value="hybrid">Hybrid</SelectItem>
-            <SelectItem value="private">Private</SelectItem>
+            <SelectItem value="standard">Lớp tiêu chuẩn</SelectItem>
+            <SelectItem value="private">Lớp 1-1</SelectItem>
           </SelectContent>
         </Select>
+        <p className="text-[11px] text-muted-foreground mt-1">
+          Hình thức dạy (onsite/online/hybrid) chọn ở Step 2.
+        </p>
       </div>
 
       <div>
@@ -306,11 +307,6 @@ export default function Step1ClassInfo({ value, onChange, errors }: Props) {
       <div>
         <Label>Số học viên tối đa</Label>
         <Input type="number" min={1} value={value.max_students ?? ""} onChange={(e) => set("max_students", e.target.value ? Number(e.target.value) : null)} />
-      </div>
-
-      <div>
-        <Label>Phòng</Label>
-        <Input value={value.room} onChange={(e) => set("room", e.target.value)} placeholder="VD: P301" />
       </div>
 
       <div className="md:col-span-2">

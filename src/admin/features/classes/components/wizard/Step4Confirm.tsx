@@ -127,8 +127,6 @@ export default function Step4Confirm({ classInfo, teachers, sessions }: Props) {
           <div><dt className="inline text-muted-foreground">Thời gian: </dt><dd className="inline">{classInfo.start_date} → {classInfo.end_date}</dd></div>
           {classInfo.room_id ? (
             <div className="md:col-span-2"><RoomConfirmDisplay roomId={classInfo.room_id} forceConflict={classInfo.room_force_conflict} /></div>
-          ) : classInfo.room ? (
-            <div><dt className="inline text-muted-foreground">Phòng (text): </dt><dd className="inline">{classInfo.room}</dd></div>
           ) : (
             <div><dt className="inline text-muted-foreground">Phòng: </dt><dd className="inline text-muted-foreground italic">— Không gán —</dd></div>
           )}

@@ -8,11 +8,14 @@ export interface WizardClassInfo {
   /** Backend program_key — lowercase: "ielts" | "wre" | "customized". */
   program: string;
   level: string;              // empty for non-IELTS
-  class_type: "standard" | "online" | "hybrid" | "private";
+  /** FORMAT của lớp (KHÔNG phải delivery mode):
+   *   - standard: lớp tiêu chuẩn (nhiều HV)
+   *   - private: lớp 1-1 (gia sư riêng)
+   *  Delivery mode (onsite/online/hybrid) là `slot.mode` ở Step 2. */
+  class_type: "standard" | "private";
   start_date: string;         // YYYY-MM-DD
   end_date: string;
   max_students: number | null;
-  room: string;
   description: string;
   study_plan_id: string | null;
   leaderboard_enabled: boolean;
@@ -62,7 +65,6 @@ export const EMPTY_CLASS_INFO: WizardClassInfo = {
   start_date: "",
   end_date: "",
   max_students: null,
-  room: "",
   description: "",
   study_plan_id: null,
   leaderboard_enabled: false,
@@ -94,7 +96,10 @@ export const WEEKDAY_KEY_MAP: Record<number, string> = {
   6: "sat",
 };
 
-/** Generate sessions between start..end for given weekdays + times, default teacher = first primary */
+/** Generate sessions between start..end for given weekdays + times, default
+ *  teacher = first primary. Per-session `room` text defaults to "" — admin có
+ *  thể override per-session ở Step 4 Sessions Preview, hoặc gán room_id qua
+ *  Step 3 RoomPicker (FK level class). */
 export function generateSessions(
   startDate: string,
   endDate: string,
@@ -102,7 +107,6 @@ export function generateSessions(
   startTime: string,
   endTime: string,
   mode: DeliveryMode,
-  room: string,
   defaultTeacherId: string,
 ): DraftSession[] {
   if (!startDate || !endDate || weekdays.length === 0) return [];
@@ -122,7 +126,7 @@ export function generateSessions(
       start_time: startTime,
       end_time: endTime,
       mode,
-      room,
+      room: "",
       teacher_id: defaultTeacherId,
       cancelled: false,
     });
