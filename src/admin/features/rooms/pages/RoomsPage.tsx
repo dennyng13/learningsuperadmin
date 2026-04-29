@@ -12,9 +12,6 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@shared/components/ui/select";
 import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
-} from "@shared/components/ui/dialog";
-import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@shared/components/ui/alert-dialog";
@@ -22,12 +19,12 @@ import { ListPageLayout } from "@shared/components/layouts/ListPageLayout";
 import {
   useRooms, useRoomMutations, type Room, type RoomArchiveResult,
 } from "@shared/hooks/useRooms";
+import RoomEditorDialog from "@admin/features/rooms/components/RoomEditorDialog";
 import { cn } from "@shared/lib/utils";
 
-/* /rooms — Phase F1 Step 2 admin list page. Manage facility rooms (onsite,
-   online, hybrid). CRUD wired via useRoomMutations. RoomEditorDialog deferred
-   to Step 3 — placeholder dialog opens for now. Route registration pending
-   Step 4. */
+/* /rooms — Admin list page for managing facility rooms (onsite, online,
+   hybrid). CRUD wired via useRoomMutations + RoomEditorDialog (Step 3).
+   Route registration pending Step 4. */
 
 const MODE_META: Record<Room["mode"], { label: string; icon: typeof Building2; cls: string }> = {
   onsite: {
@@ -186,8 +183,7 @@ export default function RoomsPage() {
         </div>
       )}
 
-      {/* TODO Step 3: replace with RoomEditorDialog */}
-      <Dialog
+      <RoomEditorDialog
         open={createOpen || !!editTarget}
         onOpenChange={(o) => {
           if (!o) {
@@ -195,26 +191,8 @@ export default function RoomsPage() {
             setEditTarget(null);
           }
         }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {editTarget ? `Sửa phòng "${editTarget.code}"` : "Tạo phòng"}
-            </DialogTitle>
-            <DialogDescription>
-              RoomEditorDialog sẽ build ở Step 3.
-            </DialogDescription>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            TODO Step 3: form editor (code, name, mode, capacity, address, meeting_link, status, notes).
-          </p>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => { setCreateOpen(false); setEditTarget(null); }}>
-              Đóng
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        room={editTarget}
+      />
 
       {/* Archive confirm */}
       <AlertDialog
