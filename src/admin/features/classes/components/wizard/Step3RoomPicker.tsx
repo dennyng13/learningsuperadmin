@@ -9,9 +9,6 @@ import { Button } from "@shared/components/ui/button";
 import { Badge } from "@shared/components/ui/badge";
 import { Skeleton } from "@shared/components/ui/skeleton";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@shared/components/ui/select";
-import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@shared/components/ui/alert-dialog";
@@ -57,7 +54,9 @@ function modeCompatible(roomMode: Room["mode"], slotMode: string | null): boolea
 const WD_LABEL: Record<number, string> = { 0: "CN", 1: "T2", 2: "T3", 3: "T4", 4: "T5", 5: "T6", 6: "T7" };
 
 export default function Step3RoomPicker({ value, onChange, slot, sessions }: Props) {
-  const defaultMode = value.default_mode ?? slot.mode ?? "onsite";
+  // Source of truth = slot.mode (Step 2). Step 3 read-only — không override
+  // để tránh divergence giữa filter rooms và session mode persist.
+  const effectiveMode = slot.mode ?? "onsite";
   const { data: allRooms = [], isLoading } = useRooms({ includeArchived: false });
 
   // Active sessions (not cancelled) for batch conflict check.
@@ -82,11 +81,11 @@ export default function Step3RoomPicker({ value, onChange, slot, sessions }: Pro
   const candidateRooms = useMemo(() => {
     const minCap = value.max_students ?? 0;
     return allRooms.filter((r) => {
-      if (!modeCompatible(r.mode, defaultMode)) return false;
+      if (!modeCompatible(r.mode, effectiveMode)) return false;
       if (minCap > 0 && r.capacity < minCap) return false;
       return true;
     });
-  }, [allRooms, defaultMode, value.max_students]);
+  }, [allRooms, effectiveMode, value.max_students]);
 
   // Per-room batch conflict check (one query per candidate room).
   const conflictQueries = useQueries({
@@ -146,11 +145,6 @@ export default function Step3RoomPicker({ value, onChange, slot, sessions }: Pro
     setForceTarget(null);
   };
 
-  const handleChangeMode = (m: string) => {
-    // Reset room_id when mode changes (vì candidate set khác).
-    onChange({ ...value, default_mode: m, room_id: null, room_force_conflict: false });
-  };
-
   return (
     <div className="space-y-5">
       {/* Summary card */}
@@ -163,7 +157,7 @@ export default function Step3RoomPicker({ value, onChange, slot, sessions }: Pro
         </p>
         <ul className="text-xs text-muted-foreground space-y-0.5 ml-1">
           <li>• Sĩ số: <strong className="text-foreground">{value.max_students ?? "—"}</strong> học viên</li>
-          <li>• Hình thức: <strong className="text-foreground">{defaultMode}</strong></li>
+          <li>• Hình thức: <strong className="text-foreground">{effectiveMode}</strong></li>
           <li>
             • Lịch:{" "}
             <strong className="text-foreground">
@@ -179,17 +173,13 @@ export default function Step3RoomPicker({ value, onChange, slot, sessions }: Pro
         </ul>
       </div>
 
-      {/* Mode default selector */}
-      <div className="max-w-xs">
-        <Label className="text-xs">Hình thức mặc định</Label>
-        <Select value={defaultMode} onValueChange={handleChangeMode}>
-          <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="onsite">Onsite (chỉ phòng vật lý)</SelectItem>
-            <SelectItem value="online">Online (chỉ phòng online)</SelectItem>
-            <SelectItem value="hybrid">Hybrid (chỉ phòng hybrid)</SelectItem>
-          </SelectContent>
-        </Select>
+      {/* Mode display — read-only, single source of truth = slot.mode (Step 2) */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <Label className="text-xs">Hình thức:</Label>
+        <Badge variant="outline" className="text-xs">{effectiveMode}</Badge>
+        <span className="text-xs text-muted-foreground">
+          (Đổi ở Step 2 Lịch &amp; Giáo viên)
+        </span>
       </div>
 
       {/* Room list */}

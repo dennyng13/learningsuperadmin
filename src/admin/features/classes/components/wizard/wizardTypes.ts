@@ -17,12 +17,10 @@ export interface WizardClassInfo {
   study_plan_id: string | null;
   leaderboard_enabled: boolean;
   /** uuid trỏ vào `rooms.id` — set khi admin pick room ở Step 3 wizard.
-   *  Step 6 sẽ wire vào p_sessions payload của create_class_atomic. */
+   *  Wired vào p_sessions[].room_id payload của create_class_atomic. */
   room_id: string | null;
   /** True khi user override warning để chọn room có buổi conflict. */
   room_force_conflict: boolean;
-  /** Mode mặc định cho lớp ('onsite'|'online'|'hybrid'), pick ở Step 3. */
-  default_mode: string | null;
 }
 
 export type ScheduleMode = "by-slot" | "by-revenue" | "by-teacher";
@@ -70,7 +68,6 @@ export const EMPTY_CLASS_INFO: WizardClassInfo = {
   leaderboard_enabled: false,
   room_id: null,
   room_force_conflict: false,
-  default_mode: null,
 };
 
 // Display order T2..CN; values follow backend convention (Sun=0..Sat=6).
