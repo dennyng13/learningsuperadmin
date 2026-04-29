@@ -215,6 +215,23 @@ export default function CreateClassWizardPage() {
         }
       }
 
+      // Stage P2 — best-effort link class to course via dedicated RPC.
+      // set_class_course_id only writes course_id (no side effects on
+      // study_plan_id or price_vnd_override). Admin can override via
+      // SettingsTab > Cấu hình. Currently only IELTS classes have course_id
+      // (verified Lovable Q5: WRE + Customized have 0 courses).
+      if (newClassId && classInfo.course_id) {
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase.rpc as any)("set_class_course_id", {
+            p_class_id: newClassId,
+            p_course_id: classInfo.course_id,
+          });
+        } catch {
+          // best-effort; admin có thể set qua SettingsTab
+        }
+      }
+
       // Stage P1 — best-effort auto-send invitation emails. Cron at 07:05 ICT
       // serves as safety net for any failures here. Admin can also manually
       // resend via LifecycleTab > "Quản lý lời mời".

@@ -1,6 +1,10 @@
 export interface WizardClassInfo {
   class_name: string;
   course_title: string;
+  /** uuid trỏ vào `courses.id` — chỉ set khi program có courses (hiện tại chỉ
+   *  IELTS) và admin pick. Wizard gọi `set_class_course_id` post-create để
+   *  gắn class với course. WRE/Customized: luôn null (Course dropdown ẩn). */
+  course_id: string | null;
   /** Backend program_key — lowercase: "ielts" | "wre" | "customized". */
   program: string;
   level: string;              // empty for non-IELTS
@@ -46,6 +50,7 @@ export interface DraftSession {
 export const EMPTY_CLASS_INFO: WizardClassInfo = {
   class_name: "",
   course_title: "",
+  course_id: null,
   program: "",
   level: "",
   class_type: "standard",

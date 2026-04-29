@@ -58,6 +58,44 @@ export default function Step1ClassInfo({ value, onChange, errors }: Props) {
     },
   });
 
+  /* Fetch courses của program. Pattern lookup program_id by key giống levelsQ.
+     Hiện tại chỉ IELTS có courses (verified Lovable Q5: WRE + Customized = 0).
+     Course dropdown sẽ ẩn cho program không có courses. Mỗi course đính kèm
+     `level_ids` (qua course_level_links) → filteredLevels giới hạn level
+     dropdown theo course đã pick. */
+  const coursesQ = useQuery({
+    queryKey: ["wizard-courses", value.program],
+    enabled: !!value.program,
+    queryFn: async () => {
+      const { data: progRows } = await (supabase as any)
+        .from("programs")
+        .select("id, key, status")
+        .eq("status", "active")
+        .eq("key", value.program);
+      const programId: string | undefined = Array.isArray(progRows) && progRows[0]?.id;
+      if (!programId) return [] as Array<{ id: string; name: string; sort_order: number; status: string; level_ids: string[] }>;
+      const [coursesRes, linksRes] = await Promise.all([
+        (supabase as any)
+          .from("courses")
+          .select("id, name, sort_order, status")
+          .eq("program_id", programId)
+          .eq("status", "active")
+          .order("sort_order", { ascending: true }),
+        (supabase as any)
+          .from("course_level_links")
+          .select("course_id, level_id"),
+      ]);
+      const linksByCourse = new Map<string, string[]>();
+      for (const l of (linksRes.data ?? []) as Array<{ course_id: string; level_id: string }>) {
+        const arr = linksByCourse.get(l.course_id) ?? [];
+        arr.push(l.level_id);
+        linksByCourse.set(l.course_id, arr);
+      }
+      return ((coursesRes.data ?? []) as Array<{ id: string; name: string; sort_order: number; status: string }>)
+        .map((c) => ({ ...c, level_ids: linksByCourse.get(c.id) ?? [] }));
+    },
+  });
+
   const levelsQ = useQuery({
     queryKey: ["wizard-levels", value.program],
     enabled: value.program === "ielts",
@@ -119,6 +157,23 @@ export default function Step1ClassInfo({ value, onChange, errors }: Props) {
     return { items: programMatches, hasRecommended: false };
   }, [allTemplates, value.program, value.level, levelsQ.data]);
 
+  /* Levels visible trong dropdown:
+       - Nếu user pick course → chỉ hiện levels nằm trong course.level_ids.
+       - Nếu chưa pick course (hoặc skip "— Không gắn —") → hiện toàn bộ levels
+         của program như flow cũ. */
+  const filteredLevels = useMemo(() => {
+    type Lvl = { id: string; name: string; sort_order: number; study_plan_template_id?: string | null };
+    const allLevels = (levelsQ.data || []) as Lvl[];
+    if (value.course_id && coursesQ.data) {
+      const course = coursesQ.data.find((c) => c.id === value.course_id);
+      if (course) {
+        const allowed = new Set<string>(course.level_ids);
+        return allLevels.filter((l) => allowed.has(l.id));
+      }
+    }
+    return allLevels;
+  }, [levelsQ.data, value.course_id, coursesQ.data]);
+
   const set = <K extends keyof WizardClassInfo>(k: K, v: WizardClassInfo[K]) => onChange({ ...value, [k]: v });
 
   const minEnd = useMemo(() => {
@@ -128,9 +183,17 @@ export default function Step1ClassInfo({ value, onChange, errors }: Props) {
     return d.toISOString().slice(0, 10);
   }, [value.start_date, today]);
 
-  // Reset level when program changes away from IELTS
+  // Reset course_id + course_title + level khi đổi program. Course gắn riêng
+  // mỗi program → đổi program = course cũ vô nghĩa. course_title đã được auto
+  // -fill từ course → cũng phải reset.
   useEffect(() => {
-    if (value.program !== "ielts" && value.level) onChange({ ...value, level: "" });
+    const next: Partial<WizardClassInfo> = {};
+    if (value.course_id) {
+      next.course_id = null;
+      next.course_title = "";
+    }
+    if (value.program !== "ielts" && value.level) next.level = "";
+    if (Object.keys(next).length > 0) onChange({ ...value, ...next });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value.program]);
 
@@ -143,8 +206,17 @@ export default function Step1ClassInfo({ value, onChange, errors }: Props) {
       </div>
 
       <div>
-        <Label>Tên khóa</Label>
-        <Input value={value.course_title} onChange={(e) => set("course_title", e.target.value)} placeholder="Optional" />
+        <Label>
+          Tên khóa
+          {value.course_id && <span className="text-muted-foreground text-xs ml-1">(tự điền từ khoá học)</span>}
+        </Label>
+        <Input
+          value={value.course_title}
+          onChange={(e) => set("course_title", e.target.value)}
+          placeholder={value.course_id ? "" : "Optional"}
+          readOnly={!!value.course_id}
+          className={value.course_id ? "bg-muted cursor-not-allowed" : ""}
+        />
       </div>
 
       <div>
@@ -173,12 +245,46 @@ export default function Step1ClassInfo({ value, onChange, errors }: Props) {
         {errors.program && <p className="text-xs text-destructive mt-1">{errors.program}</p>}
       </div>
 
+      {/* Khoá học — chỉ render khi program có courses (verified Lovable Q5: chỉ
+          IELTS có 8 courses; WRE + Customized = 0). Pick course → set course_id +
+          auto-fill course_title + reset level. Pick "— Không gắn —" → fallback
+          flow cũ (course_title editable, level từ program_levels). */}
+      {(coursesQ.data ?? []).length > 0 && (
+        <div>
+          <Label>Khoá học</Label>
+          <Select
+            value={value.course_id ?? "none"}
+            onValueChange={(v) => {
+              if (v === "none") {
+                onChange({ ...value, course_id: null });
+              } else {
+                const course = (coursesQ.data ?? []).find((c) => c.id === v);
+                onChange({
+                  ...value,
+                  course_id: v,
+                  course_title: course?.name ?? value.course_title,
+                  level: "",
+                });
+              }
+            }}
+          >
+            <SelectTrigger><SelectValue placeholder="Chọn khoá học" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">— Không gắn khoá học —</SelectItem>
+              {(coursesQ.data ?? []).map((c) => (
+                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
       <div>
         <Label>Level {value.program !== "ielts" && <span className="text-muted-foreground text-xs">(chỉ IELTS)</span>}</Label>
         <Select value={value.level} onValueChange={(v) => set("level", v)} disabled={value.program !== "ielts"}>
           <SelectTrigger><SelectValue placeholder={value.program === "ielts" ? "Chọn level" : "—"} /></SelectTrigger>
           <SelectContent>
-            {(levelsQ.data || []).map((l: any) => (
+            {filteredLevels.map((l) => (
               <SelectItem key={l.id} value={l.name}>{l.name}</SelectItem>
             ))}
           </SelectContent>
