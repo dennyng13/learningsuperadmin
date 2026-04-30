@@ -99,7 +99,9 @@ export const WEEKDAY_KEY_MAP: Record<number, string> = {
 /** Generate sessions between start..end for given weekdays + times, default
  *  teacher = first primary. Per-session `room` text defaults to "" — admin có
  *  thể override per-session ở Step 4 Sessions Preview, hoặc gán room_id qua
- *  Step 3 RoomPicker (FK level class). */
+ *  Step 3 RoomPicker (FK level class). Optional `maxSessions` cap loop early
+ *  để defensive-stop khi đã đủ buổi (avoid generating beyond Study Plan
+ *  total_sessions ngay cả khi end_date dài hơn mức cần). */
 export function generateSessions(
   startDate: string,
   endDate: string,
@@ -108,6 +110,7 @@ export function generateSessions(
   endTime: string,
   mode: DeliveryMode,
   defaultTeacherId: string,
+  maxSessions?: number,
 ): DraftSession[] {
   if (!startDate || !endDate || weekdays.length === 0) return [];
   const out: DraftSession[] = [];
@@ -130,6 +133,29 @@ export function generateSessions(
       teacher_id: defaultTeacherId,
       cancelled: false,
     });
+    if (maxSessions != null && out.length >= maxSessions) break;
   }
   return out;
+}
+
+/** Compute end_date sao cho count buổi (matching weekdays) từ startDate đạt
+ *  totalSessions. Trả về startDate nếu không tính được (invalid input). Safety
+ *  bound 730 days (~2 years) để tránh infinite loop nếu weekdays config sai. */
+export function computeEndDateForSessions(
+  startDate: string,
+  weekdays: number[],
+  totalSessions: number,
+): string {
+  if (!startDate || weekdays.length === 0 || totalSessions <= 0) return startDate;
+  const cur = new Date(startDate + "T00:00:00");
+  if (Number.isNaN(cur.getTime())) return startDate;
+  let count = 0;
+  for (let i = 0; i < 730; i++) {
+    if (weekdays.includes(cur.getDay())) {
+      count++;
+      if (count === totalSessions) return cur.toISOString().slice(0, 10);
+    }
+    cur.setDate(cur.getDate() + 1);
+  }
+  return startDate;
 }

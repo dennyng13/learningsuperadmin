@@ -13,7 +13,7 @@ import Step3RoomPicker from "../components/wizard/Step3RoomPicker";
 import Step3Sessions from "../components/wizard/Step3Sessions";
 import Step4Confirm from "../components/wizard/Step4Confirm";
 import {
-  AssignedTeacher, DraftSession, EMPTY_CLASS_INFO, generateSessions,
+  AssignedTeacher, computeEndDateForSessions, DraftSession, EMPTY_CLASS_INFO, generateSessions,
   ScheduleMode, WEEKDAY_KEY_MAP, WizardClassInfo, WizardSlot,
 } from "../components/wizard/wizardTypes";
 import { useCreateClass } from "@shared/hooks/useCreateClass";
@@ -46,6 +46,10 @@ export default function CreateClassWizardPage() {
   const [showMismatchConfirm, setShowMismatchConfirm] = useState(false);
   const [confirmedMismatch, setConfirmedMismatch] = useState(false);
 
+  // Auto-calc end_date từ template.total_sessions + start_date + slot.weekdays.
+  // Reset khi user đổi template. Set TRUE khi user manual edit end_date Input.
+  const [endDateManuallyOverridden, setEndDateManuallyOverridden] = useState(false);
+
   const createMutation = useCreateClass();
   const createWithTemplateMutation = useCreateClassWithTemplate();
   const { data: allTemplates } = useStudyPlanTemplates();
@@ -57,6 +61,23 @@ export default function CreateClassWizardPage() {
     const tpl = allTemplates.find((t) => t.id === classInfo.study_plan_id);
     return tpl?.total_sessions ?? null;
   }, [classInfo.study_plan_id, allTemplates]);
+
+  // Auto-calc end_date khi inputs thay đổi (skip nếu user đã override).
+  // Deps loại classInfo.end_date để tránh loop (effect tự set field này).
+  useEffect(() => {
+    if (endDateManuallyOverridden) return;
+    if (!expectedSessions || !classInfo.start_date || slot.weekdays.length === 0) return;
+    const calc = computeEndDateForSessions(classInfo.start_date, slot.weekdays, expectedSessions);
+    if (calc !== classInfo.end_date) {
+      setClassInfo((prev) => ({ ...prev, end_date: calc }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [expectedSessions, classInfo.start_date, slot.weekdays, endDateManuallyOverridden]);
+
+  // Reset override flag khi user đổi template (expect re-calc theo plan mới).
+  useEffect(() => {
+    setEndDateManuallyOverridden(false);
+  }, [classInfo.study_plan_id]);
 
   const isDirty = useMemo(() => {
     return (
@@ -75,6 +96,7 @@ export default function CreateClassWizardPage() {
       classInfo.start_date, classInfo.end_date, slot.weekdays,
       slot.start_time, slot.end_time, slot.mode,
       primary.teacher_id,
+      expectedSessions ?? undefined,
     );
     setSessions(generated);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -329,7 +351,18 @@ export default function CreateClassWizardPage() {
 
       {/* Step content */}
       <div className="border rounded-xl bg-card p-4 md:p-6 min-h-[300px]">
-        {step === 1 && <Step1ClassInfo value={classInfo} onChange={setClassInfo} errors={errors} />}
+        {step === 1 && (
+          <Step1ClassInfo
+            value={classInfo}
+            onChange={setClassInfo}
+            errors={errors}
+            expectedSessions={expectedSessions}
+            weekdaysCount={slot.weekdays.length}
+            endDateManuallyOverridden={endDateManuallyOverridden}
+            onEndDateOverride={() => setEndDateManuallyOverridden(true)}
+            onEndDateAutoReset={() => setEndDateManuallyOverridden(false)}
+          />
+        )}
         {step === 2 && (
           <Step2Schedule
             classInfo={classInfo}
