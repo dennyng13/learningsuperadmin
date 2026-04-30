@@ -159,3 +159,25 @@ export function computeEndDateForSessions(
   }
   return startDate;
 }
+
+/** Walk BACKWARD từ endDate để compute start_date — sao cho count buổi đạt
+ *  totalSessions giữa start..end với weekdays đã chọn. Dùng khi user đổi
+ *  end_date manual và chọn "Tự động đổi ngày khai giảng" để giữ N buổi. */
+export function computeStartDateForSessions(
+  endDate: string,
+  weekdays: number[],
+  totalSessions: number,
+): string {
+  if (!endDate || weekdays.length === 0 || totalSessions <= 0) return endDate;
+  const cur = new Date(endDate + "T00:00:00");
+  if (Number.isNaN(cur.getTime())) return endDate;
+  let count = 0;
+  for (let i = 0; i < 730; i++) {
+    if (weekdays.includes(cur.getDay())) {
+      count++;
+      if (count === totalSessions) return cur.toISOString().slice(0, 10);
+    }
+    cur.setDate(cur.getDate() - 1);
+  }
+  return endDate;
+}

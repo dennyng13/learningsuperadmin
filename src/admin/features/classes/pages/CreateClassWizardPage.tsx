@@ -13,7 +13,8 @@ import Step3RoomPicker from "../components/wizard/Step3RoomPicker";
 import Step3Sessions from "../components/wizard/Step3Sessions";
 import Step4Confirm from "../components/wizard/Step4Confirm";
 import {
-  AssignedTeacher, computeEndDateForSessions, DraftSession, EMPTY_CLASS_INFO, generateSessions,
+  AssignedTeacher, computeEndDateForSessions, computeStartDateForSessions,
+  DraftSession, EMPTY_CLASS_INFO, generateSessions,
   ScheduleMode, WEEKDAY_KEY_MAP, WizardClassInfo, WizardSlot,
 } from "../components/wizard/wizardTypes";
 import { useCreateClass } from "@shared/hooks/useCreateClass";
@@ -36,7 +37,7 @@ export default function CreateClassWizardPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const [scheduleMode, setScheduleMode] = useState<ScheduleMode>("by-slot");
-  const [slot, setSlot] = useState<WizardSlot>({ weekdays: [], start_time: "19:00", end_time: "20:30", mode: "hybrid" });
+  const [slot, setSlot] = useState<WizardSlot>({ weekdays: [], start_time: "19:00", end_time: "21:00", mode: "hybrid" });
   const [teachers, setTeachers] = useState<AssignedTeacher[]>([]);
   const [selectedSlotKeys, setSelectedSlotKeys] = useState<string[]>([]);
   const [sessions, setSessions] = useState<DraftSession[]>([]);
@@ -49,6 +50,13 @@ export default function CreateClassWizardPage() {
   // Auto-calc end_date từ template.total_sessions + start_date + slot.weekdays.
   // Reset khi user đổi template. Set TRUE khi user manual edit end_date Input.
   const [endDateManuallyOverridden, setEndDateManuallyOverridden] = useState(false);
+
+  // Confirm dialog state khi user manual edit end_date sau auto-calc.
+  // pendingEndDate = giá trị user vừa nhập, chờ user quyết "đổi start" hay "giữ start".
+  // previousEndDate = giá trị end_date trước khi user edit, dùng để revert nếu user Cancel.
+  const [showEndDateChangeConfirm, setShowEndDateChangeConfirm] = useState(false);
+  const [pendingEndDate, setPendingEndDate] = useState<string | null>(null);
+  const [previousEndDate, setPreviousEndDate] = useState<string | null>(null);
 
   const createMutation = useCreateClass();
   const createWithTemplateMutation = useCreateClassWithTemplate();
@@ -78,6 +86,51 @@ export default function CreateClassWizardPage() {
   useEffect(() => {
     setEndDateManuallyOverridden(false);
   }, [classInfo.study_plan_id]);
+
+  /* End-date change handler — gọi từ Step1ClassInfo qua callback. Nếu auto-calc
+     đang active (chưa override + có template + có weekdays) → capture previous
+     end_date + mở confirm dialog. Else → update direct + mark override. */
+  const handleEndDateChange = (newDate: string) => {
+    if (!endDateManuallyOverridden && expectedSessions != null && slot.weekdays.length > 0) {
+      setPendingEndDate(newDate);
+      setPreviousEndDate(classInfo.end_date);
+      setShowEndDateChangeConfirm(true);
+      return;
+    }
+    setClassInfo((prev) => ({ ...prev, end_date: newDate }));
+    setEndDateManuallyOverridden(true);
+  };
+
+  const closeConfirmDialog = () => {
+    setShowEndDateChangeConfirm(false);
+    setPendingEndDate(null);
+    setPreviousEndDate(null);
+  };
+
+  const confirmChangeStartDate = () => {
+    if (!pendingEndDate || expectedSessions == null) return;
+    const newStart = computeStartDateForSessions(pendingEndDate, slot.weekdays, expectedSessions);
+    setClassInfo((prev) => ({ ...prev, start_date: newStart, end_date: pendingEndDate }));
+    // KHÔNG mark override — auto-calc invariant valid (start + N sessions = end)
+    closeConfirmDialog();
+  };
+
+  const confirmKeepStartDate = () => {
+    if (!pendingEndDate) return;
+    setClassInfo((prev) => ({ ...prev, end_date: pendingEndDate }));
+    setEndDateManuallyOverridden(true);
+    closeConfirmDialog();
+  };
+
+  const cancelEndDateChange = () => {
+    // Explicit revert end_date về giá trị auto-calc trước khi user edit (D4).
+    if (previousEndDate !== null) {
+      setClassInfo((prev) => ({ ...prev, end_date: previousEndDate }));
+    }
+    closeConfirmDialog();
+  };
+
+  const resetEndDateAuto = () => setEndDateManuallyOverridden(false);
 
   const isDirty = useMemo(() => {
     return (
@@ -359,8 +412,8 @@ export default function CreateClassWizardPage() {
             expectedSessions={expectedSessions}
             weekdaysCount={slot.weekdays.length}
             endDateManuallyOverridden={endDateManuallyOverridden}
-            onEndDateOverride={() => setEndDateManuallyOverridden(true)}
-            onEndDateAutoReset={() => setEndDateManuallyOverridden(false)}
+            onEndDateChange={handleEndDateChange}
+            onEndDateAutoReset={resetEndDateAuto}
           />
         )}
         {step === 2 && (
@@ -461,6 +514,47 @@ export default function CreateClassWizardPage() {
             >
               Tạo lớp anyway ({sessions.filter((s) => !s.cancelled).length} buổi)
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirm dialog khi user manual edit end_date sau auto-calc.
+          3 lựa chọn: đổi start_date (giữ N buổi) | giữ start_date (chấp nhận
+          khác số buổi → mark override) | hủy (revert end_date về previous). */}
+      <AlertDialog
+        open={showEndDateChangeConfirm}
+        onOpenChange={(open) => { if (!open) cancelEndDateChange(); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Bạn vừa đổi ngày kết thúc</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2">
+                <p>
+                  Lớp đang auto-tính theo Study Plan ({expectedSessions ?? 0} buổi).
+                  Bạn vừa đổi ngày kết thúc sang{" "}
+                  <strong>
+                    {pendingEndDate
+                      ? new Date(pendingEndDate + "T00:00:00").toLocaleDateString("vi-VN")
+                      : "—"}
+                  </strong>.
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Bạn muốn xử lý thế nào?
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col gap-2 sm:flex-col sm:space-x-0">
+            <AlertDialogAction onClick={confirmChangeStartDate} className="w-full">
+              Tự động đổi ngày khai giảng (giữ {expectedSessions ?? 0} buổi)
+            </AlertDialogAction>
+            <Button variant="outline" onClick={confirmKeepStartDate} className="w-full">
+              Giữ ngày khai giảng (chấp nhận khác số buổi)
+            </Button>
+            <AlertDialogCancel onClick={cancelEndDateChange} className="w-full mt-0">
+              Hủy
+            </AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

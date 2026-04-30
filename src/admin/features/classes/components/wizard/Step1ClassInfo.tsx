@@ -19,8 +19,9 @@ interface Props {
   weekdaysCount: number;
   /** True nếu user đã manual edit end_date — skip auto-calc. */
   endDateManuallyOverridden: boolean;
-  /** Callback khi user manual edit end_date Input. */
-  onEndDateOverride: () => void;
+  /** Callback khi user edit end_date Input — parent quyết định mở confirm dialog
+   *  (khi auto-calc đang active) hoặc set thẳng (khi đã override). */
+  onEndDateChange: (newDate: string) => void;
   /** Callback khi user click "Tính lại từ Study Plan". */
   onEndDateAutoReset: () => void;
 }
@@ -43,7 +44,7 @@ const PROGRAM_GROUP_LABEL: Record<string, string> = {
 export default function Step1ClassInfo({
   value, onChange, errors,
   expectedSessions, weekdaysCount, endDateManuallyOverridden,
-  onEndDateOverride, onEndDateAutoReset,
+  onEndDateChange, onEndDateAutoReset,
 }: Props) {
   const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
 
@@ -318,10 +319,7 @@ export default function Step1ClassInfo({
           type="date"
           min={minEnd}
           value={value.end_date}
-          onChange={(e) => {
-            set("end_date", e.target.value);
-            onEndDateOverride();
-          }}
+          onChange={(e) => onEndDateChange(e.target.value)}
         />
         {errors.end_date && <p className="text-xs text-destructive mt-1">{errors.end_date}</p>}
         {expectedSessions != null && weekdaysCount === 0 && !endDateManuallyOverridden && (
