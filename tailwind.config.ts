@@ -42,8 +42,9 @@ export default {
     },
     extend: {
       fontFamily: {
-        display: ['"Epilogue"', 'system-ui', 'sans-serif'],
-        body: ['"Source Sans 3"', '"Epilogue"', 'system-ui', 'sans-serif'],
+        display: ['"Bricolage Grotesque"', '"Epilogue"', 'system-ui', 'sans-serif'],
+        body:    ['"Plus Jakarta Sans"', '"Source Sans 3"', '"Epilogue"', 'system-ui', 'sans-serif'],
+        mono:    ['"JetBrains Mono"', 'ui-monospace', 'Menlo', 'monospace'],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -111,11 +112,44 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        // Sticker-pop palette (synced via lp-sticker-tokens.css)
+        lp: {
+          coral:        "var(--lp-coral)",
+          "coral-deep": "var(--lp-coral-deep)",
+          "coral-soft": "var(--lp-coral-soft)",
+          teal:         "var(--lp-teal)",
+          "teal-deep":  "var(--lp-teal-deep)",
+          "teal-soft":  "var(--lp-teal-soft)",
+          yellow:        "var(--lp-yellow)",
+          "yellow-soft": "var(--lp-yellow-soft)",
+          violet:        "var(--lp-violet)",
+          "violet-soft": "var(--lp-violet-soft)",
+          sky:    "var(--lp-sky)",
+          pink:   "var(--lp-pink)",
+          rose:   "var(--lp-rose)",
+          mint:   "var(--lp-mint)",
+          cream:  "var(--lp-cream)",
+          ink:    "var(--lp-ink)",
+          "ink-2": "var(--lp-ink-2)",
+          body:   "var(--lp-body)",
+          bg:     "var(--lp-bg)",
+        },
+      },
+      boxShadow: {
+        "pop-xs": "2px 2px 0 0 var(--lp-ink)",
+        "pop-sm": "4px 4px 0 0 var(--lp-ink)",
+        "pop":    "6px 6px 0 0 var(--lp-ink)",
+        "pop-lg": "8px 8px 0 0 var(--lp-ink)",
       },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+        pop:      "18px",
+        "pop-lg": "20px",
+      },
+      transitionTimingFunction: {
+        bounce: "cubic-bezier(.34, 1.56, .64, 1)",
       },
       keyframes: {
         "accordion-down": {

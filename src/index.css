@@ -1,3 +1,16 @@
+/* ── Sticker-pop redesign fonts ── */
+@import '@fontsource/bricolage-grotesque/700.css';
+@import '@fontsource/bricolage-grotesque/800.css';
+@import '@fontsource/plus-jakarta-sans/400.css';
+@import '@fontsource/plus-jakarta-sans/500.css';
+@import '@fontsource/plus-jakarta-sans/700.css';
+@import '@fontsource/jetbrains-mono/400.css';
+
+/* ── Sticker-pop tokens + animations (synced across 3 repos) ── */
+@import './shared/styles/lp-sticker-tokens.css';
+@import './shared/styles/lp-animations.css';
+
+/* ── Existing brand fonts ── */
 @import url('https://fonts.googleapis.com/css2?family=Epilogue:wght@300;400;500;600;700;800&family=Source+Sans+3:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;

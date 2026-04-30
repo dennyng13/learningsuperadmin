@@ -1,0 +1,74 @@
+/* DO NOT FORMAT — design animations, sync 3 repos
+ * Source of truth: Admin WebApp UI / styles.css (Lovable design spike)
+ * Used by: ieltspractice (Student) + learningsuperadmin + teachingwithlearningplus
+ */
+
+/* ── Keyframes ── */
+
+@keyframes pulseDot {
+  0%   { box-shadow: 0 0 0 0 rgba(22, 165, 114, .7); }
+  70%  { box-shadow: 0 0 0 8px rgba(22, 165, 114, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(22, 165, 114, 0); }
+}
+
+@keyframes wave {
+  0%, 60%, 100% { transform: rotate(0); }
+  10% { transform: rotate(14deg); }
+  20% { transform: rotate(-8deg); }
+  30% { transform: rotate(14deg); }
+  40% { transform: rotate(-4deg); }
+  50% { transform: rotate(10deg); }
+}
+
+@keyframes bob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-10px); }
+}
+
+@keyframes pop-in {
+  0%   { transform: scale(0) rotate(-12deg); opacity: 0; }
+  70%  { transform: scale(1.08) rotate(2deg); }
+  100% { transform: scale(1) rotate(-2deg); opacity: 1; }
+}
+
+@keyframes lp-float-up {
+  0%, 100% { transform: translateY(0) rotate(-2deg); }
+  50%      { transform: translateY(-8px) rotate(2deg); }
+}
+
+@keyframes float-down {
+  0%, 100% { transform: translateY(0) rotate(3deg); }
+  50%      { transform: translateY(6px) rotate(-2deg); }
+}
+
+@keyframes wiggle {
+  0%, 100% { transform: rotate(-4deg); }
+  50%      { transform: rotate(4deg); }
+}
+
+@keyframes lp-spin-slow {
+  0%   { transform: rotate(0); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ── Animation utility classes ── */
+
+.animate-pulse-dot  { animation: pulseDot 1.6s infinite; }
+.animate-wave       { animation: wave 2.4s infinite; transform-origin: 70% 70%; display: inline-block; }
+.animate-bob        { animation: bob 3.2s ease-in-out infinite; }
+.animate-pop-in     { animation: pop-in .5s var(--bounce) both; }
+.animate-lp-float-up { animation: lp-float-up 4s ease-in-out infinite; }
+.animate-float-down { animation: float-down 5s ease-in-out infinite; }
+.animate-wiggle     { animation: wiggle 4s ease-in-out infinite; }
+.animate-lp-spin-slow { animation: lp-spin-slow 22s linear infinite; }
+
+/* ── Hover translate utilities (sticker pop) ── */
+
+.hover-pop-xs:hover { transform: translate(-1px, -1px); }
+.hover-pop-sm:hover { transform: translate(-2px, -2px); }
+
+/* ── Active press states ── */
+
+.active-pop-xs:active { transform: translate(1px, 1px); }
+.active-pop-sm:active { transform: translate(2px, 2px); }
+.active-pop-md:active { transform: translate(4px, 4px); }

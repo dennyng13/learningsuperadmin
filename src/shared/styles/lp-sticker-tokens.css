@@ -1,0 +1,62 @@
+/* DO NOT FORMAT — design tokens, sync 3 repos
+ * Source of truth: Admin WebApp UI / styles.css (Lovable design spike)
+ * Used by: ieltspractice (Student) + learningsuperadmin + teachingwithlearningplus
+ */
+
+:root {
+  /* ── Brand teal ── */
+  --lp-teal:      #38B6AB;
+  --lp-teal-deep: #1F8A80;
+  --lp-teal-soft: #E1FAFF;
+  --lp-teal-pale: #F0FDFC;
+
+  /* ── Coral accent ── */
+  --lp-coral:      #FA7D64;
+  --lp-coral-deep: #E15D44;
+  --lp-coral-soft: #FDE3DF;
+
+  /* ── Yellow ── */
+  --lp-yellow:      #FFC940;
+  --lp-yellow-soft: #FFF4D1;
+
+  /* ── Violet ── */
+  --lp-violet:      #8B5CF6;
+  --lp-violet-soft: #EDE6FE;
+
+  /* ── Pastels ── */
+  --lp-mint:  #3DBA6C; /* fresh green (brighter than original #5BB5A2 — see commit history) */
+  --lp-pink:  #FFB5C5;
+  --lp-rose:  #F43F5E; /* vibrant red-pink, distinct from pink */
+  --lp-sky:   #BDE8F5;
+  --lp-cream: #FFF7ED;
+
+  /* ── Ink + body text ── */
+  --lp-ink:   #1C2025;
+  --lp-ink-2: #2A2F36;
+  --lp-body:  #5A6470;
+
+  /* ── Backgrounds ── */
+  --lp-bg:   #F4F4EE; /* warm off-white */
+  --lp-bg-2: #FFFFFF;
+
+  /* ── Lines ── */
+  --lp-line:      #1C2025;
+  --lp-line-soft: #E5E1D8;
+
+  /* ── Pop shadow primitives ── */
+  --pop-shadow-xs: 2px 2px 0 0 var(--lp-ink);
+  --pop-shadow-sm: 4px 4px 0 0 var(--lp-ink);
+  --pop-shadow:    6px 6px 0 0 var(--lp-ink);
+  --pop-shadow-lg: 8px 8px 0 0 var(--lp-ink);
+
+  /* ── Border weights ── */
+  --lp-border-thin: 2px;     /* chips, small pills */
+  --lp-border-bold: 2.5px;   /* pop-card, pop-btn signature */
+
+  /* ── Easing ── */
+  --bounce: cubic-bezier(.34, 1.56, .64, 1);
+}
+
+.dark {
+  --lp-ink: #FFFFFF;
+}
