@@ -3,10 +3,6 @@ import {
   MapPin, Plus, Pencil, Archive, Search, Building2, Wifi, Layers, Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Input } from "@shared/components/ui/input";
-import { Button } from "@shared/components/ui/button";
-import { Badge } from "@shared/components/ui/badge";
-import { Card } from "@shared/components/ui/card";
 import { Skeleton } from "@shared/components/ui/skeleton";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -15,48 +11,39 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@shared/components/ui/alert-dialog";
-import { ListPageLayout } from "@shared/components/layouts/ListPageLayout";
+import { HeroBoard } from "@shared/components/ui/hero-board";
+import { PopCard } from "@shared/components/ui/pop-card";
+import { PopButton } from "@shared/components/ui/pop-button";
+import { PopChip } from "@shared/components/ui/pop-chip";
+import { StatusBadge } from "@shared/components/ui/status-badge";
+import { IconButton } from "@shared/components/ui/icon-button";
+import { EmptyMascot } from "@shared/components/ui/empty-mascot";
 import {
   useRooms, useRoomMutations, type Room, type RoomArchiveResult,
 } from "@shared/hooks/useRooms";
 import RoomEditorDialog from "@admin/features/rooms/components/RoomEditorDialog";
-import { cn } from "@shared/lib/utils";
 
 /* /rooms — Admin list page for managing facility rooms (onsite, online,
    hybrid). CRUD wired via useRoomMutations + RoomEditorDialog (Step 3).
-   Route registration pending Step 4. */
+   Sprint 2 Day 4 sticker-pop refactor. */
 
-const MODE_META: Record<Room["mode"], { label: string; icon: typeof Building2; cls: string }> = {
-  onsite: {
-    label: "Onsite",
-    icon: Building2,
-    cls: "border-sky-500/30 text-sky-700 dark:text-sky-400",
-  },
-  online: {
-    label: "Online",
-    icon: Wifi,
-    cls: "border-emerald-500/30 text-emerald-700 dark:text-emerald-400",
-  },
-  hybrid: {
-    label: "Hybrid",
-    icon: Layers,
-    cls: "border-violet-500/30 text-violet-700 dark:text-violet-400",
-  },
+const MODE_META: Record<Room["mode"], {
+  label: string;
+  icon: typeof Building2;
+  tone: "sky" | "teal" | "violet";
+}> = {
+  onsite: { label: "Onsite", icon: Building2, tone: "sky" },
+  online: { label: "Online", icon: Wifi,      tone: "teal" },
+  hybrid: { label: "Hybrid", icon: Layers,    tone: "violet" },
 };
 
-const STATUS_META: Record<Room["status"], { label: string; cls: string }> = {
-  active: {
-    label: "Hoạt động",
-    cls: "border-emerald-500/30 text-emerald-700 dark:text-emerald-400",
-  },
-  archived: {
-    label: "Đã lưu trữ",
-    cls: "border-muted-foreground/30 text-muted-foreground",
-  },
-  under_maintenance: {
-    label: "Bảo trì",
-    cls: "border-amber-500/30 text-amber-700 dark:text-amber-400",
-  },
+const STATUS_META: Record<Room["status"], {
+  label: string;
+  status: "active" | "archived" | "warning";
+}> = {
+  active:            { label: "Hoạt động",   status: "active" },
+  archived:          { label: "Đã lưu trữ",  status: "archived" },
+  under_maintenance: { label: "Bảo trì",     status: "warning" },
 };
 
 type FilterMode = "all" | Room["mode"];
@@ -114,64 +101,76 @@ export default function RoomsPage() {
     }
   };
 
-  const filterBar = (
-    <div className="flex flex-wrap gap-2 items-center">
-      <div className="relative flex-1 min-w-[200px]">
-        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-        <Input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Tìm code hoặc tên phòng…"
-          className="pl-8 h-9 text-sm"
-        />
-      </div>
-      <Select value={filterMode} onValueChange={(v) => setFilterMode(v as FilterMode)}>
-        <SelectTrigger className="w-[150px] h-9 text-sm"><SelectValue /></SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">Mọi hình thức</SelectItem>
-          <SelectItem value="onsite">Onsite</SelectItem>
-          <SelectItem value="online">Online</SelectItem>
-          <SelectItem value="hybrid">Hybrid</SelectItem>
-        </SelectContent>
-      </Select>
-      <Select value={filterStatus} onValueChange={(v) => setFilterStatus(v as FilterStatus)}>
-        <SelectTrigger className="w-[160px] h-9 text-sm"><SelectValue /></SelectTrigger>
-        <SelectContent>
-          <SelectItem value="active">Đang hoạt động</SelectItem>
-          <SelectItem value="archived">Đã lưu trữ</SelectItem>
-          <SelectItem value="all">Tất cả</SelectItem>
-        </SelectContent>
-      </Select>
-    </div>
-  );
-
-  const headerActions = (
-    <Button size="sm" onClick={() => setCreateOpen(true)} className="gap-1.5">
-      <Plus className="h-4 w-4" />
-      Tạo phòng
-    </Button>
-  );
+  const totalActive = (rooms ?? []).filter((r) => r.status === "active").length;
+  const totalCount = (rooms ?? []).length;
 
   return (
-    <ListPageLayout
-      title="Phòng học"
-      subtitle="Quản lý cơ sở vật chất + phòng online"
-      icon={MapPin}
-      actions={headerActions}
-      filterBar={filterBar}
-    >
+    <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
+      <HeroBoard
+        tone="teal"
+        title="Phòng học"
+        subtitle={
+          isLoading
+            ? "Đang tải…"
+            : `${totalActive} phòng đang hoạt động · ${totalCount} tổng`
+        }
+        action={
+          <PopButton tone="white" onClick={() => setCreateOpen(true)}>
+            <Plus className="size-4" />
+            <span>Tạo phòng</span>
+          </PopButton>
+        }
+        illustration={<MapPin className="size-28 text-white/85 animate-bob" strokeWidth={1.5} />}
+      />
+
+      {/* Filter bar — sticker-style search + 2 selects */}
+      <div className="flex flex-wrap gap-2 items-center">
+        <div className="relative flex-1 min-w-[200px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-lp-body" />
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Tìm code hoặc tên phòng…"
+            className="w-full h-10 pl-9 pr-3 text-sm font-body bg-white border-[2px] border-lp-ink rounded-pop placeholder:text-lp-body/70 focus:outline-none focus:shadow-pop-xs transition-shadow"
+          />
+        </div>
+        <Select value={filterMode} onValueChange={(v) => setFilterMode(v as FilterMode)}>
+          <SelectTrigger className="w-[150px] h-10 text-sm font-display font-bold bg-white border-[2px] border-lp-ink rounded-pop text-lp-ink">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent className="border-[2px] border-lp-ink rounded-pop shadow-pop">
+            <SelectItem value="all">Mọi hình thức</SelectItem>
+            <SelectItem value="onsite">Onsite</SelectItem>
+            <SelectItem value="online">Online</SelectItem>
+            <SelectItem value="hybrid">Hybrid</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={filterStatus} onValueChange={(v) => setFilterStatus(v as FilterStatus)}>
+          <SelectTrigger className="w-[160px] h-10 text-sm font-display font-bold bg-white border-[2px] border-lp-ink rounded-pop text-lp-ink">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent className="border-[2px] border-lp-ink rounded-pop shadow-pop">
+            <SelectItem value="active">Đang hoạt động</SelectItem>
+            <SelectItem value="archived">Đã lưu trữ</SelectItem>
+            <SelectItem value="all">Tất cả</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Content */}
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {[0, 1, 2].map((i) => <Skeleton key={i} className="h-40 rounded-xl" />)}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[0, 1, 2].map((i) => <Skeleton key={i} className="h-44 rounded-pop-lg" />)}
         </div>
       ) : filtered.length === 0 ? (
-        <EmptyState
+        <RoomsEmptyState
           hasRooms={(rooms ?? []).length > 0}
           searching={!!query.trim() || filterMode !== "all"}
           onCreate={() => setCreateOpen(true)}
         />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((room) => (
             <RoomCard
               key={room.id}
@@ -199,12 +198,12 @@ export default function RoomsPage() {
         open={!!archiveTarget && !archiveResult}
         onOpenChange={(o) => !o && closeArchiveFlow()}
       >
-        <AlertDialogContent>
+        <AlertDialogContent className="border-[2.5px] border-lp-ink rounded-pop-lg shadow-pop-lg">
           <AlertDialogHeader>
-            <AlertDialogTitle>
+            <AlertDialogTitle className="font-display text-lp-ink">
               Lưu trữ phòng "{archiveTarget?.code}"?
             </AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogDescription className="text-lp-body">
               Phòng sẽ ẩn khỏi danh sách hoạt động. Có thể khôi phục bằng cách
               chuyển status về "Hoạt động".
             </AlertDialogDescription>
@@ -214,6 +213,7 @@ export default function RoomsPage() {
             <AlertDialogAction
               onClick={() => handleArchive(false)}
               disabled={archiveMut.isPending}
+              className="bg-lp-coral text-white border-[2px] border-lp-ink hover:bg-lp-coral-deep"
             >
               {archiveMut.isPending && <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />}
               Lưu trữ
@@ -227,10 +227,10 @@ export default function RoomsPage() {
         open={!!archiveResult}
         onOpenChange={(o) => !o && closeArchiveFlow()}
       >
-        <AlertDialogContent>
+        <AlertDialogContent className="border-[2.5px] border-lp-ink rounded-pop-lg shadow-pop-lg">
           <AlertDialogHeader>
-            <AlertDialogTitle>Phòng có buổi học tương lai</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle className="font-display text-lp-ink">Phòng có buổi học tương lai</AlertDialogTitle>
+            <AlertDialogDescription className="text-lp-body">
               {archiveResult?.message
                 ?? `Phòng có ${archiveResult?.sessions_count ?? "?"} buổi học chưa kết thúc. Vẫn lưu trữ?`}
               <br />
@@ -242,7 +242,7 @@ export default function RoomsPage() {
             <AlertDialogAction
               onClick={() => handleArchive(true)}
               disabled={archiveMut.isPending}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-lp-coral text-white border-[2px] border-lp-ink hover:bg-lp-coral-deep"
             >
               {archiveMut.isPending && <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />}
               Vẫn lưu trữ
@@ -250,7 +250,7 @@ export default function RoomsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </ListPageLayout>
+    </div>
   );
 }
 
@@ -269,54 +269,49 @@ function RoomCard({
   const previewText = room.address || room.meeting_link;
 
   return (
-    <Card className="p-4 space-y-2.5">
+    <PopCard tone="white" shadow="md" hover="lift" className="p-4 space-y-3">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
-          <h3 className="font-display font-bold text-base truncate">{room.code}</h3>
-          <p className="text-xs text-muted-foreground truncate">{room.name}</p>
+          <h3 className="font-display font-extrabold text-base text-lp-ink truncate">{room.code}</h3>
+          <p className="text-xs text-lp-body truncate">{room.name}</p>
         </div>
-        <Badge variant="outline" className={cn("text-[10px] shrink-0", statusMeta.cls)}>
-          {statusMeta.label}
-        </Badge>
+        <StatusBadge status={statusMeta.status} label={statusMeta.label} />
       </div>
 
-      <div className="flex items-center gap-1.5 flex-wrap text-xs">
-        <Badge variant="outline" className={cn("text-[10px] gap-1", modeMeta.cls)}>
+      <div className="flex items-center gap-2 flex-wrap text-xs">
+        <PopChip tone={modeMeta.tone}>
           <ModeIcon className="h-3 w-3" />
           {modeMeta.label}
-        </Badge>
-        <span className="text-muted-foreground">·</span>
-        <span className="text-muted-foreground">Sĩ số: <strong className="text-foreground tabular-nums">{room.capacity}</strong></span>
+        </PopChip>
+        <span className="text-lp-body">·</span>
+        <span className="text-lp-body font-body">
+          Sĩ số: <strong className="text-lp-ink font-display tabular-nums">{room.capacity}</strong>
+        </span>
       </div>
 
       {previewText && (
-        <p className="text-[11px] text-muted-foreground truncate" title={previewText}>
+        <p className="text-[11px] text-lp-body truncate" title={previewText}>
           {previewText}
         </p>
       )}
 
-      <div className="flex items-center gap-1 pt-2 border-t">
-        <Button variant="ghost" size="sm" onClick={onEdit} className="h-7 px-2 text-xs gap-1">
-          <Pencil className="h-3 w-3" /> Sửa
-        </Button>
+      <div className="flex items-center gap-2 pt-2 border-t-[2px] border-lp-ink/10">
+        <IconButton tone="teal" size="sm" aria-label="Sửa phòng" onClick={onEdit}>
+          <Pencil />
+        </IconButton>
         {room.status !== "archived" && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onArchive}
-            className="h-7 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground"
-          >
-            <Archive className="h-3 w-3" /> Lưu trữ
-          </Button>
+          <IconButton tone="coral" size="sm" aria-label="Lưu trữ phòng" onClick={onArchive}>
+            <Archive />
+          </IconButton>
         )}
       </div>
-    </Card>
+    </PopCard>
   );
 }
 
 /* ────────────────────────────────────────────────────────────────────────── */
 
-function EmptyState({
+function RoomsEmptyState({
   hasRooms, searching, onCreate,
 }: {
   hasRooms: boolean;
@@ -325,23 +320,22 @@ function EmptyState({
 }) {
   const isFiltered = hasRooms && searching;
   return (
-    <div className="rounded-2xl border border-dashed bg-muted/20 p-10 text-center space-y-3">
-      <div className="mx-auto h-12 w-12 rounded-full bg-muted flex items-center justify-center">
-        <MapPin className="h-5 w-5 text-muted-foreground" />
-      </div>
-      <h3 className="font-display text-base font-semibold">
-        {isFiltered ? "Không có phòng phù hợp bộ lọc" : "Không có phòng học"}
-      </h3>
-      <p className="text-sm text-muted-foreground max-w-sm mx-auto">
-        {isFiltered
+    <EmptyMascot
+      icon={MapPin}
+      title={isFiltered ? "Không có phòng phù hợp bộ lọc" : "Không có phòng học"}
+      description={
+        isFiltered
           ? "Thử bỏ filter hoặc tìm với từ khoá khác."
-          : "Tạo phòng đầu tiên để gán cho lớp học."}
-      </p>
-      {!isFiltered && (
-        <Button onClick={onCreate} size="sm" className="gap-1.5">
-          <Plus className="h-4 w-4" /> Tạo phòng đầu tiên
-        </Button>
-      )}
-    </div>
+          : "Tạo phòng đầu tiên để gán cho lớp học."
+      }
+      action={
+        !isFiltered ? (
+          <PopButton tone="coral" size="sm" onClick={onCreate}>
+            <Plus className="size-4" />
+            <span>Tạo phòng đầu tiên</span>
+          </PopButton>
+        ) : undefined
+      }
+    />
   );
 }
