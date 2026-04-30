@@ -45,6 +45,36 @@ export interface StudyPlanTemplateEntry {
 
 const cast = <T,>(d: any): T => d as unknown as T;
 
+const TEMPLATE_COLUMNS = [
+  "id",
+  "template_name",
+  "description",
+  "program",
+  "assigned_level",
+  "plan_type",
+  "skills",
+  "total_sessions",
+  "session_duration",
+  "schedule_pattern",
+  "exercise_ids",
+  "flashcard_set_ids",
+  "materials_links",
+  "teacher_notes",
+  "current_score",
+  "target_score",
+  "status",
+] as const;
+
+function toTemplatePayload(tpl: Partial<StudyPlanTemplate>) {
+  const source = tpl as Record<string, any>;
+  const header: Record<string, any> = {};
+  for (const key of TEMPLATE_COLUMNS) {
+    if (key in source) header[key] = source[key];
+  }
+  if (header.assigned_level === "") header.assigned_level = null;
+  return header;
+}
+
 /** List all templates (admin sees all, teacher sees own) */
 export function useStudyPlanTemplates() {
   return useQuery({
@@ -94,12 +124,7 @@ export function useTemplateMutations() {
 
   const upsertTemplate = useMutation({
     mutationFn: async (tpl: Partial<StudyPlanTemplate>) => {
-      const { entries, ...header } = tpl as any;
-      // Drop course_id — column does not exist on study_plan_templates yet
-      // (course-template linking deferred to Phase F3 via course_study_plans).
-      delete header.course_id;
-      // Same defensive cleanup for assigned_level (text but UI uses "" sentinel).
-      if (header.assigned_level === "") header.assigned_level = null;
+      const header = toTemplatePayload(tpl);
       if (header.id) {
         const { error } = await supabase
           .from("study_plan_templates")
