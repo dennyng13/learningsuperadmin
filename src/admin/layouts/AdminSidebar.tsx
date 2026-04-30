@@ -1,50 +1,44 @@
-import {
-  LogOut, ExternalLink, ChevronRight,
-} from "lucide-react";
+import { ExternalLink, LogOut } from "lucide-react";
 import { NavLink } from "@shared/components/misc/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@shared/hooks/useAuth";
 import { cn } from "@shared/lib/utils";
-import {
-  Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
-  SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
-  SidebarHeader, SidebarFooter, SidebarSeparator, useSidebar,
-} from "@shared/components/ui/sidebar";
 import { adminNavItems } from "@shared/config/navigation";
 import { usePendingDraftCount } from "@shared/hooks/useAvailabilityDrafts";
 import { useBrandAsset } from "@shared/hooks/useBrandAsset";
 import { useOrgShortName } from "@shared/hooks/useOrgShortName";
 
+type GroupKey = "academic" | "classes" | "users" | "hr" | "system";
+
+const GROUP_LABELS: Record<GroupKey, string> = {
+  academic: "Học thuật",
+  classes:  "Lớp & Lịch",
+  users:    "Người dùng",
+  hr:       "Hành chính",
+  system:   "Hệ thống",
+};
+
+const GROUP_ORDER: GroupKey[] = ["academic", "classes", "users", "hr", "system"];
+
 const byOrder = (a: { order: number }, b: { order: number }) => a.order - b.order;
-const academicItems = adminNavItems.filter(i => i.group === "academic").sort(byOrder);
-const classesItems  = adminNavItems.filter(i => i.group === "classes").sort(byOrder);
-const usersItems    = adminNavItems.filter(i => i.group === "users").sort(byOrder);
-const hrItems       = adminNavItems.filter(i => i.group === "hr").sort(byOrder);
-const superAdminItems = adminNavItems.filter(i => i.group === "system").sort(byOrder);
 
 export function AdminSidebar() {
-  const { state } = useSidebar();
-  const collapsed = state === "collapsed";
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, isSuperAdmin, signOut } = useAuth();
+  const { isSuperAdmin, signOut } = useAuth();
   const pendingDrafts = usePendingDraftCount();
   const orgShortName = useOrgShortName();
-  // Resolve the app logo from the brand-assets registry.
-  // DB convention is kebab-case (logo-app / logo-main); camelCase variants
-  // kept as fallback for any historic uploads.
   const { url: logoUrl } = useBrandAsset(["logo-app", "logo-main", "logoApp", "logoMain"]);
 
-  // Build a map of every route → which nav item it should highlight.
-  // aliasPaths lets one nav entry "own" multiple URL prefixes (vd /library
-  // được active khi user đang ở /tests, /flashcards, /study-plans).
-  const pathOwnership = adminNavItems.flatMap(i =>
-    [i.route, ...(i.aliasPaths ?? [])].map(p => ({ path: p, ownerRoute: i.route }))
+  // Path ownership map — multiple aliasPaths can map to one nav item.
+  const pathOwnership = adminNavItems.flatMap((i) =>
+    [i.route, ...(i.aliasPaths ?? [])].map((p) => ({ path: p, ownerRoute: i.route })),
   );
   const isActive = (path: string) => {
     if (path === "/") return location.pathname === "/";
     const matches = pathOwnership.filter(
-      ({ path: p }) => p !== "/" && (location.pathname === p || location.pathname.startsWith(p + "/"))
+      ({ path: p }) =>
+        p !== "/" && (location.pathname === p || location.pathname.startsWith(p + "/")),
     );
     if (matches.length === 0) return false;
     const longest = matches.reduce((a, b) => (a.path.length >= b.path.length ? a : b));
@@ -56,216 +50,135 @@ export function AdminSidebar() {
     navigate("/login");
   };
 
-  const renderMenuItem = (item: typeof academicItems[0]) => {
-    const active = isActive(item.route);
-    const badgeCount = item.id === "availability-drafts" ? pendingDrafts : 0;
-    return (
-      <SidebarMenuItem key={item.id}>
-        <SidebarMenuButton
-          asChild
-          isActive={active}
-          size="sm"
-          tooltip={item.label}
-          className={cn(
-            "rounded-md text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/60 transition-colors duration-150",
-            active && "!bg-primary/10 !text-primary font-medium shadow-[inset_2px_0_0_hsl(var(--primary))]"
-          )}
-        >
-          <NavLink to={item.route} end={item.end}>
-            <item.icon className={cn("h-3.5 w-3.5 shrink-0", active && "text-primary")} />
-            <span>{item.label}</span>
-            {badgeCount > 0 && (
-              <span className="ml-auto inline-flex items-center justify-center h-4 min-w-4 px-1 rounded-full bg-amber-500 text-white text-[9px] font-semibold leading-none group-data-[collapsible=icon]:hidden">
-                {badgeCount > 99 ? "99+" : badgeCount}
-              </span>
-            )}
-            {active && badgeCount === 0 && <ChevronRight className="ml-auto h-3 w-3 text-primary/40" />}
-          </NavLink>
-        </SidebarMenuButton>
-      </SidebarMenuItem>
-    );
-  };
+  const visibleItems = adminNavItems.filter((i) => !i.superAdminOnly || isSuperAdmin);
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-sidebar-border/60">
+    <aside
+      className="relative w-64 min-h-screen flex flex-col bg-lp-ink text-white shrink-0"
+      data-portal="admin"
+    >
+      {/* Teal accent strip — admin signature */}
+      <div aria-hidden="true" className="absolute inset-y-0 left-0 w-1 bg-lp-teal" />
+
       {/* Header */}
-      <SidebarHeader className="px-3 py-3">
-        <div className="flex items-center gap-2 overflow-hidden">
-          <div className={cn(
-            "flex items-center justify-center shrink-0 h-9 w-9",
-            !logoUrl && "rounded-xl bg-gradient-to-br from-primary/15 to-accent/15 shadow-sm"
-          )}>
-            {logoUrl ? (
-              <img
-                src={logoUrl}
-                alt="Logo"
-                className="h-9 w-9 object-contain"
-                loading="eager"
-                decoding="async"
-              />
-            ) : (
-              <span className="font-display font-extrabold text-base leading-none tracking-tight">
-                <span className="text-primary">L</span>
-                <span className="text-accent">+</span>
-              </span>
-            )}
-          </div>
-          <div className="min-w-0 group-data-[collapsible=icon]:hidden">
-            <p className="font-display text-sm font-extrabold text-sidebar-foreground leading-tight truncate tracking-tight">
-              <BrandShortName name={orgShortName} />
-            </p>
-            <p className="text-[10px] text-sidebar-foreground/50 leading-tight truncate mt-0.5">Admin Portal</p>
-          </div>
+      <div className="relative pl-5 pr-3 py-4 border-b-2 border-white/10 flex items-start justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          {logoUrl ? (
+            <img src={logoUrl} alt="" className="h-9 w-9 object-contain shrink-0" />
+          ) : (
+            <span className="inline-flex items-center justify-center h-9 w-9 rounded-pop bg-white/10 font-display font-extrabold text-base leading-none tracking-tight shrink-0">
+              <span className="text-lp-teal">L</span>
+              <span className="text-lp-coral">+</span>
+            </span>
+          )}
+          <h2 className="font-display text-base font-extrabold text-white leading-tight truncate">
+            <BrandShortName name={orgShortName} />
+          </h2>
         </div>
-      </SidebarHeader>
+        <span className="shrink-0 inline-flex items-center px-2 py-0.5 border-[2px] border-white/90 rounded-full text-[10px] font-display font-bold tracking-wider bg-lp-teal text-white">
+          ADMIN
+        </span>
+      </div>
 
-      <SidebarSeparator />
+      {/* Nav groups */}
+      <nav className="flex-1 py-3 px-2 overflow-y-auto" aria-label="Admin navigation">
+        {GROUP_ORDER.map((groupKey) => {
+          if (groupKey === "system" && !isSuperAdmin) return null;
+          const items = visibleItems.filter((i) => i.group === groupKey).sort(byOrder);
+          if (items.length === 0) return null;
 
-      <SidebarContent>
-        {/* Học thuật (kèm Dashboard ở đầu) */}
-        <SidebarGroup className="py-1.5">
-          <SidebarGroupLabel className="text-[9px] uppercase tracking-[0.1em] text-sidebar-foreground/40 font-semibold px-2 mb-0.5">
-            Học thuật
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu className="gap-px">
-              {academicItems.map(renderMenuItem)}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+          return (
+            <div key={groupKey} className="mb-4 last:mb-0">
+              <div className="px-3 mb-1.5 text-[10px] uppercase tracking-[0.1em] font-display font-bold text-white/50">
+                {GROUP_LABELS[groupKey]}
+              </div>
+              <ul className="space-y-1">
+                {items.map((item) => {
+                  const active = isActive(item.route);
+                  const badgeCount = item.id === "availability-drafts" ? pendingDrafts : 0;
+                  const Icon = item.icon;
+                  return (
+                    <li key={item.id}>
+                      <NavLink
+                        to={item.route}
+                        end={item.end}
+                        className={cn(
+                          "group w-full flex items-center gap-3 px-3 py-2 rounded-pop text-left text-sm font-body font-medium",
+                          "transition-all duration-200 ease-bounce",
+                          active
+                            ? "bg-lp-teal text-white shadow-pop-xs"
+                            : "text-white/80 hover:bg-white/10 hover:text-white hover:translate-x-1",
+                        )}
+                      >
+                        <Icon className="size-[18px] shrink-0" strokeWidth={2} />
+                        <span className="flex-1 truncate">{item.label}</span>
+                        {badgeCount > 0 && (
+                          <span
+                            className={cn(
+                              "shrink-0 inline-flex items-center justify-center min-w-5 h-5 px-1.5 text-[10px] font-bold rounded-full border-[1.5px]",
+                              active
+                                ? "bg-white text-lp-ink border-lp-ink/40"
+                                : "bg-lp-coral text-white border-white/80",
+                            )}
+                          >
+                            {badgeCount > 99 ? "99+" : badgeCount}
+                          </span>
+                        )}
+                      </NavLink>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          );
+        })}
+      </nav>
 
-        {/* Lớp & Lịch */}
-        {classesItems.length > 0 && (
-          <>
-            <SidebarSeparator className="mx-3" />
-            <SidebarGroup className="py-1.5">
-              <SidebarGroupLabel className="text-[9px] uppercase tracking-[0.1em] text-sidebar-foreground/40 font-semibold px-2 mb-0.5">
-                Lớp & Lịch
-              </SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu className="gap-px">
-                  {classesItems.map(renderMenuItem)}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          </>
-        )}
-
-        {/* Người dùng */}
-        {usersItems.length > 0 && (
-          <>
-            <SidebarSeparator className="mx-3" />
-            <SidebarGroup className="py-1.5">
-              <SidebarGroupLabel className="text-[9px] uppercase tracking-[0.1em] text-sidebar-foreground/40 font-semibold px-2 mb-0.5">
-                Người dùng
-              </SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu className="gap-px">
-                  {usersItems.map(renderMenuItem)}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          </>
-        )}
-
-        {/* Hành chính */}
-        {hrItems.length > 0 && (
-          <>
-            <SidebarSeparator className="mx-3" />
-            <SidebarGroup className="py-1.5">
-              <SidebarGroupLabel className="text-[9px] uppercase tracking-[0.1em] text-sidebar-foreground/40 font-semibold px-2 mb-0.5">
-                Hành chính
-              </SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu className="gap-px">
-                  {hrItems.map(renderMenuItem)}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          </>
-        )}
-
-        {/* Super Admin */}
-        {isSuperAdmin && (
-          <>
-            <SidebarSeparator className="mx-3" />
-            <SidebarGroup className="py-1.5">
-              <SidebarGroupLabel className="text-[9px] uppercase tracking-[0.1em] text-sidebar-foreground/40 font-semibold px-2 mb-0.5">
-                Hệ thống
-              </SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu className="gap-px">
-                  {superAdminItems.map(renderMenuItem)}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          </>
-        )}
-      </SidebarContent>
-
-      <SidebarSeparator />
-
-      {/* Footer */}
-      <SidebarFooter className="py-2">
-        <SidebarMenu className="gap-px">
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              size="sm"
-              asChild
-              tooltip="IELTS Practice (Học viên)"
-              className="rounded-md text-primary/70 hover:text-primary hover:bg-primary/5 cursor-pointer transition-colors duration-150"
-            >
-              <a href="https://ielts.learningplus.vn" target="_blank" rel="noopener noreferrer">
-                <ExternalLink className="h-3.5 w-3.5 shrink-0" />
-                <span>IELTS Practice</span>
-              </a>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              size="sm"
-              asChild
-              tooltip="Teacher's Hub (Giáo viên)"
-              className="rounded-md text-primary/70 hover:text-primary hover:bg-primary/5 cursor-pointer transition-colors duration-150"
-            >
-              <a href="https://teacher.learningplus.vn" target="_blank" rel="noopener noreferrer">
-                <ExternalLink className="h-3.5 w-3.5 shrink-0" />
-                <span>Teacher's Hub</span>
-              </a>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              size="sm"
-              onClick={handleSignOut}
-              tooltip="Đăng xuất"
-              className="rounded-md text-sidebar-foreground/50 hover:text-destructive hover:bg-destructive/5 cursor-pointer transition-colors duration-150"
-            >
-              <LogOut className="h-3.5 w-3.5 shrink-0" />
-              <span>Đăng xuất</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarFooter>
-    </Sidebar>
+      {/* Footer — external links + signout */}
+      <div className="border-t-2 border-white/10 px-2 py-2 space-y-1">
+        <a
+          href="https://ielts.learningplus.vn"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-3 px-3 py-2 rounded-pop text-sm font-body font-medium text-white/70 hover:bg-white/10 hover:text-white transition-colors"
+        >
+          <ExternalLink className="size-4 shrink-0" />
+          <span className="flex-1 truncate">IELTS Practice</span>
+        </a>
+        <a
+          href="https://teacher.learningplus.vn"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-3 px-3 py-2 rounded-pop text-sm font-body font-medium text-white/70 hover:bg-white/10 hover:text-white transition-colors"
+        >
+          <ExternalLink className="size-4 shrink-0" />
+          <span className="flex-1 truncate">Teacher's Hub</span>
+        </a>
+        <button
+          type="button"
+          onClick={handleSignOut}
+          className="w-full flex items-center gap-3 px-3 py-2 rounded-pop text-sm font-body font-medium text-white/60 hover:bg-lp-coral/20 hover:text-lp-coral transition-colors"
+        >
+          <LogOut className="size-4 shrink-0" />
+          <span className="flex-1 text-left">Đăng xuất</span>
+        </button>
+      </div>
+    </aside>
   );
 }
 
 /**
- * Hiển thị tên viết tắt của tổ chức với nhấn nhá màu:
- * - Nếu tên kết thúc bằng dấu "+": phần trước = primary, "+" = accent
- *   (vd: "Learn+" → Learn(primary) + (accent))
- * - Ngược lại: toàn bộ dùng màu primary
+ * Brand short name with subtle accent on the trailing "+" (e.g. "Learn+" → Learn (white) + (coral)).
  */
 function BrandShortName({ name }: { name: string }) {
   const trimmed = name.trim();
   if (trimmed.endsWith("+") && trimmed.length > 1) {
     return (
       <>
-        <span className="text-primary">{trimmed.slice(0, -1)}</span>
-        <span className="text-accent">+</span>
+        <span className="text-white">{trimmed.slice(0, -1)}</span>
+        <span className="text-lp-coral">+</span>
       </>
     );
   }
-  return <span className="text-sidebar-foreground">{trimmed}</span>;
+  return <span className="text-white">{trimmed}</span>;
 }
