@@ -45,7 +45,7 @@ export function CalEvt({
   className,
   ...props
 }: CalEvtProps) {
-  const Element = onClick ? "button" : "div";
+  const Element: any = onClick ? "button" : "div";
   const interactiveProps = onClick ? { type: "button" as const, onClick } : {};
 
   return (
