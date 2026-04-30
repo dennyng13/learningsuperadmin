@@ -57,6 +57,11 @@ export function useStudyPlanTemplates() {
       if (error) throw error;
       return cast<StudyPlanTemplate[]>(data || []);
     },
+    // Templates rarely change — cache 5min + retain 30min để avoid refetch khi
+    // user toggle program back-and-forth trong wizard Step1.
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    placeholderData: (prev) => prev,
   });
 }
 

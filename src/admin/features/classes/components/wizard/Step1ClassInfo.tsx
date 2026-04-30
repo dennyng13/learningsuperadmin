@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@shared/components/ui/input";
@@ -71,6 +71,9 @@ export default function Step1ClassInfo({
       }
       return unique.length ? unique : PROGRAM_FALLBACK;
     },
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    placeholderData: (prev) => prev,
   });
 
   /* Fetch courses của program. Pattern lookup program_id by key giống levelsQ.
@@ -109,6 +112,9 @@ export default function Step1ClassInfo({
       return ((coursesRes.data ?? []) as Array<{ id: string; name: string; sort_order: number; status: string }>)
         .map((c) => ({ ...c, level_ids: linksByCourse.get(c.id) ?? [] }));
     },
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    placeholderData: (prev) => prev,
   });
 
   const levelsQ = useQuery({
@@ -140,6 +146,9 @@ export default function Step1ClassInfo({
       );
       return (lvlRows ?? []).filter((l: any) => allowed.has(l.id));
     },
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    placeholderData: (prev) => prev,
   });
 
   /* Phase 1 refactor: templates đã chuyển sang `study_plan_templates`. Dùng
@@ -198,19 +207,8 @@ export default function Step1ClassInfo({
     return d.toISOString().slice(0, 10);
   }, [value.start_date, today]);
 
-  // Reset course_id + course_title + level khi đổi program. Course gắn riêng
-  // mỗi program → đổi program = course cũ vô nghĩa. course_title đã được auto
-  // -fill từ course → cũng phải reset.
-  useEffect(() => {
-    const next: Partial<WizardClassInfo> = {};
-    if (value.course_id) {
-      next.course_id = null;
-      next.course_title = "";
-    }
-    if (value.program !== "ielts" && value.level) next.level = "";
-    if (Object.keys(next).length > 0) onChange({ ...value, ...next });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value.program]);
+  // Reset logic moved into program Select onValueChange — eliminates double-render
+  // cascade (was useEffect[value.program] previously). Single render pass per change.
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -250,7 +248,22 @@ export default function Step1ClassInfo({
 
       <div>
         <Label>Program <span className="text-destructive">*</span></Label>
-        <Select value={value.program} onValueChange={(v) => set("program", v)}>
+        <Select
+          value={value.program}
+          onValueChange={(v) => {
+            // Reset dependent fields atomically (Tier 3 jank fix — was useEffect cascade).
+            // Course gắn riêng mỗi program → đổi program = course cũ vô nghĩa.
+            // course_title auto-filled từ course → cũng phải reset.
+            // Level: chỉ giữ nếu vẫn IELTS (chỉ IELTS có level dropdown).
+            onChange({
+              ...value,
+              program: v,
+              course_id: null,
+              course_title: "",
+              level: v === "ielts" ? value.level : "",
+            });
+          }}
+        >
           <SelectTrigger><SelectValue placeholder="Chọn program" /></SelectTrigger>
           <SelectContent>
             {(programsQ.data || PROGRAM_FALLBACK).map((p) => (
@@ -261,39 +274,45 @@ export default function Step1ClassInfo({
         {errors.program && <p className="text-xs text-destructive mt-1">{errors.program}</p>}
       </div>
 
-      {/* Khoá học — chỉ render khi program có courses (verified Lovable Q5: chỉ
-          IELTS có 8 courses; WRE + Customized = 0). Pick course → set course_id +
-          auto-fill course_title + reset level. Pick "— Không gắn —" → fallback
-          flow cũ (course_title editable, level từ program_levels). */}
-      {(coursesQ.data ?? []).length > 0 && (
-        <div>
-          <Label>Khoá học</Label>
-          <Select
-            value={value.course_id ?? "none"}
-            onValueChange={(v) => {
-              if (v === "none") {
-                onChange({ ...value, course_id: null });
-              } else {
-                const course = (coursesQ.data ?? []).find((c) => c.id === v);
-                onChange({
-                  ...value,
-                  course_id: v,
-                  course_title: course?.name ?? value.course_title,
-                  level: "",
-                });
-              }
-            }}
-          >
-            <SelectTrigger><SelectValue placeholder="Chọn khoá học" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">— Không gắn khoá học —</SelectItem>
-              {(coursesQ.data ?? []).map((c) => (
-                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
+      {/* Khoá học — luôn render grid cell để tránh layout reflow khi đổi program
+          (Tier 2 jank fix). Disabled khi program chưa pick hoặc program không có
+          course (verified Lovable Q5: chỉ IELTS có 8 courses; WRE + Customized = 0).
+          Pick course → set course_id + auto-fill course_title + reset level. */}
+      <div>
+        <Label>Khoá học</Label>
+        <Select
+          value={value.course_id ?? "none"}
+          onValueChange={(v) => {
+            if (v === "none") {
+              onChange({ ...value, course_id: null });
+            } else {
+              const course = (coursesQ.data ?? []).find((c) => c.id === v);
+              onChange({
+                ...value,
+                course_id: v,
+                course_title: course?.name ?? value.course_title,
+                level: "",
+              });
+            }
+          }}
+          disabled={!value.program || coursesQ.isLoading || (coursesQ.data ?? []).length === 0}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder={
+              !value.program ? "Chọn program trước"
+              : coursesQ.isLoading ? "Đang tải..."
+              : (coursesQ.data ?? []).length === 0 ? "Không có khoá học cho chương trình này"
+              : "Chọn khoá học"
+            } />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">— Không gắn khoá học —</SelectItem>
+            {(coursesQ.data ?? []).map((c) => (
+              <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
       <div>
         <Label>Level {value.program !== "ielts" && <span className="text-muted-foreground text-xs">(chỉ IELTS)</span>}</Label>
