@@ -321,56 +321,69 @@ function AdminDashboardPageInner() {
 
   return (
     <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
-      <HeroBoard
-        tone="teal"
-        title={
-          <>
-            <span className="block text-[11px] tracking-[0.18em] font-display font-bold text-white/70 uppercase mb-2">
+      {/* Custom Dashboard hero — playful sticker-pop với mascot Max big */}
+      <div className="relative bg-lp-teal text-white border-[2.5px] border-lp-ink rounded-pop-lg shadow-pop-lg overflow-hidden">
+        {/* Decorative background blobs */}
+        <div aria-hidden="true" className="absolute -top-12 -left-12 size-40 rounded-full bg-lp-yellow/20 blur-[1px]" />
+        <div aria-hidden="true" className="absolute -bottom-16 -right-16 size-56 rounded-full bg-lp-coral/20 blur-[1px]" />
+        <Sparkles aria-hidden="true" className="absolute top-6 right-1/3 size-6 text-white/30 animate-wiggle" strokeWidth={2.5} />
+
+        <div className="relative grid grid-cols-1 md:grid-cols-[1fr_minmax(260px,40%)] gap-4 md:gap-6 p-6 md:p-8">
+          {/* Left: text + buttons */}
+          <div className="flex flex-col justify-center min-h-[260px] md:min-h-[320px]">
+            <span className="block text-[11px] tracking-[0.18em] font-display font-bold text-white/70 uppercase mb-3">
               Dashboard · {todayLabel}
             </span>
-            <span className="block">Mọi chuyến đi đều</span>
-            <span className="inline-flex items-center flex-wrap gap-2 mt-1">
-              <span className="inline-block bg-lp-yellow text-lp-ink border-[2.5px] border-lp-ink rounded-pop px-3 py-0.5 leading-tight">
-                an toàn cập bến
+            <h1 className="font-display text-3xl md:text-4xl lg:text-5xl font-extrabold leading-[1.1] tracking-tight">
+              <span className="block">Mọi chuyến đi đều</span>
+              <span className="inline-flex items-center flex-wrap gap-2 mt-2">
+                <span className="inline-block bg-lp-yellow text-lp-ink border-[2.5px] border-lp-ink rounded-pop px-3 py-0.5 leading-tight rotate-[-1.5deg] shadow-pop-xs">
+                  an toàn cập bến
+                </span>
+                <span>hôm nay</span>
+                <Waves className="size-7 lg:size-8 text-white inline-block" strokeWidth={2.5} />
               </span>
-              <span>hôm nay</span>
-              <Waves className="size-7 text-white inline-block" strokeWidth={2.5} />
-            </span>
-          </>
-        }
-        subtitle={
-          <>
-            {s.totalStudents.toLocaleString("vi-VN")} học viên đang lướt sóng cùng Learning Plus.
-            {" "}
-            {s.totalClasses} lớp đang vận hành.
-          </>
-        }
-        action={
-          <div className="flex flex-wrap items-center gap-2">
-            <PopButton tone="ink" size="md" onClick={() => navigate("/classes/list?action=create")}>
-              <Plus className="size-4" />
-              <span>Tạo lớp mới</span>
-            </PopButton>
-            <PopButton tone="white" size="md" onClick={() => navigate("/tests/import")}>
-              <Upload className="size-4" />
-              <span>Import đề thi</span>
-            </PopButton>
-            <PopButton tone="yellow" size="md" onClick={() => navigate("/insights")}>
-              <Sparkles className="size-4" />
-              <span>AI Insights</span>
-            </PopButton>
+            </h1>
+            <p className="text-sm md:text-base opacity-90 font-body max-w-2xl mt-4">
+              {s.totalStudents.toLocaleString("vi-VN")} học viên đang lướt sóng cùng Learning Plus.
+              {" "}
+              {s.totalClasses} lớp đang vận hành.
+            </p>
+            {/* Buttons LEFT-ALIGNED per user feedback */}
+            <div className="flex flex-wrap items-center gap-2 mt-5 justify-start">
+              <PopButton tone="ink" size="md" onClick={() => navigate("/classes/list?action=create")}>
+                <Plus className="size-4" />
+                <span>Tạo lớp mới</span>
+              </PopButton>
+              <PopButton tone="white" size="md" onClick={() => navigate("/tests/import")}>
+                <Upload className="size-4" />
+                <span>Import đề thi</span>
+              </PopButton>
+              <PopButton tone="yellow" size="md" onClick={() => navigate("/insights")}>
+                <Sparkles className="size-4" />
+                <span>AI Insights</span>
+              </PopButton>
+            </div>
           </div>
-        }
-        illustration={
-          <img
-            src={mascotHero}
-            alt="Max mascot"
-            className="size-40 object-contain animate-bob drop-shadow-[3px_3px_0_var(--lp-ink)]"
-            loading="eager"
-            decoding="async"
-          />
-        }
-      />
+
+          {/* Right: BIG Max mascot với floating playful decorations */}
+          <div className="relative hidden md:flex items-end justify-center min-h-[300px] lg:min-h-[360px]">
+            {/* Floating sticker shapes */}
+            <span aria-hidden="true" className="absolute top-2 left-4 size-7 rounded-full bg-lp-yellow border-[2px] border-lp-ink animate-bob shadow-pop-xs" />
+            <span aria-hidden="true" className="absolute top-1/4 right-2 size-5 rounded-full bg-lp-coral border-[2px] border-lp-ink animate-wiggle shadow-pop-xs" />
+            <Sparkles aria-hidden="true" className="absolute top-6 right-8 size-6 text-lp-yellow animate-pulse-dot" strokeWidth={2.5} fill="currentColor" />
+            <span aria-hidden="true" className="absolute bottom-12 left-2 size-4 rounded-full bg-white border-[2px] border-lp-ink animate-pulse-dot" />
+
+            <img
+              src={mascotHero}
+              alt="Max mascot"
+              className="relative size-64 md:size-72 lg:size-80 xl:size-[22rem] object-contain animate-bob drop-shadow-[4px_4px_0_var(--lp-ink)] -rotate-3"
+              loading="eager"
+              decoding="async"
+            />
+          </div>
+        </div>
+      </div>
 
 
       {/* ── Hero: KPI cards + Calendar + Performance chart + Recent ── */}
