@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTeacherAccessScope } from "@shared/hooks/useTeacherAccessScope";
-import { Loader2, School, UserCheck, Calendar, Sparkles, Search, Filter, BookOpen, GraduationCap } from "lucide-react";
+import { Loader2, School, UserCheck, Calendar, Sparkles, Search, Filter, BookOpen } from "lucide-react";
 import { Badge } from "@shared/components/ui/badge";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@shared/components/ui/breadcrumb";
 import { usePrograms } from "@shared/hooks/usePrograms";
@@ -59,29 +59,7 @@ export function CloneTemplateDialog({ template, teacherMode = false, onClose }: 
   const programHasCourse = tplProgramKey && !PROGRAMS_WITHOUT_COURSE.has(tplProgramKey);
 
   // Filters trong dialog: cho phép tắt từng filter để mở rộng phạm vi nếu cần
-  const [filterByCourse, setFilterByCourse] = useState<boolean>(!!(template as any).course_id && programHasCourse);
   const [filterByLevel, setFilterByLevel] = useState<boolean>(!!template.assigned_level);
-
-  // Levels thuộc course của template — dùng để OR-match `classes.level`
-  // (vì classes hiện chưa có cột course_id, ta map qua course_level_links → course_levels.name).
-  const { data: courseLevelNames = [] } = useQuery({
-    queryKey: ["clone-course-level-names", (template as any).course_id],
-    enabled: !!(template as any).course_id && programHasCourse,
-    queryFn: async () => {
-      const courseId = (template as any).course_id as string;
-      const { data: links } = await (supabase as any)
-        .from("course_level_links")
-        .select("level_id")
-        .eq("course_id", courseId);
-      const levelIds = (links || []).map((l: any) => l.level_id);
-      if (levelIds.length === 0) return [] as string[];
-      const { data: lvs } = await (supabase as any)
-        .from("course_levels")
-        .select("name")
-        .in("id", levelIds);
-      return (lvs || []).map((l: any) => l.name as string);
-    },
-  });
 
   const { data: classes } = useQuery({
     queryKey: ["classes-clone", programDbName, teacherMode, scope?.teacherId, scope?.canViewAllClasses],
@@ -98,17 +76,13 @@ export function CloneTemplateDialog({ template, teacherMode = false, onClose }: 
   // Lọc client-side theo course / level / search
   const filteredClasses = useMemo(() => {
     let arr = classes || [];
-    if (filterByCourse && programHasCourse && courseLevelNames.length > 0) {
-      const set = new Set(courseLevelNames);
-      arr = arr.filter((c: any) => c.level && set.has(c.level));
-    }
     if (filterByLevel && template.assigned_level) {
       arr = arr.filter((c: any) => c.level === template.assigned_level);
     }
     const q = searchClass.trim().toLowerCase();
     if (q) arr = arr.filter((c: any) => (c.class_name || "").toLowerCase().includes(q));
     return arr;
-  }, [classes, filterByCourse, filterByLevel, programHasCourse, courseLevelNames, template.assigned_level, searchClass]);
+  }, [classes, filterByLevel, template.assigned_level, searchClass]);
 
   const { data: students } = useQuery({
     queryKey: ["students-clone", teacherMode, scope?.teacherId, scope?.canViewAllClasses],
