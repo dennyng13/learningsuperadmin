@@ -3,6 +3,7 @@ import {
   FileText, Layers,
   Upload, BarChart3, UserPlus, Award,
   ArrowRight, PenLine, ListChecks, UserSearch, ChevronRight, CalendarDays, AlertTriangle,
+  Sparkles,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,6 +16,11 @@ import {
   ResponsiveContainer, Legend, BarChart, Bar, Cell,
 } from "recharts";
 import { Badge } from "@shared/components/ui/badge";
+import { HeroBoard } from "@shared/components/ui/hero-board";
+import { PopCard } from "@shared/components/ui/pop-card";
+import { PopButton } from "@shared/components/ui/pop-button";
+import { PopChip } from "@shared/components/ui/pop-chip";
+import { StatusBadge } from "@shared/components/ui/status-badge";
 import ClassQuestionTypeStats from "@shared/components/teacher-shared/ClassQuestionTypeStats";
 import PracticeErrorStats from "@admin/features/practice/components/PracticeErrorStats";
 import AdminActivityCalendar from "@admin/features/dashboard/components/AdminActivityCalendar";
@@ -275,14 +281,12 @@ function AdminDashboardPageInner() {
   if (loading) {
     return (
       <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
-        <div>
-          <h1 className="font-display text-2xl md:text-3xl font-extrabold tracking-tight text-foreground">
-            Dashboard
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Tổng quan hệ thống Learning+ Admin Portal
-          </p>
-        </div>
+        <HeroBoard
+          tone="cream"
+          title="Dashboard"
+          subtitle="Tổng quan hệ thống Learning+ Admin Portal"
+          illustration={<Sparkles className="size-20 text-lp-teal animate-bob" strokeWidth={1.75} />}
+        />
         <DashboardHeroSkeleton />
         <TodayScheduleSkeleton />
         <AnalyticsSectionSkeleton />
@@ -293,20 +297,20 @@ function AdminDashboardPageInner() {
   if (loadError || !stats) {
     return (
       <div className="p-4 md:p-6 max-w-7xl mx-auto">
-        <div className="rounded-xl border border-border bg-card p-5 md:p-6">
+        <PopCard tone="white" shadow="md" className="p-5 md:p-6">
           <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-pop bg-lp-coral/15 text-lp-coral border-[2px] border-lp-coral">
               <AlertTriangle className="h-5 w-5" />
             </div>
             <div className="min-w-0 space-y-2">
-              <h1 className="font-display text-lg font-bold text-foreground">Dashboard tạm thời chưa tải được</h1>
-              <p className="text-sm text-muted-foreground">
+              <h1 className="font-display text-lg font-extrabold text-lp-ink">Dashboard tạm thời chưa tải được</h1>
+              <p className="text-sm text-lp-body">
                 {loadError || "Dữ liệu dashboard hiện chưa sẵn sàng. Bạn có thể thử tải lại trang."}
               </p>
-              <Button onClick={() => window.location.reload()} size="sm">Thử lại</Button>
+              <PopButton tone="coral" size="sm" onClick={() => window.location.reload()}>Thử lại</PopButton>
             </div>
           </div>
-        </div>
+        </PopCard>
       </div>
     );
   }
@@ -315,10 +319,13 @@ function AdminDashboardPageInner() {
 
   return (
     <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
-      <div>
-        <h1 className="font-display text-2xl md:text-3xl font-extrabold tracking-tight text-foreground">Dashboard</h1>
-        <p className="text-sm text-muted-foreground mt-1">Tổng quan hệ thống Learning+ Admin Portal</p>
-      </div>
+      <HeroBoard
+        tone="cream"
+        title="Dashboard"
+        subtitle="Tổng quan hệ thống Learning+ Admin Portal"
+        illustration={<Sparkles className="size-20 text-lp-teal animate-bob" strokeWidth={1.75} />}
+      />
+
 
       {/* ── Hero: KPI cards + Calendar + Performance chart + Recent ── */}
       <DashboardHero
@@ -339,7 +346,7 @@ function AdminDashboardPageInner() {
       {/* ╔══════════ 2. LỊCH HÔM NAY ══════════╗
          Tóm tắt buổi học hôm nay + KPI bài tập (chưa có trong Hero) */}
       <section className="space-y-3">
-        <h2 className="font-display text-sm font-bold text-muted-foreground uppercase tracking-[0.12em] flex items-center gap-2">
+        <h2 className="font-display text-sm font-extrabold text-lp-body uppercase tracking-[0.12em] flex items-center gap-2">
           <CalendarDays className="h-3.5 w-3.5" /> Lịch hôm nay
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 auto-rows-fr">
@@ -348,96 +355,83 @@ function AdminDashboardPageInner() {
             const hasSchedule = !!todaySchedule && todaySchedule.count > 0;
             const hasConflicts = hasSchedule && (todaySchedule?.conflicts ?? 0) > 0;
             return (
-              <div className="h-full rounded-2xl bg-card p-4 shadow-[0_4px_20px_rgba(15,23,42,0.04)] flex flex-col">
+              <PopCard tone="white" shadow="sm" hover="lift" className="h-full p-4 flex flex-col">
                 <div className="flex items-start gap-3 flex-1">
                   <div className={cn(
-                    "h-10 w-10 rounded-xl flex items-center justify-center shrink-0",
-                    hasSchedule ? "bg-primary/12 text-primary" : "bg-muted text-muted-foreground",
+                    "h-10 w-10 rounded-pop flex items-center justify-center shrink-0 border-[2px] border-lp-ink",
+                    hasSchedule ? "bg-lp-teal text-white" : "bg-lp-cream text-lp-body",
                   )}>
                     <CalendarDays className="h-5 w-5" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-display font-bold text-sm text-foreground">
+                    <h3 className="font-display font-extrabold text-sm text-lp-ink">
                       {hasSchedule ? `${todaySchedule!.count} buổi học hôm nay` : "Không có buổi học hôm nay"}
                     </h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">
+                    <p className="text-xs text-lp-body mt-0.5">
                       {hasSchedule
                         ? (todaySchedule!.firstTime ? `Buổi đầu lúc ${todaySchedule!.firstTime}` : "Chưa có giờ cụ thể")
-                        : "Lịch trống — hãy nghỉ ngơi 🌿"}
+                        : "Lịch trống — hãy nghỉ ngơi"}
                     </p>
                     {hasSchedule && (
                       <div className="flex items-center flex-wrap gap-1.5 mt-2">
-                        <Badge variant="secondary" className="text-[10px] font-medium">
-                          {todaySchedule!.count} buổi
-                        </Badge>
+                        <PopChip tone="cream">{todaySchedule!.count} buổi</PopChip>
                         {todaySchedule!.firstTime && (
-                          <Badge variant="outline" className="text-[10px] font-medium">
-                            Bắt đầu {todaySchedule!.firstTime}
-                          </Badge>
+                          <PopChip tone="sky">Bắt đầu {todaySchedule!.firstTime}</PopChip>
                         )}
                         {hasConflicts && (
-                          <Badge variant="destructive" className="text-[10px] font-medium gap-1">
-                            <AlertTriangle className="h-2.5 w-2.5" />
-                            {todaySchedule!.conflicts} xung đột
-                          </Badge>
+                          <StatusBadge status="error" label={`${todaySchedule!.conflicts} xung đột`} />
                         )}
                       </div>
                     )}
                   </div>
                 </div>
-                <div className="mt-3 pt-3 border-t border-border/50 flex items-center justify-end">
-                  <Button
-                    size="sm"
-                    variant="ghost"
+                <div className="mt-3 pt-3 border-t-2 border-lp-ink/10 flex items-center justify-end">
+                  <button
+                    type="button"
                     onClick={() => navigate("/schedule")}
-                    className="h-8 text-xs gap-1 font-display font-semibold text-primary hover:text-primary hover:bg-primary/8"
+                    className="h-8 px-2 text-xs gap-1 font-display font-bold text-lp-teal hover:text-lp-teal-deep hover:underline flex items-center"
                   >
                     Xem lịch
                     <ChevronRight className="h-3.5 w-3.5" />
-                  </Button>
+                  </button>
                 </div>
-              </div>
+              </PopCard>
             );
           })()}
 
           {/* Card 2: Exercises summary */}
           {s.totalExercises > 0 && (
-            <div className="h-full rounded-2xl bg-card p-4 shadow-[0_4px_20px_rgba(15,23,42,0.04)] flex flex-col">
+            <PopCard tone="white" shadow="sm" hover="lift" className="h-full p-4 flex flex-col">
               <div className="flex items-start gap-3 flex-1">
-                <div className="h-10 w-10 rounded-xl bg-accent/12 text-accent flex items-center justify-center shrink-0">
+                <div className="h-10 w-10 rounded-pop bg-lp-coral text-white flex items-center justify-center shrink-0 border-[2px] border-lp-ink">
                   <Layers className="h-5 w-5" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-display font-bold text-sm text-foreground">
+                  <h3 className="font-display font-extrabold text-sm text-lp-ink">
                     {s.totalExercises} bài tập
                   </h3>
-                  <p className="text-xs text-muted-foreground mt-0.5">
+                  <p className="text-xs text-lp-body mt-0.5">
                     Quản lý bài luyện tập theo kỹ năng
                   </p>
                   <div className="flex items-center flex-wrap gap-1.5 mt-2">
-                    <Badge variant="secondary" className="text-[10px] font-medium">
-                      {s.publishedExercises} published
-                    </Badge>
+                    <PopChip tone="teal">{s.publishedExercises} published</PopChip>
                     {s.totalExercises - s.publishedExercises > 0 && (
-                      <Badge variant="outline" className="text-[10px] font-medium">
-                        {s.totalExercises - s.publishedExercises} draft
-                      </Badge>
+                      <PopChip tone="cream">{s.totalExercises - s.publishedExercises} draft</PopChip>
                     )}
                   </div>
                 </div>
               </div>
-              <div className="mt-3 pt-3 border-t border-border/50 flex items-center justify-end">
-                <Button
-                  size="sm"
-                  variant="ghost"
+              <div className="mt-3 pt-3 border-t-2 border-lp-ink/10 flex items-center justify-end">
+                <button
+                  type="button"
                   onClick={() => navigate("/tests?type=exercise")}
-                  className="h-8 text-xs gap-1 font-display font-semibold text-primary hover:text-primary hover:bg-primary/8"
+                  className="h-8 px-2 text-xs gap-1 font-display font-bold text-lp-teal hover:text-lp-teal-deep hover:underline flex items-center"
                 >
                   Xem bài tập
                   <ChevronRight className="h-3.5 w-3.5" />
-                </Button>
+                </button>
               </div>
-            </div>
+            </PopCard>
           )}
         </div>
       </section>
@@ -446,7 +440,7 @@ function AdminDashboardPageInner() {
          Toàn bộ widget phân tích, vận hành & nội dung */}
       <section className="space-y-4">
         <div className="flex items-center justify-between gap-3 flex-wrap">
-          <h2 className="font-display text-sm font-bold text-muted-foreground uppercase tracking-[0.12em] flex items-center gap-2">
+          <h2 className="font-display text-sm font-extrabold text-lp-body uppercase tracking-[0.12em] flex items-center gap-2">
             <BarChart3 className="h-3.5 w-3.5" /> Analytics & vận hành
           </h2>
           <AnalyticsRangeSelector />
@@ -465,8 +459,8 @@ function AdminDashboardPageInner() {
 
         {/* Activity Trend Chart */}
         {activityTrend.some(d => d.tests > 0 || d.practices > 0) && (
-        <div className="rounded-xl border bg-card p-4">
-          <h2 className="font-display text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+        <PopCard tone="white" shadow="sm" className="p-4">
+          <h2 className="font-display text-sm font-extrabold text-lp-body uppercase tracking-wider mb-4 flex items-center gap-2">
             <BarChart3 className="h-3.5 w-3.5" />
             Xu hướng hoạt động ({rangeDays(range)} ngày)
           </h2>
@@ -526,7 +520,7 @@ function AdminDashboardPageInner() {
               />
             </AreaChart>
           </ResponsiveContainer>
-        </div>
+        </PopCard>
         )}
 
         {/* Progress & login streak */}
@@ -544,7 +538,7 @@ function AdminDashboardPageInner() {
 
       {/* ╔══════════ 4. QUICK ACTIONS ══════════╗ */}
       <section>
-        <h2 className="font-display text-sm font-bold text-muted-foreground uppercase tracking-[0.12em] mb-3 flex items-center gap-2">
+        <h2 className="font-display text-sm font-extrabold text-lp-body uppercase tracking-[0.12em] mb-3 flex items-center gap-2">
           <ArrowRight className="h-3.5 w-3.5" /> Thao tác nhanh
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
@@ -563,15 +557,24 @@ function QuickAction({ icon: Icon, label, desc, onClick }: {
   icon: any; label: string; desc: string; onClick: () => void;
 }) {
   return (
-    <button onClick={onClick} className="w-full flex items-center gap-3 bg-card rounded-xl border px-4 py-3 text-left hover:border-primary/30 hover:shadow-sm transition-all group">
-      <div className="w-9 h-9 rounded-lg bg-secondary flex items-center justify-center text-primary shrink-0 group-hover:bg-primary/10 transition-colors">
+    <button
+      onClick={onClick}
+      className={cn(
+        "group w-full flex items-center gap-3 px-4 py-3 text-left",
+        "bg-white border-[2px] border-lp-ink rounded-pop shadow-pop-xs",
+        "transition-all duration-150 ease-bounce",
+        "hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-pop-sm",
+        "active:translate-x-0.5 active:translate-y-0.5 active:shadow-none",
+      )}
+    >
+      <div className="w-9 h-9 rounded-pop bg-lp-teal text-white flex items-center justify-center shrink-0 border-[2px] border-lp-ink">
         <Icon className="h-4 w-4" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold">{label}</p>
-        <p className="text-[11px] text-muted-foreground">{desc}</p>
+        <p className="font-display text-sm font-bold text-lp-ink">{label}</p>
+        <p className="text-[11px] text-lp-body">{desc}</p>
       </div>
-      <ArrowRight className="h-4 w-4 text-muted-foreground/30 group-hover:text-primary transition-colors shrink-0" />
+      <ArrowRight className="h-4 w-4 text-lp-ink/30 group-hover:text-lp-coral transition-colors shrink-0" />
     </button>
   );
 }
@@ -583,11 +586,11 @@ const STATUS_LABELS: Record<string, string> = {
   enrolled: "Đăng ký",
 };
 
-const STATUS_COLORS: Record<string, string> = {
-  pending: "bg-muted text-muted-foreground",
-  testing: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-  completed: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-  enrolled: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
+const PROSPECT_STATUS_MAP: Record<string, "pending" | "info" | "warning" | "success"> = {
+  pending:   "pending",
+  testing:   "info",
+  completed: "warning",
+  enrolled:  "success",
 };
 
 const SOURCE_COLORS = [
@@ -632,14 +635,14 @@ function ProspectFunnel({ prospects, navigate }: { prospects: any[]; navigate: (
   if (total === 0) return null;
 
   return (
-    <div className="rounded-xl border bg-card p-4 md:p-6 space-y-5">
+    <PopCard tone="white" shadow="sm" className="p-4 md:p-6 space-y-5">
       <div className="flex items-center justify-between">
-        <h2 className="font-display text-sm font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+        <h2 className="font-display text-sm font-extrabold text-lp-body uppercase tracking-wider flex items-center gap-2">
           <UserSearch className="h-3.5 w-3.5" /> Tuyển sinh
         </h2>
         <button
           onClick={() => navigate("/placement")}
-          className="text-xs text-primary hover:underline flex items-center gap-0.5"
+          className="text-xs text-lp-teal font-display font-bold hover:text-lp-teal-deep hover:underline flex items-center gap-0.5"
         >
           Placement Tests <ChevronRight className="h-3 w-3" />
         </button>
@@ -650,16 +653,16 @@ function ProspectFunnel({ prospects, navigate }: { prospects: any[]; navigate: (
         {funnel.map((step, i) => (
           <div key={step.label} className="text-center">
             <div className={cn(
-              "rounded-lg py-3 px-2 border transition-all",
-              i === 0 ? "bg-primary/10 border-primary/20" :
-              i === funnel.length - 1 ? "bg-emerald-50 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-800" :
-              "bg-muted/50"
+              "rounded-pop py-3 px-2 border-[2px] border-lp-ink transition-all",
+              i === 0 ? "bg-lp-teal/15" :
+              i === funnel.length - 1 ? "bg-lp-mint/15" :
+              "bg-lp-cream",
             )}>
-              <p className="text-xl md:text-2xl font-bold">{step.count}</p>
-              <p className="text-[10px] md:text-xs text-muted-foreground mt-0.5">{step.label}</p>
+              <p className="font-display text-xl md:text-2xl font-extrabold text-lp-ink">{step.count}</p>
+              <p className="text-[10px] md:text-xs text-lp-body mt-0.5">{step.label}</p>
             </div>
             {i > 0 && (
-              <p className="text-[10px] text-muted-foreground mt-1">{step.pct}%</p>
+              <p className="text-[10px] font-display font-bold text-lp-body mt-1">{step.pct}%</p>
             )}
           </div>
         ))}
@@ -701,27 +704,28 @@ function ProspectFunnel({ prospects, navigate }: { prospects: any[]; navigate: (
 
         {/* Recent Prospects Table */}
         <div>
-          <h3 className="text-xs font-semibold text-muted-foreground mb-2">Gần đây</h3>
+          <h3 className="text-xs font-display font-bold text-lp-body uppercase tracking-wider mb-2">Gần đây</h3>
           <div className="space-y-1.5 max-h-[200px] overflow-y-auto">
             {recent.map(p => (
               <div
                 key={p.id}
-                className="flex items-center gap-2 text-sm px-2 py-1.5 rounded-lg hover:bg-muted/50 cursor-pointer"
+                className="flex items-center gap-2 text-sm px-2 py-1.5 rounded-pop hover:bg-lp-yellow/20 cursor-pointer transition-colors"
                 onClick={() => navigate("/placement")}
               >
-                <span className="flex-1 truncate font-medium">{p.full_name}</span>
-                <span className="text-[10px] text-muted-foreground shrink-0">{p.source}</span>
-                <Badge variant="secondary" className={cn("text-[10px] shrink-0", STATUS_COLORS[p.status] || "")}>
-                  {STATUS_LABELS[p.status] || p.status}
-                </Badge>
+                <span className="flex-1 truncate font-medium text-lp-ink">{p.full_name}</span>
+                <span className="text-[10px] text-lp-body shrink-0">{p.source}</span>
+                <StatusBadge
+                  status={PROSPECT_STATUS_MAP[p.status] ?? "pending"}
+                  label={STATUS_LABELS[p.status] || p.status}
+                />
                 {p.suggested_level && (
-                  <span className="text-[10px] text-muted-foreground shrink-0">{p.suggested_level}</span>
+                  <span className="text-[10px] text-lp-body shrink-0">{p.suggested_level}</span>
                 )}
               </div>
             ))}
           </div>
         </div>
       </div>
-    </div>
+    </PopCard>
   );
 }

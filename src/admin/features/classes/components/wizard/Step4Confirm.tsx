@@ -132,6 +132,18 @@ export default function Step4Confirm({ classInfo, teachers, sessions }: Props) {
           )}
           {classInfo.max_students != null && <div><dt className="inline text-muted-foreground">Max HV: </dt><dd className="inline">{classInfo.max_students}</dd></div>}
         </dl>
+        <div className="mt-3 text-sm text-muted-foreground bg-muted/50 rounded-md p-3 space-y-1">
+          <p>
+            <strong className="text-foreground">Mã lớp:</strong> Sẽ được tự động tạo sau khi lớp khởi tạo (theo trigger backend khi insert buổi học đầu tiên).
+          </p>
+          <p className="text-xs">
+            Format: <code>PROGRAM-COURSE-BRANCH+HOUR-YYMMDD</code> (vd:{" "}
+            <code className="font-mono">IE-DG1-A17-260513</code>)
+          </p>
+          <p className="text-xs">
+            Có thể sửa thủ công sau ở tab Cấu hình nếu cần.
+          </p>
+        </div>
       </section>
 
       <section className="border rounded-lg p-4">

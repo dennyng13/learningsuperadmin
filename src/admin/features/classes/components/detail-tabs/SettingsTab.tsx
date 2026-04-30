@@ -88,6 +88,17 @@ export function SettingsTab({ cls, onSaved }: { cls: ClassDetail; onSaved?: () =
     onError: (e: Error) => toast.error(`Lưu thất bại: ${e.message}`),
   });
 
+  /* class_code chỉ chấp nhận chữ cái, số, dấu gạch ngang. Trống = OK
+     (NULL trong DB → backend trigger có thể regen khi insert session sau). */
+  const handleSave = () => {
+    const code = form.class_code?.trim();
+    if (code && !/^[A-Z0-9-]+$/i.test(code)) {
+      toast.error("Mã lớp chỉ được chứa chữ cái, số và dấu gạch ngang");
+      return;
+    }
+    saveMut.mutate();
+  };
+
   /* RPC inherit_class_from_course — áp study plan default + giá từ course vào lớp. */
   const inheritMut = useMutation({
     mutationFn: async (args: { courseId: string; overwrite: boolean }) => {
@@ -249,7 +260,7 @@ export function SettingsTab({ cls, onSaved }: { cls: ClassDetail; onSaved?: () =
       </Section>
 
       <div className="flex justify-end">
-        <Button onClick={() => saveMut.mutate()} disabled={saveMut.isPending} className="gap-1.5">
+        <Button onClick={handleSave} disabled={saveMut.isPending} className="gap-1.5">
           {saveMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
           {saveMut.isPending ? "Đang lưu…" : "Lưu thay đổi"}
         </Button>
