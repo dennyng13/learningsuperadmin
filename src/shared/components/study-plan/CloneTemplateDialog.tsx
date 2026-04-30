@@ -189,21 +189,6 @@ export function CloneTemplateDialog({ template, teacherMode = false, onClose }: 
             ) : (
               <Badge variant="outline" className="text-[10px] text-muted-foreground">Không gắn chương trình</Badge>
             )}
-            {(template as any).course_id && programHasCourse && (
-              <button
-                type="button"
-                onClick={() => setFilterByCourse((v) => !v)}
-                className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border transition-colors ${
-                  filterByCourse
-                    ? "bg-emerald-50 text-emerald-700 border-emerald-300"
-                    : "bg-background text-muted-foreground border-dashed"
-                }`}
-                title="Bật/tắt lọc lớp theo khoá học của mẫu"
-              >
-                <GraduationCap className="w-3 h-3" />
-                Khoá học {filterByCourse ? "✓" : "—"}
-              </button>
-            )}
             {template.assigned_level && (
               <button
                 type="button"
