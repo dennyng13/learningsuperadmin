@@ -39,7 +39,6 @@ export function TemplateEditor({ template, onClose }: Props) {
     description: (template as any)?.description || "",
     program: ((template as any)?.program || "").toLowerCase(),
     assigned_level: (template as any)?.assigned_level || "",
-    course_id: (template as any)?.course_id || "",
     plan_type: (template as any)?.plan_type || "structured",
     total_sessions: (template as any)?.total_sessions || 10,
     session_duration: (template as any)?.session_duration || 60,
@@ -75,7 +74,6 @@ export function TemplateEditor({ template, onClose }: Props) {
         description: loaded.description || "",
         program: (loaded.program || "ielts").toLowerCase(),
         assigned_level: loaded.assigned_level || "",
-        course_id: (loaded as any).course_id || "",
         plan_type: loaded.plan_type,
         total_sessions: loaded.total_sessions,
         session_duration: loaded.session_duration,
@@ -113,54 +111,6 @@ export function TemplateEditor({ template, onClose }: Props) {
     () => programs.find((p) => p.key.toLowerCase() === form.program),
     [programs, form.program],
   );
-
-  // Courses scoped to selected program ----------------------------------------
-  const { courses: programCourses } = useCourses({
-    programId: selectedProgram?.id,
-    withStats: false,
-  });
-
-  // Reset course_id if it does not belong to the new program
-  useEffect(() => {
-    if (!form.course_id) return;
-    // Program "Khác" không có khoá học → bỏ gán course_id để dữ liệu không lệch.
-    if (form.program === "other") {
-      setForm((f) => ({ ...f, course_id: "" }));
-      return;
-    }
-    if (programCourses.length === 0) return;
-    if (!programCourses.some((c) => c.id === form.course_id)) {
-      setForm((f) => ({ ...f, course_id: "" }));
-    }
-  }, [form.course_id, programCourses, form.program]);
-
-  /**
-   * Auto-persist `course_id` ngay khi user chọn khoá học — chỉ áp dụng khi
-   * đang edit template đã có id (isNew thì để Save Tổng lo).
-   * Bỏ qua lần đầu (lúc hydrate từ `loaded`) bằng ref guard.
-   */
-  const initialCourseRef = useState({ initialized: false })[0];
-  useEffect(() => {
-    if (isNew || !tplId) return;
-    if (!initialCourseRef.initialized) {
-      // Lần đầu form.course_id được populate từ loaded → bỏ qua
-      if (loaded) initialCourseRef.initialized = true;
-      return;
-    }
-    const next = form.course_id || null;
-    (async () => {
-      const { error } = await (supabase as any)
-        .from("study_plan_templates")
-        .update({ course_id: next })
-        .eq("id", tplId);
-      if (error) {
-        toast.error("Lưu khoá học thất bại: " + error.message);
-      } else {
-        toast.success(next ? "Đã gán khoá học" : "Đã bỏ gán khoá học", { duration: 1500 });
-      }
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form.course_id, tplId, isNew]);
 
   const { data: programLevelLinks = [] } = useQuery({
     queryKey: ["program-levels-for-template", selectedProgram?.id],
@@ -260,24 +210,13 @@ export function TemplateEditor({ template, onClose }: Props) {
       flashcard_set: allFlashcardIds.filter((id) => flashcardSets && !fcIds.has(id)),
       assessment: allAssessmentIds.filter((id) => assessments && !asIds.has(id)),
     };
-    let courseOff: { exercise: string[]; flashcard_set: string[]; assessment: string[] } = {
+    // Course-level mismatch detection deferred to Phase F3 (course_study_plans
+    // junction). study_plan_templates currently has no course_id column.
+    const courseOff: { exercise: string[]; flashcard_set: string[]; assessment: string[] } = {
       exercise: [],
       flashcard_set: [],
       assessment: [],
     };
-    if (form.course_id) {
-      const filt = (ids: string[], map: Record<string, string[]>) =>
-        ids.filter((id) => {
-          const courses = map[id] || [];
-          // untagged is OK; only flag if assigned to OTHER courses (not the picked one)
-          return courses.length > 0 && !courses.includes(form.course_id);
-        });
-      courseOff = {
-        exercise: filt(allExerciseIds, exMap),
-        flashcard_set: filt(allFlashcardIds, fcMap),
-        assessment: filt(allAssessmentIds, asMap),
-      };
-    }
     const totalProgram =
       programOff.exercise.length + programOff.flashcard_set.length + programOff.assessment.length;
     const totalCourse =
@@ -293,7 +232,6 @@ export function TemplateEditor({ template, onClose }: Props) {
     exMap,
     fcMap,
     asMap,
-    form.course_id,
   ]);
 
   const removeMismatched = (scope: "program" | "course") => {
@@ -478,54 +416,10 @@ export function TemplateEditor({ template, onClose }: Props) {
               </Select>
             </div>
             <div className="md:col-span-2">
-              {form.program === "other" ? (
-                <div className="rounded-md border border-dashed border-border bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground flex items-center gap-1.5">
-                  <GraduationCap className="w-3.5 h-3.5" />
-                  Chương trình "Khác" không có Khoá học. Bỏ qua bước gán khoá — chỉ chọn Level nếu cần.
-                </div>
-              ) : (
-              <>
-              <Label className="flex items-center gap-1.5">
-                <GraduationCap className="w-3.5 h-3.5 text-emerald-600" />
-                Khoá học
-                {form.program && (
-                  <span className="ml-1 text-[10px] text-muted-foreground font-normal">
-                    (theo chương trình {getProgramLabel(form.program)})
-                  </span>
-                )}
-              </Label>
-              <Select
-                value={form.course_id || "__none"}
-                onValueChange={(v) =>
-                  setForm((f) => ({ ...f, course_id: v === "__none" ? "" : v }))
-                }
-                disabled={!form.program}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={form.program ? "Chưa gán khoá" : "Chọn chương trình trước"} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none">Chưa gán khoá</SelectItem>
-                  {programCourses.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.name}
-                    </SelectItem>
-                  ))}
-                  {form.program && programCourses.length === 0 && (
-                    <div className="px-2 py-1.5 text-xs text-muted-foreground">
-                      Chương trình này chưa có khoá học nào.
-                    </div>
-                  )}
-                </SelectContent>
-              </Select>
-              {form.course_id && (
-                <p className="text-[10px] text-emerald-700 mt-1 flex items-center gap-1">
-                  <GraduationCap className="w-3 h-3" />
-                  Bài tập / flashcard sẽ được lọc theo khoá đã chọn — bài chưa gắn khoá nào sẽ hiện ở mục "Chưa phân loại".
-                </p>
-              )}
-              </>
-              )}
+              <div className="rounded-md border border-dashed border-border bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground flex items-center gap-1.5">
+                <GraduationCap className="w-3.5 h-3.5" />
+                Liên kết Khoá học cho Mẫu sẽ được mở ở phase sau (Phase F3).
+              </div>
             </div>
             <div>
               <Label>Số buổi (tổng)</Label>
@@ -611,7 +505,7 @@ export function TemplateEditor({ template, onClose }: Props) {
                     flashcardSets={flashcardSets}
                     assessments={assessments}
                     selectedLevel={form.assigned_level}
-                    courseId={form.course_id || null}
+                    courseId={null}
                   />
                   <button
                     onClick={() => removeEntry(idx)}
