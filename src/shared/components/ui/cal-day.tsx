@@ -56,7 +56,7 @@ export function CalDay({
   const visible = events?.slice(0, 3) ?? [];
   const overflow = events && events.length > 3 ? events.length - 3 : 0;
 
-  const Element = onClick ? "button" : "div";
+  const Element: any = onClick ? "button" : "div";
   const interactiveProps = onClick ? { type: "button" as const, onClick } : {};
 
   return (
