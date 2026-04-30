@@ -57,8 +57,19 @@ export function AdminSidebar() {
       className="sticky top-0 self-start h-screen w-64 flex flex-col bg-lp-ink text-white shrink-0"
       data-portal="admin"
     >
-      {/* Teal accent strip — admin signature */}
-      <div aria-hidden="true" className="absolute inset-y-0 left-0 w-1 bg-lp-teal" />
+      {/* Scoped scrollbar style — teal indicator on the nav scroll area */}
+      <style>{`
+        .admin-sidebar-scroll {
+          scrollbar-width: thin;
+          scrollbar-color: var(--lp-teal) transparent;
+        }
+        .admin-sidebar-scroll::-webkit-scrollbar { width: 4px; }
+        .admin-sidebar-scroll::-webkit-scrollbar-track { background: transparent; }
+        .admin-sidebar-scroll::-webkit-scrollbar-thumb {
+          background: var(--lp-teal);
+          border-radius: 2px;
+        }
+      `}</style>
 
       {/* Header */}
       <div className="relative pl-5 pr-3 py-4 border-b-2 border-white/10 flex items-center justify-between gap-2">
@@ -75,13 +86,13 @@ export function AdminSidebar() {
             <BrandShortName name={orgShortName} />
           </h2>
         </div>
-        <span className="shrink-0 inline-flex items-center px-2 py-0.5 border-[2px] border-white/90 rounded-full text-[10px] font-display font-bold tracking-wider bg-lp-teal text-white">
+        <span className="shrink-0 inline-flex items-center px-2 py-0.5 border-[2px] border-lp-teal text-lp-teal bg-transparent rounded-full text-[10px] font-display font-bold tracking-wider">
           ADMIN
         </span>
       </div>
 
       {/* Nav groups */}
-      <nav className="flex-1 py-3 px-2 overflow-y-auto" aria-label="Admin navigation">
+      <nav className="admin-sidebar-scroll flex-1 py-3 px-2 overflow-y-auto" aria-label="Admin navigation">
         {GROUP_ORDER.map((groupKey) => {
           if (groupKey === "system" && !isSuperAdmin) return null;
           const items = visibleItems.filter((i) => i.group === groupKey).sort(byOrder);

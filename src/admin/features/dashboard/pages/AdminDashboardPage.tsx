@@ -3,7 +3,7 @@ import {
   FileText, Layers,
   Upload, BarChart3, UserPlus, Award,
   ArrowRight, PenLine, ListChecks, UserSearch, ChevronRight, CalendarDays, AlertTriangle,
-  Sparkles,
+  Sparkles, Waves, Plus,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -316,14 +316,48 @@ function AdminDashboardPageInner() {
   }
 
   const s = stats;
+  const todayLabel = format(new Date(), "EEEE, d MMMM yyyy").toUpperCase();
 
   return (
     <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
       <HeroBoard
-        tone="cream"
-        title="Dashboard"
-        subtitle="Tổng quan hệ thống Learning+ Admin Portal"
-        illustration={<Sparkles className="size-20 text-lp-teal animate-bob" strokeWidth={1.75} />}
+        tone="teal"
+        title={
+          <>
+            <div className="text-[11px] tracking-[0.18em] font-display font-bold text-white/70 uppercase mb-2">
+              Dashboard · {todayLabel}
+            </div>
+            <span className="block">Mọi chuyến đi đều</span>
+            <span className="inline-flex items-center gap-2 mt-1">
+              <span className="inline-block bg-lp-yellow text-lp-ink border-[2.5px] border-lp-ink rounded-pop px-3 py-0.5 leading-tight">
+                an toàn cập bến
+              </span>
+              <span>hôm nay</span>
+              <Waves className="size-7 text-white" strokeWidth={2.5} />
+            </span>
+          </>
+        }
+        subtitle={
+          <>
+            {s.totalStudents.toLocaleString("vi-VN")} học viên đang lướt sóng cùng Learning Plus.
+            {" "}
+            {s.totalClasses} lớp đang vận hành.
+          </>
+        }
+        action={
+          <div className="flex flex-wrap gap-2">
+            <PopButton tone="ink" size="md" onClick={() => navigate("/classes/list?action=create")}>
+              <Plus className="size-4" /> Tạo lớp mới
+            </PopButton>
+            <PopButton tone="white" size="md" onClick={() => navigate("/tests/import")}>
+              <Upload className="size-4" /> Import đề thi
+            </PopButton>
+            <PopButton tone="yellow" size="md" onClick={() => navigate("/insights")}>
+              <Sparkles className="size-4" /> AI Insights
+            </PopButton>
+          </div>
+        }
+        illustration={<Waves className="size-32 text-white/90 animate-bob" strokeWidth={1.5} />}
       />
 
 
