@@ -2,10 +2,8 @@ import { useState, useMemo } from "react";
 import { useAllStudyPlans } from "@shared/hooks/useStudyPlan";
 import { StudyPlanList } from "@shared/components/study-plan/StudyPlanList";
 import { Input } from "@shared/components/ui/input";
-import { Button } from "@shared/components/ui/button";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@shared/components/ui/breadcrumb";
-import { Search, Plus, ChevronDown, Loader2 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Search, Loader2 } from "lucide-react";
 import { cn } from "@shared/lib/utils";
 
 const STATUS_FILTERS = [
@@ -17,7 +15,6 @@ const STATUS_FILTERS = [
 
 export default function StudyPlansPage() {
   const { data: plans, isLoading } = useAllStudyPlans();
-  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [searchOpen, setSearchOpen] = useState(false);
@@ -49,16 +46,11 @@ export default function StudyPlansPage() {
         </BreadcrumbList>
       </Breadcrumb>
 
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="font-display text-xl md:text-2xl font-extrabold">Kế hoạch học tập</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">{plans?.length || 0} kế hoạch</p>
-        </div>
-        <Button onClick={() => navigate("/study-plans/new")} size="sm">
-          <Plus className="h-4 w-4 mr-1" /> Tạo kế hoạch
-        </Button>
-      </div>
+      {/* Page-level header removed (Issue A1): broken /study-plans/new route + duplicated
+          với header của <StudyPlanList> bên dưới. Action "Tạo kế hoạch" giờ chỉ còn 1
+          entry point — button trong StudyPlanList (line 239) → setEditTarget("new")
+          → SharedPlanEditor inline. Status filter chips giữ nguyên (orthogonal với
+          StudyPlanList's program filter chips). */}
 
       {/* Filter bar */}
       <div className="flex flex-wrap items-center gap-2">
