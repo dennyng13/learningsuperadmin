@@ -2,8 +2,8 @@
  * CourseStudyPlansDialog — popup search & gán Study Plan vào một khoá học.
  *
  * Hai vùng dữ liệu:
- *   1. "Đã gắn tag khoá học này"  — templates có `course_id === course.id`
- *      hoặc đang được link sẵn qua bảng `course_study_plans`.
+ *   1. "Đã gắn khoá học này"      — templates đang được link sẵn qua bảng
+ *      `course_study_plans`.
  *   2. "Tìm thêm"                 — toàn bộ template còn lại, lọc theo:
  *        · query (tên / level / skills / mô tả)
  *        · scope: cùng program ↔ tất cả program
@@ -68,14 +68,12 @@ export default function CourseStudyPlansDialog({
     setSelected((arr) => arr.filter((id) => validIds.has(id)));
   }, [open, isLoading, allTemplates]);
 
-  /** Templates đã được tag trực tiếp với course này, hoặc đã link sẵn. */
+  /** Templates đã được link sẵn với course này. */
   const tagged = useMemo(() => {
     const list = allTemplates ?? [];
     const linkedSet = new Set(course.study_plan_ids);
-    return list.filter(
-      (t: any) => t.course_id === course.id || linkedSet.has(t.id),
-    );
-  }, [allTemplates, course.id, course.study_plan_ids]);
+    return list.filter((t) => linkedSet.has(t.id));
+  }, [allTemplates, course.study_plan_ids]);
 
   const taggedIds = useMemo(() => new Set(tagged.map((t) => t.id)), [tagged]);
 
@@ -206,7 +204,7 @@ export default function CourseStudyPlansDialog({
                         onToggle={() => toggle(t.id)}
                         onMakeDefault={() => makeDefault(t.id)}
                         palette={palette}
-                        taggedToCourse={t.course_id === course.id}
+                        taggedToCourse={selected.includes(t.id)}
                       />
                     ))}
                   </ul>
