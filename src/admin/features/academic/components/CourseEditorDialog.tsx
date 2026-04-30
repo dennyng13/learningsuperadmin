@@ -765,6 +765,19 @@ function StepLevels({
 
   return (
     <div className="space-y-3">
+      {/* Bug 10 quick-win — UX clarification cho M2M relationship.
+          Cấp độ thuộc CHƯƠNG TRÌNH (program-pool), không phải children của khoá.
+          1 cấp độ có thể được link với nhiều khoá trong cùng program qua junction
+          course_level_links. UI cũ render flat checkbox list khiến admin nhầm
+          "thấy cấp độ của khoá khác" — đây là cấp độ pool sẵn sàng để gán. */}
+      <div className="rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-[11px] leading-relaxed">
+        <p className="text-foreground">
+          <strong>Cấp độ thuộc chương trình</strong>, có thể chia sẻ giữa nhiều khoá học.
+          Tích chọn các cấp độ áp dụng cho khoá này — các khoá khác trong cùng chương
+          trình có thể dùng chung cấp độ đó.
+        </p>
+      </div>
+
       <div className="flex items-center gap-2">
         <div className="relative flex-1">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
@@ -797,7 +810,9 @@ function StepLevels({
       </div>
 
       <div className="text-[11px] text-muted-foreground">
-        Đã chọn <strong className="text-foreground">{selectedIds.length}</strong> / {levels.length} cấp độ
+        Đã gán <strong className="text-foreground">{selectedIds.length}</strong> cấp độ vào khoá
+        {" · "}
+        Chương trình có <strong className="text-foreground">{levels.length}</strong> cấp độ sẵn sàng
         {query && ` (lọc: ${filtered.length})`}
       </div>
 
