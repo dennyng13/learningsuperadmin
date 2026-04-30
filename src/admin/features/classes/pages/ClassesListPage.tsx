@@ -2,16 +2,10 @@ import { useMemo, useState, useCallback, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ListPageLayout } from "@shared/components/layouts/ListPageLayout";
-import { Input } from "@shared/components/ui/input";
-import { Button } from "@shared/components/ui/button";
 import { Checkbox } from "@shared/components/ui/checkbox";
 import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@shared/components/ui/popover";
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@shared/components/ui/table";
 import { ScrollArea } from "@shared/components/ui/scroll-area";
 import {
   GraduationCap, Search, Filter, RotateCw, LayoutGrid, List as ListIcon,
@@ -29,6 +23,13 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@shared/components/ui/alert-dialog";
 import { Textarea } from "@shared/components/ui/textarea";
+import { HeroBoard } from "@shared/components/ui/hero-board";
+import { PopCard } from "@shared/components/ui/pop-card";
+import { PopButton } from "@shared/components/ui/pop-button";
+import { PopChip } from "@shared/components/ui/pop-chip";
+import { TableWrap } from "@shared/components/ui/table-wrap";
+import { Table } from "@shared/components/ui/pop-table";
+import { EmptyMascot } from "@shared/components/ui/empty-mascot";
 import { useArchiveClass } from "@admin/features/classes/hooks/useArchiveClass";
 import { cn } from "@shared/lib/utils";
 import { getLevelColor } from "@shared/utils/levelColors";
@@ -216,157 +217,176 @@ export default function ClassesListPage() {
 
   /* ─────────── Render ─────────── */
 
+  const totalActive = countRows.filter((r) => r.lifecycle_status !== "archived").length;
+  const totalCount = countRows.length;
+
   return (
-    <ListPageLayout
-      title="Quản lý lớp học"
-      subtitle="Danh sách lớp với bộ lọc theo trạng thái lifecycle."
-      icon={GraduationCap}
-      actions={
-        <Button onClick={() => navigate("/classes/new")} className="gap-1.5" size="sm">
-          <Plus className="h-4 w-4" /> Tạo lớp mới
-        </Button>
-      }
-      filterBar={
-        <div className="space-y-2 pt-2">
-          {/* Counter chips */}
-          <ScrollArea className="w-full whitespace-nowrap -mx-1 px-1">
-            <div className="flex gap-1 pb-1">
+    <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
+      <HeroBoard
+        tone="teal"
+        title="Quản lý lớp học"
+        subtitle={
+          isLoading
+            ? "Đang tải…"
+            : `${totalActive} lớp đang hoạt động · ${totalCount} tổng (gồm đã lưu trữ)`
+        }
+        action={
+          <PopButton tone="white" onClick={() => navigate("/classes/new")}>
+            <Plus className="size-4" />
+            <span>Tạo lớp mới</span>
+          </PopButton>
+        }
+        illustration={<GraduationCap className="size-28 text-white/85 animate-bob" strokeWidth={1.5} />}
+      />
+
+      {/* Filter bar */}
+      <div className="space-y-3">
+        {/* Counter chips */}
+        <ScrollArea className="w-full whitespace-nowrap -mx-1 px-1">
+          <div className="flex gap-1.5 pb-1">
+            <button
+              type="button"
+              onClick={() => setStatuses(DEFAULT_VISIBLE_STATUSES)}
+              className={cn(
+                "shrink-0 inline-flex items-center gap-1 rounded-full border-[2px] px-2.5 py-0.5 text-[10.5px] font-display font-bold transition-all",
+                isDefaultStatuses
+                  ? "bg-lp-ink text-white border-lp-ink shadow-pop-xs"
+                  : "bg-white text-lp-ink border-lp-ink hover:bg-lp-yellow/20",
+              )}
+            >
+              Tất cả
+              <span className="font-extrabold tabular-nums">
+                {countRows.filter((r) => r.lifecycle_status !== "archived").length}
+              </span>
+            </button>
+            {CLASS_STATUS_OPTIONS.map((s) => {
+              const active = statuses.length === 1 && statuses[0] === s;
+              return (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setStatuses([s])}
+                  className={cn(
+                    "shrink-0 inline-flex items-center gap-1 rounded-full border-[2px] border-lp-ink pl-0.5 pr-1.5 py-0.5 transition-all",
+                    active ? "shadow-pop-xs bg-lp-yellow/30" : "bg-white hover:bg-lp-yellow/10",
+                  )}
+                >
+                  <ClassStatusBadge status={s} size="sm" compact />
+                  <span className="text-[10.5px] font-display font-extrabold tabular-nums text-lp-ink">{counts[s] ?? 0}</span>
+                </button>
+              );
+            })}
+          </div>
+        </ScrollArea>
+
+        {/* Toolbar: search + multi-status + view + reset */}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative flex-1 min-w-[200px] max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-lp-body" />
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Tìm tên / mã lớp…"
+              className="w-full h-10 pl-9 pr-3 text-sm font-body bg-white border-[2px] border-lp-ink rounded-pop placeholder:text-lp-body/70 focus:outline-none focus:shadow-pop-xs transition-shadow"
+            />
+          </div>
+
+          <Popover>
+            <PopoverTrigger asChild>
               <button
                 type="button"
-                onClick={() => setStatuses(DEFAULT_VISIBLE_STATUSES)}
-                className={cn(
-                  "shrink-0 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10.5px] font-medium transition-colors",
-                  isDefaultStatuses
-                    ? "bg-foreground text-background border-foreground"
-                    : "bg-card hover:bg-muted/50",
-                )}
+                className="inline-flex items-center gap-1.5 h-10 px-3 text-sm font-display font-bold bg-white text-lp-ink border-[2px] border-lp-ink rounded-pop transition-all duration-150 hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-pop-xs"
               >
-                Tất cả
-                <span className="font-bold tabular-nums">
-                  {countRows.filter((r) => r.lifecycle_status !== "archived").length}
-                </span>
+                <Filter className="h-4 w-4" />
+                Trạng thái
+                {!allSelected && (
+                  <span className="ml-0.5 inline-flex items-center justify-center min-w-5 h-5 rounded-full bg-lp-coral text-white border-[1.5px] border-lp-ink text-[10px] font-bold tabular-nums px-1.5">
+                    {statuses.length}
+                  </span>
+                )}
               </button>
-              {CLASS_STATUS_OPTIONS.map((s) => {
-                const active = statuses.length === 1 && statuses[0] === s;
-                return (
-                  <button
-                    key={s}
-                    type="button"
-                    onClick={() => setStatuses([s])}
-                    className={cn(
-                      "shrink-0 inline-flex items-center gap-1 rounded-full border pl-0.5 pr-1.5 py-0.5 transition-shadow",
-                      active ? "ring-2 ring-primary ring-offset-1 ring-offset-background" : "hover:shadow-sm",
-                    )}
-                  >
-                    <ClassStatusBadge status={s} size="sm" compact />
-                    <span className="text-[10.5px] font-bold tabular-nums">{counts[s] ?? 0}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </ScrollArea>
-
-          {/* Toolbar: search + multi-status + view + reset (compact 1 dòng) */}
-          <div className="flex flex-wrap items-center gap-1.5">
-            <div className="relative flex-1 min-w-[180px] max-w-sm">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Tìm tên / mã lớp…"
-                className="pl-7 h-8 text-xs"
-              />
-            </div>
-
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-1 h-8 px-2 text-xs">
-                  <Filter className="h-3.5 w-3.5" />
-                  Trạng thái
-                  {!allSelected && (
-                    <span className="ml-0.5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold px-1.5 leading-4 tabular-nums">
-                      {statuses.length}
-                    </span>
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent align="start" className="w-64 p-2">
-                <div className="flex items-center justify-between px-2 pb-2 border-b mb-1">
-                  <span className="text-xs font-semibold">Lifecycle status</span>
-                  <button
-                    type="button"
-                    onClick={() => setStatuses(allSelected ? [] : CLASS_STATUS_OPTIONS)}
-                    className="text-[11px] text-primary hover:underline"
-                  >
-                    {allSelected ? "Bỏ hết" : "Chọn hết"}
-                  </button>
-                </div>
-                <div className="space-y-0.5 max-h-72 overflow-y-auto">
-                  {CLASS_STATUS_OPTIONS.map((s) => {
-                    const checked = statuses.includes(s);
-                    return (
-                      <label
-                        key={s}
-                        className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted/50 cursor-pointer"
-                      >
-                        <Checkbox checked={checked} onCheckedChange={() => toggleStatus(s)} />
-                        <ClassStatusBadge status={s} size="sm" />
-                        <span className="ml-auto text-[10px] text-muted-foreground tabular-nums">
-                          {counts[s] ?? 0}
-                        </span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </PopoverContent>
-            </Popover>
-
-            <div className="ml-auto flex items-center gap-1">
-              {filterActive && (
-                <Button variant="ghost" size="sm" onClick={resetFilters} className="gap-1 h-8 px-2 text-xs">
-                  <RotateCw className="h-3 w-3" /> Reset
-                </Button>
-              )}
-              <div className="flex items-center rounded-md border bg-card overflow-hidden">
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-64 p-2 border-[2px] border-lp-ink rounded-pop shadow-pop">
+              <div className="flex items-center justify-between px-2 pb-2 border-b-[2px] border-lp-ink/15 mb-1">
+                <span className="text-xs font-display font-extrabold uppercase tracking-wider text-lp-body">Lifecycle status</span>
                 <button
                   type="button"
-                  onClick={() => setView("table")}
-                  className={cn(
-                    "px-2 py-1.5 transition-colors",
-                    view === "table" ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted/50",
-                  )}
-                  aria-label="Bảng"
+                  onClick={() => setStatuses(allSelected ? [] : CLASS_STATUS_OPTIONS)}
+                  className="text-[11px] font-display font-bold text-lp-teal hover:text-lp-teal-deep hover:underline"
                 >
-                  <ListIcon className="h-3.5 w-3.5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setView("grid")}
-                  className={cn(
-                    "px-2 py-1.5 transition-colors",
-                    view === "grid" ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted/50",
-                  )}
-                  aria-label="Lưới"
-                >
-                  <LayoutGrid className="h-3.5 w-3.5" />
+                  {allSelected ? "Bỏ hết" : "Chọn hết"}
                 </button>
               </div>
+              <div className="space-y-0.5 max-h-72 overflow-y-auto">
+                {CLASS_STATUS_OPTIONS.map((s) => {
+                  const checked = statuses.includes(s);
+                  return (
+                    <label
+                      key={s}
+                      className="flex items-center gap-2 px-2 py-1.5 rounded-pop hover:bg-lp-yellow/20 cursor-pointer"
+                    >
+                      <Checkbox checked={checked} onCheckedChange={() => toggleStatus(s)} />
+                      <ClassStatusBadge status={s} size="sm" />
+                      <span className="ml-auto text-[10px] text-lp-body font-display font-bold tabular-nums">
+                        {counts[s] ?? 0}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          <div className="ml-auto flex items-center gap-2">
+            {filterActive && (
+              <button
+                type="button"
+                onClick={resetFilters}
+                className="inline-flex items-center gap-1 h-9 px-3 text-xs font-display font-bold text-lp-coral hover:text-lp-coral-deep hover:bg-lp-coral/10 rounded-pop transition-colors"
+              >
+                <RotateCw className="h-3 w-3" /> Reset
+              </button>
+            )}
+            <div className="flex items-center rounded-pop border-[2px] border-lp-ink bg-white overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setView("table")}
+                className={cn(
+                  "px-2.5 py-2 transition-colors",
+                  view === "table" ? "bg-lp-yellow text-lp-ink" : "text-lp-body hover:bg-lp-yellow/20",
+                )}
+                aria-label="Bảng"
+              >
+                <ListIcon className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setView("grid")}
+                className={cn(
+                  "px-2.5 py-2 transition-colors border-l-[2px] border-lp-ink",
+                  view === "grid" ? "bg-lp-yellow text-lp-ink" : "text-lp-body hover:bg-lp-yellow/20",
+                )}
+                aria-label="Lưới"
+              >
+                <LayoutGrid className="h-4 w-4" />
+              </button>
             </div>
           </div>
         </div>
-      }
-    >
-      {/* ─── States ─── */}
+      </div>
+
+      {/* States */}
       {isLoading ? (
         <div className="flex items-center justify-center py-20">
-          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          <Loader2 className="h-6 w-6 animate-spin text-lp-teal" />
         </div>
       ) : error ? (
-        <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-6 text-sm text-destructive">
+        <PopCard tone="white" shadow="sm" className="p-6 text-sm text-lp-coral border-lp-coral">
           Lỗi tải lớp: {(error as Error).message}
-        </div>
+        </PopCard>
       ) : rows.length === 0 ? (
-        <EmptyState onReset={resetFilters} hasFilter={filterActive} />
+        <ClassesEmptyState onReset={resetFilters} hasFilter={filterActive} />
       ) : view === "table" ? (
         <TableView
           rows={rows}
@@ -386,73 +406,86 @@ export default function ClassesListPage() {
         />
       )}
 
-      {/* ─── Archive confirmation dialog ─── */}
+      {/* Archive confirmation dialog */}
       <AlertDialog open={!!archiveTarget} onOpenChange={(o) => !o && setArchiveTarget(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="border-[2.5px] border-lp-ink rounded-pop-lg shadow-pop-lg">
           <AlertDialogHeader>
-            <AlertDialogTitle>Lưu trữ lớp học?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Lớp <span className="font-semibold text-foreground">{archiveTarget?.name ?? "—"}</span>{" "}
+            <AlertDialogTitle className="font-display text-lp-ink">Lưu trữ lớp học?</AlertDialogTitle>
+            <AlertDialogDescription className="text-lp-body">
+              Lớp <span className="font-display font-bold text-lp-ink">{archiveTarget?.name ?? "—"}</span>{" "}
               sẽ bị ẩn khỏi danh sách thường nhưng giữ lại toàn bộ thông tin và lịch sử.
               Bạn có thể khôi phục bất kỳ lúc nào trong filter "Đã lưu trữ".
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-foreground">Lý do lưu trữ (tuỳ chọn)</label>
+            <label className="text-xs font-display font-bold text-lp-ink">Lý do lưu trữ (tuỳ chọn)</label>
             <Textarea
               value={archiveReason}
               onChange={(e) => setArchiveReason(e.target.value)}
               placeholder="VD: Lớp đã kết thúc chu kỳ, lưu trữ để tham khảo về sau…"
               rows={3}
-              className="text-sm"
+              className="text-sm border-[2px] border-lp-ink rounded-pop focus-visible:shadow-pop-xs"
             />
           </div>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={archiveMut.isPending}>Huỷ</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmArchive} disabled={archiveMut.isPending}>
+            <AlertDialogAction
+              onClick={confirmArchive}
+              disabled={archiveMut.isPending}
+              className="bg-lp-coral text-white border-[2px] border-lp-ink hover:bg-lp-coral-deep"
+            >
               {archiveMut.isPending ? "Đang lưu trữ…" : "Lưu trữ"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* ─── Restore confirmation dialog ─── */}
+      {/* Restore confirmation dialog */}
       <AlertDialog open={!!restoreTarget} onOpenChange={(o) => !o && setRestoreTarget(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="border-[2.5px] border-lp-ink rounded-pop-lg shadow-pop-lg">
           <AlertDialogHeader>
-            <AlertDialogTitle>Khôi phục lớp học?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Lớp <span className="font-semibold text-foreground">{restoreTarget?.name ?? "—"}</span>{" "}
+            <AlertDialogTitle className="font-display text-lp-ink">Khôi phục lớp học?</AlertDialogTitle>
+            <AlertDialogDescription className="text-lp-body">
+              Lớp <span className="font-display font-bold text-lp-ink">{restoreTarget?.name ?? "—"}</span>{" "}
               sẽ chuyển về trạng thái "Lên kế hoạch". Bạn có thể chỉnh lại trạng thái phù hợp sau.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={archiveMut.isPending}>Huỷ</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmRestore} disabled={archiveMut.isPending}>
+            <AlertDialogAction
+              onClick={confirmRestore}
+              disabled={archiveMut.isPending}
+              className="bg-lp-teal text-white border-[2px] border-lp-ink hover:bg-lp-teal-deep"
+            >
               {archiveMut.isPending ? "Đang khôi phục…" : "Khôi phục"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </ListPageLayout>
+    </div>
   );
 }
 
 /* ─────────── Subviews ─────────── */
 
-function EmptyState({ onReset, hasFilter }: { onReset: () => void; hasFilter: boolean }) {
+function ClassesEmptyState({ onReset, hasFilter }: { onReset: () => void; hasFilter: boolean }) {
   return (
-    <div className="rounded-xl border border-dashed bg-muted/20 py-16 text-center space-y-3">
-      <Inbox className="h-10 w-10 mx-auto text-muted-foreground" />
-      <p className="text-sm text-muted-foreground">
-        {hasFilter ? "Không có lớp nào khớp bộ lọc" : "Chưa có lớp học nào trong hệ thống"}
-      </p>
-      {hasFilter && (
-        <Button variant="outline" size="sm" onClick={onReset}>
-          Xoá bộ lọc
-        </Button>
-      )}
-    </div>
+    <EmptyMascot
+      icon={Inbox}
+      title={hasFilter ? "Không có lớp nào khớp bộ lọc" : "Chưa có lớp học nào"}
+      description={
+        hasFilter
+          ? "Thử bỏ filter hoặc tìm với từ khoá khác."
+          : "Tạo lớp đầu tiên để bắt đầu quản lý."
+      }
+      action={
+        hasFilter ? (
+          <PopButton tone="white" size="sm" onClick={onReset}>
+            <span>Xoá bộ lọc</span>
+          </PopButton>
+        ) : undefined
+      }
+    />
   );
 }
 
@@ -465,8 +498,8 @@ function SortableHead({
       type="button"
       onClick={() => onClick(sortKey)}
       className={cn(
-        "inline-flex items-center gap-1 hover:text-foreground transition-colors",
-        active ? "text-foreground" : "text-muted-foreground",
+        "inline-flex items-center gap-1 transition-colors",
+        active ? "text-lp-ink" : "text-lp-body hover:text-lp-ink",
       )}
     >
       {label}
@@ -487,72 +520,72 @@ function TableView({
   onRestore: (cls: ClassRow) => void;
 }) {
   return (
-    <div className="rounded-xl border overflow-hidden bg-card">
-      <Table>
-        <TableHeader>
-          <TableRow className="bg-muted/40 hover:bg-muted/40">
-            <TableHead className="w-[110px] text-[11px]">Mã lớp</TableHead>
-            <TableHead className="text-[11px]">
+    <TableWrap tone="white" shadow="md">
+      <Table.Root>
+        <Table.Header>
+          <Table.Row>
+            <Table.HeadCell className="w-[110px]">Mã lớp</Table.HeadCell>
+            <Table.HeadCell>
               <SortableHead label="Tên lớp" sortKey="name" currentKey={sortKey} currentDir={sortDir} onClick={onSort} />
-            </TableHead>
-            <TableHead className="text-[11px]">Chương trình / Level</TableHead>
-            <TableHead className="text-[11px]">Cơ sở · Hình thức</TableHead>
-            <TableHead className="text-[11px]">Giáo viên</TableHead>
-            <TableHead className="text-[11px]">
+            </Table.HeadCell>
+            <Table.HeadCell>Chương trình / Level</Table.HeadCell>
+            <Table.HeadCell>Cơ sở · Hình thức</Table.HeadCell>
+            <Table.HeadCell>Giáo viên</Table.HeadCell>
+            <Table.HeadCell>
               <SortableHead label="Lịch học" sortKey="start_date" currentKey={sortKey} currentDir={sortDir} onClick={onSort} />
-            </TableHead>
-            <TableHead className="text-center text-[11px]">HV</TableHead>
-            <TableHead className="text-[11px]">
+            </Table.HeadCell>
+            <Table.HeadCell className="text-center">HV</Table.HeadCell>
+            <Table.HeadCell>
               <SortableHead label="Trạng thái" sortKey="status_changed_at" currentKey={sortKey} currentDir={sortDir} onClick={onSort} />
-            </TableHead>
-            <TableHead className="w-[40px]" />
-          </TableRow>
-        </TableHeader>
-        <TableBody>
+            </Table.HeadCell>
+            <Table.HeadCell className="w-[40px]" />
+          </Table.Row>
+        </Table.Header>
+        <Table.Body>
           {rows.map((cls) => (
-            <TableRow
+            <Table.Row
               key={cls.id}
               className="cursor-pointer"
               onClick={() => onOpen(cls.id)}
             >
-              <TableCell className="font-mono text-[11px] text-muted-foreground py-2">
+              <Table.Cell className="font-mono text-[11px] text-lp-body py-2">
                 {cls.class_code ?? "—"}
-              </TableCell>
-              <TableCell className="font-semibold text-[13px] py-2">{displayName(cls)}</TableCell>
-              <TableCell className="text-xs py-2">
+              </Table.Cell>
+              <Table.Cell className="font-display font-bold text-[13px] text-lp-ink py-2">{displayName(cls)}</Table.Cell>
+              <Table.Cell className="text-xs py-2">
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  <span>{cls.program ?? "—"}</span>
+                  <span className="text-lp-ink">{cls.program ?? "—"}</span>
                   {cls.level && <LevelChip level={cls.level} />}
                 </div>
-              </TableCell>
-              <TableCell className="text-[11px] text-muted-foreground py-2">
+              </Table.Cell>
+              <Table.Cell className="text-[11px] text-lp-body py-2">
                 {[cls.branch, cls.mode, cls.room].filter(Boolean).join(" · ") || "—"}
-              </TableCell>
-              <TableCell className="text-xs py-2">{cls.teacher_name ?? "—"}</TableCell>
-              <TableCell className="text-[11px] text-muted-foreground py-2 whitespace-nowrap">
+              </Table.Cell>
+              <Table.Cell className="text-xs text-lp-ink py-2">{cls.teacher_name ?? "—"}</Table.Cell>
+              <Table.Cell className="text-[11px] text-lp-body py-2 whitespace-nowrap">
                 {formatRange(cls.start_date, cls.end_date)}
                 {cls.schedule && (
-                  <div className="text-[10px] text-muted-foreground/70 truncate max-w-[140px]">
+                  <div className="text-[10px] text-lp-body/70 truncate max-w-[140px]">
                     {cls.schedule}
                   </div>
                 )}
-              </TableCell>
-              <TableCell className="text-center text-xs tabular-nums py-2">{cls.student_count ?? 0}</TableCell>
-              <TableCell>
+              </Table.Cell>
+              <Table.Cell className="text-center text-xs text-lp-ink font-display font-bold tabular-nums py-2">{cls.student_count ?? 0}</Table.Cell>
+              <Table.Cell>
                 <ClassStatusBadge
                   status={cls.lifecycle_status}
                   reason={cls.cancellation_reason}
                   size="sm"
                 />
-              </TableCell>
-              <TableCell onClick={(e) => e.stopPropagation()} className="w-[40px]">
+              </Table.Cell>
+              <Table.Cell onClick={(e) => e.stopPropagation()} className="w-[40px]">
                 <RowActions cls={cls} onArchive={onArchive} onRestore={onRestore} />
-              </TableCell>
-            </TableRow>
+              </Table.Cell>
+            </Table.Row>
           ))}
-        </TableBody>
-      </Table>
-    </div>
+        </Table.Body>
+      </Table.Root>
+    </TableWrap>
   );
 }
 
@@ -565,17 +598,20 @@ function GridView({
   onRestore: (cls: ClassRow) => void;
 }) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5">
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
       {rows.map((cls) => (
-        <div
+        <PopCard
           key={cls.id}
-          className="group relative rounded-lg border bg-card text-left p-3 hover:border-primary/40 hover:shadow-md transition-all space-y-2"
+          tone="white"
+          shadow="sm"
+          hover="lift"
+          className="group relative p-3 space-y-2"
         >
           <button
             type="button"
             onClick={() => onOpen(cls.id)}
             aria-label={`Mở lớp ${displayName(cls)}`}
-            className="absolute inset-0 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className="absolute inset-0 rounded-pop-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-lp-coral"
           />
           <div className="absolute top-2 right-2 flex items-center gap-1 z-10">
             <ClassStatusBadge
@@ -588,13 +624,13 @@ function GridView({
             </div>
           </div>
           <div className="relative pr-28 pointer-events-none">
-            <p className="font-mono text-[10px] text-muted-foreground/80 truncate">{cls.class_code ?? "—"}</p>
-            <h3 className="font-display font-bold text-sm leading-tight mt-0.5 line-clamp-2">
+            <p className="font-mono text-[10px] text-lp-body/80 truncate">{cls.class_code ?? "—"}</p>
+            <h3 className="font-display font-extrabold text-sm text-lp-ink leading-tight mt-0.5 line-clamp-2">
               {displayName(cls)}
             </h3>
             <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
               {cls.program && (
-                <span className="text-[10px] font-medium text-muted-foreground">{cls.program}</span>
+                <span className="text-[10px] font-display font-bold text-lp-body">{cls.program}</span>
               )}
               {cls.level && <LevelChip level={cls.level} />}
             </div>
@@ -606,7 +642,7 @@ function GridView({
               {cls.room && <MetaTag>P. {cls.room}</MetaTag>}
             </div>
           )}
-          <div className="relative flex flex-wrap gap-x-2.5 gap-y-1 text-[10.5px] text-muted-foreground pointer-events-none pt-0.5 border-t border-border/40">
+          <div className="relative flex flex-wrap gap-x-2.5 gap-y-1 text-[10.5px] text-lp-body pointer-events-none pt-2 border-t-[2px] border-lp-ink/10">
             {cls.teacher_name && (
               <span className="inline-flex items-center gap-1 truncate max-w-[140px]">
                 <User className="h-3 w-3" />
@@ -615,7 +651,7 @@ function GridView({
             )}
             <span className="inline-flex items-center gap-1">
               <Users className="h-3 w-3" />
-              <span className="tabular-nums">{cls.student_count ?? 0}</span> HV
+              <span className="tabular-nums font-display font-bold text-lp-ink">{cls.student_count ?? 0}</span> HV
             </span>
             {cls.start_date && (
               <span className="inline-flex items-center gap-1">
@@ -624,7 +660,7 @@ function GridView({
               </span>
             )}
           </div>
-        </div>
+        </PopCard>
       ))}
     </div>
   );
@@ -637,7 +673,7 @@ function LevelChip({ level }: { level: string }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center px-1.5 py-0 rounded text-[10px] font-semibold leading-4",
+        "inline-flex items-center px-1.5 py-0 rounded text-[10px] font-display font-extrabold leading-4",
         getLevelColor(level),
       )}
     >
@@ -649,9 +685,9 @@ function LevelChip({ level }: { level: string }) {
 /** Meta tag (branch / mode / room) — neutral, dense. */
 function MetaTag({ children }: { children: React.ReactNode }) {
   return (
-    <span className="inline-flex items-center px-1.5 py-0 rounded border border-border/60 bg-muted/30 text-[10px] text-muted-foreground leading-4">
+    <PopChip tone="cream" className="px-1.5 py-0 text-[10px] leading-4">
       {children}
-    </span>
+    </PopChip>
   );
 }
 
@@ -670,21 +706,21 @@ function RowActions({
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-pop text-lp-body hover:bg-lp-yellow/20 hover:text-lp-ink transition-colors"
           aria-label="Thao tác"
           onClick={(e) => e.stopPropagation()}
         >
           <MoreHorizontal className="h-4 w-4" />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-44">
+      <DropdownMenuContent align="end" className="w-44 border-[2px] border-lp-ink rounded-pop shadow-pop">
         {isArchived ? (
-          <DropdownMenuItem onClick={() => onRestore(cls)} className="gap-2 text-xs">
-            <ArchiveRestore className="h-3.5 w-3.5" /> Khôi phục lớp
+          <DropdownMenuItem onClick={() => onRestore(cls)} className="gap-2 text-xs font-body">
+            <ArchiveRestore className="h-3.5 w-3.5 text-lp-teal" /> Khôi phục lớp
           </DropdownMenuItem>
         ) : (
-          <DropdownMenuItem onClick={() => onArchive(cls)} className="gap-2 text-xs">
-            <Archive className="h-3.5 w-3.5" /> Lưu trữ lớp
+          <DropdownMenuItem onClick={() => onArchive(cls)} className="gap-2 text-xs font-body">
+            <Archive className="h-3.5 w-3.5 text-lp-coral" /> Lưu trữ lớp
           </DropdownMenuItem>
         )}
       </DropdownMenuContent>
