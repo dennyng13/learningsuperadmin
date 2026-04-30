@@ -128,14 +128,14 @@ export function useTemplateMutations() {
       if (header.id) {
         const { error } = await supabase
           .from("study_plan_templates")
-          .update(header)
+          .update(header as any)
           .eq("id", header.id);
         if (error) throw error;
         return header.id as string;
       }
       const { data, error } = await supabase
         .from("study_plan_templates")
-        .insert({ ...header, created_by: user?.id })
+        .insert({ ...header, created_by: user?.id } as any)
         .select("id")
         .single();
       if (error) throw error;
