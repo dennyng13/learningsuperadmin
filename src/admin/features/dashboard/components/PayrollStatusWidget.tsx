@@ -17,6 +17,12 @@ interface PayrollCounts {
   paidThisMonth: number;
 }
 
+const TONE_CLASSES = {
+  cream:  "bg-lp-cream text-lp-ink",
+  yellow: "bg-lp-yellow text-lp-ink",
+  mint:   "bg-lp-mint text-white",
+} as const;
+
 function currentMonthStart(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
@@ -49,26 +55,26 @@ export default function PayrollStatusWidget() {
   const cards = useMemo(() => [
     {
       key: "payroll-draft", icon: Banknote, label: "Payslip bản nháp",
-      hint: "Cần kiểm tra & chốt", value: state?.draft ?? 0, tone: "slate",
+      hint: "Cần kiểm tra & chốt", value: state?.draft ?? 0, tone: "cream",
       onClick: () => navigate("/payroll"),
     },
     {
       key: "payroll-awaiting-payment", icon: CheckCircle2,
       label: "Đã chốt, chờ thanh toán",
-      hint: "Bao gồm cả GV đã xác nhận", value: state?.awaitingPayment ?? 0, tone: "amber",
+      hint: "Bao gồm cả GV đã xác nhận", value: state?.awaitingPayment ?? 0, tone: "yellow",
       onClick: () => navigate("/payroll"),
     },
     {
       key: "payroll-paid-this-month", icon: Wallet, label: "Đã thanh toán tháng này",
-      hint: "Trong tháng hiện tại", value: state?.paidThisMonth ?? 0, tone: "emerald",
+      hint: "Trong tháng hiện tại", value: state?.paidThisMonth ?? 0, tone: "mint",
       onClick: () => navigate("/payroll"),
     },
   ] as const, [state, navigate]);
 
   if (isLoading) {
     return (
-      <div className="rounded-xl border bg-card p-4 flex items-center text-xs text-muted-foreground">
-        <Loader2 className="h-3.5 w-3.5 animate-spin mr-2" /> Đang tải số liệu bảng lương…
+      <div className="rounded-pop border-[2px] border-lp-ink bg-white shadow-pop-xs p-4 flex items-center text-xs text-lp-body font-body">
+        <Loader2 className="h-3.5 w-3.5 animate-spin mr-2 text-lp-teal" /> Đang tải số liệu bảng lương…
       </div>
     );
   }
@@ -77,7 +83,7 @@ export default function PayrollStatusWidget() {
   return (
     <section className="space-y-2">
       <div className="flex items-center justify-between">
-        <h3 className="text-[11px] font-display font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+        <h3 className="text-[11px] font-display font-extrabold uppercase tracking-[0.12em] text-lp-body">
           Bảng lương
         </h3>
         <WidgetRefreshButton
@@ -91,26 +97,18 @@ export default function PayrollStatusWidget() {
         <button
           key={key}
           onClick={onClick}
-          className="text-left rounded-xl border bg-card p-4 hover:bg-muted/40 transition-colors"
+          className="text-left rounded-pop border-[2px] border-lp-ink bg-white shadow-pop-xs p-4 transition-all duration-150 ease-bounce hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-pop-sm active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
         >
           <div className="flex items-center gap-3">
-            <div
-              className={`h-10 w-10 rounded-lg flex items-center justify-center ${
-                tone === "slate"
-                  ? "bg-slate-500/10 text-slate-600"
-                  : tone === "amber"
-                    ? "bg-amber-500/10 text-amber-600"
-                    : "bg-emerald-500/10 text-emerald-600"
-              }`}
-            >
+            <div className={`h-10 w-10 rounded-pop flex items-center justify-center border-[2px] border-lp-ink shrink-0 ${TONE_CLASSES[tone]}`}>
               <Icon className="h-5 w-5" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs text-muted-foreground">{label}</p>
+              <p className="text-xs text-lp-body font-body">{label}</p>
               <div className="flex items-baseline gap-2">
-                <span className="font-display text-2xl font-extrabold">{value}</span>
+                <span className="font-display text-2xl font-extrabold text-lp-ink">{value}</span>
               </div>
-              <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{hint}</p>
+              <p className="text-[10px] text-lp-body mt-0.5 truncate">{hint}</p>
             </div>
           </div>
         </button>

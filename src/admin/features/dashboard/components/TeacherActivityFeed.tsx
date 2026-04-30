@@ -479,9 +479,9 @@ export default function TeacherActivityFeed({
   }
 
   return (
-    <div className="rounded-xl border bg-card p-4">
+    <div className="rounded-pop-lg border-[2.5px] border-lp-ink bg-white shadow-pop p-4">
       <div className="flex items-center justify-between mb-3 gap-2">
-        <h2 className="font-display text-sm font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2 min-w-0">
+        <h2 className="font-display text-sm font-extrabold text-lp-body uppercase tracking-[0.12em] flex items-center gap-2 min-w-0">
           <Activity className="h-3.5 w-3.5 shrink-0" />
           <span className="truncate">Hoạt động giáo viên</span>
           <AnalyticsRangeBadge range={range} className="ml-1 normal-case tracking-normal" />

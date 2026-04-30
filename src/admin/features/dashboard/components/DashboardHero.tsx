@@ -1,4 +1,4 @@
-import { Users, GraduationCap, BookOpen, TrendingUp, ChevronRight } from "lucide-react";
+import { Users, GraduationCap, BookOpen, TrendingUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
   CylindersDecor, StripedArcDecor, SpheresDecor, RingsDecor,
@@ -26,12 +26,12 @@ interface KpiProps {
 }
 
 function KpiCard({ label, value, delta, deltaPositive = true, icon: Icon, decor, iconTone = "teal", onClick }: KpiProps) {
-  const iconBg = iconTone === "coral" ? "bg-accent/12 text-accent" : "bg-primary/12 text-primary";
+  const iconBg = iconTone === "coral" ? "bg-lp-coral text-white" : "bg-lp-teal text-white";
   return (
     <button
       type="button"
       onClick={onClick}
-      className="group relative overflow-hidden rounded-2xl bg-card text-left p-5 shadow-[0_4px_20px_rgba(15,23,42,0.04)] hover:shadow-[0_10px_30px_rgba(15,23,42,0.08)] hover:-translate-y-0.5 transition-all duration-300 min-h-[148px]"
+      className="group relative overflow-hidden rounded-pop-lg bg-white border-[2.5px] border-lp-ink text-left p-5 shadow-pop transition-all duration-150 ease-bounce hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-pop-lg active:translate-x-0.5 active:translate-y-0.5 active:shadow-pop-sm min-h-[148px]"
     >
       {/* Decorative geometric SVG bottom-right */}
       <div className="pointer-events-none absolute -bottom-2 -right-2 w-28 h-28 opacity-90">
@@ -39,12 +39,12 @@ function KpiCard({ label, value, delta, deltaPositive = true, icon: Icon, decor,
       </div>
 
       <div className="relative flex items-start justify-between">
-        <div className={`h-10 w-10 rounded-xl ${iconBg} flex items-center justify-center shrink-0`}>
+        <div className={`h-10 w-10 rounded-pop ${iconBg} border-[2px] border-lp-ink flex items-center justify-center shrink-0`}>
           <Icon className="h-5 w-5" />
         </div>
         {delta && (
-          <span className={`inline-flex items-center gap-0.5 text-[11px] font-bold rounded-full px-2 py-0.5 ${
-            deltaPositive ? "bg-primary/10 text-primary" : "bg-accent/10 text-accent"
+          <span className={`inline-flex items-center gap-0.5 text-[11px] font-bold rounded-full px-2 py-0.5 border-[1.5px] border-lp-ink ${
+            deltaPositive ? "bg-lp-mint text-white" : "bg-lp-coral text-white"
           }`}>
             <TrendingUp className={`h-3 w-3 ${!deltaPositive && "rotate-180"}`} />
             {delta}
@@ -53,8 +53,8 @@ function KpiCard({ label, value, delta, deltaPositive = true, icon: Icon, decor,
       </div>
 
       <div className="relative mt-4">
-        <p className="text-[11px] uppercase tracking-[0.1em] font-semibold text-muted-foreground">{label}</p>
-        <p className="font-display text-3xl md:text-4xl font-extrabold text-foreground mt-1 leading-none tracking-tight">
+        <p className="text-[11px] uppercase tracking-[0.1em] font-display font-bold text-lp-body">{label}</p>
+        <p className="font-display text-3xl md:text-4xl font-extrabold text-lp-ink mt-1 leading-none tracking-tight">
           {value}
         </p>
       </div>
@@ -83,27 +83,27 @@ function CalendarWidget({ activeDays }: { activeDays?: { date: Date; tone: "teal
   };
 
   return (
-    <div className="rounded-2xl bg-card p-5 shadow-[0_4px_20px_rgba(15,23,42,0.04)] h-full flex flex-col">
+    <div className="rounded-pop-lg bg-white border-[2.5px] border-lp-ink p-5 shadow-pop h-full flex flex-col">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <p className="text-[11px] uppercase tracking-[0.1em] font-semibold text-muted-foreground">
+          <p className="text-[11px] uppercase tracking-[0.1em] font-display font-bold text-lp-body">
             Lịch tháng
           </p>
-          <h3 className="font-display text-base font-extrabold text-foreground capitalize mt-0.5">
+          <h3 className="font-display text-base font-extrabold text-lp-ink capitalize mt-0.5">
             {format(today, "MMMM yyyy", { locale: vi })}
           </h3>
         </div>
         <div className="flex items-center gap-3 text-[10px]">
-          <span className="inline-flex items-center gap-1 text-muted-foreground">
-            <span className="h-1.5 w-1.5 rounded-full bg-primary" /> Lớp
+          <span className="inline-flex items-center gap-1 text-lp-body">
+            <span className="h-1.5 w-1.5 rounded-full bg-lp-teal" /> Lớp
           </span>
-          <span className="inline-flex items-center gap-1 text-muted-foreground">
-            <span className="h-1.5 w-1.5 rounded-full bg-accent" /> Sự kiện
+          <span className="inline-flex items-center gap-1 text-lp-body">
+            <span className="h-1.5 w-1.5 rounded-full bg-lp-coral" /> Sự kiện
           </span>
         </div>
       </div>
 
-      <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-bold uppercase text-muted-foreground/70 mb-1.5">
+      <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-display font-bold uppercase text-lp-body/70 mb-1.5">
         {weekdayLabels.map((d) => <div key={d} className="py-1">{d}</div>)}
       </div>
 
@@ -115,15 +115,15 @@ function CalendarWidget({ activeDays }: { activeDays?: { date: Date; tone: "teal
           return (
             <div
               key={d.toISOString()}
-              className={`relative aspect-square rounded-lg flex items-center justify-center text-xs font-semibold transition-all cursor-default
+              className={`relative aspect-square rounded-pop flex items-center justify-center text-xs font-display font-bold transition-all cursor-default
                 ${today_
-                  ? "bg-primary text-primary-foreground shadow-md shadow-primary/30"
-                  : "text-foreground/80 hover:bg-secondary/60"}
+                  ? "bg-lp-teal text-white border-[2px] border-lp-ink shadow-pop-xs"
+                  : "text-lp-ink/80 hover:bg-lp-yellow/20"}
               `}
             >
               {format(d, "d")}
               {tone && !today_ && (
-                <span className={`absolute bottom-1 h-1 w-1 rounded-full ${tone === "teal" ? "bg-primary" : "bg-accent"}`} />
+                <span className={`absolute bottom-1 h-1.5 w-1.5 rounded-full ${tone === "teal" ? "bg-lp-teal" : "bg-lp-coral"}`} />
               )}
             </div>
           );
@@ -139,22 +139,22 @@ interface BarDatum { name: string; primary: number; secondary: number }
 
 function PerformanceChart({ data }: { data: BarDatum[] }) {
   return (
-    <div className="rounded-2xl bg-card p-5 shadow-[0_4px_20px_rgba(15,23,42,0.04)] h-full flex flex-col">
+    <div className="rounded-pop-lg bg-white border-[2.5px] border-lp-ink p-5 shadow-pop h-full flex flex-col">
       <div className="flex items-start justify-between mb-4">
         <div>
-          <p className="text-[11px] uppercase tracking-[0.1em] font-semibold text-muted-foreground">
+          <p className="text-[11px] uppercase tracking-[0.1em] font-display font-bold text-lp-body">
             Performance
           </p>
-          <h3 className="font-display text-base font-extrabold text-foreground mt-0.5">
+          <h3 className="font-display text-base font-extrabold text-lp-ink mt-0.5">
             Hoạt động theo skill (30 ngày)
           </h3>
         </div>
         <div className="flex items-center gap-3 text-[10px]">
-          <span className="inline-flex items-center gap-1 text-muted-foreground font-medium">
-            <span className="h-2 w-2 rounded-sm bg-primary" /> Bài thi
+          <span className="inline-flex items-center gap-1 text-lp-body font-medium">
+            <span className="h-2 w-2 rounded-sm bg-lp-teal" /> Bài thi
           </span>
-          <span className="inline-flex items-center gap-1 text-muted-foreground font-medium">
-            <span className="h-2 w-2 rounded-sm bg-accent" /> Luyện tập
+          <span className="inline-flex items-center gap-1 text-lp-body font-medium">
+            <span className="h-2 w-2 rounded-sm bg-lp-coral" /> Luyện tập
           </span>
         </div>
       </div>
@@ -164,31 +164,31 @@ function PerformanceChart({ data }: { data: BarDatum[] }) {
           <BarChart data={data} margin={{ top: 10, right: 0, left: -28, bottom: 0 }} barCategoryGap="28%">
             <XAxis
               dataKey="name"
-              tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11, fontWeight: 600 }}
+              tick={{ fill: "var(--lp-body)", fontSize: 11, fontWeight: 600 }}
               axisLine={false}
               tickLine={false}
             />
             <YAxis
-              tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }}
+              tick={{ fill: "var(--lp-body)", fontSize: 10 }}
               axisLine={false}
               tickLine={false}
               allowDecimals={false}
             />
             <Tooltip
-              cursor={{ fill: "hsl(var(--secondary) / 0.4)" }}
+              cursor={{ fill: "var(--lp-yellow)", fillOpacity: 0.2 }}
               contentStyle={{
-                background: "hsl(var(--card))",
-                border: "1px solid hsl(var(--border))",
+                background: "white",
+                border: "2px solid var(--lp-ink)",
                 borderRadius: "12px",
                 fontSize: "12px",
-                boxShadow: "0 8px 24px rgba(15,23,42,0.08)",
+                boxShadow: "4px 4px 0 0 var(--lp-ink)",
               }}
             />
             <Bar dataKey="primary" radius={[8, 8, 0, 0]} maxBarSize={20}>
-              {data.map((_, i) => <Cell key={i} fill="hsl(174 51% 47%)" />)}
+              {data.map((_, i) => <Cell key={i} fill="var(--lp-teal)" />)}
             </Bar>
             <Bar dataKey="secondary" radius={[8, 8, 0, 0]} maxBarSize={20}>
-              {data.map((_, i) => <Cell key={i} fill="hsl(10 93% 69%)" />)}
+              {data.map((_, i) => <Cell key={i} fill="var(--lp-coral)" />)}
             </Bar>
           </BarChart>
         </ResponsiveContainer>
@@ -207,35 +207,40 @@ interface PerformerItem {
 }
 
 function TopPerformers({ items }: { items: PerformerItem[] }) {
-  const colors = ["from-primary/80 to-primary", "from-accent/80 to-accent", "from-primary/60 to-primary/90", "from-accent/60 to-accent/90"];
+  const colors = [
+    "from-lp-yellow to-lp-coral",
+    "from-lp-coral to-lp-violet",
+    "from-lp-teal to-lp-mint",
+    "from-lp-violet to-lp-pink",
+  ];
   return (
-    <div className="rounded-2xl bg-card p-5 shadow-[0_4px_20px_rgba(15,23,42,0.04)] h-full">
+    <div className="rounded-pop-lg bg-white border-[2.5px] border-lp-ink p-5 shadow-pop h-full">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <p className="text-[11px] uppercase tracking-[0.1em] font-semibold text-muted-foreground">
+          <p className="text-[11px] uppercase tracking-[0.1em] font-display font-bold text-lp-body">
             Hoạt động gần đây
           </p>
-          <h3 className="font-display text-base font-extrabold text-foreground mt-0.5">Nội dung mới</h3>
+          <h3 className="font-display text-base font-extrabold text-lp-ink mt-0.5">Nội dung mới</h3>
         </div>
       </div>
       <ul className="space-y-3">
         {items.length === 0 && (
-          <li className="text-sm text-muted-foreground py-6 text-center">Chưa có dữ liệu</li>
+          <li className="text-sm text-lp-body py-6 text-center">Chưa có dữ liệu</li>
         )}
         {items.map((item, i) => (
-          <li key={item.id} className="flex items-center gap-3 p-2 rounded-xl hover:bg-secondary/40 transition-colors">
-            <div className={`h-9 w-9 rounded-full bg-gradient-to-br ${colors[i % colors.length]} text-white font-display font-bold text-xs flex items-center justify-center shadow-sm shrink-0`}>
+          <li key={item.id} className="flex items-center gap-3 p-2 rounded-pop hover:bg-lp-yellow/20 transition-colors">
+            <div className={`h-9 w-9 rounded-full bg-gradient-to-br ${colors[i % colors.length]} text-lp-ink font-display font-extrabold text-xs flex items-center justify-center border-[2px] border-lp-ink shrink-0`}>
               {item.name.charAt(0).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-foreground truncate">{item.name}</p>
-              <p className="text-[11px] text-muted-foreground truncate">{item.meta}</p>
+              <p className="text-sm font-display font-bold text-lp-ink truncate">{item.name}</p>
+              <p className="text-[11px] text-lp-body truncate">{item.meta}</p>
             </div>
             {item.badge && (
-              <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full
-                ${item.badge.tone === "teal" ? "bg-primary/10 text-primary"
-                  : item.badge.tone === "coral" ? "bg-accent/10 text-accent"
-                  : "bg-muted text-muted-foreground"}`}>
+              <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border-[1.5px] border-lp-ink
+                ${item.badge.tone === "teal" ? "bg-lp-teal text-white"
+                  : item.badge.tone === "coral" ? "bg-lp-coral text-white"
+                  : "bg-lp-cream text-lp-body"}`}>
                 {item.badge.label}
               </span>
             )}

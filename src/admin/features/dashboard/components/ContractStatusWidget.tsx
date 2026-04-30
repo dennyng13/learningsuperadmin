@@ -18,6 +18,12 @@ interface ContractCounts {
   contractsExpiringSoon: number;
 }
 
+const TONE_CLASSES = {
+  yellow: "bg-lp-yellow text-lp-ink",
+  sky:    "bg-lp-sky text-lp-ink",
+  coral:  "bg-lp-coral text-white",
+} as const;
+
 export default function ContractStatusWidget() {
   const navigate = useNavigate();
 
@@ -51,7 +57,7 @@ export default function ContractStatusWidget() {
       label: "HĐ chờ ký",
       hint: "Chờ giáo viên / admin ký",
       value: state?.contractsAwaiting ?? 0,
-      tone: "amber",
+      tone: "yellow",
       onClick: () => navigate("/contracts?status=awaiting_teacher"),
     },
     {
@@ -60,7 +66,7 @@ export default function ContractStatusWidget() {
       label: "Phụ lục chờ ký",
       hint: "Phụ lục thù lao chưa ký xong",
       value: state?.addendumsAwaiting ?? 0,
-      tone: "blue",
+      tone: "sky",
       onClick: () => navigate("/contracts"),
     },
     {
@@ -69,15 +75,15 @@ export default function ContractStatusWidget() {
       label: "Sắp hết hạn 30 ngày",
       hint: "Hợp đồng đang hiệu lực",
       value: state?.contractsExpiringSoon ?? 0,
-      tone: "rose",
+      tone: "coral",
       onClick: () => navigate("/contracts?expiring_within_days=30"),
     },
   ] as const, [state, navigate]);
 
   if (isLoading) {
     return (
-      <div className="rounded-xl border bg-card p-4 flex items-center text-xs text-muted-foreground">
-        <Loader2 className="h-3.5 w-3.5 animate-spin mr-2" /> Đang tải số liệu hợp đồng…
+      <div className="rounded-pop border-[2px] border-lp-ink bg-white shadow-pop-xs p-4 flex items-center text-xs text-lp-body font-body">
+        <Loader2 className="h-3.5 w-3.5 animate-spin mr-2 text-lp-teal" /> Đang tải số liệu hợp đồng…
       </div>
     );
   }
@@ -88,7 +94,7 @@ export default function ContractStatusWidget() {
   return (
     <section className="space-y-2">
       <div className="flex items-center justify-between">
-        <h3 className="text-[11px] font-display font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+        <h3 className="text-[11px] font-display font-extrabold uppercase tracking-[0.12em] text-lp-body">
           Hợp đồng
         </h3>
         <WidgetRefreshButton
@@ -102,18 +108,18 @@ export default function ContractStatusWidget() {
         <button
           key={key}
           onClick={onClick}
-          className="text-left rounded-xl border bg-card p-4 hover:bg-muted/40 transition-colors"
+          className="text-left rounded-pop border-[2px] border-lp-ink bg-white shadow-pop-xs p-4 transition-all duration-150 ease-bounce hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-pop-sm active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
         >
           <div className="flex items-center gap-3">
-            <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${tone === "amber" ? "bg-amber-500/10 text-amber-600" : tone === "blue" ? "bg-blue-500/10 text-blue-600" : "bg-rose-500/10 text-rose-600"}`}>
+            <div className={`h-10 w-10 rounded-pop flex items-center justify-center border-[2px] border-lp-ink shrink-0 ${TONE_CLASSES[tone]}`}>
               <Icon className="h-5 w-5" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs text-muted-foreground">{label}</p>
+              <p className="text-xs text-lp-body font-body">{label}</p>
               <div className="flex items-baseline gap-2">
-                <span className="font-display text-2xl font-extrabold">{value}</span>
+                <span className="font-display text-2xl font-extrabold text-lp-ink">{value}</span>
               </div>
-              <p className="text-[11px] text-muted-foreground truncate">{hint}</p>
+              <p className="text-[11px] text-lp-body truncate">{hint}</p>
             </div>
           </div>
         </button>
