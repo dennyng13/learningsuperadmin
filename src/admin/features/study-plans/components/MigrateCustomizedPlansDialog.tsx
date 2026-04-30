@@ -201,7 +201,16 @@ export default function MigrateCustomizedPlansDialog({ open, onOpenChange, onMig
                     className="mt-0.5"
                   />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{plan.plan_name || "Kế hoạch không tên"}</p>
+                    {(() => {
+                      const rawName = (plan.plan_name || "").trim();
+                      const fallback = plan.studentName?.trim();
+                      const isUnnamed = !rawName && !fallback;
+                      return (
+                        <p className={`text-sm font-medium truncate ${isUnnamed ? "italic text-muted-foreground" : ""}`}>
+                          {rawName || fallback || "(chưa đặt tên)"}
+                        </p>
+                      );
+                    })()}
                     <div className="flex flex-wrap items-center gap-1.5 mt-1">
                       {plan.studentName && (
                         <Badge variant="secondary" className="text-[10px] gap-1">

@@ -286,12 +286,20 @@ function TeacherList({ rows, onClickPlan }: { rows: TeacherRow[]; onClickPlan: (
             <CalendarClock className="h-3.5 w-3.5 text-emerald-600" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-medium truncate">
-              {r.plan_name || "(Study plan)"}
-              {r.session_type && (
-                <span className="ml-2 text-[10px] font-normal text-muted-foreground uppercase">{r.session_type}</span>
-              )}
-            </p>
+            {(() => {
+              const rawName = (r.plan_name || "").trim();
+              const isUnnamed = !rawName;
+              return (
+                <p className="font-medium truncate">
+                  <span className={cn(isUnnamed && "italic text-muted-foreground")}>
+                    {rawName || "(chưa đặt tên)"}
+                  </span>
+                  {r.session_type && (
+                    <span className="ml-2 text-[10px] font-normal text-muted-foreground uppercase">{r.session_type}</span>
+                  )}
+                </p>
+              );
+            })()}
             {r.skills.length > 0 && (
               <div className="flex flex-wrap gap-1 mt-1">
                 {r.skills.map((s) => (

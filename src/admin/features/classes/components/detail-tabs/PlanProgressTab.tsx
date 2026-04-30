@@ -178,9 +178,15 @@ export function PlanProgressTab({ classId, studyPlanId }: Props) {
             <p className="text-xs uppercase tracking-wide text-muted-foreground inline-flex items-center gap-1.5">
               <BookOpen className="h-3.5 w-3.5" /> Study Plan
             </p>
-            <h3 className="font-display text-lg font-bold truncate">
-              {plan.plan_name ?? "(Plan không tên)"}
-            </h3>
+            {(() => {
+              const rawName = (plan.plan_name || "").trim();
+              const isUnnamed = !rawName;
+              return (
+                <h3 className={cn("font-display text-lg font-bold truncate", isUnnamed && "italic text-muted-foreground")}>
+                  {rawName || "(chưa đặt tên)"}
+                </h3>
+              );
+            })()}
           </div>
           {plan.status && (
             <Badge variant="outline" className="text-[10px]">{plan.status}</Badge>
