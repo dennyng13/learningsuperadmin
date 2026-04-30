@@ -39,7 +39,6 @@ export function TemplateEditor({ template, onClose }: Props) {
     description: (template as any)?.description || "",
     program: ((template as any)?.program || "").toLowerCase(),
     assigned_level: (template as any)?.assigned_level || "",
-    course_id: (template as any)?.course_id || "",
     plan_type: (template as any)?.plan_type || "structured",
     total_sessions: (template as any)?.total_sessions || 10,
     session_duration: (template as any)?.session_duration || 60,
@@ -75,7 +74,6 @@ export function TemplateEditor({ template, onClose }: Props) {
         description: loaded.description || "",
         program: (loaded.program || "ielts").toLowerCase(),
         assigned_level: loaded.assigned_level || "",
-        course_id: (loaded as any).course_id || "",
         plan_type: loaded.plan_type,
         total_sessions: loaded.total_sessions,
         session_duration: loaded.session_duration,
@@ -113,54 +111,6 @@ export function TemplateEditor({ template, onClose }: Props) {
     () => programs.find((p) => p.key.toLowerCase() === form.program),
     [programs, form.program],
   );
-
-  // Courses scoped to selected program ----------------------------------------
-  const { courses: programCourses } = useCourses({
-    programId: selectedProgram?.id,
-    withStats: false,
-  });
-
-  // Reset course_id if it does not belong to the new program
-  useEffect(() => {
-    if (!form.course_id) return;
-    // Program "Khác" không có khoá học → bỏ gán course_id để dữ liệu không lệch.
-    if (form.program === "other") {
-      setForm((f) => ({ ...f, course_id: "" }));
-      return;
-    }
-    if (programCourses.length === 0) return;
-    if (!programCourses.some((c) => c.id === form.course_id)) {
-      setForm((f) => ({ ...f, course_id: "" }));
-    }
-  }, [form.course_id, programCourses, form.program]);
-
-  /**
-   * Auto-persist `course_id` ngay khi user chọn khoá học — chỉ áp dụng khi
-   * đang edit template đã có id (isNew thì để Save Tổng lo).
-   * Bỏ qua lần đầu (lúc hydrate từ `loaded`) bằng ref guard.
-   */
-  const initialCourseRef = useState({ initialized: false })[0];
-  useEffect(() => {
-    if (isNew || !tplId) return;
-    if (!initialCourseRef.initialized) {
-      // Lần đầu form.course_id được populate từ loaded → bỏ qua
-      if (loaded) initialCourseRef.initialized = true;
-      return;
-    }
-    const next = form.course_id || null;
-    (async () => {
-      const { error } = await (supabase as any)
-        .from("study_plan_templates")
-        .update({ course_id: next })
-        .eq("id", tplId);
-      if (error) {
-        toast.error("Lưu khoá học thất bại: " + error.message);
-      } else {
-        toast.success(next ? "Đã gán khoá học" : "Đã bỏ gán khoá học", { duration: 1500 });
-      }
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form.course_id, tplId, isNew]);
 
   const { data: programLevelLinks = [] } = useQuery({
     queryKey: ["program-levels-for-template", selectedProgram?.id],
