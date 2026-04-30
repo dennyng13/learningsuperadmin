@@ -21,15 +21,18 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@shared/components/ui/select";
 import {
-  AlertTriangle, Award, Loader2, Search, Sparkles, TrendingDown, Users, Wallet,
+  AlertTriangle, Award, BookOpen, CheckCircle2, Loader2, Search, Sparkles, TrendingDown, Users, Wallet,
 } from "lucide-react";
 import { useAvailableTeachersV2, AvailableTeacherV2 } from "@shared/hooks/useAvailableTeachersV2";
 import { useLowestRevenueTeachers } from "@shared/hooks/useLowestRevenueTeachers";
 import { useTeacherSlots } from "@shared/hooks/useTeacherSlots";
+import { useStudyPlanTemplates } from "@shared/hooks/useStudyPlanTemplates";
 import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  AssignedTeacher, DeliveryMode, ScheduleMode, WizardClassInfo, WizardSlot, WEEKDAY_LABELS,
+  AssignedTeacher, DeliveryMode, ScheduleMode, WizardClassInfo, WizardSlot,
+  WEEKDAY_LABELS, countSessionsInRange,
 } from "./wizardTypes";
 
 interface Props {
@@ -42,6 +45,12 @@ interface Props {
   setTeachers: (t: AssignedTeacher[]) => void;
   selectedSlotKeys: string[];
   setSelectedSlotKeys: (k: string[]) => void;
+  /** F2.1: setter cho study_plan_id. Wizard parent owns classInfo state — Step2
+   *  gọi callback này khi user pick template từ dropdown filter-by-course_id. */
+  setStudyPlanId: (id: string | null) => void;
+  /** F2.2: expectedSessions từ template đã chọn. null khi chưa pick template
+   *  (Customized class) — mismatch indicator ẩn. */
+  expectedSessions: number | null;
 }
 
 const VND_FMT = new Intl.NumberFormat("vi-VN");
@@ -71,6 +80,13 @@ export default function Step2Schedule(props: Props) {
 
   return (
     <div className="space-y-6">
+      <StudyPlanSection
+        classInfo={props.classInfo}
+        slot={props.slot}
+        setStudyPlanId={props.setStudyPlanId}
+        expectedSessions={props.expectedSessions}
+      />
+
       <div className="flex flex-wrap gap-2">
         {pill("by-slot",    "Theo khung thời gian", <Search className="h-3.5 w-3.5" />)}
         {pill("by-revenue", "Theo doanh thu thấp",  <TrendingDown className="h-3.5 w-3.5" />)}
@@ -80,6 +96,155 @@ export default function Step2Schedule(props: Props) {
       {props.scheduleMode === "by-slot"    && <ModeAByTimeSlotV2 {...props} />}
       {props.scheduleMode === "by-revenue" && <ModeRevenueBased  {...props} />}
       {props.scheduleMode === "by-teacher" && <ModeBByTeacher    {...props} />}
+    </div>
+  );
+}
+
+/* ───────────── F2.1 + F2.2 — Study Plan section ─────────────
+   Dropdown filter eligible templates by course_id qua junction
+   course_study_plans (Plan B, junction-only). Mismatch Alert real-time
+   compute count buổi từ slot.weekdays + classInfo.start/end_date so với
+   expectedSessions từ template đã chọn. */
+
+function StudyPlanSection({
+  classInfo, slot, setStudyPlanId, expectedSessions,
+}: {
+  classInfo: WizardClassInfo;
+  slot: WizardSlot;
+  setStudyPlanId: (id: string | null) => void;
+  expectedSessions: number | null;
+}) {
+  const { data: allTemplates } = useStudyPlanTemplates();
+
+  // Junction fetch — small table, filter by course_id, cache 5min (Tier 1 pattern).
+  const linksQ = useQuery({
+    queryKey: ["wizard-course-study-plans", classInfo.course_id],
+    enabled: !!classInfo.course_id,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("course_study_plans")
+        .select("course_id, template_id, is_default, sort_order")
+        .eq("course_id", classInfo.course_id!)
+        .order("sort_order", { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as Array<{ course_id: string; template_id: string; is_default: boolean; sort_order: number }>;
+    },
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    placeholderData: (prev) => prev,
+  });
+
+  const eligibleTemplates = useMemo(() => {
+    if (!classInfo.course_id || !allTemplates) return [];
+    const linkedIds = new Set((linksQ.data ?? []).map((l) => l.template_id));
+    if (linkedIds.size === 0) return [];
+    return allTemplates.filter((t) => linkedIds.has(t.id));
+  }, [classInfo.course_id, allTemplates, linksQ.data]);
+
+  const actualSessionCount = useMemo(
+    () => countSessionsInRange(classInfo.start_date, classInfo.end_date, slot.weekdays),
+    [classInfo.start_date, classInfo.end_date, slot.weekdays],
+  );
+
+  const dropdownDisabled = !classInfo.course_id || linksQ.isLoading || eligibleTemplates.length === 0;
+  const dropdownPlaceholder = !classInfo.course_id
+    ? "Chọn khoá học ở Step 1 (nếu có)"
+    : linksQ.isLoading
+    ? "Đang tải..."
+    : eligibleTemplates.length === 0
+    ? "Khoá này chưa có template — lớp sẽ customized"
+    : "Chọn template";
+
+  // Mismatch state — chỉ tính khi có expectedSessions
+  const hasMismatch = expectedSessions != null && actualSessionCount > 0 && actualSessionCount !== expectedSessions;
+  const isExactMatch = expectedSessions != null && actualSessionCount > 0 && actualSessionCount === expectedSessions;
+  const hasNoInputs = expectedSessions != null && actualSessionCount === 0;
+
+  return (
+    <div className="rounded-xl border bg-muted/20 p-4 space-y-3">
+      <div>
+        <Label className="inline-flex items-center gap-1.5 text-sm font-semibold">
+          <BookOpen className="h-3.5 w-3.5" /> Study Plan template (tuỳ chọn)
+        </Label>
+        <Select
+          value={classInfo.study_plan_id ?? "none"}
+          onValueChange={(v) => setStudyPlanId(v === "none" ? null : v)}
+          disabled={dropdownDisabled}
+        >
+          <SelectTrigger className="mt-1">
+            <SelectValue placeholder={dropdownPlaceholder} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">— Không gán (lớp customized) —</SelectItem>
+            {eligibleTemplates.map((t) => (
+              <SelectItem key={t.id} value={t.id}>
+                {t.template_name} · {t.total_sessions} buổi · {t.session_duration}'
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {classInfo.course_id && classInfo.course_title && eligibleTemplates.length > 0 && (
+          <p className="text-[11px] text-muted-foreground mt-1">
+            Templates link với khoá <strong>{classInfo.course_title}</strong>. Tạo template mới qua trang Mẫu kế hoạch.
+          </p>
+        )}
+        {classInfo.study_plan_id && (
+          <p className="text-[11px] text-muted-foreground mt-1">
+            ✨ Bản copy của template sẽ được tạo cho lớp này (Tier 2 instance).
+          </p>
+        )}
+      </div>
+
+      {/* F2.2 — Real-time mismatch indicator. Hidden khi không có template. */}
+      {expectedSessions != null && (
+        <div
+          className={`rounded-lg border p-3 text-sm flex items-start gap-2 ${
+            isExactMatch
+              ? "border-emerald-500/30 bg-emerald-500/5 text-emerald-900 dark:text-emerald-200"
+              : hasMismatch
+              ? "border-amber-500/40 bg-amber-500/5 text-amber-900 dark:text-amber-200"
+              : "border-muted bg-card text-muted-foreground"
+          }`}
+        >
+          {isExactMatch ? (
+            <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5 text-emerald-600 dark:text-emerald-400" />
+          ) : hasMismatch ? (
+            <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
+          ) : (
+            <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+          )}
+          <div className="space-y-0.5 flex-1">
+            <p className="font-semibold">
+              {isExactMatch
+                ? "✅ Khớp số buổi với Study Plan"
+                : hasMismatch
+                ? "⚠️ Số buổi không khớp Study Plan"
+                : hasNoInputs
+                ? "Chưa đủ dữ liệu để dự kiến"
+                : ""}
+            </p>
+            <p className="text-xs">
+              Template: <strong className="tabular-nums">{expectedSessions}</strong> buổi
+              {" · "}
+              Sẽ tạo: <strong className="tabular-nums">{actualSessionCount}</strong> buổi
+              {hasMismatch && (
+                <>
+                  {" · "}
+                  Khác: <strong className="tabular-nums">{actualSessionCount - expectedSessions > 0 ? "+" : ""}{actualSessionCount - expectedSessions}</strong>
+                </>
+              )}
+            </p>
+            {hasNoInputs && (
+              <p className="text-[11px]">Chọn weekdays + ngày kết thúc để xem dự kiến.</p>
+            )}
+            {hasMismatch && (
+              <p className="text-[11px]">
+                💡 Sửa weekdays / ngày kết thúc bên dưới để khớp, hoặc giữ và xác nhận ở Step cuối.
+              </p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

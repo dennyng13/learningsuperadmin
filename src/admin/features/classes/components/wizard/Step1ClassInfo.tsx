@@ -6,7 +6,6 @@ import { Label } from "@shared/components/ui/label";
 import { Textarea } from "@shared/components/ui/textarea";
 import { Checkbox } from "@shared/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@shared/components/ui/select";
-import { useStudyPlanTemplates, type StudyPlanTemplate } from "@shared/hooks/useStudyPlanTemplates";
 import type { WizardClassInfo } from "./wizardTypes";
 
 interface Props {
@@ -151,36 +150,6 @@ export default function Step1ClassInfo({
     placeholderData: (prev) => prev,
   });
 
-  /* Phase 1 refactor: templates đã chuyển sang `study_plan_templates`. Dùng
-     shared hook + filter client-side theo `program` (case-insensitive vì
-     dữ liệu mixed-case 'IELTS'/'WRE'/'customized'). L3 hybrid: nếu user đã
-     chọn level và level đó có study_plan_template_id → đặt template đó lên
-     đầu list. Phase 2 sẽ adapt RPC create_class_atomic để nhận template_id. */
-  const { data: allTemplates } = useStudyPlanTemplates();
-
-  const templateOptions = useMemo(() => {
-    if (!value.program) return { items: [] as StudyPlanTemplate[], hasRecommended: false };
-    const want = value.program.toLowerCase();
-    const programMatches = (allTemplates || []).filter(
-      (t) => (t.program || "").toLowerCase() === want,
-    );
-    if (value.level && levelsQ.data) {
-      const levelRow = (levelsQ.data as Array<{ name: string; study_plan_template_id?: string | null }>)
-        .find((l) => l.name === value.level);
-      const recId = levelRow?.study_plan_template_id;
-      if (recId) {
-        const rec = programMatches.find((t) => t.id === recId);
-        if (rec) {
-          return {
-            items: [rec, ...programMatches.filter((t) => t.id !== rec.id)],
-            hasRecommended: true,
-          };
-        }
-      }
-    }
-    return { items: programMatches, hasRecommended: false };
-  }, [allTemplates, value.program, value.level, levelsQ.data]);
-
   /* Levels visible trong dropdown:
        - Nếu user pick course → chỉ hiện levels nằm trong course.level_ids.
        - Nếu chưa pick course (hoặc skip "— Không gắn —") → hiện toàn bộ levels
@@ -255,12 +224,14 @@ export default function Step1ClassInfo({
             // Course gắn riêng mỗi program → đổi program = course cũ vô nghĩa.
             // course_title auto-filled từ course → cũng phải reset.
             // Level: chỉ giữ nếu vẫn IELTS (chỉ IELTS có level dropdown).
+            // study_plan_id: reset (eligibleTemplates ở Step 2 filter by course_id).
             onChange({
               ...value,
               program: v,
               course_id: null,
               course_title: "",
               level: v === "ielts" ? value.level : "",
+              study_plan_id: null,
             });
           }}
         >
@@ -284,7 +255,8 @@ export default function Step1ClassInfo({
           value={value.course_id ?? "none"}
           onValueChange={(v) => {
             if (v === "none") {
-              onChange({ ...value, course_id: null });
+              // Reset study_plan_id cùng — eligibleTemplates ở Step 2 filter theo course_id.
+              onChange({ ...value, course_id: null, study_plan_id: null });
             } else {
               const course = (coursesQ.data ?? []).find((c) => c.id === v);
               onChange({
@@ -292,6 +264,7 @@ export default function Step1ClassInfo({
                 course_id: v,
                 course_title: course?.name ?? value.course_title,
                 level: "",
+                study_plan_id: null,
               });
             }
           }}
@@ -375,21 +348,8 @@ export default function Step1ClassInfo({
         <Textarea rows={3} value={value.description} onChange={(e) => set("description", e.target.value)} />
       </div>
 
-      <div className="md:col-span-2">
-        <Label>Study plan template</Label>
-        <Select value={value.study_plan_id ?? "none"} onValueChange={(v) => set("study_plan_id", v === "none" ? null : v)} disabled={!value.program}>
-          <SelectTrigger><SelectValue placeholder={value.program ? "Chọn study plan (optional)" : "Chọn program trước"} /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="none">— Không gán —</SelectItem>
-            {templateOptions.items.map((t, idx) => (
-              <SelectItem key={t.id} value={t.id}>
-                {idx === 0 && templateOptions.hasRecommended ? "⭐ " : ""}
-                {t.template_name} · {t.total_sessions} buổi · {t.session_duration}'
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      {/* Study plan template dropdown đã move sang Step 2 (Phase F2.1) — filter
+          eligible templates theo course_id qua junction course_study_plans. */}
 
       <div className="md:col-span-2 flex items-center gap-2">
         <Checkbox id="lb" checked={value.leaderboard_enabled} onCheckedChange={(c) => set("leaderboard_enabled", !!c)} />

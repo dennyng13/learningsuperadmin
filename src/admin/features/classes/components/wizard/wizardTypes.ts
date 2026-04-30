@@ -160,6 +160,26 @@ export function computeEndDateForSessions(
   return startDate;
 }
 
+/** Count buổi học giữa startDate..endDate matching weekdays — KHÔNG generate
+ *  full DraftSession array. Dùng cho real-time mismatch indicator ở Step 2
+ *  (F2.2) khi sessions chưa generate (mới generate ở Step 3 entry effect).
+ *  Trả 0 khi input không hợp lệ. Safety bound 730 days giống generateSessions. */
+export function countSessionsInRange(
+  startDate: string,
+  endDate: string,
+  weekdays: number[],
+): number {
+  if (!startDate || !endDate || weekdays.length === 0) return 0;
+  const start = new Date(startDate + "T00:00:00");
+  const end = new Date(endDate + "T00:00:00");
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) return 0;
+  let count = 0;
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    if (weekdays.includes(d.getDay())) count++;
+  }
+  return count;
+}
+
 /** Walk BACKWARD từ endDate để compute start_date — sao cho count buổi đạt
  *  totalSessions giữa start..end với weekdays đã chọn. Dùng khi user đổi
  *  end_date manual và chọn "Tự động đổi ngày khai giảng" để giữ N buổi. */

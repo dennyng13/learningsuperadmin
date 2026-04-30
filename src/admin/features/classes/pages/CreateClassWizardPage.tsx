@@ -427,6 +427,8 @@ export default function CreateClassWizardPage() {
             setTeachers={setTeachers}
             selectedSlotKeys={selectedSlotKeys}
             setSelectedSlotKeys={setSelectedSlotKeys}
+            setStudyPlanId={(id) => setClassInfo((prev) => ({ ...prev, study_plan_id: id }))}
+            expectedSessions={expectedSessions}
           />
         )}
         {step === 3 && (
