@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
+import mascotHero from "@/assets/mascot-hero.png";
 import {
   FileText, Layers,
   Upload, BarChart3, UserPlus, Award,
@@ -324,16 +325,16 @@ function AdminDashboardPageInner() {
         tone="teal"
         title={
           <>
-            <div className="text-[11px] tracking-[0.18em] font-display font-bold text-white/70 uppercase mb-2">
+            <span className="block text-[11px] tracking-[0.18em] font-display font-bold text-white/70 uppercase mb-2">
               Dashboard · {todayLabel}
-            </div>
+            </span>
             <span className="block">Mọi chuyến đi đều</span>
-            <span className="inline-flex items-center gap-2 mt-1">
+            <span className="inline-flex items-center flex-wrap gap-2 mt-1">
               <span className="inline-block bg-lp-yellow text-lp-ink border-[2.5px] border-lp-ink rounded-pop px-3 py-0.5 leading-tight">
                 an toàn cập bến
               </span>
               <span>hôm nay</span>
-              <Waves className="size-7 text-white" strokeWidth={2.5} />
+              <Waves className="size-7 text-white inline-block" strokeWidth={2.5} />
             </span>
           </>
         }
@@ -345,19 +346,30 @@ function AdminDashboardPageInner() {
           </>
         }
         action={
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <PopButton tone="ink" size="md" onClick={() => navigate("/classes/list?action=create")}>
-              <Plus className="size-4" /> Tạo lớp mới
+              <Plus className="size-4" />
+              <span>Tạo lớp mới</span>
             </PopButton>
             <PopButton tone="white" size="md" onClick={() => navigate("/tests/import")}>
-              <Upload className="size-4" /> Import đề thi
+              <Upload className="size-4" />
+              <span>Import đề thi</span>
             </PopButton>
             <PopButton tone="yellow" size="md" onClick={() => navigate("/insights")}>
-              <Sparkles className="size-4" /> AI Insights
+              <Sparkles className="size-4" />
+              <span>AI Insights</span>
             </PopButton>
           </div>
         }
-        illustration={<Waves className="size-32 text-white/90 animate-bob" strokeWidth={1.5} />}
+        illustration={
+          <img
+            src={mascotHero}
+            alt="Max mascot"
+            className="size-40 object-contain animate-bob drop-shadow-[3px_3px_0_var(--lp-ink)]"
+            loading="eager"
+            decoding="async"
+          />
+        }
       />
 
 
