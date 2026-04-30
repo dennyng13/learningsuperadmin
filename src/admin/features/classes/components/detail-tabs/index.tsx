@@ -1,4 +1,4 @@
-import { BarChart3, Activity, Trophy, ClipboardList } from "lucide-react";
+import { Activity, Trophy } from "lucide-react";
 import { BackendPendingTab } from "./PlaceholderTab";
 
 export { AnnouncementsTab } from "./AnnouncementsTab";
@@ -9,31 +9,9 @@ export { OverviewTab } from "./OverviewTab";
 export { RevenueTab } from "./RevenueTab";
 export { PayrollTab } from "./PayrollTab";
 export { LifecycleTab } from "./LifecycleTab";
+export { PlanProgressTab } from "./PlanProgressTab";
 
-/* ─── 3 tabs còn chờ backend ─── */
-
-export function PlanProgressTab({ studyPlanId }: { classId: string; studyPlanId: string | null }) {
-  if (!studyPlanId) {
-    return (
-      <BackendPendingTab
-        icon={ClipboardList}
-        title="Tiến độ kế hoạch"
-        description="Lớp hiện chưa được gắn study plan nào. Vào tab Cấu hình để gán study plan, sau đó mở lại tab này để xem tiến độ on-track / behind / ahead."
-      />
-    );
-  }
-  return (
-    <BackendPendingTab
-      icon={BarChart3}
-      title="Tiến độ kế hoạch"
-      description={`Tab này sẽ hiển thị progress của study plan #${studyPlanId.slice(0, 8)} so với lịch học thực tế.`}
-      checklist={[
-        "Logic calcPlanProgress(plan, sessions) đã có trong @shared/utils/studyPlanProgress",
-        "Cần class_sessions để map session_no → ngày thực tế",
-      ]}
-    />
-  );
-}
+/* ─── 2 tabs còn chờ backend ─── */
 
 export function ActivityTab(_: { classId: string }) {
   return (
