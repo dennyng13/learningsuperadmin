@@ -18,6 +18,7 @@ import {
 } from "../components/wizard/wizardTypes";
 import { useCreateClass } from "@shared/hooks/useCreateClass";
 import { useCreateClassWithTemplate } from "@shared/hooks/useCreateClassWithTemplate";
+import { useStudyPlanTemplates } from "@shared/hooks/useStudyPlanTemplates";
 import { supabase } from "@/integrations/supabase/client";
 
 const STEPS = [
@@ -27,10 +28,6 @@ const STEPS = [
   { id: 4, title: "Preview buổi học" },
   { id: 5, title: "Xác nhận" },
 ];
-
-/** Lớp có ≥ N buổi cần xác nhận trước khi tạo. Đa số IELTS course 10-12
- *  buổi normal; > 12 buổi mới warn (đại diện "lớp đặc biệt dài"). */
-const SESSIONS_CONFIRM_THRESHOLD = 12;
 
 export default function CreateClassWizardPage() {
   const navigate = useNavigate();
@@ -44,13 +41,22 @@ export default function CreateClassWizardPage() {
   const [selectedSlotKeys, setSelectedSlotKeys] = useState<string[]>([]);
   const [sessions, setSessions] = useState<DraftSession[]>([]);
 
-  // Confirm gate state cho lớp lớn (≥ SESSIONS_CONFIRM_THRESHOLD buổi).
-  // Reset confirmedLargeClass khi user goBack để force re-confirm sau khi sửa.
-  const [showLargeClassConfirm, setShowLargeClassConfirm] = useState(false);
-  const [confirmedLargeClass, setConfirmedLargeClass] = useState(false);
+  // Confirm gate state khi số buổi generated ≠ study_plan.total_sessions.
+  // Reset confirmedMismatch khi user goBack để force re-confirm sau khi sửa.
+  const [showMismatchConfirm, setShowMismatchConfirm] = useState(false);
+  const [confirmedMismatch, setConfirmedMismatch] = useState(false);
 
   const createMutation = useCreateClass();
   const createWithTemplateMutation = useCreateClassWithTemplate();
+  const { data: allTemplates } = useStudyPlanTemplates();
+
+  // Expected số buổi từ study plan template đã chọn. null khi không có
+  // study_plan_id (Customized class) — skip mismatch check.
+  const expectedSessions = useMemo(() => {
+    if (!classInfo.study_plan_id || !allTemplates) return null;
+    const tpl = allTemplates.find((t) => t.id === classInfo.study_plan_id);
+    return tpl?.total_sessions ?? null;
+  }, [classInfo.study_plan_id, allTemplates]);
 
   const isDirty = useMemo(() => {
     return (
@@ -134,7 +140,7 @@ export default function CreateClassWizardPage() {
 
   const goBack = () => {
     // Reset confirm flag — user có thể sửa lịch/sessions thay đổi count buổi.
-    setConfirmedLargeClass(false);
+    setConfirmedMismatch(false);
     setStep((s) => (Math.max(1, s - 1) as 1 | 2 | 3 | 4 | 5));
   };
 
@@ -163,9 +169,14 @@ export default function CreateClassWizardPage() {
 
   const handleSubmit = async () => {
     const active = sessions.filter((s) => !s.cancelled);
-    // Gate: confirm nếu lớp lớn (≥ SESSIONS_CONFIRM_THRESHOLD buổi) và chưa confirm.
-    if (active.length >= SESSIONS_CONFIRM_THRESHOLD && !confirmedLargeClass) {
-      setShowLargeClassConfirm(true);
+    // Mismatch gate: chỉ check khi có study plan + expected count + chưa confirm.
+    // Customized class (no study plan) bypass — không có baseline để so sánh.
+    if (
+      expectedSessions != null &&
+      active.length !== expectedSessions &&
+      !confirmedMismatch
+    ) {
+      setShowMismatchConfirm(true);
       return;
     }
     await executeSubmit();
@@ -362,38 +373,60 @@ export default function CreateClassWizardPage() {
         )}
       </div>
 
-      {/* Confirm gate khi lớp ≥ SESSIONS_CONFIRM_THRESHOLD buổi. */}
-      <AlertDialog open={showLargeClassConfirm} onOpenChange={setShowLargeClassConfirm}>
+      {/* Confirm gate khi số buổi generated ≠ study_plan.total_sessions. */}
+      <AlertDialog open={showMismatchConfirm} onOpenChange={setShowMismatchConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Xác nhận tạo lớp lớn?</AlertDialogTitle>
+            <AlertDialogTitle>Số buổi không khớp với Study Plan</AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-2">
-                <p>
-                  Lớp này có{" "}
-                  <strong>{sessions.filter((s) => !s.cancelled).length} buổi học</strong>.
-                </p>
-                <div className="text-sm space-y-1 mt-2">
-                  <div>Thời gian: <strong>{classInfo.start_date}</strong> → <strong>{classInfo.end_date}</strong></div>
-                  <div>Số giáo viên: <strong>{teachers.length}</strong></div>
-                  {classInfo.room_id && <div>Đã gán phòng học</div>}
-                </div>
-                <p className="mt-2 text-amber-600 dark:text-amber-400 text-sm">
-                  ⚠️ Lớp lớn (≥{SESSIONS_CONFIRM_THRESHOLD} buổi) cần xác nhận trước khi tạo. Việc hủy sau sẽ cần thao tác thủ công.
-                </p>
+                {(() => {
+                  const generated = sessions.filter((s) => !s.cancelled).length;
+                  const expected = expectedSessions ?? 0;
+                  const diff = generated - expected;
+                  return (
+                    <>
+                      <p>
+                        Study plan đã chọn có <strong>{expected} buổi expected</strong>,
+                        nhưng lớp được generate <strong>{generated} buổi</strong>.
+                      </p>
+                      <div className="text-sm space-y-1 mt-2">
+                        <div>
+                          Khác biệt:{" "}
+                          <strong className={diff > 0 ? "text-blue-600" : "text-amber-600"}>
+                            {diff > 0 ? "+" : ""}{diff} buổi
+                          </strong>
+                        </div>
+                        <div>
+                          Thời gian: <strong>{classInfo.start_date}</strong> → <strong>{classInfo.end_date}</strong>
+                        </div>
+                      </div>
+                      <p className="mt-2 text-sm text-muted-foreground">
+                        💡 Bạn có thể quay lại Step 2 để sửa start/end_date hoặc weekdays để khớp số buổi expected.
+                      </p>
+                    </>
+                  );
+                })()}
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Quay lại chỉnh sửa</AlertDialogCancel>
+            <AlertDialogCancel
+              onClick={() => {
+                setShowMismatchConfirm(false);
+                setStep(2);
+              }}
+            >
+              Quay lại Step 2 sửa lịch
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={async () => {
-                setConfirmedLargeClass(true);
-                setShowLargeClassConfirm(false);
+                setConfirmedMismatch(true);
+                setShowMismatchConfirm(false);
                 await executeSubmit();
               }}
             >
-              Tạo lớp ({sessions.filter((s) => !s.cancelled).length} buổi)
+              Tạo lớp anyway ({sessions.filter((s) => !s.cancelled).length} buổi)
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
