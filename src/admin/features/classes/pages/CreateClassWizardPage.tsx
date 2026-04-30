@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@shared/components/ui/button";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@shared/components/ui/alert-dialog";
 import { ArrowLeft, ArrowRight, Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import Step1ClassInfo from "../components/wizard/Step1ClassInfo";
@@ -24,6 +28,10 @@ const STEPS = [
   { id: 5, title: "Xác nhận" },
 ];
 
+/** Lớp có ≥ N buổi cần xác nhận trước khi tạo. Đa số IELTS course 10-12
+ *  buổi normal; > 12 buổi mới warn (đại diện "lớp đặc biệt dài"). */
+const SESSIONS_CONFIRM_THRESHOLD = 12;
+
 export default function CreateClassWizardPage() {
   const navigate = useNavigate();
   const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1);
@@ -35,6 +43,11 @@ export default function CreateClassWizardPage() {
   const [teachers, setTeachers] = useState<AssignedTeacher[]>([]);
   const [selectedSlotKeys, setSelectedSlotKeys] = useState<string[]>([]);
   const [sessions, setSessions] = useState<DraftSession[]>([]);
+
+  // Confirm gate state cho lớp lớn (≥ SESSIONS_CONFIRM_THRESHOLD buổi).
+  // Reset confirmedLargeClass khi user goBack để force re-confirm sau khi sửa.
+  const [showLargeClassConfirm, setShowLargeClassConfirm] = useState(false);
+  const [confirmedLargeClass, setConfirmedLargeClass] = useState(false);
 
   const createMutation = useCreateClass();
   const createWithTemplateMutation = useCreateClassWithTemplate();
@@ -119,7 +132,11 @@ export default function CreateClassWizardPage() {
     setStep((s) => (Math.min(5, s + 1) as 1 | 2 | 3 | 4 | 5));
   };
 
-  const goBack = () => setStep((s) => (Math.max(1, s - 1) as 1 | 2 | 3 | 4 | 5));
+  const goBack = () => {
+    // Reset confirm flag — user có thể sửa lịch/sessions thay đổi count buổi.
+    setConfirmedLargeClass(false);
+    setStep((s) => (Math.max(1, s - 1) as 1 | 2 | 3 | 4 | 5));
+  };
 
   const handleCancel = () => {
     if (isDirty && !confirm("Bạn có dữ liệu chưa lưu. Hủy?")) return;
@@ -145,6 +162,16 @@ export default function CreateClassWizardPage() {
   });
 
   const handleSubmit = async () => {
+    const active = sessions.filter((s) => !s.cancelled);
+    // Gate: confirm nếu lớp lớn (≥ SESSIONS_CONFIRM_THRESHOLD buổi) và chưa confirm.
+    if (active.length >= SESSIONS_CONFIRM_THRESHOLD && !confirmedLargeClass) {
+      setShowLargeClassConfirm(true);
+      return;
+    }
+    await executeSubmit();
+  };
+
+  const executeSubmit = async () => {
     const active = sessions.filter((s) => !s.cancelled);
     const primaryIds = teachers.filter((t) => t.role === "primary").map((t) => t.teacher_id);
     const taIds      = teachers.filter((t) => t.role === "ta").map((t) => t.teacher_id);
@@ -334,6 +361,43 @@ export default function CreateClassWizardPage() {
           </Button>
         )}
       </div>
+
+      {/* Confirm gate khi lớp ≥ SESSIONS_CONFIRM_THRESHOLD buổi. */}
+      <AlertDialog open={showLargeClassConfirm} onOpenChange={setShowLargeClassConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Xác nhận tạo lớp lớn?</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2">
+                <p>
+                  Lớp này có{" "}
+                  <strong>{sessions.filter((s) => !s.cancelled).length} buổi học</strong>.
+                </p>
+                <div className="text-sm space-y-1 mt-2">
+                  <div>Thời gian: <strong>{classInfo.start_date}</strong> → <strong>{classInfo.end_date}</strong></div>
+                  <div>Số giáo viên: <strong>{teachers.length}</strong></div>
+                  {classInfo.room_id && <div>Đã gán phòng học</div>}
+                </div>
+                <p className="mt-2 text-amber-600 dark:text-amber-400 text-sm">
+                  ⚠️ Lớp lớn (≥{SESSIONS_CONFIRM_THRESHOLD} buổi) cần xác nhận trước khi tạo. Việc hủy sau sẽ cần thao tác thủ công.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Quay lại chỉnh sửa</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                setConfirmedLargeClass(true);
+                setShowLargeClassConfirm(false);
+                await executeSubmit();
+              }}
+            >
+              Tạo lớp ({sessions.filter((s) => !s.cancelled).length} buổi)
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
