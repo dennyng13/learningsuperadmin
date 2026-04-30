@@ -54,14 +54,14 @@ export function AdminSidebar() {
 
   return (
     <aside
-      className="relative w-64 min-h-screen flex flex-col bg-lp-ink text-white shrink-0"
+      className="sticky top-0 self-start h-screen w-64 flex flex-col bg-lp-ink text-white shrink-0"
       data-portal="admin"
     >
       {/* Teal accent strip — admin signature */}
       <div aria-hidden="true" className="absolute inset-y-0 left-0 w-1 bg-lp-teal" />
 
       {/* Header */}
-      <div className="relative pl-5 pr-3 py-4 border-b-2 border-white/10 flex items-start justify-between gap-2">
+      <div className="relative pl-5 pr-3 py-4 border-b-2 border-white/10 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
           {logoUrl ? (
             <img src={logoUrl} alt="" className="h-9 w-9 object-contain shrink-0" />
