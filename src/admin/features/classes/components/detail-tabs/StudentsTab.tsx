@@ -22,6 +22,7 @@ import {
 import { Skeleton } from "@shared/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@shared/components/ui/avatar";
 import { cn } from "@shared/lib/utils";
+import { formatDateDDMMYYYY } from "@shared/utils/dateFormat";
 
 /* ─────────────────────────────────────────────────────────────────────────────
  * StudentsTab — danh sách học viên trong lớp dựa trên bảng class_enrollments
@@ -221,7 +222,7 @@ export function StudentsTab({ classId }: { classId: string }) {
                 <div className="text-right shrink-0">
                   <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Enroll</p>
                   <p className="text-[11px] font-medium">
-                    {new Date(row.enrolled_at).toLocaleDateString("vi-VN")}
+                    {formatDateDDMMYYYY(row.enrolled_at)}
                   </p>
                 </div>
                 <DropdownMenu>

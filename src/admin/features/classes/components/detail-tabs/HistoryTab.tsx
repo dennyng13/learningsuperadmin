@@ -1,6 +1,7 @@
 import { History as HistoryIcon } from "lucide-react";
 import ClassStatusBadge from "@shared/components/admin/ClassStatusBadge";
 import type { ClassDetail } from "@admin/features/classes/components/ClassInfoCard";
+import { formatDateTimeDDMMYYYY } from "@shared/utils/dateFormat";
 
 /**
  * Tab "Lịch sử" — placeholder timeline dựng từ thông tin có sẵn trên
@@ -38,7 +39,7 @@ export function HistoryTab({ cls }: { cls: ClassDetail }) {
             <li key={i} className="ml-4">
               <div className="absolute -left-[5px] mt-1.5 h-2.5 w-2.5 rounded-full bg-primary" />
               <p className="text-[11px] text-muted-foreground">
-                {new Date(e.ts).toLocaleString("vi-VN")}
+                {formatDateTimeDDMMYYYY(e.ts)}
               </p>
               <div className="flex items-center gap-2 mt-1 flex-wrap">
                 <span className="text-sm">{e.label}</span>

@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@shared/components/ui/button";
 import { Card } from "@shared/components/ui/card";
 import { Skeleton } from "@shared/components/ui/skeleton";
+import { formatDateDDMMYYYY } from "@shared/utils/dateFormat";
 import { Input } from "@shared/components/ui/input";
 import { Label } from "@shared/components/ui/label";
 import {
@@ -265,9 +266,7 @@ export function PayrollTab({ classId }: { classId: string }) {
                   {fmtVND(r.total_payable_vnd)}
                 </td>
                 <td className="px-4 py-2.5 text-xs text-muted-foreground">
-                  {r.last_session_at
-                    ? new Date(r.last_session_at).toLocaleDateString("vi-VN")
-                    : "—"}
+                  {formatDateDDMMYYYY(r.last_session_at)}
                 </td>
               </tr>
             ))}

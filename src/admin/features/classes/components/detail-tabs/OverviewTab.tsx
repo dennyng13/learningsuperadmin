@@ -2,6 +2,7 @@ import { Activity, Users, Calendar, Mail, BookOpen, GraduationCap, Wallet, Bankn
 import { Card } from "@shared/components/ui/card";
 import { Progress } from "@shared/components/ui/progress";
 import type { ClassDetail } from "@admin/features/classes/components/ClassInfoCard";
+import { formatDateTimeDDMMYYYY } from "@shared/utils/dateFormat";
 
 function formatVNDCompact(n: number): string {
   if (n >= 1_000_000_000) return (n / 1_000_000_000).toFixed(1).replace(/\.0$/, "") + "T₫";
@@ -164,7 +165,7 @@ export function OverviewTab({
               <p className="text-muted-foreground">{cls.cancellation_reason}</p>
               {cls.status_changed_at && (
                 <p className="text-muted-foreground">
-                  {new Date(cls.status_changed_at).toLocaleString("vi-VN")}
+                  {formatDateTimeDDMMYYYY(cls.status_changed_at)}
                 </p>
               )}
             </div>

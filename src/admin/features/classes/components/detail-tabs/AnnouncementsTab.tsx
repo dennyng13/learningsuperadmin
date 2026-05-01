@@ -6,6 +6,7 @@ import { Plus, Pin, Trash2, Pencil, Megaphone, Loader2 } from "lucide-react";
 import { Button } from "@shared/components/ui/button";
 import { Input } from "@shared/components/ui/input";
 import { Textarea } from "@shared/components/ui/textarea";
+import { formatDateTimeDDMMYYYY } from "@shared/utils/dateFormat";
 import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
 } from "@shared/components/ui/dialog";
@@ -161,7 +162,7 @@ export function AnnouncementsTab({ classId }: { classId: string }) {
                   </p>
                 )}
                 <p className="text-[10px] text-muted-foreground mt-1.5">
-                  Cập nhật {new Date(a.updated_at).toLocaleString("vi-VN")}
+                  Cập nhật {formatDateTimeDDMMYYYY(a.updated_at)}
                 </p>
               </div>
               <div className="flex items-center gap-0.5">

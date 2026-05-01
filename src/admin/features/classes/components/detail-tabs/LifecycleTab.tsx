@@ -11,6 +11,7 @@ import ClassStatusBadge, {
 import { Button } from "@shared/components/ui/button";
 import { Badge } from "@shared/components/ui/badge";
 import { Skeleton } from "@shared/components/ui/skeleton";
+import { formatDateTimeDDMMYYYY } from "@shared/utils/dateFormat";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter,
   DialogHeader, DialogTitle,
@@ -281,7 +282,7 @@ export function LifecycleTab({ cls }: { cls: ClassDetail }) {
               <li key={e.id} className="ml-4">
                 <div className="absolute -left-[5px] mt-1.5 h-2.5 w-2.5 rounded-full bg-primary" />
                 <p className="text-[11px] text-muted-foreground">
-                  {new Date(e.created_at).toLocaleString("vi-VN")}
+                  {formatDateTimeDDMMYYYY(e.created_at)}
                 </p>
                 <div className="flex items-center gap-2 mt-1 flex-wrap text-sm">
                   {e.from_status && (

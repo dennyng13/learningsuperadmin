@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@shared/components/ui/card";
 import { Skeleton } from "@shared/components/ui/skeleton";
 import { Button } from "@shared/components/ui/button";
+import { formatDateDDMMYYYY } from "@shared/utils/dateFormat";
 import {
   Select,
   SelectContent,
@@ -159,7 +160,7 @@ export function RevenueTab({ classId }: { classId: string }) {
           value={fmt(Math.abs(outstanding))}
           subtext={
             r.last_payment_date
-              ? `Lần thu cuối: ${new Date(r.last_payment_date).toLocaleDateString("vi-VN")}`
+              ? `Lần thu cuối: ${formatDateDDMMYYYY(r.last_payment_date)}`
               : "Chưa có giao dịch"
           }
           tone={outstanding > 0 ? "warning" : "success"}
@@ -217,7 +218,7 @@ export function RevenueTab({ classId }: { classId: string }) {
                 {rows.map((p) => (
                   <tr key={p.id} className="hover:bg-muted/30">
                     <td className="px-4 py-2 tabular-nums">
-                      {new Date(p.payment_date).toLocaleDateString("vi-VN")}
+                      {formatDateDDMMYYYY(p.payment_date)}
                     </td>
                     <td className="px-4 py-2 font-semibold tabular-nums">{fmt(p.amount)}</td>
                     <td className="px-4 py-2 text-muted-foreground">{p.payment_method ?? "—"}</td>
