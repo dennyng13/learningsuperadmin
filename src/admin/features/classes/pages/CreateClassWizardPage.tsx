@@ -581,44 +581,58 @@ export default function CreateClassWizardPage() {
 
       {/* Confirm dialog khi user manual edit end_date sau auto-calc.
           3 lựa chọn: đổi start_date (giữ N buổi) | giữ start_date (chấp nhận
-          khác số buổi → mark override) | hủy (revert end_date về previous). */}
-      <AlertDialog
-        open={showEndDateChangeConfirm}
-        onOpenChange={(open) => { if (!open) cancelEndDateChange(); }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Bạn vừa đổi ngày kết thúc</AlertDialogTitle>
-            <AlertDialogDescription asChild>
-              <div className="space-y-2">
-                <p>
-                  Lớp đang auto-tính theo Study Plan ({expectedSessions ?? 0} buổi).
-                  Bạn vừa đổi ngày kết thúc sang{" "}
-                  <strong>
-                    {pendingEndDate
-                      ? new Date(pendingEndDate + "T00:00:00").toLocaleDateString("vi-VN")
-                      : "—"}
-                  </strong>.
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Bạn muốn xử lý thế nào?
-                </p>
-              </div>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="flex-col gap-2 sm:flex-col sm:space-x-0">
-            <AlertDialogAction onClick={confirmChangeStartDate} className="w-full">
-              Tự động đổi ngày khai giảng (giữ {expectedSessions ?? 0} buổi)
-            </AlertDialogAction>
-            <Button variant="outline" onClick={confirmKeepStartDate} className="w-full">
-              Giữ ngày khai giảng (chấp nhận khác số buổi)
-            </Button>
-            <AlertDialogCancel onClick={cancelEndDateChange} className="w-full mt-0">
-              Hủy
-            </AlertDialogCancel>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+          khác số buổi → mark override) | hủy (revert end_date về previous).
+          #C3: Preview ngày khai giảng / kết thúc mới hiển thị trong button label. */}
+      {(() => {
+        // Compute previews ahead of time for display
+        const previewNewStart = pendingEndDate && expectedSessions != null && slot.weekdays.length > 0
+          ? computeStartDateForSessions(pendingEndDate, slot.weekdays, expectedSessions)
+          : null;
+        const previewNewEnd = pendingEndDate;
+        const fmtVN = (iso: string | null) =>
+          iso ? new Date(iso + "T00:00:00").toLocaleDateString("vi-VN") : "—";
+        return (
+          <AlertDialog
+            open={showEndDateChangeConfirm}
+            onOpenChange={(open) => { if (!open) cancelEndDateChange(); }}
+          >
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Bạn vừa đổi ngày kết thúc</AlertDialogTitle>
+                <AlertDialogDescription asChild>
+                  <div className="space-y-2">
+                    <p>
+                      Lớp đang auto-tính theo Study Plan ({expectedSessions ?? 0} buổi).
+                      Bạn vừa đổi ngày kết thúc sang{" "}
+                      <strong>{fmtVN(pendingEndDate)}</strong>.
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Bạn muốn xử lý thế nào?
+                    </p>
+                  </div>
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter className="flex-col gap-2 sm:flex-col sm:space-x-0">
+                <AlertDialogAction onClick={confirmChangeStartDate} className="w-full flex-col h-auto py-2.5">
+                  <span>Tự động đổi ngày khai giảng (giữ {expectedSessions ?? 0} buổi)</span>
+                  <span className="text-[11px] opacity-80 font-normal mt-0.5">
+                    → Khai giảng mới: <strong>{fmtVN(previewNewStart)}</strong>
+                  </span>
+                </AlertDialogAction>
+                <Button variant="outline" onClick={confirmKeepStartDate} className="w-full flex-col h-auto py-2.5">
+                  <span>Giữ ngày khai giảng (chấp nhận khác số buổi)</span>
+                  <span className="text-[11px] opacity-80 font-normal mt-0.5">
+                    → Kết thúc mới: <strong>{fmtVN(previewNewEnd)}</strong>
+                  </span>
+                </Button>
+                <AlertDialogCancel onClick={cancelEndDateChange} className="w-full mt-0">
+                  Hủy
+                </AlertDialogCancel>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        );
+      })()}
     </div>
   );
 }
