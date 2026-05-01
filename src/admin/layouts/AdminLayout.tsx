@@ -6,7 +6,7 @@ import { Outlet } from "react-router-dom";
 import { useIsMobile } from "@shared/hooks/use-mobile";
 import { Bell, Search, BellOff } from "lucide-react";
 import { useAuth } from "@shared/hooks/useAuth";
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Popover,
   PopoverContent,
@@ -26,6 +26,12 @@ export default function AdminLayout() {
   const greeting = useMemo(() => getGreeting(), []);
   const displayName = (user?.email?.split("@")[0] || "Admin").replace(/[._-]/g, " ");
   const initial = displayName.charAt(0).toUpperCase();
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (searchOpen) searchInputRef.current?.focus();
+  }, [searchOpen]);
 
   return (
     <div className="min-h-screen flex w-full bg-lp-bg">
@@ -43,25 +49,41 @@ export default function AdminLayout() {
             </p>
           </div>
 
-          {/* Search bar — sticker style */}
-          <div className="hidden lg:flex items-center gap-2 ml-4 px-3.5 h-10 rounded-full bg-white border-[2px] border-lp-ink focus-within:shadow-pop-xs transition-all w-[280px] xl:w-[360px]">
-            <Search className="h-4 w-4 text-lp-body shrink-0" />
-            <input
-              type="text"
-              placeholder="Tìm kiếm học viên, lớp, đề thi…"
-              className="bg-transparent outline-none border-0 text-sm flex-1 placeholder:text-lp-body/70 text-lp-ink"
-            />
-            <kbd className="hidden xl:inline-flex h-5 items-center px-1.5 rounded bg-lp-cream text-[10px] font-mono text-lp-body border border-lp-ink/30">
-              ⌘K
-            </kbd>
-          </div>
-
           {/* Spacer + breadcrumb on small/medium */}
           <div className="lg:hidden flex-1 min-w-0 flex items-center">
             <GlobalBackButton />
             <AdminBreadcrumb />
           </div>
           <div className="hidden lg:block ml-auto" />
+
+          {/* Search — collapsible icon → input on click */}
+          {searchOpen ? (
+            <div className="hidden lg:flex items-center gap-2 px-3.5 h-10 rounded-full bg-white border-[2px] border-lp-ink shadow-pop-xs transition-all w-[280px] xl:w-[360px]">
+              <Search className="h-4 w-4 text-lp-body shrink-0" />
+              <input
+                ref={searchInputRef}
+                type="text"
+                placeholder="Tìm kiếm học viên, lớp, đề thi…"
+                className="bg-transparent outline-none border-0 text-sm flex-1 placeholder:text-lp-body/70 text-lp-ink"
+                onBlur={() => setSearchOpen(false)}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") setSearchOpen(false);
+                }}
+              />
+              <kbd className="hidden xl:inline-flex h-5 items-center px-1.5 rounded bg-lp-cream text-[10px] font-mono text-lp-body border border-lp-ink/30">
+                Esc
+              </kbd>
+            </div>
+          ) : (
+            <button
+              type="button"
+              aria-label="Tìm kiếm"
+              onClick={() => setSearchOpen(true)}
+              className="hidden lg:flex h-10 w-10 rounded-pop bg-white border-[2px] border-lp-ink shadow-pop-xs hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-pop-sm active:translate-x-0.5 active:translate-y-0.5 active:shadow-none items-center justify-center transition-all duration-150 text-lp-ink"
+            >
+              <Search className="h-[18px] w-[18px]" strokeWidth={2.2} />
+            </button>
+          )}
 
           {/* Notification bell — sticker IconButton */}
           <Popover>
