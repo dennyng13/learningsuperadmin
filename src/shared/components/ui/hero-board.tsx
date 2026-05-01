@@ -49,7 +49,7 @@ export function HeroBoard({
               <p className="text-sm md:text-base opacity-80 font-body max-w-2xl">{subtitle}</p>
             )}
           </div>
-          {action && <div className="mt-4 flex justify-start md:justify-end">{action}</div>}
+          {action && <div className="mt-4 flex justify-start">{action}</div>}
         </div>
         {illustration && (
           <aside className="hidden md:flex items-center justify-center shrink-0 w-32 lg:w-40">
