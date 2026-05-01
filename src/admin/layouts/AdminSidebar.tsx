@@ -82,9 +82,14 @@ export function AdminSidebar() {
               <span className="text-lp-coral">+</span>
             </span>
           )}
-          <h2 className="font-display text-base font-extrabold text-white leading-tight truncate">
-            <BrandShortName name={orgShortName} />
-          </h2>
+          <div className="leading-tight min-w-0">
+            <h2 className="font-display text-base font-extrabold text-white leading-tight truncate">
+              <BrandShortName name={orgShortName} />
+            </h2>
+            <p className="text-[10px] font-semibold text-white/60 uppercase tracking-wider">
+              Admin Portal
+            </p>
+          </div>
         </div>
         <span className="shrink-0 inline-flex items-center px-2 py-0.5 border-[2px] border-lp-teal text-lp-teal bg-transparent rounded-full text-[10px] font-display font-bold tracking-wider">
           ADMIN
