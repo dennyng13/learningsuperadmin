@@ -21,7 +21,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@shared/components/ui/select";
 import {
-  AlertTriangle, Award, BookOpen, CheckCircle2, Loader2, Search, Sparkles, TrendingDown, Users, Wallet,
+  AlertTriangle, Award, BookOpen, CalendarDays, CheckCircle2, Loader2, Search, Sparkles, TrendingDown, Users, Wallet,
 } from "lucide-react";
 import { useAvailableTeachersV2, AvailableTeacherV2 } from "@shared/hooks/useAvailableTeachersV2";
 import { useLowestRevenueTeachers } from "@shared/hooks/useLowestRevenueTeachers";
@@ -29,7 +29,12 @@ import { useTeacherSlots } from "@shared/hooks/useTeacherSlots";
 import { useStudyPlanTemplates } from "@shared/hooks/useStudyPlanTemplates";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
+import { addDays, format, startOfWeek } from "date-fns";
+import { vi } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  AdminWeeklyGrid, fetchAllScheduleData, detectConflicts,
+} from "@admin/features/schedule/pages/AdminSchedulePage";
 import {
   AssignedTeacher, DeliveryMode, ScheduleMode, WizardClassInfo, WizardSlot,
   WEEKDAY_LABELS, countSessionsInRange,
@@ -107,6 +112,78 @@ export default function Step2Schedule(props: Props) {
       {props.scheduleMode === "by-slot"    && <ModeAByTimeSlotV2 {...props} />}
       {props.scheduleMode === "by-revenue" && <ModeRevenueBased  {...props} />}
       {props.scheduleMode === "by-teacher" && <ModeBByTeacher    {...props} />}
+
+      <CenterScheduleEmbed startDate={props.classInfo.start_date} />
+    </div>
+  );
+}
+
+/* ───────────── F2.5 mini — Center Schedule Calendar (read-only) ─────────────
+   Reuses AdminWeeklyGrid + fetchAllScheduleData + detectConflicts đã exported
+   từ AdminSchedulePage. Read-only single-week view khởi điểm từ classInfo.start_date
+   (hoặc tuần hiện tại nếu chưa set) — admin có visual context lịch trung tâm khi
+   pick weekdays/slot ở Step 2.
+
+   Defer Full F2.5 features: drag/quẹt pick time range, occupancy heat coloring,
+   week navigation prev/next. */
+
+function CenterScheduleEmbed({ startDate }: { startDate: string }) {
+  // Anchor week chứa classInfo.start_date — fallback today nếu chưa set.
+  // weekStartsOn:1 = Monday (vi convention).
+  const weekDates = useMemo(() => {
+    const anchor = startDate ? new Date(startDate + "T00:00:00") : new Date();
+    if (Number.isNaN(anchor.getTime())) anchor.setTime(Date.now());
+    const monday = startOfWeek(anchor, { weekStartsOn: 1 });
+    return Array.from({ length: 7 }, (_, i) => addDays(monday, i));
+  }, [startDate]);
+
+  const rangeStart = useMemo(() => format(weekDates[0], "yyyy-MM-dd"), [weekDates]);
+  const rangeEnd = useMemo(() => format(weekDates[6], "yyyy-MM-dd"), [weekDates]);
+
+  const dataQ = useQuery({
+    queryKey: ["wizard-center-schedule", rangeStart, rangeEnd],
+    queryFn: () => fetchAllScheduleData(rangeStart, rangeEnd),
+    staleTime: 60 * 1000,
+    placeholderData: (prev) => prev,
+  });
+
+  const sessions = dataQ.data?.sessions ?? [];
+  const conflictIds = useMemo(() => detectConflicts(sessions), [sessions]);
+
+  const weekLabel = useMemo(
+    () => `${format(weekDates[0], "dd/MM", { locale: vi })} → ${format(weekDates[6], "dd/MM/yyyy", { locale: vi })}`,
+    [weekDates],
+  );
+
+  return (
+    <div className="border-t-2 pt-4 mt-2">
+      <div className="flex items-start justify-between gap-3 flex-wrap mb-2">
+        <div>
+          <h3 className="font-display text-sm font-bold inline-flex items-center gap-1.5">
+            <CalendarDays className="h-4 w-4 text-primary" /> Lịch trung tâm (tham khảo)
+          </h3>
+          <p className="text-[11px] text-muted-foreground mt-0.5">
+            Tuần {weekLabel} — xem occupancy của trung tâm để pick weekdays + giờ phù hợp.
+          </p>
+        </div>
+        {dataQ.isFetching && (
+          <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+            <Loader2 className="h-3 w-3 animate-spin" /> Đang tải…
+          </span>
+        )}
+      </div>
+
+      {dataQ.error ? (
+        <p className="text-xs text-destructive">Lỗi tải lịch: {(dataQ.error as Error).message}</p>
+      ) : !dataQ.isLoading && sessions.length === 0 ? (
+        <div className="rounded-lg border-dashed border-2 bg-muted/20 p-4 text-center text-xs text-muted-foreground">
+          Chưa có buổi học nào trong tuần này.
+        </div>
+      ) : (
+        <div className="rounded-lg border bg-card overflow-hidden">
+          <AdminWeeklyGrid sessions={sessions} weekDates={weekDates} conflictIds={conflictIds} />
+        </div>
+      )}
     </div>
   );
 }

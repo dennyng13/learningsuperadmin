@@ -53,7 +53,10 @@ import {
   validateAvailabilityDraft,
 } from "@shared/utils/availability";
 
-interface SessionWithClass {
+// Phase F2.5 mini: SessionWithClass + fetchAllScheduleData + detectConflicts +
+// AdminWeeklyGrid exported để wizard Step 2 có thể embed read-only weekly grid view.
+// Local usage by AdminSchedulePage unchanged.
+export interface SessionWithClass {
   entry: any;
   cls: any;
   sessionNumber: number;
@@ -83,7 +86,7 @@ function fmtDuration(start: string | null, end: string | null) {
   return `${mins} phút`;
 }
 
-async function fetchAllScheduleData(startDate: string, endDate: string) {
+export async function fetchAllScheduleData(startDate: string, endDate: string) {
   const { data: classes } = await (supabase as any)
     .from("classes")
     .select("id, class_name, class_type, level, program, room, default_start_time, default_end_time, study_plan_id, teacher_id")
@@ -148,7 +151,7 @@ async function fetchAllScheduleData(startDate: string, endDate: string) {
   return { sessions, classes };
 }
 
-function detectConflicts(sessions: SessionWithClass[]): Set<string> {
+export function detectConflicts(sessions: SessionWithClass[]): Set<string> {
   const conflictIds = new Set<string>();
   for (let i = 0; i < sessions.length; i++) {
     for (let j = i + 1; j < sessions.length; j++) {
@@ -233,7 +236,7 @@ function TeacherAvailabilityStateNotice({ message }: { message?: string }) {
   return <ScheduleSetupNotice title="Module lịch rảnh chưa thể tải dữ liệu" message={message || "Không đọc được dữ liệu availability từ DB dùng chung."} />;
 }
 
-function AdminWeeklyGrid({ sessions, weekDates, conflictIds }: { sessions: SessionWithClass[]; weekDates: Date[]; conflictIds: Set<string> }) {
+export function AdminWeeklyGrid({ sessions, weekDates, conflictIds }: { sessions: SessionWithClass[]; weekDates: Date[]; conflictIds: Set<string> }) {
   const byDay = useMemo(() => {
     const map = new Map<number, SessionWithClass[]>();
     for (let i = 0; i < 7; i++) map.set(i, []);
