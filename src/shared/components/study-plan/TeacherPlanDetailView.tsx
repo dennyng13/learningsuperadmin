@@ -130,7 +130,16 @@ export default function TeacherPlanDetailView({ plan, onBack }: Props) {
             </Badge>
           )}
         </div>
-        <h1 className="text-xl font-extrabold mb-1">{plan.student_name || plan.plan_name || "Kế hoạch học tập"}</h1>
+        {(() => {
+          const rawName = (plan.plan_name || "").trim();
+          const fallback = plan.student_name?.trim();
+          const isUnnamed = !rawName && !fallback;
+          return (
+            <h1 className={cn("text-xl font-extrabold mb-1", isUnnamed && "italic opacity-70")}>
+              {fallback || rawName || "(chưa đặt tên)"}
+            </h1>
+          );
+        })()}
         <div className="flex flex-wrap items-center gap-3 text-sm opacity-80">
           {plan.test_date && (
             <span className="flex items-center gap-1">

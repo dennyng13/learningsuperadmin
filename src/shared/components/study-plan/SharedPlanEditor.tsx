@@ -611,6 +611,17 @@ export function SharedPlanEditor({ plan, onClose, teacherMode = false }: SharedP
   const handleSave = async () => {
     setSaving(true);
     try {
+      // ─── plan_name validation (Action 1 propagation) ────────────────────
+      // Structured plans rely on plan_name as primary display label (no student
+      // fallback in some surfaces). Empty plan_name → list shows "(chưa đặt tên)"
+      // italic — block save to prevent silent blank rows. Customized plans skip
+      // (display fallback to student_name luôn có).
+      if (isStructured && !structuredForm.plan_name.trim()) {
+        toast.error("Vui lòng nhập tên kế hoạch");
+        setSaving(false);
+        return;
+      }
+
       // ─── Scope enforcement ────────────────────────────
       // Teachers (non-admin) must operate within their own classes/students.
       if (teacherMode && !scope?.canViewAllClasses) {
@@ -808,9 +819,16 @@ export function SharedPlanEditor({ plan, onClose, teacherMode = false }: SharedP
                     {(p.program || "C").charAt(0).toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm truncate">
-                      {p.plan_name || (p._student_name ? p._student_name : `Kế hoạch ${(p.program || "").toUpperCase() || "Customized"}${p.assigned_level ? ` – ${p.assigned_level}` : ""}`)}
-                    </p>
+                    {(() => {
+                      const rawName = (p.plan_name || "").trim();
+                      const fallback = p._student_name?.trim();
+                      const isUnnamed = !rawName && !fallback;
+                      return (
+                        <p className={cn("font-medium text-sm truncate", isUnnamed && "italic text-muted-foreground")}>
+                          {rawName || fallback || "(chưa đặt tên)"}
+                        </p>
+                      );
+                    })()}
                     <div className="flex flex-wrap gap-1.5 mt-0.5">
                       <Badge variant="outline" className="text-[9px]">{(p.program || "customized").toUpperCase()}</Badge>
                       {p.plan_type === "structured" && <Badge variant="secondary" className="text-[9px]">{p.total_sessions} buổi</Badge>}
@@ -1629,7 +1647,10 @@ export function SharedPlanEditor({ plan, onClose, teacherMode = false }: SharedP
                 Tiếp <ArrowRight className="w-3.5 h-3.5 ml-1" />
               </Button>
             ) : (
-              <Button onClick={handleSave} disabled={saving}>
+              <Button
+                onClick={handleSave}
+                disabled={saving || (isStructured && !structuredForm.plan_name.trim())}
+              >
                 {saving ? "Đang lưu..." : isNew ? "Tạo kế hoạch" : "Lưu thay đổi"}
               </Button>
             )}

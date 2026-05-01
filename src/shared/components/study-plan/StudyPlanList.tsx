@@ -75,7 +75,7 @@ function TodayStatusPanel({ plans }: { plans: StudyPlan[] }) {
 
   if (!todayEntries || todayEntries.length === 0) return null;
 
-  const nameMap = new Map(plans.map(p => [p.id, p.student_name || p.plan_name || "?"]));
+  const nameMap = new Map(plans.map(p => [p.id, p.student_name || p.plan_name || "(chưa đặt tên)"]));
   const done = todayEntries.filter((e: any) => getEffectiveStatus(e.entry_date, e.plan_status) === "done").length;
   const delayed = todayEntries.filter((e: any) => getEffectiveStatus(e.entry_date, e.plan_status) === "delayed").length;
   const pending = todayEntries.filter((e: any) => getEffectiveStatus(e.entry_date, e.plan_status) === null).length;
@@ -321,7 +321,16 @@ export function StudyPlanList({ plans, isLoading, teacherMode = false, canCreate
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <p className="font-bold text-sm truncate">{plan.student_name || plan.plan_name || "Kế hoạch"}</p>
+                        {(() => {
+                          const rawName = (plan.plan_name || "").trim();
+                          const fallback = plan.student_name?.trim();
+                          const isUnnamed = !rawName && !fallback;
+                          return (
+                            <p className={cn("font-bold text-sm truncate", isUnnamed && "italic text-muted-foreground")}>
+                              {fallback || rawName || "(chưa đặt tên)"}
+                            </p>
+                          );
+                        })()}
                         {pgm && (
                           <Badge variant="outline" className={`text-[10px] shrink-0 ${pgm.badge}`}>
                             {PROGRAMS.find(p => p.value === (plan.program || "").toLowerCase())?.label}
@@ -406,7 +415,7 @@ export function StudyPlanList({ plans, isLoading, teacherMode = false, canCreate
           <AlertDialogHeader>
             <AlertDialogTitle>Xoá kế hoạch?</AlertDialogTitle>
             <AlertDialogDescription>
-              Bạn có chắc muốn xoá kế hoạch <strong>{deleteConfirm?.student_name || deleteConfirm?.plan_name}</strong>? Toàn bộ dữ liệu sẽ bị xoá.
+              Bạn có chắc muốn xoá kế hoạch <strong>{deleteConfirm?.student_name || deleteConfirm?.plan_name || "(chưa đặt tên)"}</strong>? Toàn bộ dữ liệu sẽ bị xoá.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -423,7 +432,7 @@ export function StudyPlanList({ plans, isLoading, teacherMode = false, canCreate
           <AlertDialogHeader>
             <AlertDialogTitle>Cập nhật mẫu gốc?</AlertDialogTitle>
             <AlertDialogDescription>
-              Toàn bộ thay đổi trong kế hoạch <strong>{syncConfirm?.student_name || syncConfirm?.plan_name}</strong> sẽ được đẩy ngược lên mẫu gốc.
+              Toàn bộ thay đổi trong kế hoạch <strong>{syncConfirm?.student_name || syncConfirm?.plan_name || "(chưa đặt tên)"}</strong> sẽ được đẩy ngược lên mẫu gốc.
               Các kế hoạch khác đã gán từ mẫu này sẽ <strong>không</strong> bị ảnh hưởng.
             </AlertDialogDescription>
           </AlertDialogHeader>
