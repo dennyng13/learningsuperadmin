@@ -5,7 +5,11 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@shared/components/ui/alert-dialog";
-import { ArrowLeft, ArrowRight, Check, Loader2 } from "lucide-react";
+import {
+  DialogPop, DialogPopContent, DialogPopHeader, DialogPopTitle, DialogPopDescription,
+} from "@shared/components/ui/dialog-pop";
+import { PopButton } from "@shared/components/ui/pop-button";
+import { ArrowLeft, ArrowRight, CalendarDays, Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import Step1ClassInfo from "../components/wizard/Step1ClassInfo";
 import Step2Schedule from "../components/wizard/Step2Schedule";
@@ -579,12 +583,11 @@ export default function CreateClassWizardPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Confirm dialog khi user manual edit end_date sau auto-calc.
-          3 lựa chọn: đổi start_date (giữ N buổi) | giữ start_date (chấp nhận
-          khác số buổi → mark override) | hủy (revert end_date về previous).
-          #C3: Preview ngày khai giảng / kết thúc mới hiển thị trong button label. */}
+      {/* #C3-bis: DialogPop migration với card-style preview per option.
+          Visual hierarchy + color coding + icons cho each choice.
+          Preserves existing handlers (confirmChangeStartDate, confirmKeepStartDate,
+          cancelEndDateChange) — only UI presentation changes. */}
       {(() => {
-        // Compute previews ahead of time for display
         const previewNewStart = pendingEndDate && expectedSessions != null && slot.weekdays.length > 0
           ? computeStartDateForSessions(pendingEndDate, slot.weekdays, expectedSessions)
           : null;
@@ -592,45 +595,81 @@ export default function CreateClassWizardPage() {
         const fmtVN = (iso: string | null) =>
           iso ? new Date(iso + "T00:00:00").toLocaleDateString("vi-VN") : "—";
         return (
-          <AlertDialog
+          <DialogPop
             open={showEndDateChangeConfirm}
             onOpenChange={(open) => { if (!open) cancelEndDateChange(); }}
           >
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Bạn vừa đổi ngày kết thúc</AlertDialogTitle>
-                <AlertDialogDescription asChild>
-                  <div className="space-y-2">
-                    <p>
-                      Lớp đang auto-tính theo Study Plan ({expectedSessions ?? 0} buổi).
-                      Bạn vừa đổi ngày kết thúc sang{" "}
-                      <strong>{fmtVN(pendingEndDate)}</strong>.
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Bạn muốn xử lý thế nào?
-                    </p>
+            <DialogPopContent size="md" hideClose>
+              <DialogPopHeader>
+                <DialogPopTitle>Bạn vừa đổi ngày kết thúc</DialogPopTitle>
+                <DialogPopDescription>
+                  Lớp đang auto-tính theo Study Plan ({expectedSessions ?? 0} buổi).
+                  Ngày kết thúc mới: <strong>{fmtVN(pendingEndDate)}</strong>.
+                  Chọn cách xử lý:
+                </DialogPopDescription>
+              </DialogPopHeader>
+
+              <div className="grid gap-3 mt-2">
+                {/* Option 1: Auto-shift start_date — recommended (green tint) */}
+                <button
+                  type="button"
+                  onClick={confirmChangeStartDate}
+                  className="text-left rounded-pop border-[2.5px] border-[var(--lp-mint)] bg-[var(--lp-mint)]/5 p-3 hover:bg-[var(--lp-mint)]/10 transition-colors group"
+                >
+                  <div className="flex items-start gap-2">
+                    <div className="h-8 w-8 rounded-pop bg-[var(--lp-mint)] flex items-center justify-center shrink-0">
+                      <CalendarDays className="h-4 w-4 text-lp-ink" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-display font-bold text-sm text-lp-ink">
+                        Tự động đổi ngày khai giảng <span className="text-[10px] font-normal opacity-70">(khuyến nghị)</span>
+                      </p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                        Giữ <strong>{expectedSessions ?? 0} buổi</strong> theo Study Plan
+                      </p>
+                      <div className="flex items-center gap-1.5 mt-1.5 text-xs">
+                        <span className="text-muted-foreground">Khai giảng mới:</span>
+                        <ArrowRight className="h-3 w-3 text-[var(--lp-mint)]" />
+                        <strong className="text-foreground tabular-nums">{fmtVN(previewNewStart)}</strong>
+                      </div>
+                    </div>
                   </div>
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter className="flex-col gap-2 sm:flex-col sm:space-x-0">
-                <AlertDialogAction onClick={confirmChangeStartDate} className="w-full flex-col h-auto py-2.5">
-                  <span>Tự động đổi ngày khai giảng (giữ {expectedSessions ?? 0} buổi)</span>
-                  <span className="text-[11px] opacity-80 font-normal mt-0.5">
-                    → Khai giảng mới: <strong>{fmtVN(previewNewStart)}</strong>
-                  </span>
-                </AlertDialogAction>
-                <Button variant="outline" onClick={confirmKeepStartDate} className="w-full flex-col h-auto py-2.5">
-                  <span>Giữ ngày khai giảng (chấp nhận khác số buổi)</span>
-                  <span className="text-[11px] opacity-80 font-normal mt-0.5">
-                    → Kết thúc mới: <strong>{fmtVN(previewNewEnd)}</strong>
-                  </span>
-                </Button>
-                <AlertDialogCancel onClick={cancelEndDateChange} className="w-full mt-0">
+                </button>
+
+                {/* Option 2: Keep start_date — accept mismatch (amber tint warning) */}
+                <button
+                  type="button"
+                  onClick={confirmKeepStartDate}
+                  className="text-left rounded-pop border-[2.5px] border-amber-500/50 bg-amber-500/5 p-3 hover:bg-amber-500/10 transition-colors group"
+                >
+                  <div className="flex items-start gap-2">
+                    <div className="h-8 w-8 rounded-pop bg-amber-500 flex items-center justify-center shrink-0">
+                      <CalendarDays className="h-4 w-4 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-display font-bold text-sm text-lp-ink">
+                        Giữ ngày khai giảng <span className="text-[10px] font-normal opacity-70">(chấp nhận khác số buổi)</span>
+                      </p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                        Số buổi sẽ khác Study Plan — admin tự xác nhận
+                      </p>
+                      <div className="flex items-center gap-1.5 mt-1.5 text-xs">
+                        <span className="text-muted-foreground">Kết thúc mới:</span>
+                        <ArrowRight className="h-3 w-3 text-amber-600" />
+                        <strong className="text-foreground tabular-nums">{fmtVN(previewNewEnd)}</strong>
+                      </div>
+                    </div>
+                  </div>
+                </button>
+              </div>
+
+              <div className="flex justify-end mt-2 pt-3 border-t-[2px] border-lp-ink/15">
+                <PopButton tone="white" size="sm" onClick={cancelEndDateChange}>
                   Hủy
-                </AlertDialogCancel>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+                </PopButton>
+              </div>
+            </DialogPopContent>
+          </DialogPop>
         );
       })()}
     </div>
