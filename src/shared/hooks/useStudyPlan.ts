@@ -377,7 +377,11 @@ export function useAllStudyPlans() {
 
       return plans.map((p: any) => ({
         ...castPlan(p),
-        student_name: p.teachngo_student_id ? nameMap.get(p.teachngo_student_id) || "Unknown" : p.plan_name || "Kế hoạch lớp",
+        // Issue #5 fix: STOP setting "Kế hoạch lớp" generic fallback for plans
+        // without teachngo_student_id. Empty student_name lets display layer
+        // detect truly unnamed plans + render "(chưa đặt tên)" italic gray
+        // (Action 1 propagation). Was hiding new plans behind generic label.
+        student_name: p.teachngo_student_id ? nameMap.get(p.teachngo_student_id) || "Unknown" : null,
       })) as StudyPlan[];
     },
   });

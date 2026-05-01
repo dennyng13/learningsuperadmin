@@ -5,6 +5,11 @@ export interface CreateClassPayload {
   p_class_data: {
     class_name: string;
     course_title?: string | null;
+    /** uuid trỏ vào courses.id — Issue #2 fix Day 6: persist trực tiếp qua RPC
+     *  payload thay vì best-effort post-create set_class_course_id (đã silent fail).
+     *  Backend RPC create_class_atomic cần honor field này; nếu chưa, frontend gửi
+     *  vẫn harmless (extra field ignored). */
+    course_id?: string | null;
     program: string;
     level?: string | null;
     class_type?: string | null;

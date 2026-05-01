@@ -18,6 +18,10 @@ export interface CreateClassWithTemplatePayload {
   p_class_data: {
     class_name: string;
     course_title?: string | null;
+    /** Issue #2 fix Day 6: persist course_id qua RPC payload (was silent-failing
+     *  via post-create set_class_course_id → all app_classes.course_id NULL →
+     *  class_code falls back to 'CLS'). Wrapper RPC nên honor field này. */
+    course_id?: string | null;
     program: string;
     level?: string | null;
     class_type?: string | null;

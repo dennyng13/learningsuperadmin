@@ -157,14 +157,15 @@ export default function CreateClassWizardPage() {
 
   /* ──────────── Step validators ──────────── */
   const validateStep1 = () => {
+    // Issue #1 fix Day 6: end_date không còn bắt buộc ở Step 1.
+    // Sau Phase F2.1 move (study_plan dropdown sang Step 2), việc force end_date
+    // ở Step 1 KHÔNG có template context → user buộc phải đoán → set override flag.
+    // Move end_date check sang validateStep2 — khi đó user đã có template +
+    // weekdays để auto-calc có thể fire.
     const e: Record<string, string> = {};
     if (!classInfo.class_name.trim()) e.class_name = "Bắt buộc";
     if (!classInfo.program) e.program = "Bắt buộc";
     if (!classInfo.start_date) e.start_date = "Bắt buộc";
-    if (!classInfo.end_date) e.end_date = "Bắt buộc";
-    if (classInfo.start_date && classInfo.end_date && new Date(classInfo.end_date) <= new Date(classInfo.start_date)) {
-      e.end_date = "Ngày kết thúc phải sau ngày bắt đầu";
-    }
     if (classInfo.start_date) {
       const today = new Date(); today.setHours(0, 0, 0, 0);
       if (new Date(classInfo.start_date) < today) e.start_date = "Ngày bắt đầu phải >= hôm nay";
@@ -184,6 +185,17 @@ export default function CreateClassWizardPage() {
     }
     if (slot.weekdays.length === 0) {
       toast.error("Cần chọn ít nhất 1 thứ trong tuần");
+      return false;
+    }
+    // Issue #1 fix Day 6: end_date checks moved here from validateStep1.
+    // By Step 2, user has template+weekdays → auto-calc populates end_date.
+    // If template skipped (customized), user enters manually.
+    if (!classInfo.end_date) {
+      toast.error("Cần thiết lập ngày kết thúc (chọn Study Plan template hoặc nhập thủ công)");
+      return false;
+    }
+    if (classInfo.start_date && new Date(classInfo.end_date) <= new Date(classInfo.start_date)) {
+      toast.error("Ngày kết thúc phải sau ngày bắt đầu");
       return false;
     }
     return true;
@@ -230,6 +242,10 @@ export default function CreateClassWizardPage() {
   const buildClassData = () => ({
     class_name: classInfo.class_name,
     course_title: classInfo.course_title || null,
+    // Issue #2 fix Day 6: persist course_id qua RPC payload thay vì best-effort
+    // post-create set_class_course_id (đã silent-fail → tất cả app_classes.course_id
+    // NULL → derive_course_abbr fallback 'CLS'). Backend RPC cần honor field này.
+    course_id: classInfo.course_id || null,
     program: classInfo.program,
     level: classInfo.level || null,
     class_type: classInfo.class_type,
