@@ -259,8 +259,16 @@ function StudyPlanSection({
     ? "Khoá này chưa có template — lớp sẽ customized"
     : "Chọn template";
 
-  // Mismatch state — chỉ tính khi có expectedSessions
-  const hasMismatch = expectedSessions != null && actualSessionCount > 0 && actualSessionCount !== expectedSessions;
+  // Mismatch state — chỉ tính khi có expectedSessions.
+  // Issue #A2 fix: hasMismatch chỉ fire khi user MANUAL OVERRIDE end_date.
+  // Auto-calc invariant: computeEndDateForSessions guarantees actualSessionCount
+  // === expectedSessions, nên warning là noise/false-positive trong auto mode
+  // (transient state during render cycle race khi đổi weekdays cũng causes flash).
+  // Manual override = user took control → warning is legitimate.
+  const hasMismatch = expectedSessions != null
+    && endDateManuallyOverridden
+    && actualSessionCount > 0
+    && actualSessionCount !== expectedSessions;
   const isExactMatch = expectedSessions != null && actualSessionCount > 0 && actualSessionCount === expectedSessions;
   const hasNoInputs = expectedSessions != null && actualSessionCount === 0;
 
