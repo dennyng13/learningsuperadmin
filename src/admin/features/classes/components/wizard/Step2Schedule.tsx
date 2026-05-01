@@ -131,7 +131,10 @@ export default function Step2Schedule(props: Props) {
         onEndDateAutoReset={props.onEndDateAutoReset}
       />
 
-      <CenterScheduleEmbed startDate={props.classInfo.start_date} />
+      <CenterScheduleEmbed
+        startDate={props.classInfo.start_date}
+        selectedTeachers={props.teachers}
+      />
     </div>
   );
 }
@@ -147,8 +150,16 @@ export default function Step2Schedule(props: Props) {
 
 type CalendarViewMode = "week" | "month";
 
-function CenterScheduleEmbed({ startDate }: { startDate: string }) {
+function CenterScheduleEmbed({
+  startDate, selectedTeachers,
+}: {
+  startDate: string;
+  selectedTeachers: AssignedTeacher[];
+}) {
   const [viewMode, setViewMode] = useState<CalendarViewMode>("week");
+  // F2.5+ teacher filter — auto-enable khi user pick teachers ở Step 2 picker.
+  // User có thể disable manually (clear button) để xem all sessions trở lại.
+  const [filterEnabled, setFilterEnabled] = useState(true);
 
   // Anchor — chứa classInfo.start_date hoặc today nếu chưa set.
   const anchor = useMemo(() => {
@@ -190,8 +201,27 @@ function CenterScheduleEmbed({ startDate }: { startDate: string }) {
     placeholderData: (prev) => prev,
   });
 
-  const sessions = dataQ.data?.sessions ?? [];
+  const allSessions = dataQ.data?.sessions ?? [];
+
+  // F2.5+ teacher filter — only sessions from selected teachers shown khi
+  // filterEnabled + có teachers picked. Empty selection or filterEnabled=false → all.
+  const teacherIdSet = useMemo(
+    () => new Set(selectedTeachers.map((t) => t.teacher_id)),
+    [selectedTeachers],
+  );
+  const filterActive = filterEnabled && teacherIdSet.size > 0;
+  const sessions = useMemo(() => {
+    if (!filterActive) return allSessions;
+    return allSessions.filter((s) => s.cls?.teacher_id && teacherIdSet.has(s.cls.teacher_id));
+  }, [allSessions, filterActive, teacherIdSet]);
+
   const conflictIds = useMemo(() => detectConflicts(sessions), [sessions]);
+
+  const teacherFilterLabel = useMemo(() => {
+    if (!filterActive) return null;
+    if (selectedTeachers.length === 1) return selectedTeachers[0].full_name;
+    return `${selectedTeachers.length} giáo viên`;
+  }, [filterActive, selectedTeachers]);
 
   const rangeLabel = useMemo(() => {
     if (viewMode === "week") {
@@ -242,6 +272,34 @@ function CenterScheduleEmbed({ startDate }: { startDate: string }) {
           )}
         </div>
       </div>
+
+      {/* F2.5+ teacher filter indicator — auto-shows khi có teachers selected */}
+      {teacherIdSet.size > 0 && (
+        <div className="mb-2 flex items-center gap-2 flex-wrap">
+          {filterActive ? (
+            <>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 text-primary border border-primary/30 px-2.5 py-0.5 text-[11px] font-medium">
+                <Users className="h-3 w-3" /> Lọc theo: <strong>{teacherFilterLabel}</strong>
+              </span>
+              <button
+                type="button"
+                onClick={() => setFilterEnabled(false)}
+                className="text-[11px] underline text-muted-foreground hover:text-foreground"
+              >
+                Xem tất cả
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setFilterEnabled(true)}
+              className="inline-flex items-center gap-1.5 rounded-full bg-muted text-muted-foreground border px-2.5 py-0.5 text-[11px] font-medium hover:text-foreground"
+            >
+              <Users className="h-3 w-3" /> Bật lọc theo {selectedTeachers.length === 1 ? selectedTeachers[0].full_name : `${selectedTeachers.length} GV`}
+            </button>
+          )}
+        </div>
+      )}
 
       {dataQ.error ? (
         <p className="text-xs text-destructive">Lỗi tải lịch: {(dataQ.error as Error).message}</p>
