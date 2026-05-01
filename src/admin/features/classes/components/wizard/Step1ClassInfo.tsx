@@ -1,12 +1,18 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { format } from "date-fns";
+import { vi } from "date-fns/locale";
+import { CalendarDays } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@shared/components/ui/input";
 import { Label } from "@shared/components/ui/label";
 import { Textarea } from "@shared/components/ui/textarea";
 import { Checkbox } from "@shared/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@shared/components/ui/select";
-import type { WizardClassInfo } from "./wizardTypes";
+import { Popover, PopoverContent, PopoverTrigger } from "@shared/components/ui/popover";
+import { Calendar } from "@shared/components/ui/calendar";
+import { cn } from "@shared/lib/utils";
+import { toLocalISODate, type WizardClassInfo } from "./wizardTypes";
 
 interface Props {
   value: WizardClassInfo;
@@ -30,7 +36,20 @@ const PROGRAM_GROUP_LABEL: Record<string, string> = {
 };
 
 export default function Step1ClassInfo({ value, onChange, errors }: Props) {
-  const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  // todayDate as Date object for Calendar `disabled` matcher (start_date >= today).
+  // Pre-migration: was string for native input min — replaced với Popover+Calendar (#C10).
+  const todayDate = useMemo(() => {
+    const t = new Date();
+    t.setHours(0, 0, 0, 0);
+    return t;
+  }, []);
+
+  // Popover open state cho start_date Calendar
+  const [startCalOpen, setStartCalOpen] = useState(false);
+  const startDateObj = useMemo(
+    () => (value.start_date ? new Date(value.start_date + "T00:00:00") : undefined),
+    [value.start_date],
+  );
 
   // The `programs` table contains one row per individual program (e.g. 8 IELTS
   // levels share program_key='ielts'). The wizard picks a *group*, so dedupe
@@ -281,7 +300,36 @@ export default function Step1ClassInfo({ value, onChange, errors }: Props) {
 
       <div>
         <Label>Ngày bắt đầu <span className="text-destructive">*</span></Label>
-        <Input type="date" min={today} value={value.start_date} onChange={(e) => set("start_date", e.target.value)} />
+        <Popover open={startCalOpen} onOpenChange={setStartCalOpen}>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              className={cn(
+                "h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm flex items-center gap-2 transition-colors",
+                "hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
+                !value.start_date && "text-muted-foreground",
+              )}
+            >
+              <CalendarDays className="h-4 w-4 opacity-70 shrink-0" />
+              {startDateObj ? format(startDateObj, "dd/MM/yyyy", { locale: vi }) : "Chọn ngày bắt đầu"}
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar
+              mode="single"
+              selected={startDateObj}
+              onSelect={(d) => {
+                if (d) {
+                  set("start_date", toLocalISODate(d));
+                  setStartCalOpen(false);
+                }
+              }}
+              disabled={(d) => d < todayDate}
+              locale={vi}
+              initialFocus
+            />
+          </PopoverContent>
+        </Popover>
         {errors.start_date && <p className="text-xs text-destructive mt-1">{errors.start_date}</p>}
       </div>
 

@@ -19,6 +19,8 @@ import { Button } from "@shared/components/ui/button";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@shared/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@shared/components/ui/popover";
+import { Calendar } from "@shared/components/ui/calendar";
 import {
   AlertTriangle, Award, BookOpen, CalendarDays, CheckCircle2, Loader2, Search, Sparkles, TrendingDown, Users, Wallet,
 } from "lucide-react";
@@ -531,13 +533,19 @@ function EndDateMismatchSection({
     return tpl?.total_sessions ?? null;
   }, [classInfo.study_plan_id, eligibleTemplates]);
 
-  const today = useMemo(() => toLocalISODate(new Date()), []);
-  const minEnd = useMemo(() => {
-    if (!classInfo.start_date) return today;
+  // #C10: Date objects cho Calendar `disabled` matcher + selected.
+  const [endCalOpen, setEndCalOpen] = useState(false);
+  const minEndDate = useMemo(() => {
+    if (!classInfo.start_date) return null;
     const d = new Date(classInfo.start_date + "T00:00:00");
     d.setDate(d.getDate() + 7);
-    return toLocalISODate(d);
-  }, [classInfo.start_date, today]);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, [classInfo.start_date]);
+  const endDateObj = useMemo(
+    () => (classInfo.end_date ? new Date(classInfo.end_date + "T00:00:00") : undefined),
+    [classInfo.end_date],
+  );
 
   const sessionsPerWeek = slot.weekdays.length;
 
@@ -586,14 +594,39 @@ function EndDateMismatchSection({
         <Label className="inline-flex items-center gap-1.5 text-sm font-semibold">
           Ngày kết thúc <span className="text-destructive">*</span>
         </Label>
-        <Input
-          type="date"
-          min={minEnd}
-          value={classInfo.end_date}
-          onChange={(e) => onEndDateChange(e.target.value)}
-          disabled={!classInfo.start_date}
-          className="mt-1"
-        />
+        <Popover open={endCalOpen} onOpenChange={setEndCalOpen}>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              disabled={!classInfo.start_date}
+              className={cn(
+                "h-10 w-full mt-1 rounded-md border border-input bg-background px-3 py-2 text-sm flex items-center gap-2 transition-colors",
+                "hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
+                "disabled:cursor-not-allowed disabled:opacity-50",
+                !classInfo.end_date && "text-muted-foreground",
+              )}
+            >
+              <CalendarDays className="h-4 w-4 opacity-70 shrink-0" />
+              {endDateObj ? format(endDateObj, "dd/MM/yyyy", { locale: vi }) : "Chọn ngày kết thúc"}
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar
+              mode="single"
+              selected={endDateObj}
+              onSelect={(d) => {
+                if (d) {
+                  onEndDateChange(toLocalISODate(d));
+                  setEndCalOpen(false);
+                }
+              }}
+              disabled={(d) => !minEndDate || d < minEndDate}
+              defaultMonth={minEndDate ?? undefined}
+              locale={vi}
+              initialFocus
+            />
+          </PopoverContent>
+        </Popover>
         {!classInfo.start_date && (
           <p className="text-[11px] text-muted-foreground mt-1">
             Chọn ngày bắt đầu ở Step 1 trước.
