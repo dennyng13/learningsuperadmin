@@ -30,6 +30,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { addDays, eachDayOfInterval, endOfMonth, endOfWeek, format, isSameMonth, isToday, startOfMonth, startOfWeek } from "date-fns";
 import { vi } from "date-fns/locale";
+import { cn } from "@shared/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import {
   AdminWeeklyGrid, fetchAllScheduleData, detectConflicts,
