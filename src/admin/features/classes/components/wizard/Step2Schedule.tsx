@@ -53,9 +53,15 @@ interface Props {
   /** F2.1: setter cho study_plan_id. Wizard parent owns classInfo state — Step2
    *  gọi callback này khi user pick template từ dropdown filter-by-course_id. */
   setStudyPlanId: (id: string | null) => void;
-  /** F2.2: expectedSessions từ template đã chọn. null khi chưa pick template
-   *  (Customized class) — mismatch indicator ẩn. */
+  /** F2.2: expectedSessions = REQUIRED số buổi (hours-adjusted, post-#C1).
+   *  Computed in parent: ceil(total_sessions × session_duration / slotDurationMinutes).
+   *  null khi chưa pick template (Customized class) — mismatch indicator ẩn. */
   expectedSessions: number | null;
+  /** Issue #C2: total hours từ template (display transparency).
+   *  null khi chưa pick template. */
+  planTotalHours: number | null;
+  /** Issue #C2: slot duration phút (display transparency). 0 khi chưa set time. */
+  slotDurationMinutes: number;
   /** Issue #1 v2: end_date moved from Step 1 → Step 2.
    *  endDateManuallyOverridden: true nếu user đã manual edit (skip auto-calc).
    *  onEndDateChange: gọi khi user edit end_date Input — parent quyết định mở
@@ -117,6 +123,8 @@ export default function Step2Schedule(props: Props) {
         classInfo={props.classInfo}
         slot={props.slot}
         expectedSessions={props.expectedSessions}
+        planTotalHours={props.planTotalHours}
+        slotDurationMinutes={props.slotDurationMinutes}
         endDateManuallyOverridden={props.endDateManuallyOverridden}
         onEndDateChange={props.onEndDateChange}
         onEndDateAutoReset={props.onEndDateAutoReset}
@@ -287,12 +295,14 @@ function TemplatePickerSection({
 }
 
 function EndDateMismatchSection({
-  classInfo, slot, expectedSessions,
+  classInfo, slot, expectedSessions, planTotalHours, slotDurationMinutes,
   endDateManuallyOverridden, onEndDateChange, onEndDateAutoReset,
 }: {
   classInfo: WizardClassInfo;
   slot: WizardSlot;
   expectedSessions: number | null;
+  planTotalHours: number | null;
+  slotDurationMinutes: number;
   endDateManuallyOverridden: boolean;
   onEndDateChange: (newDate: string) => void;
   onEndDateAutoReset: () => void;
@@ -304,15 +314,8 @@ function EndDateMismatchSection({
     [classInfo.start_date, classInfo.end_date, slot.weekdays],
   );
 
-  // Issue #A4: session duration validation
-  const slotDurationMinutes = useMemo(() => {
-    if (!slot.start_time || !slot.end_time) return 0;
-    const [sh, sm] = slot.start_time.split(":").map(Number);
-    const [eh, em] = slot.end_time.split(":").map(Number);
-    if ([sh, sm, eh, em].some((n) => Number.isNaN(n))) return 0;
-    return (eh * 60 + em) - (sh * 60 + sm);
-  }, [slot.start_time, slot.end_time]);
-
+  // Issue #A4: session duration validation. expectedDuration = template's
+  // per-session minutes. slotDurationMinutes now passed from parent (#C1).
   const expectedDuration = useMemo(() => {
     if (!classInfo.study_plan_id) return null;
     const tpl = (eligibleTemplates ?? []).find((t) => t.id === classInfo.study_plan_id);
@@ -321,6 +324,13 @@ function EndDateMismatchSection({
 
   const durationMismatch =
     expectedDuration != null && slotDurationMinutes > 0 && slotDurationMinutes !== expectedDuration;
+
+  // Template raw count for display transparency (post-#C1 expectedSessions is hours-adjusted)
+  const templateSessionCount = useMemo(() => {
+    if (!classInfo.study_plan_id) return null;
+    const tpl = (eligibleTemplates ?? []).find((t) => t.id === classInfo.study_plan_id);
+    return tpl?.total_sessions ?? null;
+  }, [classInfo.study_plan_id, eligibleTemplates]);
 
   const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
   const minEnd = useMemo(() => {
@@ -361,7 +371,8 @@ function EndDateMismatchSection({
         )}
         {classInfo.start_date && expectedSessions != null && sessionsPerWeek === 0 && !endDateManuallyOverridden && (
           <p className="text-[11px] text-muted-foreground mt-1">
-            💡 Chọn weekdays bên trên để tự động tính theo {expectedSessions} buổi.
+            💡 Chọn weekdays bên trên để tự động tính theo {expectedSessions} buổi (
+            {planTotalHours ?? 0} hrs / {slotDurationMinutes} phút/buổi).
           </p>
         )}
         {classInfo.start_date && expectedSessions != null && sessionsPerWeek > 0 && !endDateManuallyOverridden && classInfo.end_date && (
@@ -413,7 +424,7 @@ function EndDateMismatchSection({
           <div className="space-y-0.5 flex-1">
             <p className="font-semibold">
               {isExactMatch
-                ? "✅ Khớp số buổi với Study Plan"
+                ? "✅ Khớp số giờ với Study Plan"
                 : hasMismatch
                 ? "⚠️ Số buổi không khớp Study Plan"
                 : hasNoInputs
@@ -421,13 +432,25 @@ function EndDateMismatchSection({
                 : ""}
             </p>
             <p className="text-xs">
-              Template: <strong className="tabular-nums">{expectedSessions}</strong> buổi
-              {" · "}
+              📊 Study Plan: <strong className="tabular-nums">{planTotalHours ?? 0}</strong> hrs (
+              {templateSessionCount ?? 0} buổi × {expectedDuration ?? 0} phút)
+            </p>
+            <p className="text-xs">
+              Slot hiện tại: <strong className="tabular-nums">{slotDurationMinutes}</strong> phút/buổi
+              {" → "}Cần <strong className="tabular-nums">{expectedSessions ?? 0}</strong> buổi
+              {sessionsPerWeek > 0 && (
+                <>
+                  {" × "}
+                  <strong className="tabular-nums">{sessionsPerWeek}</strong> ngày/tuần
+                </>
+              )}
+            </p>
+            <p className="text-xs">
               Sẽ tạo: <strong className="tabular-nums">{actualSessionCount}</strong> buổi
               {hasMismatch && (
                 <>
                   {" · "}
-                  Khác: <strong className="tabular-nums">{actualSessionCount - expectedSessions > 0 ? "+" : ""}{actualSessionCount - expectedSessions}</strong>
+                  Khác: <strong className="tabular-nums">{actualSessionCount - (expectedSessions ?? 0) > 0 ? "+" : ""}{actualSessionCount - (expectedSessions ?? 0)}</strong>
                 </>
               )}
             </p>

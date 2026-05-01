@@ -62,13 +62,39 @@ export default function CreateClassWizardPage() {
   const createWithTemplateMutation = useCreateClassWithTemplate();
   const { data: allTemplates } = useStudyPlanTemplates();
 
-  // Expected số buổi từ study plan template đã chọn. null khi không có
-  // study_plan_id (Customized class) — skip mismatch check.
+  // Issue #C1+#C4 architectural redesign: template = total HOURS (not session count).
+  // Wizard adapts session count to slot duration via:
+  //   totalMinutes = total_sessions × session_duration
+  //   requiredSessions = ceil(totalMinutes / slotDurationMinutes)
+  // Slot duration changes (start/end_time) → expectedSessions recomputes → auto-calc
+  // useEffect re-fires with new expectedSessions → end_date updates accordingly.
+  const slotDurationMinutes = useMemo(() => {
+    if (!slot.start_time || !slot.end_time) return 0;
+    const [sh, sm] = slot.start_time.split(":").map(Number);
+    const [eh, em] = slot.end_time.split(":").map(Number);
+    if ([sh, sm, eh, em].some((n) => Number.isNaN(n))) return 0;
+    return (eh * 60 + em) - (sh * 60 + sm);
+  }, [slot.start_time, slot.end_time]);
+
+  // planTotalHours — exposed for Step2 display transparency (breakdown text).
+  const planTotalHours = useMemo(() => {
+    if (!classInfo.study_plan_id || !allTemplates) return null;
+    const tpl = allTemplates.find((t) => t.id === classInfo.study_plan_id);
+    if (!tpl) return null;
+    return (tpl.total_sessions * tpl.session_duration) / 60;
+  }, [classInfo.study_plan_id, allTemplates]);
+
+  // expectedSessions = REQUIRED số buổi wizard cần generate (hours-adjusted).
+  // null khi không có study_plan_id (Customized class) — skip mismatch check.
+  // Fallback to raw total_sessions khi slotDurationMinutes chưa available.
   const expectedSessions = useMemo(() => {
     if (!classInfo.study_plan_id || !allTemplates) return null;
     const tpl = allTemplates.find((t) => t.id === classInfo.study_plan_id);
-    return tpl?.total_sessions ?? null;
-  }, [classInfo.study_plan_id, allTemplates]);
+    if (!tpl) return null;
+    const totalMinutes = tpl.total_sessions * tpl.session_duration;
+    if (slotDurationMinutes <= 0) return tpl.total_sessions;
+    return Math.ceil(totalMinutes / slotDurationMinutes);
+  }, [classInfo.study_plan_id, allTemplates, slotDurationMinutes]);
 
   // Auto-calc end_date khi inputs thay đổi (skip nếu user đã override).
   // Deps loại classInfo.end_date để tránh loop (effect tự set field này).
@@ -457,6 +483,8 @@ export default function CreateClassWizardPage() {
             setSelectedSlotKeys={setSelectedSlotKeys}
             setStudyPlanId={(id) => setClassInfo((prev) => ({ ...prev, study_plan_id: id }))}
             expectedSessions={expectedSessions}
+            planTotalHours={planTotalHours}
+            slotDurationMinutes={slotDurationMinutes}
             endDateManuallyOverridden={endDateManuallyOverridden}
             onEndDateChange={handleEndDateChange}
             onEndDateAutoReset={resetEndDateAuto}
