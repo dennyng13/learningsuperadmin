@@ -28,12 +28,13 @@ import { useLowestRevenueTeachers } from "@shared/hooks/useLowestRevenueTeachers
 import { useTeacherSlots } from "@shared/hooks/useTeacherSlots";
 import { useStudyPlanTemplates } from "@shared/hooks/useStudyPlanTemplates";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo } from "react";
-import { addDays, format, startOfWeek } from "date-fns";
+import { useMemo, useState } from "react";
+import { addDays, eachDayOfInterval, endOfMonth, endOfWeek, format, isSameMonth, isToday, startOfMonth, startOfWeek } from "date-fns";
 import { vi } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import {
   AdminWeeklyGrid, fetchAllScheduleData, detectConflicts,
+  type SessionWithClass,
 } from "@admin/features/schedule/pages/AdminSchedulePage";
 import {
   AssignedTeacher, DeliveryMode, ScheduleMode, WizardClassInfo, WizardSlot,
@@ -144,22 +145,47 @@ export default function Step2Schedule(props: Props) {
    Defer Full F2.5 features: drag/quẹt pick time range, occupancy heat coloring,
    week navigation prev/next. */
 
+type CalendarViewMode = "week" | "month";
+
 function CenterScheduleEmbed({ startDate }: { startDate: string }) {
-  // Anchor week chứa classInfo.start_date — fallback today nếu chưa set.
-  // weekStartsOn:1 = Monday (vi convention).
-  const weekDates = useMemo(() => {
-    const anchor = startDate ? new Date(startDate + "T00:00:00") : new Date();
-    if (Number.isNaN(anchor.getTime())) anchor.setTime(Date.now());
-    const monday = startOfWeek(anchor, { weekStartsOn: 1 });
-    return Array.from({ length: 7 }, (_, i) => addDays(monday, i));
+  const [viewMode, setViewMode] = useState<CalendarViewMode>("week");
+
+  // Anchor — chứa classInfo.start_date hoặc today nếu chưa set.
+  const anchor = useMemo(() => {
+    const a = startDate ? new Date(startDate + "T00:00:00") : new Date();
+    if (Number.isNaN(a.getTime())) a.setTime(Date.now());
+    return a;
   }, [startDate]);
 
-  const rangeStart = useMemo(() => format(weekDates[0], "yyyy-MM-dd"), [weekDates]);
-  const rangeEnd = useMemo(() => format(weekDates[6], "yyyy-MM-dd"), [weekDates]);
+  // Week mode: 7-day window starting Monday
+  const weekDates = useMemo(() => {
+    const monday = startOfWeek(anchor, { weekStartsOn: 1 });
+    return Array.from({ length: 7 }, (_, i) => addDays(monday, i));
+  }, [anchor]);
+
+  // Month mode: full calendar grid (Mon..Sun, 5-6 rows tuỳ tháng)
+  const monthDays = useMemo(() => {
+    const monthStart = startOfMonth(anchor);
+    const monthEnd = endOfMonth(anchor);
+    const gridStart = startOfWeek(monthStart, { weekStartsOn: 1 });
+    const gridEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
+    return eachDayOfInterval({ start: gridStart, end: gridEnd });
+  }, [anchor]);
+
+  // Range query — adapts to viewMode
+  const range = useMemo(() => {
+    if (viewMode === "week") {
+      return { start: format(weekDates[0], "yyyy-MM-dd"), end: format(weekDates[6], "yyyy-MM-dd") };
+    }
+    return {
+      start: format(monthDays[0], "yyyy-MM-dd"),
+      end: format(monthDays[monthDays.length - 1], "yyyy-MM-dd"),
+    };
+  }, [viewMode, weekDates, monthDays]);
 
   const dataQ = useQuery({
-    queryKey: ["wizard-center-schedule", rangeStart, rangeEnd],
-    queryFn: () => fetchAllScheduleData(rangeStart, rangeEnd),
+    queryKey: ["wizard-center-schedule", range.start, range.end],
+    queryFn: () => fetchAllScheduleData(range.start, range.end),
     staleTime: 60 * 1000,
     placeholderData: (prev) => prev,
   });
@@ -167,10 +193,12 @@ function CenterScheduleEmbed({ startDate }: { startDate: string }) {
   const sessions = dataQ.data?.sessions ?? [];
   const conflictIds = useMemo(() => detectConflicts(sessions), [sessions]);
 
-  const weekLabel = useMemo(
-    () => `${format(weekDates[0], "dd/MM", { locale: vi })} → ${format(weekDates[6], "dd/MM/yyyy", { locale: vi })}`,
-    [weekDates],
-  );
+  const rangeLabel = useMemo(() => {
+    if (viewMode === "week") {
+      return `Tuần ${format(weekDates[0], "dd/MM", { locale: vi })} → ${format(weekDates[6], "dd/MM/yyyy", { locale: vi })}`;
+    }
+    return `Tháng ${format(anchor, "MM/yyyy", { locale: vi })}`;
+  }, [viewMode, weekDates, anchor]);
 
   return (
     <div className="border-t-2 pt-4 mt-2">
@@ -180,27 +208,140 @@ function CenterScheduleEmbed({ startDate }: { startDate: string }) {
             <CalendarDays className="h-4 w-4 text-primary" /> Lịch trung tâm (tham khảo)
           </h3>
           <p className="text-[11px] text-muted-foreground mt-0.5">
-            Tuần {weekLabel} — xem occupancy của trung tâm để pick weekdays + giờ phù hợp.
+            {rangeLabel} — xem occupancy của trung tâm để pick weekdays + giờ phù hợp.
           </p>
         </div>
-        {dataQ.isFetching && (
-          <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
-            <Loader2 className="h-3 w-3 animate-spin" /> Đang tải…
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {/* F2.5+ week/month view toggle */}
+          <div className="inline-flex rounded-md border bg-background p-0.5 text-[11px]">
+            <button
+              type="button"
+              onClick={() => setViewMode("week")}
+              className={cn(
+                "px-2.5 py-1 rounded transition-colors font-semibold",
+                viewMode === "week" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              Tuần
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("month")}
+              className={cn(
+                "px-2.5 py-1 rounded transition-colors font-semibold",
+                viewMode === "month" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              Tháng
+            </button>
+          </div>
+          {dataQ.isFetching && (
+            <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+              <Loader2 className="h-3 w-3 animate-spin" /> Đang tải…
+            </span>
+          )}
+        </div>
       </div>
 
       {dataQ.error ? (
         <p className="text-xs text-destructive">Lỗi tải lịch: {(dataQ.error as Error).message}</p>
       ) : !dataQ.isLoading && sessions.length === 0 ? (
         <div className="rounded-lg border-dashed border-2 bg-muted/20 p-4 text-center text-xs text-muted-foreground">
-          Chưa có buổi học nào trong tuần này.
+          Chưa có buổi học nào trong {viewMode === "week" ? "tuần" : "tháng"} này.
         </div>
-      ) : (
+      ) : viewMode === "week" ? (
         <div className="rounded-lg border bg-card overflow-hidden">
           <AdminWeeklyGrid sessions={sessions} weekDates={weekDates} conflictIds={conflictIds} />
         </div>
+      ) : (
+        <MonthlyCompactGrid sessions={sessions} monthDays={monthDays} anchor={anchor} />
       )}
+    </div>
+  );
+}
+
+/* F2.5+ MonthlyCompactGrid — compact calendar grid showing session chips per day.
+   Cells outside current month dimmed. Sessions shown as small colored chips,
+   first 2 visible + "+N" overflow indicator. Reuses fetchAllScheduleData. */
+function MonthlyCompactGrid({
+  sessions, monthDays, anchor,
+}: {
+  sessions: SessionWithClass[];
+  monthDays: Date[];
+  anchor: Date;
+}) {
+  const sessionsByDay = useMemo(() => {
+    const map = new Map<string, SessionWithClass[]>();
+    for (const s of sessions) {
+      const date = s.entry.entry_date;
+      if (!date) continue;
+      const arr = map.get(date) ?? [];
+      arr.push(s);
+      map.set(date, arr);
+    }
+    return map;
+  }, [sessions]);
+
+  // Header labels follow display order T2..CN (matches WEEKDAY_LABELS)
+  const headerOrder = [1, 2, 3, 4, 5, 6, 0];
+  const dayLabel = (n: number) => WEEKDAY_LABELS.find((l) => l.value === n)?.label ?? "";
+
+  return (
+    <div className="rounded-lg border bg-card overflow-hidden">
+      <div className="grid grid-cols-7 gap-px bg-border">
+        {headerOrder.map((wd) => (
+          <div key={wd} className="bg-muted/50 p-2 text-center text-[11px] font-semibold">
+            {dayLabel(wd)}
+          </div>
+        ))}
+        {monthDays.map((d) => {
+          const isCurrentMonth = isSameMonth(d, anchor);
+          const dateKey = toLocalISODate(d);
+          const daySessions = sessionsByDay.get(dateKey) ?? [];
+          const isPast = d < new Date(new Date().setHours(0, 0, 0, 0));
+          return (
+            <div
+              key={dateKey}
+              className={cn(
+                "bg-card p-1.5 min-h-[64px] flex flex-col gap-0.5 text-xs",
+                !isCurrentMonth && "opacity-40 bg-muted/20",
+                isToday(d) && "ring-2 ring-primary ring-inset",
+                isPast && isCurrentMonth && "bg-muted/10",
+              )}
+            >
+              <span className={cn(
+                "font-medium tabular-nums text-[11px]",
+                isToday(d) && "text-primary font-bold",
+              )}>
+                {d.getDate()}
+              </span>
+              {daySessions.length > 0 && (
+                <div className="flex flex-wrap gap-0.5">
+                  {daySessions.slice(0, 2).map((s, idx) => (
+                    <span
+                      key={`${s.entry.id ?? idx}`}
+                      className={cn(
+                        "text-[9px] px-1 py-0.5 rounded truncate max-w-full",
+                        s.cls?.class_type === "private"
+                          ? "bg-destructive/15 text-destructive"
+                          : "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400",
+                      )}
+                      title={s.cls?.class_name ?? ""}
+                    >
+                      {s.cls?.class_name ?? "—"}
+                    </span>
+                  ))}
+                  {daySessions.length > 2 && (
+                    <span className="text-[9px] text-muted-foreground font-medium">
+                      +{daySessions.length - 2}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -413,7 +554,7 @@ function EndDateMismatchSection({
               {" × "}
               <strong className="text-foreground">{sessionsPerWeek}</strong> ngày/tuần
               {" → "}kết thúc{" "}
-              <strong className="text-foreground">{new Date(classInfo.end_date + "T00:00:00").toLocaleDateString("vi-VN")}</strong>
+              <strong className="text-foreground">{format(new Date(classInfo.end_date + "T00:00:00"), "dd/MM/yyyy")}</strong>
             </p>
             {sessionListText && (
               <p className="font-mono">
@@ -487,7 +628,7 @@ function EndDateMismatchSection({
               → Cần <strong className="tabular-nums">{expectedSessions ?? 0}</strong> buổi
               {classInfo.end_date && (
                 <>
-                  {" "}(kết thúc <strong>{new Date(classInfo.end_date + "T00:00:00").toLocaleDateString("vi-VN")}</strong>)
+                  {" "}(kết thúc <strong>{format(new Date(classInfo.end_date + "T00:00:00"), "dd/MM/yyyy")}</strong>)
                 </>
               )}
             </p>

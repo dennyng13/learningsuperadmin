@@ -10,6 +10,7 @@ import {
 } from "@shared/components/ui/dialog-pop";
 import { PopButton } from "@shared/components/ui/pop-button";
 import { ArrowLeft, ArrowRight, CalendarDays, Check, Loader2 } from "lucide-react";
+import { format as fmtDate } from "date-fns";
 import { toast } from "sonner";
 import Step1ClassInfo from "../components/wizard/Step1ClassInfo";
 import Step2Schedule from "../components/wizard/Step2Schedule";
@@ -424,7 +425,7 @@ export default function CreateClassWizardPage() {
       if (conflictMatch) {
         const [, teacherUuid, dateIso, startHm, endHm] = conflictMatch;
         const teacherName = teachers.find((t) => t.teacher_id === teacherUuid)?.full_name || "Không rõ";
-        const dateVN = new Date(dateIso + "T00:00:00").toLocaleDateString("vi-VN");
+        const dateVN = fmtDate(new Date(dateIso + "T00:00:00"), "dd/MM/yyyy");
         toast.error(
           `Giáo viên ${teacherName} bị trùng lịch ngày ${dateVN} (${startHm}–${endHm}).\n\nGợi ý:\n• Quay lại Step 2 chọn giáo viên khác\n• Đổi giờ học\n• Đổi ngày bắt đầu`,
           { duration: 10000 },
@@ -593,7 +594,7 @@ export default function CreateClassWizardPage() {
           : null;
         const previewNewEnd = pendingEndDate;
         const fmtVN = (iso: string | null) =>
-          iso ? new Date(iso + "T00:00:00").toLocaleDateString("vi-VN") : "—";
+          iso ? fmtDate(new Date(iso + "T00:00:00"), "dd/MM/yyyy") : "—";
         return (
           <DialogPop
             open={showEndDateChangeConfirm}
