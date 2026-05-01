@@ -238,6 +238,26 @@ function StudyPlanSection({
     [classInfo.start_date, classInfo.end_date, slot.weekdays],
   );
 
+  // Issue #A4: session duration validation. Compare slot.start_time→end_time
+  // duration (minutes) với template.session_duration (minutes). Warning khi
+  // mismatch — admin có thể proceed (warning only, không block).
+  const slotDurationMinutes = useMemo(() => {
+    if (!slot.start_time || !slot.end_time) return 0;
+    const [sh, sm] = slot.start_time.split(":").map(Number);
+    const [eh, em] = slot.end_time.split(":").map(Number);
+    if ([sh, sm, eh, em].some((n) => Number.isNaN(n))) return 0;
+    return (eh * 60 + em) - (sh * 60 + sm);
+  }, [slot.start_time, slot.end_time]);
+
+  const expectedDuration = useMemo(() => {
+    if (!classInfo.study_plan_id) return null;
+    const tpl = (eligibleTemplates ?? []).find((t) => t.id === classInfo.study_plan_id);
+    return tpl?.session_duration ?? null;
+  }, [classInfo.study_plan_id, eligibleTemplates]);
+
+  const durationMismatch =
+    expectedDuration != null && slotDurationMinutes > 0 && slotDurationMinutes !== expectedDuration;
+
   // Issue #1 v2: end_date Input min — start_date + 7 days minimum window.
   const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
   const minEnd = useMemo(() => {
@@ -408,6 +428,27 @@ function StudyPlanSection({
                 💡 Sửa weekdays / ngày kết thúc bên dưới để khớp, hoặc giữ và xác nhận ở Step cuối.
               </p>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Issue #A4 — duration mismatch warning. Standalone warning (independent
+          of session count mismatch). Allow proceed — non-blocking. */}
+      {durationMismatch && (
+        <div className="rounded-lg border border-amber-500/40 bg-amber-500/5 p-3 text-sm flex items-start gap-2 text-amber-900 dark:text-amber-200">
+          <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
+          <div className="space-y-0.5 flex-1">
+            <p className="font-semibold">⚠️ Thời lượng buổi học không khớp Study Plan</p>
+            <p className="text-xs">
+              Template: <strong className="tabular-nums">{expectedDuration}</strong> phút
+              {" · "}
+              Slot hiện tại: <strong className="tabular-nums">{slotDurationMinutes}</strong> phút
+              {" · "}
+              Khác: <strong className="tabular-nums">{slotDurationMinutes - (expectedDuration ?? 0) > 0 ? "+" : ""}{slotDurationMinutes - (expectedDuration ?? 0)}</strong> phút
+            </p>
+            <p className="text-[11px]">
+              💡 Sửa giờ bắt đầu/kết thúc bên dưới để khớp template, hoặc proceed nếu cố ý đổi thời lượng.
+            </p>
           </div>
         </div>
       )}
