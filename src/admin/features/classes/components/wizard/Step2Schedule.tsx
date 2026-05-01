@@ -51,6 +51,14 @@ interface Props {
   /** F2.2: expectedSessions từ template đã chọn. null khi chưa pick template
    *  (Customized class) — mismatch indicator ẩn. */
   expectedSessions: number | null;
+  /** Issue #1 v2: end_date moved from Step 1 → Step 2.
+   *  endDateManuallyOverridden: true nếu user đã manual edit (skip auto-calc).
+   *  onEndDateChange: gọi khi user edit end_date Input — parent quyết định mở
+   *    confirm dialog (Batch 1) hoặc set thẳng.
+   *  onEndDateAutoReset: gọi khi user click "Tính lại từ Study Plan". */
+  endDateManuallyOverridden: boolean;
+  onEndDateChange: (newDate: string) => void;
+  onEndDateAutoReset: () => void;
 }
 
 const VND_FMT = new Intl.NumberFormat("vi-VN");
@@ -85,6 +93,9 @@ export default function Step2Schedule(props: Props) {
         slot={props.slot}
         setStudyPlanId={props.setStudyPlanId}
         expectedSessions={props.expectedSessions}
+        endDateManuallyOverridden={props.endDateManuallyOverridden}
+        onEndDateChange={props.onEndDateChange}
+        onEndDateAutoReset={props.onEndDateAutoReset}
       />
 
       <div className="flex flex-wrap gap-2">
@@ -108,11 +119,15 @@ export default function Step2Schedule(props: Props) {
 
 function StudyPlanSection({
   classInfo, slot, setStudyPlanId, expectedSessions,
+  endDateManuallyOverridden, onEndDateChange, onEndDateAutoReset,
 }: {
   classInfo: WizardClassInfo;
   slot: WizardSlot;
   setStudyPlanId: (id: string | null) => void;
   expectedSessions: number | null;
+  endDateManuallyOverridden: boolean;
+  onEndDateChange: (newDate: string) => void;
+  onEndDateAutoReset: () => void;
 }) {
   const { data: allTemplates } = useStudyPlanTemplates();
 
@@ -145,6 +160,18 @@ function StudyPlanSection({
     () => countSessionsInRange(classInfo.start_date, classInfo.end_date, slot.weekdays),
     [classInfo.start_date, classInfo.end_date, slot.weekdays],
   );
+
+  // Issue #1 v2: end_date Input min — start_date + 7 days minimum window.
+  const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const minEnd = useMemo(() => {
+    if (!classInfo.start_date) return today;
+    const d = new Date(classInfo.start_date + "T00:00:00");
+    d.setDate(d.getDate() + 7);
+    return d.toISOString().slice(0, 10);
+  }, [classInfo.start_date, today]);
+
+  // Frequency = số weekdays đã chọn = số buổi/tuần.
+  const sessionsPerWeek = slot.weekdays.length;
 
   const dropdownDisabled = !classInfo.course_id || linksQ.isLoading || eligibleTemplates.length === 0;
   const dropdownPlaceholder = !classInfo.course_id
@@ -191,6 +218,60 @@ function StudyPlanSection({
         {classInfo.study_plan_id && (
           <p className="text-[11px] text-muted-foreground mt-1">
             ✨ Bản copy của template sẽ được tạo cho lớp này (Tier 2 instance).
+          </p>
+        )}
+      </div>
+
+      {/* Issue #1 v2 — Ngày kết thúc moved here from Step 1.
+          Auto-calc khi expectedSessions + weekdays + start_date present (parent
+          useEffect). User có thể manual edit → handleEndDateChange ở parent mở
+          confirm dialog (Batch 1: Tự động đổi start / Giữ start / Hủy). */}
+      <div className="border-t pt-3">
+        <Label className="inline-flex items-center gap-1.5 text-sm font-semibold">
+          Ngày kết thúc <span className="text-destructive">*</span>
+        </Label>
+        <Input
+          type="date"
+          min={minEnd}
+          value={classInfo.end_date}
+          onChange={(e) => onEndDateChange(e.target.value)}
+          disabled={!classInfo.start_date}
+          className="mt-1"
+        />
+        {!classInfo.start_date && (
+          <p className="text-[11px] text-muted-foreground mt-1">
+            Chọn ngày bắt đầu ở Step 1 trước.
+          </p>
+        )}
+        {classInfo.start_date && expectedSessions != null && sessionsPerWeek === 0 && !endDateManuallyOverridden && (
+          <p className="text-[11px] text-muted-foreground mt-1">
+            💡 Chọn weekdays bên dưới để tự động tính theo {expectedSessions} buổi.
+          </p>
+        )}
+        {classInfo.start_date && expectedSessions != null && sessionsPerWeek > 0 && !endDateManuallyOverridden && classInfo.end_date && (
+          <p className="text-[11px] text-muted-foreground mt-1">
+            ✨ Tự động: <strong className="text-foreground">{expectedSessions}</strong> buổi
+            {" × "}
+            <strong className="text-foreground">{sessionsPerWeek}</strong> ngày/tuần
+            {" → "}
+            <strong className="text-foreground">{new Date(classInfo.end_date + "T00:00:00").toLocaleDateString("vi-VN")}</strong>
+          </p>
+        )}
+        {expectedSessions != null && endDateManuallyOverridden && (
+          <div className="flex items-center gap-2 mt-1 flex-wrap">
+            <span className="text-[11px] text-amber-600 dark:text-amber-400">⚠️ Đã chỉnh thủ công</span>
+            <button
+              type="button"
+              onClick={onEndDateAutoReset}
+              className="text-[11px] underline text-blue-600 hover:text-blue-800 dark:text-blue-400"
+            >
+              Tính lại từ Study Plan
+            </button>
+          </div>
+        )}
+        {classInfo.start_date && expectedSessions == null && (
+          <p className="text-[11px] text-muted-foreground mt-1">
+            Lớp customized (không có template) — nhập ngày kết thúc thủ công.
           </p>
         )}
       </div>

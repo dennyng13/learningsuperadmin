@@ -12,17 +12,6 @@ interface Props {
   value: WizardClassInfo;
   onChange: (v: WizardClassInfo) => void;
   errors: Record<string, string>;
-  /** Expected số buổi từ template (null nếu chưa pick template). */
-  expectedSessions: number | null;
-  /** Số weekdays đã chọn ở Step 2 slot (0 nếu chưa cấu hình). */
-  weekdaysCount: number;
-  /** True nếu user đã manual edit end_date — skip auto-calc. */
-  endDateManuallyOverridden: boolean;
-  /** Callback khi user edit end_date Input — parent quyết định mở confirm dialog
-   *  (khi auto-calc đang active) hoặc set thẳng (khi đã override). */
-  onEndDateChange: (newDate: string) => void;
-  /** Callback khi user click "Tính lại từ Study Plan". */
-  onEndDateAutoReset: () => void;
 }
 
 // Backend convention: program_keys are lowercase ('ielts' | 'wre' | 'customized').
@@ -40,11 +29,7 @@ const PROGRAM_GROUP_LABEL: Record<string, string> = {
   customized: "Customized",
 };
 
-export default function Step1ClassInfo({
-  value, onChange, errors,
-  expectedSessions, weekdaysCount, endDateManuallyOverridden,
-  onEndDateChange, onEndDateAutoReset,
-}: Props) {
+export default function Step1ClassInfo({ value, onChange, errors }: Props) {
   const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
 
   // The `programs` table contains one row per individual program (e.g. 8 IELTS
@@ -169,13 +154,8 @@ export default function Step1ClassInfo({
 
   const set = <K extends keyof WizardClassInfo>(k: K, v: WizardClassInfo[K]) => onChange({ ...value, [k]: v });
 
-  const minEnd = useMemo(() => {
-    if (!value.start_date) return today;
-    const d = new Date(value.start_date + "T00:00:00");
-    d.setDate(d.getDate() + 7);
-    return d.toISOString().slice(0, 10);
-  }, [value.start_date, today]);
-
+  // Issue #1 v2: end_date đã move sang Step 2 (Phase F2.1+ alignment) — depends on
+  // weekdays + total_sessions ở Step 2, more logical to live there.
   // Reset logic moved into program Select onValueChange — eliminates double-render
   // cascade (was useEffect[value.program] previously). Single render pass per change.
 
@@ -305,38 +285,8 @@ export default function Step1ClassInfo({
         {errors.start_date && <p className="text-xs text-destructive mt-1">{errors.start_date}</p>}
       </div>
 
-      <div>
-        <Label>Ngày kết thúc <span className="text-destructive">*</span></Label>
-        <Input
-          type="date"
-          min={minEnd}
-          value={value.end_date}
-          onChange={(e) => onEndDateChange(e.target.value)}
-        />
-        {errors.end_date && <p className="text-xs text-destructive mt-1">{errors.end_date}</p>}
-        {expectedSessions != null && weekdaysCount === 0 && !endDateManuallyOverridden && (
-          <p className="text-xs text-muted-foreground mt-1">
-            💡 Chọn weekdays ở Step 2 để auto-calc end_date theo {expectedSessions} buổi
-          </p>
-        )}
-        {expectedSessions != null && weekdaysCount > 0 && !endDateManuallyOverridden && value.end_date && (
-          <p className="text-xs text-muted-foreground mt-1">
-            ✨ Tự động tính: {expectedSessions} buổi → kết thúc {new Date(value.end_date + "T00:00:00").toLocaleDateString("vi-VN")}
-          </p>
-        )}
-        {expectedSessions != null && endDateManuallyOverridden && (
-          <div className="flex items-center gap-2 mt-1 flex-wrap">
-            <span className="text-xs text-amber-600 dark:text-amber-400">⚠️ Đã chỉnh thủ công</span>
-            <button
-              type="button"
-              onClick={onEndDateAutoReset}
-              className="text-xs underline text-blue-600 hover:text-blue-800 dark:text-blue-400"
-            >
-              Tính lại từ Study Plan
-            </button>
-          </div>
-        )}
-      </div>
+      {/* Ngày kết thúc moved to Step 2 (Issue #1 v2 redesign) — depends on
+          weekdays + template total_sessions which live in Step 2. */}
 
       <div>
         <Label>Số học viên tối đa</Label>

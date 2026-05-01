@@ -425,11 +425,6 @@ export default function CreateClassWizardPage() {
             value={classInfo}
             onChange={setClassInfo}
             errors={errors}
-            expectedSessions={expectedSessions}
-            weekdaysCount={slot.weekdays.length}
-            endDateManuallyOverridden={endDateManuallyOverridden}
-            onEndDateChange={handleEndDateChange}
-            onEndDateAutoReset={resetEndDateAuto}
           />
         )}
         {step === 2 && (
@@ -445,6 +440,9 @@ export default function CreateClassWizardPage() {
             setSelectedSlotKeys={setSelectedSlotKeys}
             setStudyPlanId={(id) => setClassInfo((prev) => ({ ...prev, study_plan_id: id }))}
             expectedSessions={expectedSessions}
+            endDateManuallyOverridden={endDateManuallyOverridden}
+            onEndDateChange={handleEndDateChange}
+            onEndDateAutoReset={resetEndDateAuto}
           />
         )}
         {step === 3 && (
