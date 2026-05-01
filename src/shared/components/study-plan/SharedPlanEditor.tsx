@@ -622,6 +622,19 @@ export function SharedPlanEditor({ plan, onClose, teacherMode = false }: SharedP
         return;
       }
 
+      // ─── Issue #12: empty sessions soft warning ───────────────────────
+      // Plan có 0 buổi học sẽ hiện trống trong PlanProgressTab và student view.
+      // Soft warning cho phép admin proceed nếu ý định tạo template skeleton trước.
+      if (entries.length === 0) {
+        const proceed = window.confirm(
+          "Kế hoạch chưa có buổi học nào.\n\nBạn có chắc muốn lưu kế hoạch trống về sessions?",
+        );
+        if (!proceed) {
+          setSaving(false);
+          return;
+        }
+      }
+
       // ─── Scope enforcement ────────────────────────────
       // Teachers (non-admin) must operate within their own classes/students.
       if (teacherMode && !scope?.canViewAllClasses) {
