@@ -342,6 +342,37 @@ function EndDateMismatchSection({
 
   const sessionsPerWeek = slot.weekdays.length;
 
+  // #C1-bis: Session list summary — show actual session days for transparency.
+  // Eliminates user mental-model gap (week-based expectation vs weekday-based reality).
+  // Walks day-by-day same logic as computeEndDateForSessions (forward walk).
+  const sessionDates = useMemo(() => {
+    if (!classInfo.start_date || slot.weekdays.length === 0 || !expectedSessions) return [];
+    const dates: string[] = [];
+    const cur = new Date(classInfo.start_date + "T00:00:00");
+    if (Number.isNaN(cur.getTime())) return [];
+    for (let i = 0; i < 730 && dates.length < expectedSessions; i++) {
+      if (slot.weekdays.includes(cur.getDay())) {
+        dates.push(cur.toISOString().slice(0, 10));
+      }
+      cur.setDate(cur.getDate() + 1);
+    }
+    return dates;
+  }, [classInfo.start_date, slot.weekdays, expectedSessions]);
+
+  // Format session list for display: short DD/MM, dot-separated.
+  // If <= 6 sessions: show all. Else: first 3 ... last 1.
+  const sessionListText = useMemo(() => {
+    if (sessionDates.length === 0) return "";
+    const fmt = (iso: string) => {
+      const d = new Date(iso + "T00:00:00");
+      return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
+    };
+    if (sessionDates.length <= 6) return sessionDates.map(fmt).join(" · ");
+    const head = sessionDates.slice(0, 3).map(fmt).join(" · ");
+    const tail = fmt(sessionDates[sessionDates.length - 1]);
+    return `${head} ... ${tail}`;
+  }, [sessionDates]);
+
   // Issue #A2 fix: hasMismatch chỉ fire khi user MANUAL OVERRIDE end_date
   const hasMismatch = expectedSessions != null
     && endDateManuallyOverridden
@@ -376,13 +407,20 @@ function EndDateMismatchSection({
           </p>
         )}
         {classInfo.start_date && expectedSessions != null && sessionsPerWeek > 0 && !endDateManuallyOverridden && classInfo.end_date && (
-          <p className="text-[11px] text-muted-foreground mt-1">
-            ✨ Tự động: <strong className="text-foreground">{expectedSessions}</strong> buổi
-            {" × "}
-            <strong className="text-foreground">{sessionsPerWeek}</strong> ngày/tuần
-            {" → "}
-            <strong className="text-foreground">{new Date(classInfo.end_date + "T00:00:00").toLocaleDateString("vi-VN")}</strong>
-          </p>
+          <div className="text-[11px] text-muted-foreground mt-1 space-y-0.5">
+            <p>
+              ✨ Tự động: <strong className="text-foreground">{expectedSessions}</strong> buổi
+              {" × "}
+              <strong className="text-foreground">{sessionsPerWeek}</strong> ngày/tuần
+              {" → "}kết thúc{" "}
+              <strong className="text-foreground">{new Date(classInfo.end_date + "T00:00:00").toLocaleDateString("vi-VN")}</strong>
+            </p>
+            {sessionListText && (
+              <p className="font-mono">
+                📅 Buổi học: <span className="text-foreground">{sessionListText}</span>
+              </p>
+            )}
+          </div>
         )}
         {expectedSessions != null && endDateManuallyOverridden && (
           <div className="flex items-center gap-2 mt-1 flex-wrap">
@@ -431,13 +469,13 @@ function EndDateMismatchSection({
                 ? "Chưa đủ dữ liệu để dự kiến"
                 : ""}
             </p>
+            {/* #C2-bis: flow order — Study Plan total → Slot config → Required result */}
             <p className="text-xs">
-              📊 Study Plan: <strong className="tabular-nums">{planTotalHours ?? 0}</strong> hrs (
-              {templateSessionCount ?? 0} buổi × {expectedDuration ?? 0} phút)
+              📊 Study Plan: <strong className="tabular-nums">{planTotalHours ?? 0}</strong> hrs total
+              {" "}({templateSessionCount ?? 0} buổi × {expectedDuration ?? 0} phút mỗi buổi)
             </p>
             <p className="text-xs">
-              Slot hiện tại: <strong className="tabular-nums">{slotDurationMinutes}</strong> phút/buổi
-              {" → "}Cần <strong className="tabular-nums">{expectedSessions ?? 0}</strong> buổi
+              ⚙️ Slot: <strong className="tabular-nums">{slotDurationMinutes}</strong> phút
               {sessionsPerWeek > 0 && (
                 <>
                   {" × "}
@@ -446,14 +484,20 @@ function EndDateMismatchSection({
               )}
             </p>
             <p className="text-xs">
-              Sẽ tạo: <strong className="tabular-nums">{actualSessionCount}</strong> buổi
-              {hasMismatch && (
+              → Cần <strong className="tabular-nums">{expectedSessions ?? 0}</strong> buổi
+              {classInfo.end_date && (
                 <>
-                  {" · "}
-                  Khác: <strong className="tabular-nums">{actualSessionCount - (expectedSessions ?? 0) > 0 ? "+" : ""}{actualSessionCount - (expectedSessions ?? 0)}</strong>
+                  {" "}(kết thúc <strong>{new Date(classInfo.end_date + "T00:00:00").toLocaleDateString("vi-VN")}</strong>)
                 </>
               )}
             </p>
+            {hasMismatch && (
+              <p className="text-xs">
+                ⚠️ Sẽ tạo: <strong className="tabular-nums">{actualSessionCount}</strong> buổi
+                {" · "}
+                Khác: <strong className="tabular-nums">{actualSessionCount - (expectedSessions ?? 0) > 0 ? "+" : ""}{actualSessionCount - (expectedSessions ?? 0)}</strong>
+              </p>
+            )}
             {hasNoInputs && (
               <p className="text-[11px]">Chọn weekdays + ngày kết thúc để xem dự kiến.</p>
             )}
