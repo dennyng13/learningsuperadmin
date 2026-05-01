@@ -14,6 +14,7 @@ import {
   RefreshCw, Loader2, Search, Users, Mail, Phone, Clock, Link2, Unlink, Eye, X, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, ArrowUpDown, UserPlus, Trash2, BarChart3, BookOpen, KeyRound, ShieldCheck, Shield, UserX, UserCog, GraduationCap, Pencil, Check, MailWarning, Settings2, Download, Send,
 } from "lucide-react";
 import { cn } from "@shared/lib/utils";
+import { formatDateDDMMYYYY } from "@shared/utils/dateFormat";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@shared/components/ui/tooltip";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
@@ -812,7 +813,7 @@ export default function SyncedUsersTab({ roleCategory = "students" }: { roleCate
           {lastSync && (
             <span className="text-[10px] text-muted-foreground flex items-center gap-1 ml-auto">
               <Clock className="h-3 w-3" />
-              {new Date(lastSync).toLocaleDateString("vi-VN")}
+              {formatDateDDMMYYYY(lastSync)}
             </span>
           )}
         </div>
@@ -1053,7 +1054,7 @@ export default function SyncedUsersTab({ roleCategory = "students" }: { roleCate
                       <td className="px-4 py-2.5 text-center hidden xl:table-cell">
                         {s.linked_user_id && lastActivityMap[s.linked_user_id] ? (
                           <span className="text-[11px] text-muted-foreground tabular-nums">
-                            {new Date(lastActivityMap[s.linked_user_id]!).toLocaleDateString("vi-VN")}
+                            {formatDateDDMMYYYY(lastActivityMap[s.linked_user_id]!)}
                           </span>
                         ) : s.linked_user_id ? (
                           <span className="text-muted-foreground/40 text-[10px]">Chưa có</span>
@@ -1245,7 +1246,7 @@ export default function SyncedUsersTab({ roleCategory = "students" }: { roleCate
                         <td className="px-3 py-2 font-medium">{r.assessment_name}</td>
                         <td className="px-3 py-2"><Badge variant="secondary" className="text-[10px] capitalize">{r.section_type}</Badge></td>
                         <td className="px-3 py-2 font-bold text-primary">{r.score !== null ? r.score : `${r.correct_answers}/${r.total_questions}`}</td>
-                        <td className="px-3 py-2 text-muted-foreground text-xs">{new Date(r.created_at).toLocaleDateString("vi-VN")}</td>
+                        <td className="px-3 py-2 text-muted-foreground text-xs">{formatDateDDMMYYYY(r.created_at)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -1388,7 +1389,7 @@ export default function SyncedUsersTab({ roleCategory = "students" }: { roleCate
                   {cleanupPreview.map((u, i) => (
                     <tr key={i} className="border-t">
                       <td className="px-3 py-1.5 text-[13px] font-medium">{u.name}</td>
-                      <td className="px-3 py-1.5 text-[12px] text-muted-foreground">{u.last_activity ? new Date(u.last_activity).toLocaleDateString("vi-VN") : "Chưa bao giờ"}</td>
+                      <td className="px-3 py-1.5 text-[12px] text-muted-foreground">{u.last_activity ? formatDateDDMMYYYY(u.last_activity) : "Chưa bao giờ"}</td>
                     </tr>
                   ))}
                 </tbody>

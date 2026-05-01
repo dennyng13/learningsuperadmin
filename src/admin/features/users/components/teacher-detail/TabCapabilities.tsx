@@ -12,6 +12,7 @@ import { Button } from "@shared/components/ui/button";
 import { Textarea } from "@shared/components/ui/textarea";
 import { Loader2, MessagesSquare, ShieldCheck, ThumbsDown, ThumbsUp, Wrench } from "lucide-react";
 import TeacherProgramEligibilityCard from "@admin/features/users/components/TeacherProgramEligibilityCard";
+import { formatDateTimeDDMMYYYY } from "@shared/utils/dateFormat";
 
 interface Props { teacherId: string }
 
@@ -108,7 +109,7 @@ function DraftsPanel({ teacherId }: Props) {
               Status: {d.status}
             </div>
             <div className="text-[11px] text-muted-foreground">
-              Gửi lúc {new Date(d.created_at).toLocaleString("vi-VN")}
+              Gửi lúc {formatDateTimeDDMMYYYY(d.created_at)}
             </div>
           </div>
           <DraftBody draft={d} />
@@ -168,7 +169,7 @@ function DraftsPanel({ teacherId }: Props) {
               <div key={d.id} className="text-xs text-muted-foreground border-l-2 border-border pl-2">
                 <span className="font-medium text-foreground">{d.status}</span>
                 {d.review_note && <span> — {d.review_note}</span>}
-                {d.reviewed_at && <span className="ml-1">({new Date(d.reviewed_at).toLocaleString("vi-VN")})</span>}
+                {d.reviewed_at && <span className="ml-1">({formatDateTimeDDMMYYYY(d.reviewed_at)})</span>}
               </div>
             ))}
           </div>

@@ -6,6 +6,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Mail, MailCheck, MailMinus, MailWarning, MessageCircle } from "lucide-react";
+import { formatDateTimeDDMMYYYY } from "@shared/utils/dateFormat";
 
 interface Row {
   id: string;
@@ -110,10 +111,10 @@ export default function TabInvitations({ teacherId }: Props) {
                 {r.role && <span className="text-xs text-muted-foreground">({r.role})</span>}
               </div>
               <div className="text-xs text-muted-foreground mt-0.5 space-x-3">
-                {r.invited_at && <span>Mời: {new Date(r.invited_at).toLocaleString("vi-VN")}</span>}
-                {r.respond_deadline && <span>Hạn: {new Date(r.respond_deadline).toLocaleString("vi-VN")}</span>}
-                {r.responded_at && <span>Phản hồi: {new Date(r.responded_at).toLocaleString("vi-VN")}</span>}
-                {r.cancelled_at && <span>Hủy: {new Date(r.cancelled_at).toLocaleString("vi-VN")}</span>}
+                {r.invited_at && <span>Mời: {formatDateTimeDDMMYYYY(r.invited_at)}</span>}
+                {r.respond_deadline && <span>Hạn: {formatDateTimeDDMMYYYY(r.respond_deadline)}</span>}
+                {r.responded_at && <span>Phản hồi: {formatDateTimeDDMMYYYY(r.responded_at)}</span>}
+                {r.cancelled_at && <span>Hủy: {formatDateTimeDDMMYYYY(r.cancelled_at)}</span>}
               </div>
               {r.response_note && (
                 <p className="text-xs mt-1 italic text-muted-foreground">"{r.response_note}"</p>

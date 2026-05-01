@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAddendumDetail, updateAddendumMeta } from "../hooks/useAddendums";
+import { formatDateTimeDDMMYYYY } from "@shared/utils/dateFormat";
 import AddendumStatusBadge from "../components/AddendumStatusBadge";
 import AddendumPayRatesEditor from "../components/AddendumPayRatesEditor";
 import AddendumActionsPanel from "../components/AddendumActionsPanel";
@@ -280,7 +281,7 @@ export default function AddendumEditorPage() {
                           <div className="flex justify-between">
                             <span className="font-medium">{log.action}</span>
                             <span className="text-xs text-muted-foreground">
-                              {new Date(log.created_at).toLocaleString("vi-VN")}
+                              {formatDateTimeDDMMYYYY(log.created_at)}
                             </span>
                           </div>
                           {(log.from_status || log.to_status) && (

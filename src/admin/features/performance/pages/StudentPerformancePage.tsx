@@ -24,6 +24,7 @@ import {
 } from "@shared/components/ui/select";
 import { subDays, isAfter, parseISO } from "date-fns";
 import { formatTimeVi, formatMinutes } from "@shared/utils/formatTime";
+import { formatDateDDMMYYYY } from "@shared/utils/dateFormat";
 import { QUESTION_TYPE_LABELS_VI, analyzeAllQuestionTypes, analyzeWeakQuestionTypes, type WeakQuestionType } from "@shared/utils/questionTypes";
 import { SKILL_TABS } from "@shared/utils/skillColors";
 import ScoreRing from "@shared/components/ui/score-ring";
@@ -683,7 +684,7 @@ export default function StudentPerformancePage() {
                   )}
                   <div>
                     <p className="text-xs font-bold">{b.badge?.name || "Huy hiệu"}</p>
-                    <p className="text-[10px] text-muted-foreground">{new Date(b.awarded_at).toLocaleDateString("vi-VN")}</p>
+                    <p className="text-[10px] text-muted-foreground">{formatDateDDMMYYYY(b.awarded_at)}</p>
                   </div>
                 </div>
               );
@@ -860,7 +861,7 @@ export default function StudentPerformancePage() {
               <tbody>
                 {payments.slice(0, 10).map((p: any) => (
                   <tr key={p.id} className="border-t">
-                    <td className="px-3 py-2 text-xs">{new Date(p.payment_date).toLocaleDateString("vi-VN")}</td>
+                    <td className="px-3 py-2 text-xs">{formatDateDDMMYYYY(p.payment_date)}</td>
                     <td className="px-3 py-2 text-right font-medium">{Number(p.amount).toLocaleString("vi-VN")}</td>
                     <td className="px-3 py-2 text-xs text-muted-foreground truncate max-w-[200px]">{p.description || "—"}</td>
                     <td className="px-3 py-2">
@@ -934,7 +935,7 @@ export default function StudentPerformancePage() {
                       {formatTimeVi(r.time_spent)}
                     </td>
                     <td className="px-5 py-3.5 text-right text-muted-foreground text-xs">
-                      {new Date(r.created_at).toLocaleDateString("vi-VN")}
+                      {formatDateDDMMYYYY(r.created_at)}
                     </td>
                   </tr>
                 ))}
@@ -967,7 +968,7 @@ export default function StudentPerformancePage() {
                     <div className="flex items-center justify-between">
                       <h4 className="font-display font-bold text-sm">{result.assessment_name}</h4>
                       <span className="text-xs text-muted-foreground">
-                        {new Date(result.created_at).toLocaleDateString("vi-VN")}
+                        {formatDateDDMMYYYY(result.created_at)}
                       </span>
                     </div>
                     {tasks.map((task: any, idx: number) => {

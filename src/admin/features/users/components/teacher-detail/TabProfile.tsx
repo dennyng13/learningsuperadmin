@@ -16,6 +16,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@shared/components/ui/select";
 import { Switch } from "@shared/components/ui/switch";
+import { formatDateTimeDDMMYYYY } from "@shared/utils/dateFormat";
 
 interface Props { teacherId: string }
 
@@ -214,7 +215,7 @@ export default function TabProfile({ teacherId }: Props) {
           <Field label="Lần xác nhận gần nhất">
             <div className="h-9 flex items-center text-sm">
               {form.bank_account_last_confirmed_at
-                ? new Date(form.bank_account_last_confirmed_at).toLocaleString("vi-VN")
+                ? formatDateTimeDDMMYYYY(form.bank_account_last_confirmed_at)
                 : <span className="text-muted-foreground">Giáo viên chưa xác nhận</span>}
             </div>
           </Field>

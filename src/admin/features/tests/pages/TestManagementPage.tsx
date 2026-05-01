@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import { useCourseLevels } from "@shared/hooks/useCourseLevels";
 import { getLevelColorConfig } from "@shared/utils/levelColors";
 import { cn } from "@shared/lib/utils";
+import { formatDateDDMMYYYY } from "@shared/utils/dateFormat";
 import ResourceTagManager from "@admin/features/settings/components/ResourceTagManager";
 import QuestionTypeBadge from "@shared/components/misc/QuestionTypeBadge";
 import { ALL_TYPE_LABELS_EN as ALL_QUESTION_TYPE_LABELS } from "@shared/utils/questionTypes";
@@ -644,10 +645,10 @@ export default function TestManagementPage() {
                 </div>
                 <div className="hidden sm:block text-xs text-muted-foreground text-right">
                   {test.available_from && (
-                    <p>Từ: {new Date(test.available_from).toLocaleDateString("vi-VN")}</p>
+                    <p>Từ: {formatDateDDMMYYYY(test.available_from)}</p>
                   )}
                   {test.available_until && (
-                    <p>Đến: {new Date(test.available_until).toLocaleDateString("vi-VN")}</p>
+                    <p>Đến: {formatDateDDMMYYYY(test.available_until)}</p>
                   )}
                 </div>
                 <DropdownMenu>

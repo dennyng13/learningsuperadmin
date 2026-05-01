@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   Briefcase, Calendar, Loader2, Mail, MessageSquare, Sparkles, TrendingUp, Wallet,
 } from "lucide-react";
+import { formatDateTimeDDMMYYYY } from "@shared/utils/dateFormat";
 
 interface KpiRow {
   teacher_id: string;
@@ -128,7 +129,7 @@ export default function TabOverview({ teacherId }: Props) {
           {data.bank_account_last_confirmed_at ? (
             <p className="text-sm">
               Lần xác nhận gần nhất:{" "}
-              <strong className="text-foreground">{new Date(data.bank_account_last_confirmed_at).toLocaleString("vi-VN")}</strong>
+              <strong className="text-foreground">{formatDateTimeDDMMYYYY(data.bank_account_last_confirmed_at)}</strong>
               {bankConfirmedDays !== null && (
                 <span className={bankConfirmedDays > 30 ? "text-warning ml-2" : "text-muted-foreground ml-2"}>
                   ({bankConfirmedDays} ngày trước)
