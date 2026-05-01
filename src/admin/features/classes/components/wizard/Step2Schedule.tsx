@@ -133,10 +133,8 @@ export default function Step2Schedule(props: Props) {
         onEndDateAutoReset={props.onEndDateAutoReset}
       />
 
-      <CenterScheduleEmbed
-        startDate={props.classInfo.start_date}
-        selectedTeachers={props.teachers}
-      />
+      {/* CenterScheduleEmbed moved to Step 1 (F2.7 quick-win) — admin có visual
+          context lịch trung tâm ngay từ khi pick start_date. */}
     </div>
   );
 }
@@ -152,7 +150,7 @@ export default function Step2Schedule(props: Props) {
 
 type CalendarViewMode = "week" | "month";
 
-function CenterScheduleEmbed({
+export function CenterScheduleEmbed({
   startDate, selectedTeachers,
 }: {
   startDate: string;

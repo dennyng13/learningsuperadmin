@@ -13,6 +13,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@shared/components/ui/p
 import { Calendar } from "@shared/components/ui/calendar";
 import { cn } from "@shared/lib/utils";
 import { toLocalISODate, type WizardClassInfo } from "./wizardTypes";
+import { CenterScheduleEmbed } from "./Step2Schedule";
 
 interface Props {
   value: WizardClassInfo;
@@ -179,6 +180,7 @@ export default function Step1ClassInfo({ value, onChange, errors }: Props) {
   // cascade (was useEffect[value.program] previously). Single render pass per change.
 
   return (
+    <div className="space-y-6">
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div className="md:col-span-2">
         <Label>Tên lớp <span className="text-destructive">*</span></Label>
@@ -353,6 +355,12 @@ export default function Step1ClassInfo({ value, onChange, errors }: Props) {
         <Checkbox id="lb" checked={value.leaderboard_enabled} onCheckedChange={(c) => set("leaderboard_enabled", !!c)} />
         <Label htmlFor="lb" className="cursor-pointer">Bật leaderboard cho lớp này</Label>
       </div>
+    </div>
+
+    {/* F2.7 quick-win: CenterScheduleEmbed moved here from Step 2 — admin có
+        visual context lịch trung tâm khi pick start_date. Empty selectedTeachers
+        at Step 1 → filter inactive, all sessions visible. */}
+    <CenterScheduleEmbed startDate={value.start_date} selectedTeachers={[]} />
     </div>
   );
 }
