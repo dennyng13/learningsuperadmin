@@ -384,7 +384,24 @@ export default function CreateClassWizardPage() {
 
       navigate("/classes");
     } catch (err: any) {
-      toast.error(err?.message || "Lỗi tạo lớp", { duration: 6000 });
+      // Issue #A5.1 fix: format teacher conflict RPC error với gợi ý.
+      // Raw RPC error: "Teacher [UUID] has conflicting session on YYYY-MM-DD (HH:MM:SS - HH:MM:SS)"
+      // → User-friendly: "Giáo viên [Tên] bị trùng lịch ngày DD/MM (HH:MM-HH:MM). Gợi ý: ..."
+      const rawMsg = err?.message || "";
+      const conflictMatch = rawMsg.match(
+        /Teacher ([\w-]+) has conflicting session on (\d{4}-\d{2}-\d{2}) \((\d{2}:\d{2}):\d{2} - (\d{2}:\d{2}):\d{2}\)/,
+      );
+      if (conflictMatch) {
+        const [, teacherUuid, dateIso, startHm, endHm] = conflictMatch;
+        const teacherName = teachers.find((t) => t.teacher_id === teacherUuid)?.full_name || "Không rõ";
+        const dateVN = new Date(dateIso + "T00:00:00").toLocaleDateString("vi-VN");
+        toast.error(
+          `Giáo viên ${teacherName} bị trùng lịch ngày ${dateVN} (${startHm}–${endHm}).\n\nGợi ý:\n• Quay lại Step 2 chọn giáo viên khác\n• Đổi giờ học\n• Đổi ngày bắt đầu`,
+          { duration: 10000 },
+        );
+        return;
+      }
+      toast.error(rawMsg || "Lỗi tạo lớp", { duration: 6000 });
     }
   };
 
