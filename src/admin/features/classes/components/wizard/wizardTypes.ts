@@ -83,6 +83,20 @@ export const WEEKDAY_LABELS: { value: number; label: string }[] = [
   { value: 0, label: "CN" },
 ];
 
+// #C3-bis-2 fix: TIMEZONE-safe date string converter.
+// JS `Date.toISOString()` returns UTC. For users in UTC+7 (Vietnam), a Date
+// constructed via `new Date("2026-05-01T00:00:00")` (LOCAL midnight) becomes
+// `"2026-04-30T17:00:00.000Z"` in UTC → toISOString().slice(0,10) returns
+// "2026-04-30" (off by one day BACKWARD). All wizard date math uses LOCAL time
+// for getDay() weekday matching, so we MUST output dates as local strings to
+// stay consistent. This helper extracts y-m-d from local date components.
+export function toLocalISODate(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 // Convert wizard numeric weekday (Sun=0..Sat=6) → key string ('sun'/'mon'/...)
 // matching study_plan_templates.schedule_pattern.days format used by the
 // create_class_with_template_atomic RPC and CloneTemplateDialog.
@@ -123,8 +137,8 @@ export function generateSessions(
     const wd = d.getDay();
     if (!weekdays.includes(wd)) continue;
     out.push({
-      id: `${d.toISOString().slice(0, 10)}-${startTime}`,
-      session_date: d.toISOString().slice(0, 10),
+      id: `${toLocalISODate(d)}-${startTime}`,
+      session_date: toLocalISODate(d),
       weekday: wd,
       start_time: startTime,
       end_time: endTime,
@@ -153,7 +167,7 @@ export function computeEndDateForSessions(
   for (let i = 0; i < 730; i++) {
     if (weekdays.includes(cur.getDay())) {
       count++;
-      if (count === totalSessions) return cur.toISOString().slice(0, 10);
+      if (count === totalSessions) return toLocalISODate(cur);
     }
     cur.setDate(cur.getDate() + 1);
   }
@@ -195,7 +209,7 @@ export function computeStartDateForSessions(
   for (let i = 0; i < 730; i++) {
     if (weekdays.includes(cur.getDay())) {
       count++;
-      if (count === totalSessions) return cur.toISOString().slice(0, 10);
+      if (count === totalSessions) return toLocalISODate(cur);
     }
     cur.setDate(cur.getDate() - 1);
   }

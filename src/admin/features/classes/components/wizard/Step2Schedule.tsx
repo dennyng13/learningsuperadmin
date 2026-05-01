@@ -37,7 +37,7 @@ import {
 } from "@admin/features/schedule/pages/AdminSchedulePage";
 import {
   AssignedTeacher, DeliveryMode, ScheduleMode, WizardClassInfo, WizardSlot,
-  WEEKDAY_LABELS, countSessionsInRange,
+  WEEKDAY_LABELS, countSessionsInRange, toLocalISODate,
 } from "./wizardTypes";
 
 interface Props {
@@ -332,12 +332,12 @@ function EndDateMismatchSection({
     return tpl?.total_sessions ?? null;
   }, [classInfo.study_plan_id, eligibleTemplates]);
 
-  const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const today = useMemo(() => toLocalISODate(new Date()), []);
   const minEnd = useMemo(() => {
     if (!classInfo.start_date) return today;
     const d = new Date(classInfo.start_date + "T00:00:00");
     d.setDate(d.getDate() + 7);
-    return d.toISOString().slice(0, 10);
+    return toLocalISODate(d);
   }, [classInfo.start_date, today]);
 
   const sessionsPerWeek = slot.weekdays.length;
@@ -352,7 +352,7 @@ function EndDateMismatchSection({
     if (Number.isNaN(cur.getTime())) return [];
     for (let i = 0; i < 730 && dates.length < expectedSessions; i++) {
       if (slot.weekdays.includes(cur.getDay())) {
-        dates.push(cur.toISOString().slice(0, 10));
+        dates.push(toLocalISODate(cur));
       }
       cur.setDate(cur.getDate() + 1);
     }
