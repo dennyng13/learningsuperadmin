@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Loader2, Plus, X, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -55,6 +55,18 @@ export default function LevelEditorDialog({
   const isEdit = !!level;
   const { levels: allLevels } = useCourseLevels({ includeOrphans: true });
   const { data: templates = [] } = useStudyPlanTemplates();
+
+  // Issue #11 fix: filter templates theo program của level được edit (lookup
+  // program.key từ programs prop + programId state). Templates không có program
+  // (generic) cũng pass — admin có thể dùng cho bất cứ chương trình nào.
+  // Match pattern với CourseEditorDialog + CourseStudyPlansDialog.
+  const filteredTemplates = useMemo(() => {
+    const programKey = programs.find((p) => p.id === programId)?.key;
+    if (!programKey) return [];
+    return templates.filter(
+      (t) => !t.program || t.program.toLowerCase() === programKey.toLowerCase(),
+    );
+  }, [templates, programs, programId]);
 
   // Form state
   const [name, setName] = useState("");
@@ -290,13 +302,17 @@ export default function LevelEditorDialog({
               <Sparkles className="h-3 w-3 text-primary" />
               Study Plan Template mặc định
             </Label>
-            <Select value={templateId || "__none"} onValueChange={(v) => setTemplateId(v === "__none" ? "" : v)}>
+            <Select
+              value={templateId || "__none"}
+              onValueChange={(v) => setTemplateId(v === "__none" ? "" : v)}
+              disabled={!programId}
+            >
               <SelectTrigger className="h-9 text-sm">
-                <SelectValue placeholder="—" />
+                <SelectValue placeholder={!programId ? "Chọn chương trình trước" : "—"} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="__none">Không gắn template</SelectItem>
-                {templates.map((t) => (
+                {filteredTemplates.map((t) => (
                   <SelectItem key={t.id} value={t.id}>
                     {t.template_name}
                     {t.assigned_level && (
