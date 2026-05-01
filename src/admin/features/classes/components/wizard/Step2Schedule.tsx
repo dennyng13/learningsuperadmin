@@ -12,7 +12,6 @@
 //                                           pre-selected.
 //   • "Theo giáo viên"       (by-teacher) — manual pick + show common slots.
 
-import { useState } from "react";
 import { Label } from "@shared/components/ui/label";
 import { Input } from "@shared/components/ui/input";
 import { Checkbox } from "@shared/components/ui/checkbox";
