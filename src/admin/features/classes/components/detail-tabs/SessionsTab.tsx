@@ -15,6 +15,7 @@ import {
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@shared/components/ui/dropdown-menu";
 import { cn } from "@shared/lib/utils";
+import { formatDateDDMMYYYY } from "@shared/utils/dateFormat";
 import {
   ChangeTeacherDialog, MarkSubstitutedDialog, EditSessionDialog,
   CancelSessionDialog,
@@ -64,9 +65,8 @@ const MODE_LABELS: Record<string, string> = {
 };
 
 function fmtDate(iso: string): string {
-  const d = new Date(iso + "T00:00:00");
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString("vi-VN");
+  // #C12 fix: standardize to dd/MM/yyyy via shared helper (handles invalid input gracefully).
+  return formatDateDDMMYYYY(iso);
 }
 
 function fmtTime(t: string | null): string {

@@ -1,6 +1,7 @@
 import { Calendar, MapPin, Users, User, BookOpen, Clock, GraduationCap, Wallet } from "lucide-react";
 import ClassStatusBadge from "@shared/components/admin/ClassStatusBadge";
 import type { ClassLifecycleStatus } from "@shared/components/admin/ClassStatusBadge";
+import { formatDateDDMMYYYY } from "@shared/utils/dateFormat";
 
 /* Subset of v_class_full columns referenced by detail page. Sử dụng
  * `any`-like typing vì supabase types.ts (read-only) chưa có cột mới sau
@@ -173,9 +174,8 @@ function InfoRow({
 
 function formatDateRange(start?: string | null, end?: string | null): string {
   if (!start && !end) return "—";
-  const fmt = (d: string) =>
-    new Date(d).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" });
-  if (start && end) return `${fmt(start)} → ${fmt(end)}`;
-  if (start) return `Từ ${fmt(start)}`;
-  return `Đến ${fmt(end!)}`;
+  // #C12 sweep: use shared formatDateDDMMYYYY helper instead of inline toLocaleDateString options.
+  if (start && end) return `${formatDateDDMMYYYY(start)} → ${formatDateDDMMYYYY(end)}`;
+  if (start) return `Từ ${formatDateDDMMYYYY(start)}`;
+  return `Đến ${formatDateDDMMYYYY(end!)}`;
 }

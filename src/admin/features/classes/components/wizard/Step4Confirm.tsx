@@ -7,6 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Wallet, AlertTriangle } from "lucide-react";
 import { useRoom } from "@shared/hooks/useRooms";
+import { formatDateDDMMYYYY } from "@shared/utils/dateFormat";
 import { AssignedTeacher, DraftSession, WizardClassInfo } from "./wizardTypes";
 
 interface Props {
@@ -124,7 +125,7 @@ export default function Step4Confirm({ classInfo, teachers, sessions }: Props) {
           <div><dt className="inline text-muted-foreground">Program: </dt><dd className="inline">{classInfo.program}</dd></div>
           {classInfo.level && <div><dt className="inline text-muted-foreground">Level: </dt><dd className="inline">{classInfo.level}</dd></div>}
           <div><dt className="inline text-muted-foreground">Type: </dt><dd className="inline">{classInfo.class_type}</dd></div>
-          <div><dt className="inline text-muted-foreground">Thời gian: </dt><dd className="inline">{classInfo.start_date} → {classInfo.end_date}</dd></div>
+          <div><dt className="inline text-muted-foreground">Thời gian: </dt><dd className="inline">{formatDateDDMMYYYY(classInfo.start_date)} → {formatDateDDMMYYYY(classInfo.end_date)}</dd></div>
           {classInfo.room_id ? (
             <div className="md:col-span-2"><RoomConfirmDisplay roomId={classInfo.room_id} forceConflict={classInfo.room_force_conflict} /></div>
           ) : (

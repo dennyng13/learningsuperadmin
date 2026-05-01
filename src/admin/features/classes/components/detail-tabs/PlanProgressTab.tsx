@@ -9,6 +9,7 @@ import { Button } from "@shared/components/ui/button";
 import { Badge } from "@shared/components/ui/badge";
 import { Skeleton } from "@shared/components/ui/skeleton";
 import { cn } from "@shared/lib/utils";
+import { formatDateDDMMYYYY } from "@shared/utils/dateFormat";
 
 /* /classes/:id Tab "Tiến độ" — read-only Study Plan instance display.
    Replace placeholder BackendPendingTab. Scope: Bug #5 fix.
@@ -48,10 +49,8 @@ const STATUS_META: Record<string, { label: string; cls: string }> = {
 };
 
 function formatDate(iso: string | null): string {
-  if (!iso) return "—";
-  const d = new Date(iso + (iso.length === 10 ? "T00:00:00" : ""));
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString("vi-VN");
+  // #C12 sweep: standardize to dd/MM/yyyy via shared helper.
+  return formatDateDDMMYYYY(iso);
 }
 
 export function PlanProgressTab({ classId, studyPlanId }: Props) {
