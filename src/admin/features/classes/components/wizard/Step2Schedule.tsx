@@ -93,16 +93,13 @@ export default function Step2Schedule(props: Props) {
 
   return (
     <div className="space-y-6">
-      <StudyPlanSection
+      {/* Top: template picker only */}
+      <TemplatePickerSection
         classInfo={props.classInfo}
-        slot={props.slot}
         setStudyPlanId={props.setStudyPlanId}
-        expectedSessions={props.expectedSessions}
-        endDateManuallyOverridden={props.endDateManuallyOverridden}
-        onEndDateChange={props.onEndDateChange}
-        onEndDateAutoReset={props.onEndDateAutoReset}
       />
 
+      {/* Mode picker pills + subcomponent (chứa weekdays + time picker) */}
       <div className="flex flex-wrap gap-2">
         {pill("by-slot",    "Theo khung thời gian", <Search className="h-3.5 w-3.5" />)}
         {pill("by-revenue", "Theo doanh thu thấp",  <TrendingDown className="h-3.5 w-3.5" />)}
@@ -112,6 +109,18 @@ export default function Step2Schedule(props: Props) {
       {props.scheduleMode === "by-slot"    && <ModeAByTimeSlotV2 {...props} />}
       {props.scheduleMode === "by-revenue" && <ModeRevenueBased  {...props} />}
       {props.scheduleMode === "by-teacher" && <ModeBByTeacher    {...props} />}
+
+      {/* Issue #A3: end_date + mismatch indicators moved AFTER mode subcomponent
+          (after weekdays picker). Logical UX flow — user picks weekdays first, then
+          sees computed end_date + mismatch warnings. */}
+      <EndDateMismatchSection
+        classInfo={props.classInfo}
+        slot={props.slot}
+        expectedSessions={props.expectedSessions}
+        endDateManuallyOverridden={props.endDateManuallyOverridden}
+        onEndDateChange={props.onEndDateChange}
+        onEndDateAutoReset={props.onEndDateAutoReset}
+      />
 
       <CenterScheduleEmbed startDate={props.classInfo.start_date} />
     </div>
@@ -188,35 +197,25 @@ function CenterScheduleEmbed({ startDate }: { startDate: string }) {
   );
 }
 
-/* ───────────── F2.1 + F2.2 — Study Plan section ─────────────
-   Dropdown filter eligible templates by course_id qua junction
-   course_study_plans (Plan B, junction-only). Mismatch Alert real-time
-   compute count buổi từ slot.weekdays + classInfo.start/end_date so với
-   expectedSessions từ template đã chọn. */
+/* ───────────── F2.1 + F2.2 + Issue #A3 — Study Plan + End_Date sections ─────────────
+   Issue #A3 split: TemplatePickerSection (top of Step 2) + EndDateMismatchSection
+   (after mode subcomponent — sau khi user pick weekdays). Logical UX flow.
 
-function StudyPlanSection({
-  classInfo, slot, setStudyPlanId, expectedSessions,
-  endDateManuallyOverridden, onEndDateChange, onEndDateAutoReset,
-}: {
-  classInfo: WizardClassInfo;
-  slot: WizardSlot;
-  setStudyPlanId: (id: string | null) => void;
-  expectedSessions: number | null;
-  endDateManuallyOverridden: boolean;
-  onEndDateChange: (newDate: string) => void;
-  onEndDateAutoReset: () => void;
-}) {
+   Both sections share queries via TanStack cache (same queryKeys → single fetch). */
+
+/** Hook to fetch eligible templates filtered by course_study_plans junction.
+ *  Cached 5min (Tier 1 pattern). Used by both TemplatePickerSection +
+ *  EndDateMismatchSection — single fetch shared via queryKey cache. */
+function useEligibleTemplates(courseId: string | null) {
   const { data: allTemplates } = useStudyPlanTemplates();
-
-  // Junction fetch — small table, filter by course_id, cache 5min (Tier 1 pattern).
   const linksQ = useQuery({
-    queryKey: ["wizard-course-study-plans", classInfo.course_id],
-    enabled: !!classInfo.course_id,
+    queryKey: ["wizard-course-study-plans", courseId],
+    enabled: !!courseId,
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("course_study_plans")
         .select("course_id, template_id, is_default, sort_order")
-        .eq("course_id", classInfo.course_id!)
+        .eq("course_id", courseId!)
         .order("sort_order", { ascending: true });
       if (error) throw error;
       return (data ?? []) as Array<{ course_id: string; template_id: string; is_default: boolean; sort_order: number }>;
@@ -225,22 +224,87 @@ function StudyPlanSection({
     gcTime: 30 * 60 * 1000,
     placeholderData: (prev) => prev,
   });
-
   const eligibleTemplates = useMemo(() => {
-    if (!classInfo.course_id || !allTemplates) return [];
+    if (!courseId || !allTemplates) return [];
     const linkedIds = new Set((linksQ.data ?? []).map((l) => l.template_id));
     if (linkedIds.size === 0) return [];
     return allTemplates.filter((t) => linkedIds.has(t.id));
-  }, [classInfo.course_id, allTemplates, linksQ.data]);
+  }, [courseId, allTemplates, linksQ.data]);
+  return { eligibleTemplates, linksQ };
+}
+
+function TemplatePickerSection({
+  classInfo, setStudyPlanId,
+}: {
+  classInfo: WizardClassInfo;
+  setStudyPlanId: (id: string | null) => void;
+}) {
+  const { eligibleTemplates, linksQ } = useEligibleTemplates(classInfo.course_id);
+
+  const dropdownDisabled = !classInfo.course_id || linksQ.isLoading || eligibleTemplates.length === 0;
+  const dropdownPlaceholder = !classInfo.course_id
+    ? "Chọn khoá học ở Step 1 (nếu có)"
+    : linksQ.isLoading
+    ? "Đang tải..."
+    : eligibleTemplates.length === 0
+    ? "Khoá này chưa có template — lớp sẽ customized"
+    : "Chọn template";
+
+  return (
+    <div className="rounded-xl border bg-muted/20 p-4">
+      <Label className="inline-flex items-center gap-1.5 text-sm font-semibold">
+        <BookOpen className="h-3.5 w-3.5" /> Study Plan template (tuỳ chọn)
+      </Label>
+      <Select
+        value={classInfo.study_plan_id ?? "none"}
+        onValueChange={(v) => setStudyPlanId(v === "none" ? null : v)}
+        disabled={dropdownDisabled}
+      >
+        <SelectTrigger className="mt-1">
+          <SelectValue placeholder={dropdownPlaceholder} />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="none">— Không gán (lớp customized) —</SelectItem>
+          {eligibleTemplates.map((t) => (
+            <SelectItem key={t.id} value={t.id}>
+              {t.template_name} · {t.total_sessions} buổi · {t.session_duration}'
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      {classInfo.course_id && classInfo.course_title && eligibleTemplates.length > 0 && (
+        <p className="text-[11px] text-muted-foreground mt-1">
+          Templates link với khoá <strong>{classInfo.course_title}</strong>. Tạo template mới qua trang Mẫu kế hoạch.
+        </p>
+      )}
+      {classInfo.study_plan_id && (
+        <p className="text-[11px] text-muted-foreground mt-1">
+          ✨ Bản copy của template sẽ được tạo cho lớp này (Tier 2 instance).
+        </p>
+      )}
+    </div>
+  );
+}
+
+function EndDateMismatchSection({
+  classInfo, slot, expectedSessions,
+  endDateManuallyOverridden, onEndDateChange, onEndDateAutoReset,
+}: {
+  classInfo: WizardClassInfo;
+  slot: WizardSlot;
+  expectedSessions: number | null;
+  endDateManuallyOverridden: boolean;
+  onEndDateChange: (newDate: string) => void;
+  onEndDateAutoReset: () => void;
+}) {
+  const { eligibleTemplates } = useEligibleTemplates(classInfo.course_id);
 
   const actualSessionCount = useMemo(
     () => countSessionsInRange(classInfo.start_date, classInfo.end_date, slot.weekdays),
     [classInfo.start_date, classInfo.end_date, slot.weekdays],
   );
 
-  // Issue #A4: session duration validation. Compare slot.start_time→end_time
-  // duration (minutes) với template.session_duration (minutes). Warning khi
-  // mismatch — admin có thể proceed (warning only, không block).
+  // Issue #A4: session duration validation
   const slotDurationMinutes = useMemo(() => {
     if (!slot.start_time || !slot.end_time) return 0;
     const [sh, sm] = slot.start_time.split(":").map(Number);
@@ -258,7 +322,6 @@ function StudyPlanSection({
   const durationMismatch =
     expectedDuration != null && slotDurationMinutes > 0 && slotDurationMinutes !== expectedDuration;
 
-  // Issue #1 v2: end_date Input min — start_date + 7 days minimum window.
   const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
   const minEnd = useMemo(() => {
     if (!classInfo.start_date) return today;
@@ -267,24 +330,9 @@ function StudyPlanSection({
     return d.toISOString().slice(0, 10);
   }, [classInfo.start_date, today]);
 
-  // Frequency = số weekdays đã chọn = số buổi/tuần.
   const sessionsPerWeek = slot.weekdays.length;
 
-  const dropdownDisabled = !classInfo.course_id || linksQ.isLoading || eligibleTemplates.length === 0;
-  const dropdownPlaceholder = !classInfo.course_id
-    ? "Chọn khoá học ở Step 1 (nếu có)"
-    : linksQ.isLoading
-    ? "Đang tải..."
-    : eligibleTemplates.length === 0
-    ? "Khoá này chưa có template — lớp sẽ customized"
-    : "Chọn template";
-
-  // Mismatch state — chỉ tính khi có expectedSessions.
-  // Issue #A2 fix: hasMismatch chỉ fire khi user MANUAL OVERRIDE end_date.
-  // Auto-calc invariant: computeEndDateForSessions guarantees actualSessionCount
-  // === expectedSessions, nên warning là noise/false-positive trong auto mode
-  // (transient state during render cycle race khi đổi weekdays cũng causes flash).
-  // Manual override = user took control → warning is legitimate.
+  // Issue #A2 fix: hasMismatch chỉ fire khi user MANUAL OVERRIDE end_date
   const hasMismatch = expectedSessions != null
     && endDateManuallyOverridden
     && actualSessionCount > 0
@@ -295,43 +343,6 @@ function StudyPlanSection({
   return (
     <div className="rounded-xl border bg-muted/20 p-4 space-y-3">
       <div>
-        <Label className="inline-flex items-center gap-1.5 text-sm font-semibold">
-          <BookOpen className="h-3.5 w-3.5" /> Study Plan template (tuỳ chọn)
-        </Label>
-        <Select
-          value={classInfo.study_plan_id ?? "none"}
-          onValueChange={(v) => setStudyPlanId(v === "none" ? null : v)}
-          disabled={dropdownDisabled}
-        >
-          <SelectTrigger className="mt-1">
-            <SelectValue placeholder={dropdownPlaceholder} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="none">— Không gán (lớp customized) —</SelectItem>
-            {eligibleTemplates.map((t) => (
-              <SelectItem key={t.id} value={t.id}>
-                {t.template_name} · {t.total_sessions} buổi · {t.session_duration}'
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {classInfo.course_id && classInfo.course_title && eligibleTemplates.length > 0 && (
-          <p className="text-[11px] text-muted-foreground mt-1">
-            Templates link với khoá <strong>{classInfo.course_title}</strong>. Tạo template mới qua trang Mẫu kế hoạch.
-          </p>
-        )}
-        {classInfo.study_plan_id && (
-          <p className="text-[11px] text-muted-foreground mt-1">
-            ✨ Bản copy của template sẽ được tạo cho lớp này (Tier 2 instance).
-          </p>
-        )}
-      </div>
-
-      {/* Issue #1 v2 — Ngày kết thúc moved here from Step 1.
-          Auto-calc khi expectedSessions + weekdays + start_date present (parent
-          useEffect). User có thể manual edit → handleEndDateChange ở parent mở
-          confirm dialog (Batch 1: Tự động đổi start / Giữ start / Hủy). */}
-      <div className="border-t pt-3">
         <Label className="inline-flex items-center gap-1.5 text-sm font-semibold">
           Ngày kết thúc <span className="text-destructive">*</span>
         </Label>
@@ -350,7 +361,7 @@ function StudyPlanSection({
         )}
         {classInfo.start_date && expectedSessions != null && sessionsPerWeek === 0 && !endDateManuallyOverridden && (
           <p className="text-[11px] text-muted-foreground mt-1">
-            💡 Chọn weekdays bên dưới để tự động tính theo {expectedSessions} buổi.
+            💡 Chọn weekdays bên trên để tự động tính theo {expectedSessions} buổi.
           </p>
         )}
         {classInfo.start_date && expectedSessions != null && sessionsPerWeek > 0 && !endDateManuallyOverridden && classInfo.end_date && (
@@ -381,7 +392,7 @@ function StudyPlanSection({
         )}
       </div>
 
-      {/* F2.2 — Real-time mismatch indicator. Hidden khi không có template. */}
+      {/* F2.2 — count mismatch indicator. Issue #A2: only fires when overridden. */}
       {expectedSessions != null && (
         <div
           className={`rounded-lg border p-3 text-sm flex items-start gap-2 ${
@@ -425,15 +436,14 @@ function StudyPlanSection({
             )}
             {hasMismatch && (
               <p className="text-[11px]">
-                💡 Sửa weekdays / ngày kết thúc bên dưới để khớp, hoặc giữ và xác nhận ở Step cuối.
+                💡 Sửa weekdays / ngày kết thúc để khớp, hoặc giữ và xác nhận ở Step cuối.
               </p>
             )}
           </div>
         </div>
       )}
 
-      {/* Issue #A4 — duration mismatch warning. Standalone warning (independent
-          of session count mismatch). Allow proceed — non-blocking. */}
+      {/* Issue #A4 — duration mismatch warning */}
       {durationMismatch && (
         <div className="rounded-lg border border-amber-500/40 bg-amber-500/5 p-3 text-sm flex items-start gap-2 text-amber-900 dark:text-amber-200">
           <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
@@ -447,7 +457,7 @@ function StudyPlanSection({
               Khác: <strong className="tabular-nums">{slotDurationMinutes - (expectedDuration ?? 0) > 0 ? "+" : ""}{slotDurationMinutes - (expectedDuration ?? 0)}</strong> phút
             </p>
             <p className="text-[11px]">
-              💡 Sửa giờ bắt đầu/kết thúc bên dưới để khớp template, hoặc proceed nếu cố ý đổi thời lượng.
+              💡 Sửa giờ bắt đầu/kết thúc bên trên để khớp template, hoặc proceed nếu cố ý đổi thời lượng.
             </p>
           </div>
         </div>
