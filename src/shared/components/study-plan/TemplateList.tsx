@@ -194,7 +194,21 @@ export function TemplateList({ teacherMode = false }: Props) {
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <p className="font-bold text-sm truncate">{tpl.template_name}</p>
+                        {(() => {
+                          const rawName = (tpl.template_name || "").trim();
+                          const isUntitled =
+                            !rawName || rawName.toLowerCase() === "untitled template";
+                          return (
+                            <p
+                              className={cn(
+                                "font-bold text-sm truncate",
+                                isUntitled && "italic text-muted-foreground",
+                              )}
+                            >
+                              {isUntitled ? "(chưa đặt tên)" : rawName}
+                            </p>
+                          );
+                        })()}
                         {tpl.program && (
                           <Badge
                             variant="outline"
@@ -260,7 +274,7 @@ export function TemplateList({ teacherMode = false }: Props) {
           <AlertDialogHeader>
             <AlertDialogTitle>Xoá mẫu?</AlertDialogTitle>
             <AlertDialogDescription>
-              Xoá mẫu <strong>{deleteConfirm?.template_name}</strong>? Các kế hoạch đã gán từ mẫu này không bị ảnh hưởng.
+              Xoá mẫu <strong>{(deleteConfirm?.template_name || "").trim() || "(chưa đặt tên)"}</strong>? Các kế hoạch đã gán từ mẫu này không bị ảnh hưởng.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
