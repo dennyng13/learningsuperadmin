@@ -24,8 +24,13 @@
  *   />
  */
 
-import { useState, useCallback } from "react";
-import { BookOpen, Clock, Loader2, Milestone, Save, Tag, Users } from "lucide-react";
+import { useState, useCallback, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import {
+  BookOpen, Clock, Loader2, Milestone, Save, Tag, Users, AlertCircle,
+  CalendarRange, GraduationCap,
+} from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@shared/components/ui/tabs";
 import { Input } from "@shared/components/ui/input";
 import { Label } from "@shared/components/ui/label";
@@ -137,8 +142,66 @@ export function PlanEditor({
     onChange({ ...value, session_duration_minutes: safe, total_hours: totalHours });
   }, [value, onChange]);
 
+  /* ─── Day 7 UX: resolve program key → programId → courses for picker.
+     F3.1 schema delivered, course wiring no longer deferred. */
+  const programIdQ = useQuery({
+    queryKey: ["plan-editor-program-id", value.program],
+    enabled: !!value.program,
+    queryFn: async (): Promise<string | null> => {
+      const { data, error } = await (supabase as any)
+        .from("course_programs")
+        .select("id")
+        .eq("key", value.program!)
+        .maybeSingle();
+      if (error) return null;
+      return data?.id ?? null;
+    },
+    staleTime: 5 * 60_000,
+  });
+
+  const coursesQ = useQuery({
+    queryKey: ["plan-editor-courses", programIdQ.data],
+    enabled: !!programIdQ.data,
+    queryFn: async (): Promise<Array<{ id: string; name: string; code: string | null }>> => {
+      const { data, error } = await (supabase as any)
+        .from("courses")
+        .select("id, name, code")
+        .eq("program_id", programIdQ.data!)
+        .eq("status", "active")
+        .order("sort_order", { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+    staleTime: 5 * 60_000,
+  });
+
+  /* ─── Day 7 UX: live summary derived metrics. */
+  const summary = useMemo(() => {
+    const hours = value.total_hours || 0;
+    const sessionsN = value.sessions || 0;
+    // Estimate "tuần" assuming ~3 buổi/tuần (most common). User can override
+    // mentally — chỉ là gợi ý cho timeline planning.
+    const SESSIONS_PER_WEEK = 3;
+    const weeks = sessionsN > 0 ? Math.ceil(sessionsN / SESSIONS_PER_WEEK) : 0;
+    return { hours, sessionsN, weeks };
+  }, [value.total_hours, value.sessions]);
+
+  /* ─── Day 7 UX: validation surface. */
+  const trimmedName = value.name.trim();
+  const errors = useMemo(() => {
+    const errs: string[] = [];
+    if (!trimmedName) errs.push("Tên kế hoạch không được trống.");
+    if (value.sessions <= 0) errs.push("Số buổi học phải > 0.");
+    if (value.session_duration_minutes < 15 || value.session_duration_minutes > 240) {
+      errs.push("Thời lượng mỗi buổi phải 15–240 phút.");
+    }
+    return errs;
+  }, [trimmedName, value.sessions, value.session_duration_minutes]);
+  const canSave = errors.length === 0;
+
   const handleSave = async () => {
     if (!onSave) return;
+    if (!canSave) return;
     await onSave(value);
   };
 
@@ -160,12 +223,52 @@ export function PlanEditor({
           </p>
         </div>
         {onSave && (
-          <Button onClick={handleSave} disabled={saving || !value.name.trim()} size="sm" className="gap-1.5">
+          <Button onClick={handleSave} disabled={saving || !canSave} size="sm" className="gap-1.5">
             {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
             Lưu
           </Button>
         )}
       </div>
+
+      {/* Day 7 UX: live summary strip — visible across all tabs.
+          Helps admin "thấy ngay" plan structure khi điều chỉnh từng field. */}
+      <div className="grid grid-cols-3 gap-2 rounded-lg border-[1.5px] border-lp-ink/15 bg-muted/20 p-3">
+        <div className="text-center">
+          <p className="text-[9px] uppercase tracking-wider font-bold text-muted-foreground">Buổi học</p>
+          <p className="font-display text-lg font-extrabold tabular-nums leading-tight">
+            {summary.sessionsN}
+          </p>
+        </div>
+        <div className="text-center border-x border-lp-ink/10">
+          <p className="text-[9px] uppercase tracking-wider font-bold text-muted-foreground">Tổng giờ</p>
+          <p className="font-display text-lg font-extrabold tabular-nums leading-tight">
+            {summary.hours}
+          </p>
+          <p className="text-[9px] text-muted-foreground">
+            {value.session_duration_minutes}'/buổi
+          </p>
+        </div>
+        <div className="text-center">
+          <p className="text-[9px] uppercase tracking-wider font-bold text-muted-foreground inline-flex items-center justify-center gap-1">
+            <CalendarRange className="h-2.5 w-2.5" /> Ước tính
+          </p>
+          <p className="font-display text-lg font-extrabold tabular-nums leading-tight">
+            {summary.weeks > 0 ? `${summary.weeks}w` : "—"}
+          </p>
+          <p className="text-[9px] text-muted-foreground">~3 buổi/tuần</p>
+        </div>
+      </div>
+
+      {/* Validation errors surface */}
+      {errors.length > 0 && (
+        <div className="rounded-lg border-[1.5px] border-amber-500/40 bg-amber-50 dark:bg-amber-500/10 p-2.5 space-y-1">
+          {errors.map((e, i) => (
+            <p key={i} className="text-[11px] text-amber-900 dark:text-amber-200 inline-flex items-start gap-1.5">
+              <AlertCircle className="h-3 w-3 shrink-0 mt-0.5" /> {e}
+            </p>
+          ))}
+        </div>
+      )}
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)}>
@@ -252,10 +355,45 @@ export function PlanEditor({
             </p>
           </div>
 
-          {/* Course + Levels wiring deferred — needs F3.1 schema first */}
-          <div className="rounded-lg border border-dashed bg-muted/20 p-3 text-[11px] text-muted-foreground">
-            ⏳ Course picker + Levels multi-select sẽ wire sau F3.1 schema deliver
-            (cần fetch courses + course_levels và filter theo program).
+          {/* Course picker — wired Day 7 (F3.1 schema delivered). Filtered
+              by current program via course_programs.key → courses.program_id. */}
+          <div>
+            <Label className="inline-flex items-center gap-1.5">
+              <GraduationCap className="h-3.5 w-3.5" /> Khóa học
+            </Label>
+            {!value.program ? (
+              <p className="text-[11px] text-muted-foreground italic mt-1">
+                Chọn Program trước để xem danh sách khóa học.
+              </p>
+            ) : programIdQ.isLoading || coursesQ.isLoading ? (
+              <div className="h-9 inline-flex items-center gap-2 text-[11px] text-muted-foreground">
+                <Loader2 className="h-3 w-3 animate-spin" /> Đang tải khóa học...
+              </div>
+            ) : (coursesQ.data ?? []).length === 0 ? (
+              <p className="text-[11px] text-muted-foreground italic mt-1">
+                Program "{value.program}" chưa có khóa học active. Tạo trên trang /courses.
+              </p>
+            ) : (
+              <Select
+                value={value.course_id ?? ""}
+                onValueChange={(v) => updateField("course_id", v || null)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Chọn khóa học (tuỳ chọn)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">— Không gắn —</SelectItem>
+                  {(coursesQ.data ?? []).map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.code ? `${c.code} · ${c.name}` : c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            <p className="text-[11px] text-muted-foreground mt-1">
+              Liên kết plan với 1 khóa học cụ thể giúp filter chính xác khi sao chép kế hoạch giữa các lớp cùng course.
+            </p>
           </div>
 
           {/* UOP-only: public share toggle */}
