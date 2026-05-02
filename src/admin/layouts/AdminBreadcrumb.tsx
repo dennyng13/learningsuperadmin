@@ -5,18 +5,25 @@ import {
 } from "@shared/components/ui/breadcrumb";
 import { adminNavItems } from "@shared/config/navigation";
 
-// Group label hiển thị trong breadcrumb (không phải route — render plain text)
+// Group label hiển thị trong breadcrumb (không phải route — render plain text).
+// Day 7 IA refactor: 7-section structure + system (super_admin).
 const GROUP_LABELS: Record<string, string> = {
-  academic: "Học thuật",
-  classes: "Lớp & Lịch",
-  users: "Người dùng",
-  hr: "Hành chính",
-  system: "Hệ thống",
+  hub:       "Trang chủ",
+  people:    "Quản lý nhân sự",
+  study:     "Quản lý học tập",
+  center:    "Quản lý trung tâm",
+  teaching:  "Quản lý giảng dạy",
+  financial: "Quản lý tài chính",
+  documents: "Tài liệu",
+  system:    "Hệ thống",
 };
 
-// Chỉ chèn cấp "group" vào breadcrumb cho các nhóm con (Người dùng / Nhân sự /
-// Hệ thống / Lớp & Lịch). Group "academic" đã ở top-level nên bỏ qua.
-const SHOW_GROUP_FOR = new Set(["users", "hr", "system", "classes"]);
+// Chỉ chèn cấp "group" vào breadcrumb cho các nhóm con (people / center /
+// teaching / financial / documents / system). Group "hub" + "study" ở top-level
+// (sidebar mặc định mở rộng) nên bỏ qua để tránh lặp lại "Quản lý học tập".
+const SHOW_GROUP_FOR = new Set([
+  "people", "center", "teaching", "financial", "documents", "system",
+]);
 const routeGroup: Record<string, string> = Object.fromEntries(
   adminNavItems
     .filter((i) => i.route !== "/" && SHOW_GROUP_FOR.has(i.group))
@@ -50,14 +57,17 @@ const routeLabels: Record<string, string> = {
 
 interface Crumb { label: string; path: string }
 
-/* ─── "Quản lý học liệu" parent ───
+/* ─── "Học liệu" parent ───
    Các route nằm trong hub /library cần chèn 1 crumb cha để user biết mình
    đang ở đâu trong hub. `LIBRARY_CHILD_PREFIXES` liệt kê prefix các nhánh
    con — bất kỳ pathname nào bắt đầu bằng các prefix này (trừ chính /library)
-   sẽ được prepend "Quản lý học liệu".
+   sẽ được prepend "Học liệu".
+
+   Day 7 IA refactor: /study-plans tách ra khỏi library hub (giờ là item
+   riêng trong group "study") nên loại khỏi prefix list.
 */
-const LIBRARY_CHILD_PREFIXES = ["/tests", "/flashcards", "/study-plans", "/practice"];
-const LIBRARY_PARENT_CRUMB: Crumb = { label: "Quản lý học liệu", path: "/library" };
+const LIBRARY_CHILD_PREFIXES = ["/tests", "/flashcards", "/practice"];
+const LIBRARY_PARENT_CRUMB: Crumb = { label: "Học liệu", path: "/library" };
 
 function libraryParentPrefix(pathname: string): Crumb[] {
   const isChild = LIBRARY_CHILD_PREFIXES.some(

@@ -8,17 +8,30 @@ import { usePendingDraftCount } from "@shared/hooks/useAvailabilityDrafts";
 import { useBrandAsset } from "@shared/hooks/useBrandAsset";
 import { useOrgShortName } from "@shared/hooks/useOrgShortName";
 
-type GroupKey = "academic" | "classes" | "users" | "hr" | "system";
+type GroupKey =
+  | "hub"
+  | "people"
+  | "study"
+  | "center"
+  | "teaching"
+  | "financial"
+  | "documents"
+  | "system";
 
 const GROUP_LABELS: Record<GroupKey, string> = {
-  academic: "Học thuật",
-  classes:  "Lớp & Lịch",
-  users:    "Người dùng",
-  hr:       "Hành chính",
-  system:   "Hệ thống",
+  hub:       "Trang chủ",
+  people:    "Quản lý nhân sự",
+  study:     "Quản lý học tập",
+  center:    "Quản lý trung tâm",
+  teaching:  "Quản lý giảng dạy",
+  financial: "Quản lý tài chính",
+  documents: "Tài liệu",
+  system:    "Hệ thống",
 };
 
-const GROUP_ORDER: GroupKey[] = ["academic", "classes", "users", "hr", "system"];
+const GROUP_ORDER: GroupKey[] = [
+  "hub", "people", "study", "center", "teaching", "financial", "documents", "system",
+];
 
 const byOrder = (a: { order: number }, b: { order: number }) => a.order - b.order;
 
