@@ -1,29 +1,31 @@
 /**
  * ClonePlanDialog — F3.3 Path B "Sao chép kế hoạch học".
  *
- * Clones a class's existing study_plan into a TARGET class via Lovable RPC
+ * Clones a study_plan into a TARGET class via Lovable RPC
  * `clone_study_plan_to_class(source_plan_id, target_class_id)`.
  *
- * RPC contract (locked per Lovable Q1-Q4):
+ * Two-section flow:
+ * 1. Source plan picker — auto-detects current plan attached to source class
+ *    (via app_classes.study_plan_id direct OR study_plans.class_ids reverse).
+ *    Detected plan auto-selected; user can swap to any candidate plan
+ *    matching the same course or program. Removes the empty-state blocker
+ *    when detection misses (F3 v2 schema variations).
+ * 2. Target class picker — same-program filter on by default, search box,
+ *    overwrite warning when target already has a plan.
+ *
+ * RPC contract (Lovable Q1-Q4 locked):
  * - Args sans p_ prefix: source_plan_id, target_class_id
  * - Returns: uuid (new plan id)
- * - Entries cloned với reset state (entry_date/completed_at/plan_status reset)
+ * - Entries cloned with reset state — caller reschedules
  * - Authority: super_admin/admin broad; teacher only own_taught classes
- *
- * Source plan resolution (robust two-path lookup — handles F3 v2 schema
- * variations where some classes use legacy app_classes.study_plan_id while
- * F3 v2 instances may be reverse-linked via study_plans.class_ids[]):
- * 1. Try app_classes.study_plan_id direct
- * 2. Fallback: study_plans where class_ids @> [classId]
- * If neither resolves → empty state with link to /study-plans.
  */
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
-  Loader2, Search, AlertTriangle, BookOpen, Copy, ClipboardList,
+  Loader2, Search, AlertTriangle, BookOpen, Copy, ListFilter, Check,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -45,8 +47,22 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   sourceClassId: string;
-  /** Class program (for default same-program filter on target picker). */
+  /** Class program (drives plan candidate filter + target same-program toggle). */
   sourceProgram: string | null;
+  /** Class course id (drives plan candidate prefer-same-course ranking). */
+  sourceCourseId: string | null;
+}
+
+interface CandidatePlan {
+  id: string;
+  plan_name: string | null;
+  program: string | null;
+  course_id: string | null;
+  cefr_level: string | null;
+  total_sessions: number | null;
+  total_hours: number | null;
+  is_user_owned: boolean | null;
+  updated_at: string | null;
 }
 
 interface TargetClassRow {
@@ -58,70 +74,132 @@ interface TargetClassRow {
   study_plan_id: string | null;
 }
 
-interface ResolvedPlan {
-  id: string;
-  plan_name: string | null;
-  total_sessions: number | null;
-}
-
 export function ClonePlanDialog({
   open,
   onOpenChange,
   sourceClassId,
   sourceProgram,
+  sourceCourseId,
 }: Props) {
   const navigate = useNavigate();
   const cloneMut = useCloneStudyPlanToClass();
 
-  const [search, setSearch] = useState("");
+  const [planSearch, setPlanSearch] = useState("");
+  const [sameCourseOnly, setSameCourseOnly] = useState(true);
+  const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
+
+  const [targetSearch, setTargetSearch] = useState("");
   const [sameProgramOnly, setSameProgramOnly] = useState(true);
   const [selectedTargetId, setSelectedTargetId] = useState<string | null>(null);
 
-  /* ─── Resolve source plan from class id (two-path lookup) ─── */
-  const planQ = useQuery({
-    queryKey: ["clone-plan-source", sourceClassId],
+  /* ─── Detect class's current plan (auto-select default) ─── */
+  const currentPlanQ = useQuery({
+    queryKey: ["clone-plan-current", sourceClassId],
     enabled: open && !!sourceClassId,
-    queryFn: async (): Promise<ResolvedPlan | null> => {
-      // Path 1: app_classes.study_plan_id direct (legacy + most common path).
+    queryFn: async (): Promise<string | null> => {
+      // Path 1: app_classes.study_plan_id direct.
       const cls = await (supabase as any)
         .from("app_classes")
         .select("study_plan_id")
         .eq("id", sourceClassId)
         .maybeSingle();
       const directId = cls.data?.study_plan_id ?? null;
-
-      if (directId) {
-        const planRow = await (supabase as any)
-          .from("study_plans")
-          .select("id, plan_name, total_sessions")
-          .eq("id", directId)
-          .maybeSingle();
-        if (planRow.data) return planRow.data as ResolvedPlan;
-      }
+      if (directId) return directId as string;
 
       // Path 2: F3 v2 reverse — study_plans.class_ids @> [classId].
       const reverse = await (supabase as any)
         .from("study_plans")
-        .select("id, plan_name, total_sessions")
+        .select("id")
         .contains("class_ids", [sourceClassId])
         .order("updated_at", { ascending: false })
         .limit(1)
         .maybeSingle();
-      if (reverse.data) return reverse.data as ResolvedPlan;
-
-      return null;
+      return reverse.data?.id ?? null;
     },
   });
 
-  /* ─── Source plan entries count (cho post-clone reschedule hint) ─── */
-  const sourceEntriesCountQ = useQuery({
-    queryKey: ["clone-plan-source-count", planQ.data?.id],
-    enabled: open && !!planQ.data?.id,
+  /* ─── Candidate plans — same program, optionally same course ─── */
+  const candidatesQ = useQuery({
+    queryKey: ["clone-plan-candidates", sourceProgram, sourceCourseId, sameCourseOnly],
+    enabled: open,
+    queryFn: async (): Promise<CandidatePlan[]> => {
+      let q = (supabase as any)
+        .from("study_plans")
+        .select(
+          "id, plan_name, program, course_id, cefr_level, total_sessions, total_hours, is_user_owned, updated_at",
+        )
+        .order("updated_at", { ascending: false })
+        .limit(200);
+      if (sourceProgram) q = q.eq("program", sourceProgram);
+      if (sameCourseOnly && sourceCourseId) q = q.eq("course_id", sourceCourseId);
+      const { data, error } = await q;
+      if (error) throw error;
+      return (data ?? []) as CandidatePlan[];
+    },
+  });
+
+  /* ─── Auto-select detected plan when candidates load ─── */
+  useEffect(() => {
+    if (!currentPlanQ.data) return;
+    if (selectedPlanId) return;
+    setSelectedPlanId(currentPlanQ.data);
+  }, [currentPlanQ.data, selectedPlanId]);
+
+  /* ─── If detected plan not in candidate list (e.g., other course),
+         fetch it once so we can render the row + auto-select. ─── */
+  const detectedPlanInCandidates = useMemo(() => {
+    if (!currentPlanQ.data) return true;
+    return (candidatesQ.data ?? []).some((p) => p.id === currentPlanQ.data);
+  }, [currentPlanQ.data, candidatesQ.data]);
+
+  const detectedPlanQ = useQuery({
+    queryKey: ["clone-plan-detected-row", currentPlanQ.data],
+    enabled: open && !!currentPlanQ.data && !detectedPlanInCandidates,
+    queryFn: async (): Promise<CandidatePlan | null> => {
+      const { data, error } = await (supabase as any)
+        .from("study_plans")
+        .select(
+          "id, plan_name, program, course_id, cefr_level, total_sessions, total_hours, is_user_owned, updated_at",
+        )
+        .eq("id", currentPlanQ.data!)
+        .maybeSingle();
+      if (error) throw error;
+      return (data as CandidatePlan | null) ?? null;
+    },
+  });
+
+  /* Combined plan list: detected plan first (if outside candidate filter),
+     then filtered candidates. */
+  const allPlans = useMemo<CandidatePlan[]>(() => {
+    const out: CandidatePlan[] = [];
+    if (detectedPlanQ.data && !detectedPlanInCandidates) out.push(detectedPlanQ.data);
+    out.push(...(candidatesQ.data ?? []));
+    return out;
+  }, [detectedPlanQ.data, detectedPlanInCandidates, candidatesQ.data]);
+
+  const filteredPlans = useMemo(() => {
+    const term = planSearch.trim().toLowerCase();
+    if (!term) return allPlans;
+    return allPlans.filter((p) =>
+      (p.plan_name ?? "").toLowerCase().includes(term) ||
+      (p.cefr_level ?? "").toLowerCase().includes(term),
+    );
+  }, [allPlans, planSearch]);
+
+  const selectedPlan = useMemo(
+    () => allPlans.find((p) => p.id === selectedPlanId) ?? null,
+    [allPlans, selectedPlanId],
+  );
+
+  /* ─── Selected plan entries count (post-clone reschedule hint) ─── */
+  const entriesCountQ = useQuery({
+    queryKey: ["clone-plan-entries-count", selectedPlanId],
+    enabled: open && !!selectedPlanId,
     queryFn: async (): Promise<number> => {
       const { count, error } = await (supabase as any)
         .from("study_plan_entries")
         .select("*", { count: "exact", head: true })
-        .eq("plan_id", planQ.data!.id);
+        .eq("plan_id", selectedPlanId);
       if (error) throw error;
       return count ?? 0;
     },
@@ -139,42 +217,42 @@ export function ClonePlanDialog({
         .neq("lifecycle_status", "archived")
         .order("name", { ascending: true })
         .limit(200);
-      if (sameProgramOnly && sourceProgram) {
-        q = q.eq("program", sourceProgram);
-      }
+      if (sameProgramOnly && sourceProgram) q = q.eq("program", sourceProgram);
       const { data, error } = await q;
       if (error) throw error;
       return (data ?? []) as TargetClassRow[];
     },
   });
 
-  const filtered = useMemo(() => {
-    const term = search.trim().toLowerCase();
+  const filteredTargets = useMemo(() => {
+    const term = targetSearch.trim().toLowerCase();
     if (!term) return targetsQ.data ?? [];
-    return (targetsQ.data ?? []).filter((c) => {
-      return (
-        (c.name ?? "").toLowerCase().includes(term) ||
-        (c.class_code ?? "").toLowerCase().includes(term)
-      );
-    });
-  }, [targetsQ.data, search]);
+    return (targetsQ.data ?? []).filter((c) =>
+      (c.name ?? "").toLowerCase().includes(term) ||
+      (c.class_code ?? "").toLowerCase().includes(term),
+    );
+  }, [targetsQ.data, targetSearch]);
 
   const selectedTarget = useMemo(
-    () => filtered.find((c) => c.id === selectedTargetId) ?? null,
-    [filtered, selectedTargetId],
+    () => filteredTargets.find((c) => c.id === selectedTargetId) ?? null,
+    [filteredTargets, selectedTargetId],
   );
 
   const handleSubmit = async () => {
-    if (!selectedTargetId || !planQ.data?.id) {
+    if (!selectedPlanId) {
+      toast.error("Vui lòng chọn kế hoạch nguồn.");
+      return;
+    }
+    if (!selectedTargetId) {
       toast.error("Vui lòng chọn lớp đích.");
       return;
     }
     try {
       await cloneMut.mutateAsync({
-        sourcePlanId: planQ.data.id,
+        sourcePlanId: selectedPlanId,
         targetClassId: selectedTargetId,
       });
-      const n = sourceEntriesCountQ.data ?? 0;
+      const n = entriesCountQ.data ?? 0;
       toast.success(
         `Đã sao chép kế hoạch học. ${n} buổi học cần được sắp lịch lại.`,
         { duration: 7000 },
@@ -182,89 +260,146 @@ export function ClonePlanDialog({
       onOpenChange(false);
       navigate(`/classes/${selectedTargetId}`);
     } catch (err: any) {
-      const friendly = mapClonePlanError(err?.message ?? "");
-      toast.error(friendly, { duration: 7000 });
+      toast.error(mapClonePlanError(err?.message ?? ""), { duration: 7000 });
     }
   };
 
   const handleOpenChange = (next: boolean) => {
     if (!next) {
-      setSearch("");
+      setPlanSearch("");
+      setTargetSearch("");
+      setSelectedPlanId(null);
       setSelectedTargetId(null);
       setSameProgramOnly(true);
+      setSameCourseOnly(true);
     }
     onOpenChange(next);
   };
 
-  /* ─── Render branches ─── */
-  const renderBody = () => {
-    if (planQ.isLoading) {
-      return (
-        <div className="space-y-2 py-2">
-          {[0, 1, 2].map((i) => <Skeleton key={i} className="h-12 w-full" />)}
-        </div>
-      );
-    }
+  const isDetected = (planId: string) => currentPlanQ.data === planId;
 
-    if (planQ.error) {
-      return (
-        <div className="rounded-lg border-[1.5px] border-destructive/40 bg-destructive/5 p-3 text-xs text-destructive">
-          Lỗi tìm kế hoạch nguồn: {(planQ.error as Error).message}
-        </div>
-      );
-    }
+  return (
+    <DialogPop open={open} onOpenChange={handleOpenChange}>
+      <DialogPopContent size="lg" className="max-h-[90vh] overflow-y-auto">
+        <DialogPopHeader>
+          <DialogPopTitle className="flex items-center gap-2">
+            <Copy className="h-5 w-5 text-lp-coral" />
+            Sao chép kế hoạch học
+          </DialogPopTitle>
+          <DialogPopDescription>
+            Chọn kế hoạch nguồn (mặc định plan hiện tại của lớp này) → chọn lớp đích →
+            buổi học sẽ được copy, <strong>reset lịch</strong> để sắp xếp lại sau.
+          </DialogPopDescription>
+        </DialogPopHeader>
 
-    if (!planQ.data) {
-      return (
-        <div className="rounded-lg border-[1.5px] border-amber-500/40 bg-amber-500/5 p-4 space-y-2 text-center">
-          <ClipboardList className="h-8 w-8 mx-auto text-amber-600 dark:text-amber-400" />
-          <p className="font-display text-sm font-bold">Lớp chưa có kế hoạch học</p>
-          <p className="text-xs text-muted-foreground">
-            Vào tab <strong>Cấu hình</strong> hoặc trang <strong>/study-plans</strong> để gán
-            study plan cho lớp này trước, rồi quay lại để sao chép.
-          </p>
-          <PopButton
-            type="button"
-            tone="white"
-            size="sm"
-            onClick={() => {
-              onOpenChange(false);
-              navigate("/study-plans");
-            }}
-            className="mt-1"
-          >
-            Mở /study-plans
-          </PopButton>
-        </div>
-      );
-    }
-
-    return (
-      <>
-        {/* Source plan summary */}
-        <div className="rounded-lg border-[1.5px] border-lp-ink/20 bg-lp-yellow/10 p-3 space-y-1">
-          <p className="text-[10px] uppercase tracking-wide text-muted-foreground inline-flex items-center gap-1.5">
-            <BookOpen className="h-3 w-3" /> Kế hoạch nguồn
-          </p>
-          <p className="font-display text-sm font-bold truncate">
-            {planQ.data.plan_name?.trim() || (
-              <span className="italic text-muted-foreground">(chưa đặt tên)</span>
-            )}
-          </p>
-          <div className="flex items-center gap-2 flex-wrap">
-            {sourceProgram && (
-              <Badge variant="outline" className="text-[10px]">{sourceProgram}</Badge>
-            )}
-            {sourceEntriesCountQ.data !== undefined && (
-              <span className="text-[10px] text-muted-foreground">
-                {sourceEntriesCountQ.data} buổi học sẽ được sao chép (reset lịch)
-              </span>
+        {/* ═══ Section 1: Source plan picker ═══ */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <Label className="text-xs font-semibold inline-flex items-center gap-1.5">
+              <BookOpen className="h-3.5 w-3.5" /> Chọn kế hoạch nguồn
+            </Label>
+            {sourceCourseId && (
+              <div className="flex items-center gap-1.5">
+                <Switch
+                  id="same-course"
+                  checked={sameCourseOnly}
+                  onCheckedChange={setSameCourseOnly}
+                />
+                <Label htmlFor="same-course" className="text-[11px] text-muted-foreground cursor-pointer">
+                  Cùng course
+                </Label>
+              </div>
             )}
           </div>
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <Input
+              placeholder="Tìm theo tên kế hoạch hoặc CEFR..."
+              value={planSearch}
+              onChange={(e) => setPlanSearch(e.target.value)}
+              className="pl-8 h-9 text-sm"
+            />
+          </div>
+          <div className="border-[1.5px] border-lp-ink/15 rounded-pop max-h-56 overflow-y-auto">
+            {currentPlanQ.isLoading || candidatesQ.isLoading ? (
+              <div className="p-2 space-y-2">
+                {[0, 1, 2].map((i) => <Skeleton key={i} className="h-10 w-full" />)}
+              </div>
+            ) : candidatesQ.error ? (
+              <div className="p-4 text-xs text-destructive">
+                Lỗi tải danh sách kế hoạch: {(candidatesQ.error as Error).message}
+              </div>
+            ) : filteredPlans.length === 0 ? (
+              <div className="p-6 text-center text-xs text-muted-foreground space-y-2">
+                <ListFilter className="h-6 w-6 mx-auto text-muted-foreground/60" />
+                <p>
+                  Không có kế hoạch khớp với{" "}
+                  {sourceCourseId && sameCourseOnly ? "course này" : sourceProgram ? `program ${sourceProgram}` : "bộ lọc"}.
+                </p>
+                {sameCourseOnly && (
+                  <button
+                    type="button"
+                    onClick={() => setSameCourseOnly(false)}
+                    className="text-lp-coral underline hover:no-underline"
+                  >
+                    Mở rộng sang toàn program
+                  </button>
+                )}
+              </div>
+            ) : (
+              <ul className="divide-y divide-lp-ink/10">
+                {filteredPlans.map((p) => {
+                  const isSelected = p.id === selectedPlanId;
+                  const detected = isDetected(p.id);
+                  return (
+                    <li key={p.id}>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedPlanId(p.id)}
+                        className={cn(
+                          "w-full text-left px-3 py-2 text-sm transition-colors flex items-center gap-2",
+                          isSelected
+                            ? "bg-lp-teal/10 border-l-[3px] border-lp-teal"
+                            : "hover:bg-muted/40 border-l-[3px] border-transparent",
+                        )}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate inline-flex items-center gap-1.5">
+                            {isSelected && <Check className="h-3.5 w-3.5 text-lp-teal shrink-0" />}
+                            {p.plan_name?.trim() || <span className="italic text-muted-foreground">(chưa đặt tên)</span>}
+                            {detected && (
+                              <Badge variant="outline" className="text-[9px] border-lp-teal/40 text-lp-teal shrink-0">
+                                Plan hiện tại
+                              </Badge>
+                            )}
+                            {p.is_user_owned && (
+                              <Badge variant="outline" className="text-[9px] shrink-0">UOP</Badge>
+                            )}
+                          </p>
+                          <p className="text-[11px] text-muted-foreground truncate">
+                            {p.cefr_level && <span>{p.cefr_level} · </span>}
+                            {p.total_sessions != null && <span>{p.total_sessions} buổi · </span>}
+                            {p.total_hours != null && <span>{p.total_hours}h</span>}
+                          </p>
+                        </div>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+          {selectedPlan && (
+            <p className="text-[10px] text-muted-foreground pl-1">
+              {entriesCountQ.data !== undefined
+                ? `${entriesCountQ.data} buổi học sẽ được sao chép (reset lịch).`
+                : "Đang đếm số buổi học..."}
+            </p>
+          )}
         </div>
 
-        {/* Target search + same-program toggle */}
-        <div className="space-y-2">
+        {/* ═══ Section 2: Target class picker ═══ */}
+        <div className="space-y-2 pt-2 border-t-[1.5px] border-lp-ink/15">
           <div className="flex items-center justify-between gap-2">
             <Label className="text-xs font-semibold">Chọn lớp đích</Label>
             {sourceProgram && (
@@ -284,13 +419,12 @@ export function ClonePlanDialog({
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
             <Input
               placeholder="Tìm theo tên hoặc mã lớp..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              value={targetSearch}
+              onChange={(e) => setTargetSearch(e.target.value)}
               className="pl-8 h-9 text-sm"
             />
           </div>
-
-          <div className="border-[1.5px] border-lp-ink/15 rounded-pop max-h-64 overflow-y-auto">
+          <div className="border-[1.5px] border-lp-ink/15 rounded-pop max-h-56 overflow-y-auto">
             {targetsQ.isLoading ? (
               <div className="p-2 space-y-2">
                 {[0, 1, 2].map((i) => <Skeleton key={i} className="h-10 w-full" />)}
@@ -299,13 +433,13 @@ export function ClonePlanDialog({
               <div className="p-4 text-xs text-destructive">
                 Lỗi tải danh sách lớp: {(targetsQ.error as Error).message}
               </div>
-            ) : filtered.length === 0 ? (
+            ) : filteredTargets.length === 0 ? (
               <div className="p-6 text-center text-xs text-muted-foreground">
-                {search ? "Không tìm thấy lớp khớp." : "Không có lớp đích phù hợp."}
+                {targetSearch ? "Không tìm thấy lớp khớp." : "Không có lớp đích phù hợp."}
               </div>
             ) : (
               <ul className="divide-y divide-lp-ink/10">
-                {filtered.map((c) => {
+                {filteredTargets.map((c) => {
                   const isSelected = c.id === selectedTargetId;
                   const hasPlan = !!c.study_plan_id;
                   return (
@@ -321,7 +455,8 @@ export function ClonePlanDialog({
                         )}
                       >
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium truncate">
+                          <p className="font-medium truncate inline-flex items-center gap-1.5">
+                            {isSelected && <Check className="h-3.5 w-3.5 text-lp-coral shrink-0" />}
                             {c.name ?? c.class_code ?? "(không tên)"}
                           </p>
                           <p className="text-[11px] text-muted-foreground truncate">
@@ -352,27 +487,6 @@ export function ClonePlanDialog({
             </p>
           </div>
         )}
-      </>
-    );
-  };
-
-  const canSubmit = !!planQ.data && !!selectedTargetId && !cloneMut.isPending;
-
-  return (
-    <DialogPop open={open} onOpenChange={handleOpenChange}>
-      <DialogPopContent size="lg" className="max-h-[90vh] overflow-y-auto">
-        <DialogPopHeader>
-          <DialogPopTitle className="flex items-center gap-2">
-            <Copy className="h-5 w-5 text-lp-coral" />
-            Sao chép kế hoạch học
-          </DialogPopTitle>
-          <DialogPopDescription>
-            Tạo bản sao của kế hoạch hiện tại và gắn vào lớp đích. Buổi học sẽ được copy
-            nhưng <strong>reset lịch</strong> — bạn cần sắp xếp lại sau.
-          </DialogPopDescription>
-        </DialogPopHeader>
-
-        {renderBody()}
 
         <DialogPopFooter>
           <PopButton
@@ -384,23 +498,21 @@ export function ClonePlanDialog({
           >
             Hủy
           </PopButton>
-          {planQ.data && (
-            <PopButton
-              type="button"
-              tone="coral"
-              size="sm"
-              onClick={handleSubmit}
-              disabled={!canSubmit}
-            >
-              {cloneMut.isPending ? (
-                <span className="inline-flex items-center gap-1.5">
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> Đang sao chép...
-                </span>
-              ) : (
-                "Sao chép kế hoạch"
-              )}
-            </PopButton>
-          )}
+          <PopButton
+            type="button"
+            tone="coral"
+            size="sm"
+            onClick={handleSubmit}
+            disabled={!selectedPlanId || !selectedTargetId || cloneMut.isPending}
+          >
+            {cloneMut.isPending ? (
+              <span className="inline-flex items-center gap-1.5">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" /> Đang sao chép...
+              </span>
+            ) : (
+              "Sao chép kế hoạch"
+            )}
+          </PopButton>
         </DialogPopFooter>
       </DialogPopContent>
     </DialogPop>

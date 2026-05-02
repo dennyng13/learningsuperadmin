@@ -80,14 +80,60 @@ export default function CreateClassWizardPage() {
   );
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Notify user once khi enter wizard via "Sao chép lớp" preset.
+  // Notify user once khi enter wizard via "Sao chép lớp" preset, và auto-fill
+  // class_name = "<base> (N)" với N = số nhỏ nhất chưa dùng (tránh nhầm).
   useEffect(() => {
     if (!preset) return;
     const fromName = preset.sourceClassName ? ` từ "${preset.sourceClassName}"` : "";
     toast.info(
-      `Đã sao chép thông tin${fromName}. Vui lòng đặt tên lớp mới và sắp lịch.`,
+      `Đã sao chép thông tin${fromName}. Tên lớp được gợi ý — vui lòng kiểm tra và sắp lịch.`,
       { duration: 6000 },
     );
+
+    // Compute next available "(N)" suffix for the cloned name. Strip any
+    // existing "(K)" suffix from base so nhân bản nhiều lần không stack:
+    //   "Lớp A" → "Lớp A (2)" → next clone → "Lớp A (3)" (not "Lớp A (2) (2)")
+    const rawBase = (preset.sourceClassName ?? "").trim();
+    if (!rawBase) return;
+    const stripped = rawBase.replace(/\s*\(\d+\)\s*$/, "").trim();
+    const base = stripped || rawBase;
+
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await (supabase as any)
+        .from("classes" as any)
+        .select("name")
+        .ilike("name", `${base}%`)
+        .limit(200);
+      if (cancelled) return;
+      if (error) {
+        // Non-fatal: just default to "(2)" if query fails.
+        setClassInfo((prev) => ({ ...prev, class_name: `${base} (2)` }));
+        return;
+      }
+      const used = new Set<number>([1]); // base name itself counts as #1
+      const escaped = base.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const re = new RegExp(`^${escaped}\\s*\\((\\d+)\\)\\s*$`, "i");
+      (data ?? []).forEach((row: { name: string | null }) => {
+        const n = (row?.name ?? "").trim();
+        if (n.toLowerCase() === base.toLowerCase()) {
+          used.add(1);
+          return;
+        }
+        const m = n.match(re);
+        if (m) {
+          const k = Number.parseInt(m[1], 10);
+          if (Number.isFinite(k) && k > 0) used.add(k);
+        }
+      });
+      let next = 2;
+      while (used.has(next)) next += 1;
+      setClassInfo((prev) => ({ ...prev, class_name: `${base} (${next})` }));
+    })();
+
+    return () => {
+      cancelled = true;
+    };
     // Run once on mount only.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

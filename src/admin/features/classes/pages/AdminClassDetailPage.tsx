@@ -521,13 +521,14 @@ export default function AdminClassDetailPage() {
       </AlertDialog>
 
       {/* F3.3 Path B clone study plan to target class.
-          Dialog tự resolve source plan via 2-path lookup (legacy direct +
-          F3 v2 reverse class_ids) → mounts unconditionally. */}
+          Dialog tự pick source plan từ list (auto-detect plan hiện tại của
+          class + filter same course/program) — không pre-gate ở caller. */}
       <ClonePlanDialog
         open={clonePlanOpen}
         onOpenChange={setClonePlanOpen}
         sourceClassId={cls.id}
         sourceProgram={cls.program ?? null}
+        sourceCourseId={cls.course_id ?? null}
       />
     </DetailPageLayout>
   );
