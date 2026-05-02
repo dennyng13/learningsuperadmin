@@ -25,6 +25,7 @@ import { StatusBadge } from "@shared/components/ui/status-badge";
 import ClassQuestionTypeStats from "@shared/components/teacher-shared/ClassQuestionTypeStats";
 import PracticeErrorStats from "@admin/features/practice/components/PracticeErrorStats";
 import AdminActivityCalendar from "@admin/features/dashboard/components/AdminActivityCalendar";
+import { CenterScheduleWidget } from "@admin/features/dashboard/components/CenterScheduleWidget";
 import TeacherProgressSummary from "@shared/components/teacher-shared/TeacherProgressSummary";
 import ContentAnalytics from "@admin/features/dashboard/components/ContentAnalytics";
 import AppsStatusWidget from "@admin/features/dashboard/components/AppsStatusWidget";
@@ -581,6 +582,10 @@ function AdminDashboardPageInner() {
           </ResponsiveContainer>
         </PopCard>
         )}
+
+        {/* Day 7 S1: Lịch toàn trung tâm — sessions next 7/14/30 days với
+            filter Program / Course / Giáo viên / Phòng. */}
+        <CenterScheduleWidget />
 
         {/* Progress & login streak */}
         <TeacherProgressSummary />
