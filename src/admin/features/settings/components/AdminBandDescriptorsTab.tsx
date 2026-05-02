@@ -11,32 +11,43 @@ import { Progress } from "@shared/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@shared/components/ui/tooltip";
 import { clearConversionCache } from "@shared/utils/scoreConversion";
 
+/* IELTS official band criteria.
+   AP#1 fix: Writing Task 2 dùng "Task Response" (TR) — không phải "Task
+   Achievement" như Task 1. Trước đây chỉ có 1 mảng criteria cho cả writing
+   skill nên Task 2 hiển thị TA sai. Restructure cho phép per-task criteria. */
+const WRITING_TASK1_CRITERIA = [
+  { key: "task_achievement", label: "Task Achievement", short: "TA" },
+  { key: "coherence_cohesion", label: "Coherence & Cohesion", short: "CC" },
+  { key: "lexical_resource", label: "Lexical Resource", short: "LR" },
+  { key: "grammar_accuracy", label: "Grammatical Range & Accuracy", short: "GRA" },
+];
+const WRITING_TASK2_CRITERIA = [
+  { key: "task_response", label: "Task Response", short: "TR" },
+  { key: "coherence_cohesion", label: "Coherence & Cohesion", short: "CC" },
+  { key: "lexical_resource", label: "Lexical Resource", short: "LR" },
+  { key: "grammar_accuracy", label: "Grammatical Range & Accuracy", short: "GRA" },
+];
+const SPEAKING_CRITERIA = [
+  { key: "fluency_coherence", label: "Fluency & Coherence", short: "FC" },
+  { key: "lexical_resource", label: "Lexical Resource", short: "LR" },
+  { key: "grammar_accuracy", label: "Grammatical Range & Accuracy", short: "GRA" },
+  { key: "pronunciation", label: "Pronunciation", short: "P" },
+];
+
 const DESCRIPTOR_SKILLS = [
   {
     key: "writing",
     label: "Writing",
     taskTypes: [
-      { key: "task1", label: "Task 1" },
-      { key: "task2", label: "Task 2" },
-    ],
-    criteria: [
-      { key: "task_achievement", label: "Task Achievement", short: "TA" },
-      { key: "coherence_cohesion", label: "Coherence & Cohesion", short: "CC" },
-      { key: "lexical_resource", label: "Lexical Resource", short: "LR" },
-      { key: "grammar_accuracy", label: "Grammatical Range & Accuracy", short: "GRA" },
+      { key: "task1", label: "Task 1", criteria: WRITING_TASK1_CRITERIA },
+      { key: "task2", label: "Task 2", criteria: WRITING_TASK2_CRITERIA },
     ],
   },
   {
     key: "speaking",
     label: "Speaking",
     taskTypes: [
-      { key: "general", label: "Tất cả Parts" },
-    ],
-    criteria: [
-      { key: "fluency_coherence", label: "Fluency & Coherence", short: "FC" },
-      { key: "lexical_resource", label: "Lexical Resource", short: "LR" },
-      { key: "grammar_accuracy", label: "Grammatical Range & Accuracy", short: "GRA" },
-      { key: "pronunciation", label: "Pronunciation", short: "P" },
+      { key: "general", label: "Tất cả Parts", criteria: SPEAKING_CRITERIA },
     ],
   },
 ];
@@ -210,6 +221,11 @@ export default function AdminBandDescriptorsTab() {
   const [activeCriteria, setActiveCriteria] = useState<string | null>(null);
 
   const currentSkill = DESCRIPTOR_SKILLS.find(s => s.key === skill);
+  /* AP#1: criteria giờ ở task-type level (Writing Task 1 vs Task 2 khác
+     nhau). Resolve based on currentSkill + taskType. Speaking chỉ có 1 task
+     nên fallback an toàn. */
+  const currentTask = currentSkill?.taskTypes.find(t => t.key === taskType) ?? currentSkill?.taskTypes[0];
+  const currentCriteria = currentTask?.criteria ?? [];
   const isScoreConversion = skill === "reading" || skill === "listening";
   const makeKey = (criteria: string, band: number) => `${criteria}:${band}`;
 
@@ -258,7 +274,7 @@ export default function AdminBandDescriptorsTab() {
   const handleSave = async () => {
     setSaving(true);
     const rows: { skill: string; criteria: string; band: number; description: string; task_type: string }[] = [];
-    for (const c of currentSkill.criteria) {
+    for (const c of currentCriteria) {
       for (const band of BANDS) {
         const desc = descriptors[makeKey(c.key, band)] || "";
         // Loại bullets trống trước khi lưu để DB sạch sẽ.
@@ -290,8 +306,8 @@ export default function AdminBandDescriptorsTab() {
   };
 
   // Stats (only for descriptor skills)
-  const totalSlots = currentSkill ? currentSkill.criteria.length * BANDS.length : 0;
-  const filledSlots = currentSkill ? currentSkill.criteria.reduce((sum, c) =>
+  const totalSlots = currentSkill ? currentCriteria.length * BANDS.length : 0;
+  const filledSlots = currentSkill ? currentCriteria.reduce((sum, c) =>
     sum + BANDS.filter(b => (descriptors[makeKey(c.key, b)] || "").trim()).length, 0) : 0;
   const progressPct = totalSlots > 0 ? Math.round((filledSlots / totalSlots) * 100) : 0;
 
@@ -299,9 +315,9 @@ export default function AdminBandDescriptorsTab() {
     BANDS.filter(b => (descriptors[makeKey(criteriaKey, b)] || "").trim()).length;
 
   // Navigate criteria
-  const criteriaIdx = activeCriteria && currentSkill ? currentSkill.criteria.findIndex(c => c.key === activeCriteria) : -1;
+  const criteriaIdx = activeCriteria && currentSkill ? currentCriteria.findIndex(c => c.key === activeCriteria) : -1;
   const canPrev = criteriaIdx > 0;
-  const canNext = currentSkill ? criteriaIdx >= 0 && criteriaIdx < currentSkill.criteria.length - 1 : false;
+  const canNext = currentSkill ? criteriaIdx >= 0 && criteriaIdx < currentCriteria.length - 1 : false;
 
   return (
     <div className="space-y-5">
@@ -365,7 +381,7 @@ export default function AdminBandDescriptorsTab() {
 
           {/* Criteria cards */}
           <div className="grid gap-3 sm:grid-cols-2">
-            {currentSkill.criteria.map(c => {
+            {currentCriteria.map(c => {
               const filled = getFilledCount(c.key);
               const complete = filled === 9;
               return (
@@ -452,10 +468,10 @@ export default function AdminBandDescriptorsTab() {
 
             <div className="flex items-center gap-1">
               <Badge variant="outline" className="text-[10px] font-bold px-1.5 py-0">
-                {currentSkill.criteria[criteriaIdx]?.short}
+                {currentCriteria[criteriaIdx]?.short}
               </Badge>
               <span className="text-sm font-bold">
-                {currentSkill.criteria[criteriaIdx]?.label}
+                {currentCriteria[criteriaIdx]?.label}
               </span>
               <span className={cn(
                 "text-[10px] font-bold ml-1 rounded-full px-2 py-0.5",
@@ -473,7 +489,7 @@ export default function AdminBandDescriptorsTab() {
                 size="icon"
                 className="h-7 w-7"
                 disabled={!canPrev}
-                onClick={() => setActiveCriteria(currentSkill.criteria[criteriaIdx - 1].key)}
+                onClick={() => setActiveCriteria(currentCriteria[criteriaIdx - 1].key)}
               >
                 <ChevronLeft className="h-3.5 w-3.5" />
               </Button>
@@ -482,7 +498,7 @@ export default function AdminBandDescriptorsTab() {
                 size="icon"
                 className="h-7 w-7"
                 disabled={!canNext}
-                onClick={() => setActiveCriteria(currentSkill.criteria[criteriaIdx + 1].key)}
+                onClick={() => setActiveCriteria(currentCriteria[criteriaIdx + 1].key)}
               >
                 <ChevronRight className="h-3.5 w-3.5" />
               </Button>

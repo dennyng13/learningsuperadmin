@@ -63,5 +63,11 @@ export function mapClonePlanError(rawMessage: string): string {
   if (/function .* does not exist|404/i.test(rawMessage)) {
     return "Backend RPC chưa sẵn sàng. Vui lòng liên hệ admin Lovable.";
   }
+  if (/set-returning functions are not allowed in WHERE/i.test(rawMessage)) {
+    return (
+      "Backend RPC clone_study_plan_to_class có lỗi SQL " +
+      "(set-returning function trong WHERE). Vui lòng liên hệ Lovable để fix RPC body."
+    );
+  }
   return rawMessage || "Lỗi sao chép kế hoạch";
 }

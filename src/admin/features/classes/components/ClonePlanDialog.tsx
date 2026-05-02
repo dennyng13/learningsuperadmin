@@ -26,6 +26,7 @@ import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   Loader2, Search, AlertTriangle, BookOpen, Copy, ListFilter, Check,
+  ChevronDown,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -85,8 +86,12 @@ export function ClonePlanDialog({
   const cloneMut = useCloneStudyPlanToClass();
 
   const [planSearch, setPlanSearch] = useState("");
-  const [sameCourseOnly, setSameCourseOnly] = useState(true);
+  // Default OFF — plans hiếm khi gắn course_id chuẩn theo Căng buồm/etc; user
+  // mong filter program-level (rộng hơn) thấy hết plans cùng program.
+  const [sameCourseOnly, setSameCourseOnly] = useState(false);
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
+  // UX: collapse plan picker khi plan đã auto-detect → chỉ cần pick target.
+  const [planPickerExpanded, setPlanPickerExpanded] = useState(false);
 
   const [targetSearch, setTargetSearch] = useState("");
   const [sameProgramOnly, setSameProgramOnly] = useState(true);
@@ -144,6 +149,16 @@ export function ClonePlanDialog({
     if (selectedPlanId) return;
     setSelectedPlanId(currentPlanQ.data);
   }, [currentPlanQ.data, selectedPlanId]);
+
+  /* Auto-expand picker khi không detect được plan hiện tại của lớp.
+     Nếu detected → giữ collapsed (banner mode), user click "Đổi plan khác"
+     để mở picker. */
+  useEffect(() => {
+    if (currentPlanQ.isLoading) return;
+    if (!currentPlanQ.data) {
+      setPlanPickerExpanded(true);
+    }
+  }, [currentPlanQ.isLoading, currentPlanQ.data]);
 
   /* ─── If detected plan not in candidate list (e.g., other course),
          fetch it once so we can render the row + auto-select. ─── */
@@ -295,7 +310,39 @@ export function ClonePlanDialog({
           </DialogPopDescription>
         </DialogPopHeader>
 
-        {/* ═══ Section 1: Source plan picker ═══ */}
+        {/* ═══ Section 1: Source plan picker ═══
+            UX: nếu plan đã auto-detect (currentPlanQ.data), hiển thị banner
+            "Plan hiện tại + tóm tắt" + nút "Đổi plan khác" để mở picker.
+            Nếu không detect được, picker mở sẵn để user pick. */}
+        {!planPickerExpanded && selectedPlan ? (
+          <div className="rounded-lg border-[1.5px] border-lp-teal/40 bg-lp-teal/5 p-3 flex items-start gap-3">
+            <BookOpen className="h-4 w-4 text-lp-teal shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0 space-y-0.5">
+              <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                Kế hoạch nguồn (plan hiện tại của lớp)
+              </p>
+              <p className="font-display text-sm font-bold truncate">
+                {selectedPlan.plan_name?.trim() || (
+                  <span className="italic text-muted-foreground">(chưa đặt tên)</span>
+                )}
+              </p>
+              <p className="text-[11px] text-muted-foreground truncate">
+                {selectedPlan.cefr_level && <span>{selectedPlan.cefr_level} · </span>}
+                {selectedPlan.total_sessions != null && <span>{selectedPlan.total_sessions} buổi · </span>}
+                {entriesCountQ.data !== undefined
+                  ? `${entriesCountQ.data} entries sẽ sao chép`
+                  : "đang đếm..."}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setPlanPickerExpanded(true)}
+              className="shrink-0 text-[11px] font-semibold text-lp-coral hover:underline inline-flex items-center gap-0.5"
+            >
+              Đổi plan khác <ChevronDown className="h-3 w-3" />
+            </button>
+          </div>
+        ) : (
         <div className="space-y-2">
           <div className="flex items-center justify-between gap-2">
             <Label className="text-xs font-semibold inline-flex items-center gap-1.5">
@@ -393,13 +440,28 @@ export function ClonePlanDialog({
             )}
           </div>
           {selectedPlan && (
-            <p className="text-[10px] text-muted-foreground pl-1">
-              {entriesCountQ.data !== undefined
-                ? `${entriesCountQ.data} buổi học sẽ được sao chép (reset lịch).`
-                : "Đang đếm số buổi học..."}
-            </p>
+            <div className="flex items-center justify-between text-[10px] text-muted-foreground pl-1">
+              <span>
+                {entriesCountQ.data !== undefined
+                  ? `${entriesCountQ.data} buổi học sẽ được sao chép (reset lịch).`
+                  : "Đang đếm số buổi học..."}
+              </span>
+              {currentPlanQ.data && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPlanPickerExpanded(false);
+                    setSelectedPlanId(currentPlanQ.data!);
+                  }}
+                  className="text-lp-teal hover:underline font-semibold"
+                >
+                  Quay về plan hiện tại
+                </button>
+              )}
+            </div>
           )}
         </div>
+        )}
 
         {/* ═══ Section 2: Target class picker ═══ */}
         <div className="space-y-2 pt-2 border-t-[1.5px] border-lp-ink/15">

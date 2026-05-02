@@ -57,7 +57,40 @@ function formatDate(iso: string | null): string {
 export function PlanProgressTab({ classId, studyPlanId }: Props) {
   const qc = useQueryClient();
   const [editOpen, setEditOpen] = useState(false);
-  if (!studyPlanId) {
+
+  /* Resolve effective plan id from either:
+     1. cls.study_plan_id direct (legacy + most common path)
+     2. F3 v2 reverse — study_plans.class_ids @> [classId]
+     Eliminates "chưa gắn study plan" false-negative khi class link via
+     reverse direction. */
+  const resolvedPlanIdQ = useQuery({
+    queryKey: ["plan-progress-resolve", classId, studyPlanId],
+    enabled: !!classId,
+    queryFn: async (): Promise<string | null> => {
+      if (studyPlanId) return studyPlanId;
+      const { data, error } = await (supabase as any)
+        .from("study_plans")
+        .select("id")
+        .contains("class_ids", [classId])
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) return null; // non-fatal — fall through to empty state
+      return data?.id ?? null;
+    },
+  });
+
+  const effectivePlanId = resolvedPlanIdQ.data ?? null;
+
+  if (resolvedPlanIdQ.isLoading) {
+    return (
+      <div className="space-y-3">
+        {[0, 1, 2].map((i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}
+      </div>
+    );
+  }
+
+  if (!effectivePlanId) {
     return (
       <div className="rounded-2xl border border-dashed bg-muted/20 p-10 text-center space-y-3">
         <div className="mx-auto h-12 w-12 rounded-full bg-muted flex items-center justify-center">
@@ -77,31 +110,31 @@ export function PlanProgressTab({ classId, studyPlanId }: Props) {
   }
 
   const planQ = useQuery({
-    queryKey: ["plan-progress-plan", studyPlanId],
+    queryKey: ["plan-progress-plan", effectivePlanId],
     queryFn: async (): Promise<StudyPlanRow | null> => {
       const { data, error } = await (supabase as any)
         .from("study_plans")
         .select("id, plan_name, total_sessions, status, start_date, end_date")
-        .eq("id", studyPlanId)
+        .eq("id", effectivePlanId)
         .maybeSingle();
       if (error) throw error;
       return (data as StudyPlanRow | null) ?? null;
     },
-    enabled: !!studyPlanId,
+    enabled: !!effectivePlanId,
   });
 
   const entriesQ = useQuery({
-    queryKey: ["plan-progress-entries", studyPlanId],
+    queryKey: ["plan-progress-entries", effectivePlanId],
     queryFn: async (): Promise<PlanEntryRow[]> => {
       const { data, error } = await (supabase as any)
         .from("study_plan_entries")
         .select("id, plan_id, session_number, session_title, session_type, entry_date, plan_status, completed_at")
-        .eq("plan_id", studyPlanId)
+        .eq("plan_id", effectivePlanId)
         .order("session_number", { ascending: true });
       if (error) throw error;
       return (data ?? []) as PlanEntryRow[];
     },
-    enabled: !!studyPlanId,
+    enabled: !!effectivePlanId,
   });
 
   const sessionsCountQ = useQuery({
@@ -155,7 +188,7 @@ export function PlanProgressTab({ classId, studyPlanId }: Props) {
               chưa clone template thành plan instance khi tạo lớp.
             </p>
             <p className="text-xs text-muted-foreground">
-              ID hiện tại: <code className="font-mono">{studyPlanId.slice(0, 8)}…</code>
+              ID hiện tại: <code className="font-mono">{(effectivePlanId ?? "").slice(0, 8)}…</code>
             </p>
             <Button asChild variant="outline" size="sm" className="gap-1.5 mt-2">
               <Link to="/study-plans">
@@ -286,14 +319,14 @@ export function PlanProgressTab({ classId, studyPlanId }: Props) {
       </div>
 
       {/* F3.6 Tier 2 instance edit dialog */}
-      {studyPlanId && (
+      {effectivePlanId && (
         <ClassPlanEditDialog
           open={editOpen}
           onOpenChange={setEditOpen}
-          studyPlanId={studyPlanId}
+          studyPlanId={effectivePlanId}
           onUpdated={() => {
-            qc.invalidateQueries({ queryKey: ["plan-progress-plan", studyPlanId] });
-            qc.invalidateQueries({ queryKey: ["plan-progress-entries", studyPlanId] });
+            qc.invalidateQueries({ queryKey: ["plan-progress-plan", effectivePlanId] });
+            qc.invalidateQueries({ queryKey: ["plan-progress-entries", effectivePlanId] });
           }}
         />
       )}
