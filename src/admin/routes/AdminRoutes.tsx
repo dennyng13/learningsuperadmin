@@ -37,6 +37,7 @@ const EmailTemplatePreviewPage = lazy(() => import("@admin/features/settings/pag
 const FeatureFlagsPage = lazy(() => import("@admin/features/feature-flags/pages/FeatureFlagsPage"));
 const StudyPlansPage = lazy(() => import("@admin/features/study-plans/pages/StudyPlansPage"));
 const StudyPlanTemplatesPage = lazy(() => import("@admin/features/study-plans/pages/StudyPlanTemplatesPage"));
+const MyPlansPage = lazy(() => import("@admin/features/study-plans/pages/MyPlansPage"));
 const PlacementTestPage = lazy(() => import("@admin/features/placement/pages/PlacementTestPage"));
 const PlacementTestEditorPage = lazy(() => import("@admin/features/placement/pages/PlacementTestEditorPage"));
 const AdminSchedulePage = lazy(() => import("@admin/features/schedule/pages/AdminSchedulePage"));
@@ -142,6 +143,7 @@ export default function AppRoutes() {
           {/* Study plans (templates nested) */}
           <Route path="study-plans" element={<ModuleAccessRoute moduleKey={ADMIN_MODULE_KEYS.STUDY_PLANS}><StudyPlansPage /></ModuleAccessRoute>} />
           <Route path="study-plans/templates" element={<ModuleAccessRoute moduleKey={ADMIN_MODULE_KEYS.STUDY_PLANS}><StudyPlanTemplatesPage /></ModuleAccessRoute>} />
+          <Route path="my-plans" element={<ModuleAccessRoute moduleKey={ADMIN_MODULE_KEYS.STUDY_PLANS}><MyPlansPage /></ModuleAccessRoute>} />
 
           {/* Placement */}
           <Route path="placement" element={<PlacementTestPage />} />
