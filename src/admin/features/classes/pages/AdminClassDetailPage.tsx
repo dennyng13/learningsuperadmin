@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import {
   GraduationCap, Calendar, Users, BarChart3, Activity, Megaphone,
   Settings, MoreVertical, RefreshCw, AlertTriangle,
-  LayoutDashboard, Wallet, Banknote, Clock, Copy,
+  LayoutDashboard, Wallet, Banknote, Clock, Copy, FilePlus2,
 } from "lucide-react";
 import { DetailPageLayout } from "@shared/components/layouts/DetailPageLayout";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@shared/components/ui/tabs";
@@ -290,22 +290,44 @@ export default function AdminClassDetailPage() {
             <MoreVertical className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-52">
-          {/* F3.3 Path B — luôn show item; nếu chưa có plan thì hint qua toast. */}
+        <DropdownMenuContent align="end" className="w-56">
+          {/* F3.3 Path B — clone plan to target class.
+              Dialog tự resolve plan → empty state nếu không có. */}
           <DropdownMenuItem
-            onClick={() => {
-              if (!cls.study_plan_id) {
-                toast.info(
-                  "Lớp chưa có kế hoạch học để sao chép. Vào tab Cấu hình để gán study plan trước.",
-                  { duration: 5000 },
-                );
-                return;
-              }
-              setClonePlanOpen(true);
-            }}
+            onClick={() => setClonePlanOpen(true)}
             className="text-xs gap-1.5"
           >
             <Copy className="h-3.5 w-3.5" /> Sao chép kế hoạch học
+          </DropdownMenuItem>
+
+          {/* F3.3+ Sao chép lớp — đi vào wizard với prefill từ class hiện tại.
+              Cho phép nhân bản nhanh: program/course/plan/maxStudents/mode/branch
+              giữ nguyên, user adjust phần còn lại (lịch, GV, ngày bắt đầu, v.v.). */}
+          <DropdownMenuItem
+            onClick={() => {
+              navigate("/classes/new", {
+                state: {
+                  preset: {
+                    program: cls.program ?? "",
+                    course_id: cls.course_id ?? null,
+                    course_title: cls.course_name ?? "",
+                    level: cls.level ?? "",
+                    class_type: (cls.class_type === "private" ? "private" : "standard") as
+                      "standard" | "private",
+                    max_students: cls.max_students ?? null,
+                    study_plan_id: cls.study_plan_id ?? null,
+                    description: cls.description ?? "",
+                    leaderboard_enabled: cls.leaderboard_enabled ?? false,
+                    branch: cls.branch ?? "",
+                    mode: cls.mode ?? "",
+                    sourceClassName: cls.name ?? cls.class_name ?? "",
+                  },
+                },
+              });
+            }}
+            className="text-xs gap-1.5"
+          >
+            <FilePlus2 className="h-3.5 w-3.5" /> Sao chép lớp (clone wizard)
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           {cls.lifecycle_status !== "archived" ? (
@@ -498,17 +520,15 @@ export default function AdminClassDetailPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* F3.3 Path B clone study plan to target class */}
-      {cls.study_plan_id && (
-        <ClonePlanDialog
-          open={clonePlanOpen}
-          onOpenChange={setClonePlanOpen}
-          sourceClassId={cls.id}
-          sourcePlanId={cls.study_plan_id}
-          sourcePlanName={cls.study_plan_name ?? null}
-          sourceProgram={cls.program ?? null}
-        />
-      )}
+      {/* F3.3 Path B clone study plan to target class.
+          Dialog tự resolve source plan via 2-path lookup (legacy direct +
+          F3 v2 reverse class_ids) → mounts unconditionally. */}
+      <ClonePlanDialog
+        open={clonePlanOpen}
+        onOpenChange={setClonePlanOpen}
+        sourceClassId={cls.id}
+        sourceProgram={cls.program ?? null}
+      />
     </DetailPageLayout>
   );
 }

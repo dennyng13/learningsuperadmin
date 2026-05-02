@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@shared/components/ui/button";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -35,11 +35,62 @@ const STEPS = [
   { id: 5, title: "Xác nhận" },
 ];
 
+/* Preset payload từ "Sao chép lớp" action ở /classes/:id 3-dot menu.
+   Pre-fills initial classInfo so user chỉ cần điều chỉnh phần khác biệt
+   (lịch, GV, ngày bắt đầu, tên lớp). */
+interface ClonePreset {
+  program?: string;
+  course_id?: string | null;
+  course_title?: string;
+  level?: string;
+  class_type?: "standard" | "private";
+  max_students?: number | null;
+  study_plan_id?: string | null;
+  description?: string;
+  leaderboard_enabled?: boolean;
+  branch?: string;
+  mode?: string;
+  sourceClassName?: string;
+}
+
+function buildPresetClassInfo(preset: ClonePreset): WizardClassInfo {
+  return {
+    ...EMPTY_CLASS_INFO,
+    program: preset.program ?? "",
+    course_id: preset.course_id ?? null,
+    course_title: preset.course_title ?? "",
+    level: preset.level ?? "",
+    class_type: preset.class_type ?? "standard",
+    max_students: preset.max_students ?? null,
+    study_plan_id: preset.study_plan_id ?? null,
+    description: preset.description ?? "",
+    leaderboard_enabled: preset.leaderboard_enabled ?? false,
+    // class_name + start_date + end_date intentionally left blank — user fills.
+  };
+}
+
 export default function CreateClassWizardPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const preset = (location.state as { preset?: ClonePreset } | null)?.preset ?? null;
+
   const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1);
-  const [classInfo, setClassInfo] = useState<WizardClassInfo>(EMPTY_CLASS_INFO);
+  const [classInfo, setClassInfo] = useState<WizardClassInfo>(() =>
+    preset ? buildPresetClassInfo(preset) : EMPTY_CLASS_INFO,
+  );
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Notify user once khi enter wizard via "Sao chép lớp" preset.
+  useEffect(() => {
+    if (!preset) return;
+    const fromName = preset.sourceClassName ? ` từ "${preset.sourceClassName}"` : "";
+    toast.info(
+      `Đã sao chép thông tin${fromName}. Vui lòng đặt tên lớp mới và sắp lịch.`,
+      { duration: 6000 },
+    );
+    // Run once on mount only.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [scheduleMode, setScheduleMode] = useState<ScheduleMode>("by-slot");
   const [slot, setSlot] = useState<WizardSlot>({ weekdays: [], start_time: "19:00", end_time: "21:00", mode: "hybrid" });
