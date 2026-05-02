@@ -1,6 +1,9 @@
 import { forwardRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { FileText, BookOpen, ClipboardList, ArrowRight, Sparkles } from "lucide-react";
+import {
+  FileText, BookOpen, ClipboardList, ArrowRight, Sparkles,
+  ScrollText, MessageSquareQuote,
+} from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { PageHeader } from "@shared/components/layouts/PageHeader";
 import { cn } from "@shared/lib/utils";
@@ -26,7 +29,8 @@ interface LibrarySection {
   route: string;
   palette: ShapePalette;  // dùng để lookup shapes trong DB
   extraLinks?: { label: string; route: string }[];
-  moduleKey: AdminModuleKey;
+  /** Optional module gating — nếu undefined, không gate (admin xem được). */
+  moduleKey?: AdminModuleKey;
   /** Ưu tiên shape có asset_key chứa từ khoá này (vd "wave", "blob"). */
   preferredShape?: string;
   /** Danh sách keyword fallback theo thứ tự ưu tiên — nếu DB chưa có shape
@@ -69,18 +73,43 @@ const SECTIONS: LibrarySection[] = [
     icon: ClipboardList,
     route: "/study-plans",
     palette: "coral",
-    extraLinks: [{ label: "Mẫu lộ trình", route: "/study-plans/templates" }],
+    extraLinks: [
+      { label: "Mẫu lộ trình", route: "/study-plans/templates" },
+      { label: "Plans của tôi", route: "/my-plans" },
+    ],
     moduleKey: ADMIN_MODULE_KEYS.STUDY_PLANS,
     // Card "lộ trình" → shape SÓNG / DÒNG CHẢY — gợi đường đi liên tục
     // qua các giai đoạn, khác hẳn 2 card trên.
     preferredShape: "wave",
     preferredShapeFallbacks: ["curve", "ribbon", "arc", "cloud", "drop"],
   },
+  {
+    id: "band-descriptors",
+    title: "Band Descriptor",
+    blurb: "Bảng tiêu chí chấm điểm theo skill (Writing/Speaking) chuẩn IELTS.",
+    icon: ScrollText,
+    route: "/band-descriptors",
+    palette: "indigo",
+    // Không gate qua moduleKey — band descriptor là utility chấm điểm,
+    // hiển thị mặc định cho mọi admin.
+    preferredShape: "ribbon",
+    preferredShapeFallbacks: ["wave", "arc", "curve"],
+  },
+  {
+    id: "feedback-templates",
+    title: "Mẫu nhận xét",
+    blurb: "Thư viện mẫu phản hồi giáo viên dùng khi chấm bài và nhận xét lớp.",
+    icon: MessageSquareQuote,
+    route: "/feedback-templates",
+    palette: "slate",
+    preferredShape: "petal",
+    preferredShapeFallbacks: ["flower", "blob", "pebble"],
+  },
 ];
 
 export default function LibraryHubPage() {
   const { canAccess } = useMyModuleAccess();
-  const visible = SECTIONS.filter((s) => canAccess(s.moduleKey));
+  const visible = SECTIONS.filter((s) => !s.moduleKey || canAccess(s.moduleKey));
 
   return (
     <div className="p-4 md:p-6 max-w-6xl mx-auto animate-page-in">

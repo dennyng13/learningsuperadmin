@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Award, Users, School,
   CalendarDays, UserSearch, Settings, ShieldCheck, BarChart3,
   BookOpen, Flag, GraduationCap, CalendarCheck, MapPin,
-  FileSignature, Wallet, BookTemplate, Library, Activity,
+  FileSignature, Wallet, Library, Activity,
   ListTodo, ClipboardSignature, Send, Building2, Wrench,
   Banknote, FolderOpen, Globe, BookOpenCheck, Receipt,
   PlusSquare, BookCopy, Telescope, MessagesSquare, ReceiptText,
@@ -72,6 +72,8 @@ export const adminNavItems: NavItem[] = [
   { id: "teachers-signatures", label: "Yêu cầu ký kết", icon: ClipboardSignature, route: "/teachers/signatures", group: "people", order: 22, subheader: "Giáo viên" },
 
   // ═══ 3. Study Management ═══
+  { id: "library",      label: "Quản lý học liệu", icon: Library,      route: "/library",          group: "study", order: 29, subheader: "Programs & Courses",
+    aliasPaths: ["/tests", "/flashcards", "/practice", "/band-descriptors", "/feedback-templates"] },
   { id: "programs",     label: "Programs",        icon: Globe,         route: "/courses/programs", group: "study", order: 30, subheader: "Programs & Courses" },
   { id: "study-plans",  label: "Kế hoạch học",    icon: BookOpen,      route: "/study-plans",      group: "study", order: 31, subheader: "Programs & Courses" },
   { id: "courses",      label: "Khóa học",        icon: GraduationCap, route: "/courses",          group: "study", order: 32, subheader: "Programs & Courses" },
@@ -102,16 +104,14 @@ export const adminNavItems: NavItem[] = [
   { id: "documents",  label: "Tài liệu",  icon: FolderOpen,  route: "/documents",  group: "documents", order: 90 },
 
   // ═══ Đang xem xét (modules dư — preserved per user, muted styling) ═══
-  { id: "library",            label: "Học liệu (digital)", icon: Library,       route: "/library",            group: "review", underReview: true, order: 200,
-    aliasPaths: ["/tests", "/flashcards", "/practice"] },
+  // Note: /library + /band-descriptors + /feedback-templates đã được đưa
+  // vào Quản lý học tập làm hub Library, không còn ở review.
   { id: "my-plans",           label: "Plans của tôi",      icon: BookOpenCheck, route: "/my-plans",           group: "review", underReview: true, order: 201 },
   { id: "placement",          label: "Sắp lớp",            icon: UserSearch,    route: "/placement",          group: "review", underReview: true, order: 202 },
   { id: "attendance",         label: "Theo dõi điểm danh", icon: CalendarCheck, route: "/attendance",         group: "review", underReview: true, order: 203,
     aliasPaths: ["/attendance/monitor"] },
   { id: "availability-drafts", label: "Duyệt lịch rảnh",   icon: CalendarCheck, route: "/availability-drafts", group: "review", underReview: true, order: 204 },
   { id: "rooms",              label: "Phòng học (legacy)", icon: MapPin,        route: "/rooms",              group: "review", underReview: true, order: 205 },
-  { id: "band-descriptors",   label: "Band Descriptor",    icon: BookOpen,      route: "/band-descriptors",   group: "review", underReview: true, order: 206 },
-  { id: "feedback-templates", label: "Mẫu nhận xét",       icon: BookTemplate,  route: "/feedback-templates", group: "review", underReview: true, order: 207 },
   { id: "badges",             label: "Huy hiệu",           icon: Award,         route: "/badges",             group: "review", underReview: true, order: 208 },
 
   // ═══ System (super_admin only) ═══

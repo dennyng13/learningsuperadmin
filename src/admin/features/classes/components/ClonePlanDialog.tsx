@@ -205,7 +205,11 @@ export function ClonePlanDialog({
     },
   });
 
-  /* ─── Candidate target classes ─── */
+  /* ─── Candidate target classes ───
+     Note: KHÔNG filter `.neq("lifecycle_status", "archived")` vì DB enum
+     class_lifecycle_status hiện không có "archived" — Postgres reject làm
+     query lỗi, target list rỗng → submit disabled. Frontend types.ts có
+     "archived" nhưng DB chưa có, mismatch chờ Lovable lock enum. */
   const targetsQ = useQuery({
     queryKey: ["clone-plan-targets", sourceClassId, sameProgramOnly, sourceProgram],
     enabled: open,
@@ -214,7 +218,6 @@ export function ClonePlanDialog({
         .from("classes" as any)
         .select("id, name, class_code, program, lifecycle_status, study_plan_id")
         .neq("id", sourceClassId)
-        .neq("lifecycle_status", "archived")
         .order("name", { ascending: true })
         .limit(200);
       if (sameProgramOnly && sourceProgram) q = q.eq("program", sourceProgram);

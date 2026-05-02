@@ -1,4 +1,5 @@
-import { ExternalLink, LogOut } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { ChevronRight, ExternalLink, LogOut } from "lucide-react";
 import { NavLink } from "@shared/components/misc/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@shared/hooks/useAuth";
@@ -36,6 +37,17 @@ const GROUP_ORDER: GroupKey[] = [
   "review", "system",
 ];
 
+/** Groups always expanded (cannot collapse). hub thường chỉ có 1-2 items
+ *  và là entry điểm nên luôn mở. */
+const NON_COLLAPSIBLE: ReadonlySet<GroupKey> = new Set(["hub"]);
+
+/** Default-collapsed groups khi user lần đầu vào portal. Mở dần theo nhu cầu. */
+const DEFAULT_COLLAPSED: ReadonlySet<GroupKey> = new Set([
+  "people", "study", "center", "teaching", "financial", "documents", "review", "system",
+]);
+
+const STORAGE_KEY = "admin-sidebar-collapsed-groups";
+
 const byOrder = (a: { order: number }, b: { order: number }) => a.order - b.order;
 
 export function AdminSidebar() {
@@ -46,10 +58,43 @@ export function AdminSidebar() {
   const orgShortName = useOrgShortName();
   const { url: logoUrl } = useBrandAsset(["logo-app", "logo-main", "logoApp", "logoMain"]);
 
-  // Path ownership map — multiple aliasPaths can map to one nav item.
-  const pathOwnership = adminNavItems.flatMap((i) =>
-    [i.route, ...(i.aliasPaths ?? [])].map((p) => ({ path: p, ownerRoute: i.route })),
-  );
+  /* ─── Collapse state per group, persisted in localStorage ─── */
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<GroupKey>>(() => {
+    if (typeof window === "undefined") return new Set(DEFAULT_COLLAPSED);
+    try {
+      const raw = window.localStorage.getItem(STORAGE_KEY);
+      if (!raw) return new Set(DEFAULT_COLLAPSED);
+      const arr = JSON.parse(raw) as string[];
+      return new Set(arr.filter((s): s is GroupKey =>
+        GROUP_ORDER.includes(s as GroupKey),
+      ));
+    } catch {
+      return new Set(DEFAULT_COLLAPSED);
+    }
+  });
+
+  const persistCollapsed = (next: Set<GroupKey>) => {
+    setCollapsedGroups(next);
+    if (typeof window !== "undefined") {
+      try {
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(next)));
+      } catch { /* ignore quota errors */ }
+    }
+  };
+
+  const toggleGroup = (g: GroupKey) => {
+    if (NON_COLLAPSIBLE.has(g)) return;
+    const next = new Set(collapsedGroups);
+    if (next.has(g)) next.delete(g); else next.add(g);
+    persistCollapsed(next);
+  };
+
+  /* ─── Path → owner mapping (longest aliasPath wins) ─── */
+  const pathOwnership = useMemo(() =>
+    adminNavItems.flatMap((i) =>
+      [i.route, ...(i.aliasPaths ?? [])].map((p) => ({ path: p, ownerRoute: i.route })),
+    ), []);
+
   const isActive = (path: string) => {
     if (path === "/") return location.pathname === "/";
     const matches = pathOwnership.filter(
@@ -61,31 +106,37 @@ export function AdminSidebar() {
     return path === longest.ownerRoute;
   };
 
-  const handleSignOut = async () => {
-    await signOut();
-    navigate("/login");
-  };
-
   const visibleItems = adminNavItems.filter((i) => !i.superAdminOnly || isSuperAdmin);
 
-  /* Group items theo group key, giữ nguyên thứ tự trong array. */
+  /** Group containing the currently-active item (force expanded). */
+  const activeGroup = useMemo<GroupKey | null>(() => {
+    const item = visibleItems.find((i) => isActive(i.route));
+    return (item?.group as GroupKey) ?? null;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname, visibleItems.length]);
+
+  /* Auto-uncollapse the active group if user navigates somewhere new while
+     parent group was collapsed. Persisted state remains intact for next visit. */
+  useEffect(() => {
+    if (!activeGroup) return;
+    if (NON_COLLAPSIBLE.has(activeGroup)) return;
+    if (collapsedGroups.has(activeGroup)) {
+      const next = new Set(collapsedGroups);
+      next.delete(activeGroup);
+      persistCollapsed(next);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeGroup]);
+
+  const isExpanded = (g: GroupKey) =>
+    NON_COLLAPSIBLE.has(g) || !collapsedGroups.has(g);
+
   const itemsByGroup = (groupKey: GroupKey) =>
     visibleItems.filter((i) => i.group === groupKey).sort(byOrder);
 
-  /* Cluster items by subheader within a group, preserving order. Items
-     without subheader come first in a "no header" cluster. */
-  const clusterBySubheader = (items: NavItem[]) => {
-    const clusters: { subheader: string | null; items: NavItem[] }[] = [];
-    items.forEach((item) => {
-      const sub = item.subheader ?? null;
-      const last = clusters[clusters.length - 1];
-      if (last && last.subheader === sub) {
-        last.items.push(item);
-      } else {
-        clusters.push({ subheader: sub, items: [item] });
-      }
-    });
-    return clusters;
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/login");
   };
 
   const renderItem = (item: NavItem, opts?: { muted?: boolean }) => {
@@ -132,7 +183,7 @@ export function AdminSidebar() {
       className="sticky top-0 self-start h-screen w-64 flex flex-col bg-lp-ink text-white shrink-0"
       data-portal="admin"
     >
-      {/* Scoped scrollbar style */}
+      {/* Scrollbar style */}
       <style>{`
         .admin-sidebar-scroll {
           scrollbar-width: thin;
@@ -179,41 +230,68 @@ export function AdminSidebar() {
           if (items.length === 0) return null;
 
           const isReview = groupKey === "review";
-          const clusters = clusterBySubheader(items);
+          const expanded = isExpanded(groupKey);
+          const collapsible = !NON_COLLAPSIBLE.has(groupKey);
+          // Show item count in collapsed header để user biết group nào còn có gì.
+          const itemCount = items.length;
+          const hasActiveChild = items.some((i) => isActive(i.route));
 
           return (
             <div
               key={groupKey}
               className={cn(
-                "mb-4 last:mb-0",
-                isReview && "mt-6 pt-3 border-t-2 border-white/10",
+                "mb-2 last:mb-0",
+                isReview && "mt-4 pt-2 border-t-2 border-white/10",
               )}
             >
-              <div
-                className={cn(
-                  "px-3 mb-1.5 text-[10px] uppercase tracking-[0.1em] font-display font-bold",
-                  isReview ? "text-white/35" : "text-white/50",
-                )}
-              >
-                {GROUP_LABELS[groupKey]}
-                {isReview && (
-                  <span className="ml-1.5 text-white/30 normal-case font-normal tracking-normal">
-                    · review
-                  </span>
-                )}
-              </div>
-              {clusters.map((cluster, ci) => (
-                <div key={ci} className={ci > 0 ? "mt-2" : undefined}>
-                  {cluster.subheader && (
-                    <div className="px-3 mb-1 text-[9px] uppercase tracking-wider text-white/35 font-semibold">
-                      {cluster.subheader}
-                    </div>
+              {/* Group header — clickable when collapsible */}
+              {collapsible ? (
+                <button
+                  type="button"
+                  onClick={() => toggleGroup(groupKey)}
+                  aria-expanded={expanded}
+                  className={cn(
+                    "w-full flex items-center gap-2 px-3 py-1.5 rounded-pop",
+                    "text-[10px] uppercase tracking-[0.1em] font-display font-bold",
+                    "transition-colors duration-150",
+                    isReview ? "text-white/35 hover:text-white/60" : "text-white/55 hover:text-white/80",
+                    "hover:bg-white/5",
                   )}
-                  <ul className="space-y-1">
-                    {cluster.items.map((item) => renderItem(item, { muted: isReview }))}
-                  </ul>
+                >
+                  <ChevronRight
+                    className={cn(
+                      "size-3 shrink-0 transition-transform duration-200",
+                      expanded && "rotate-90",
+                    )}
+                    strokeWidth={2.5}
+                  />
+                  <span className="flex-1 text-left truncate">
+                    {GROUP_LABELS[groupKey]}
+                  </span>
+                  {!expanded && (
+                    <span className={cn(
+                      "shrink-0 text-[9px] font-mono font-normal tracking-normal",
+                      hasActiveChild ? "text-lp-teal" : "text-white/40",
+                    )}>
+                      {hasActiveChild ? "● " : ""}{itemCount}
+                    </span>
+                  )}
+                </button>
+              ) : (
+                <div className={cn(
+                  "px-3 py-1.5 text-[10px] uppercase tracking-[0.1em] font-display font-bold",
+                  "text-white/55",
+                )}>
+                  {GROUP_LABELS[groupKey]}
                 </div>
-              ))}
+              )}
+
+              {/* Items */}
+              {expanded && (
+                <ul className="space-y-1 mt-1">
+                  {items.map((item) => renderItem(item, { muted: isReview }))}
+                </ul>
+              )}
             </div>
           );
         })}
