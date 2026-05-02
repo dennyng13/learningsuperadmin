@@ -71,41 +71,71 @@ const TABS = [
   { value: "settings",       label: "Cấu hình",   icon: Settings    },
 ] as const;
 
+/* Day 7: ClassID URL contract — accept BOTH UUID and class_code in route.
+   - UUID matches if string passes RFC 4122 v4-ish regex (32 hex + 4 dashes).
+   - Anything else treated as class_code (e.g. "IE-CB-A19-260501").
+   - Lookup priority: UUID → eq(id); else eq(class_code) first, fallback eq(id).
+   - Canonical UUID always used for downstream queries (cls.id post-resolve).
+
+   Cross-portal: Teacher Portal must mirror this resolver pattern so URLs
+   like /classes/IE-CB-A19-260501 work consistently across both portals. */
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const looksLikeUuid = (s: string): boolean => UUID_RE.test(s);
+
 export default function AdminClassDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const classId = id ?? "";
+  const urlParam = id ?? "";
   // Gate header actions (vd nút "Tìm GV thay thế") theo role.
   // RPC server-side cũng chặn non-admin nên đây thuần UX.
   const { isAdmin } = useAuth();
 
-  /* ─── Query: class detail (sau P4a đọc từ v_class_full — có sẵn course +
-     study_plan + teacher + counts join trong 1 row).
-     Fallback: nếu view chưa apply ở môi trường cũ → fallback `classes` shim. */
+  /* ─── Query: class detail. Resolves either UUID or class_code in URL. ─── */
   const { data: cls, isLoading, error, refetch, isRefetching } = useQuery({
-    queryKey: ["admin-class-detail", classId],
+    queryKey: ["admin-class-detail", urlParam],
     queryFn: async (): Promise<ClassDetail | null> => {
-      if (!classId) return null;
-      // Thử v_class_full trước.
-      const v = await (supabase as any)
-        .from("v_class_full" as any)
-        .select("*")
-        .eq("id", classId)
-        .maybeSingle();
+      if (!urlParam) return null;
+
+      // Helper: query a table/view với column match.
+      const queryByCol = async (table: string, col: "id" | "class_code") => {
+        const r = await (supabase as any)
+          .from(table as any)
+          .select("*")
+          .eq(col, urlParam)
+          .maybeSingle();
+        return r;
+      };
+
+      const isUuid = looksLikeUuid(urlParam);
+
+      // 1. v_class_full primary lookup.
+      const vKey = isUuid ? "id" : "class_code";
+      const v = await queryByCol("v_class_full", vKey);
       if (!v.error && v.data) return v.data as ClassDetail;
-      // Fallback shim view / legacy table (P4a `classes` view hoặc teachngo_classes).
-      const fallback = await (supabase as any)
-        .from("classes" as any)
-        .select("*")
-        .eq("id", classId)
-        .maybeSingle();
-      if (fallback.error) throw fallback.error;
-      return fallback.data as ClassDetail | null;
+
+      // 2. Fallback to classes shim với cùng key.
+      const fb = await queryByCol("classes", vKey);
+      if (!fb.error && fb.data) return fb.data as ClassDetail;
+
+      // 3. Cross-fallback: nếu code lookup miss, thử id (defensive cho
+      //    edge cases như code chứa dashes giống UUID).
+      if (!isUuid) {
+        const v2 = await queryByCol("v_class_full", "id");
+        if (!v2.error && v2.data) return v2.data as ClassDetail;
+      }
+
+      return null;
     },
-    enabled: !!classId,
+    enabled: !!urlParam,
     staleTime: 15_000,
   });
+
+  /* Canonical UUID for downstream queries/mutations. Derived from resolved
+     cls.id; fallback to urlParam (only used during initial load before cls
+     resolves — sub-queries gated by enabled: !!classId still evaluate
+     correctly because urlParam is non-empty when route active). */
+  const classId = cls?.id ?? urlParam;
 
   /* ─── Mutations: status change ─── */
   const updateStatusMut = useMutation({
@@ -123,7 +153,7 @@ export default function AdminClassDetailPage() {
     },
     onSuccess: () => {
       toast.success("Đã cập nhật trạng thái");
-      qc.invalidateQueries({ queryKey: ["admin-class-detail", classId] });
+      qc.invalidateQueries({ queryKey: ["admin-class-detail"] });
       qc.invalidateQueries({ queryKey: ["admin-classes-list"] });
       qc.invalidateQueries({ queryKey: ["admin-classes-counts"] });
     },
@@ -252,7 +282,7 @@ export default function AdminClassDetailPage() {
       { id: classId, action: "archive", reason: archiveReason },
       {
         onSuccess: () => {
-          qc.invalidateQueries({ queryKey: ["admin-class-detail", classId] });
+          qc.invalidateQueries({ queryKey: ["admin-class-detail"] });
         },
         onSettled: () => {
           setConfirmArchive(false);
@@ -446,7 +476,7 @@ export default function AdminClassDetailPage() {
               onClick={() =>
                 archiveMut.mutate(
                   { id: classId, action: "restore" },
-                  { onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-class-detail", classId] }) },
+                  { onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-class-detail"] }) },
                 )
               }
               className="text-xs"
@@ -536,7 +566,7 @@ export default function AdminClassDetailPage() {
           <LifecycleTab cls={cls} />
         </TabsContent>
         <TabsContent value="settings" className="mt-4">
-          <SettingsTab cls={cls} onSaved={() => qc.invalidateQueries({ queryKey: ["admin-class-detail", classId] })} />
+          <SettingsTab cls={cls} onSaved={() => qc.invalidateQueries({ queryKey: ["admin-class-detail"] })} />
         </TabsContent>
       </Tabs>
 

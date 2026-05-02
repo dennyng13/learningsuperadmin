@@ -36,6 +36,29 @@ These are visible UI elements that show "Mock" labels because their backend data
 
 Real data on same KPI strip: classes count + students count (from `classes` table query, scoped by `program` key).
 
+## Cross-portal URL contract — Class identifier resolution (Day 7)
+
+Route `/classes/:id` accepts EITHER UUID or `class_code` value:
+- If `:id` matches RFC 4122 v4 UUID regex → looked up via `eq("id", :id)` first.
+- Otherwise → treated as `class_code`, looked up via `eq("class_code", :id)` first, with defensive UUID fallback.
+- Resolution checks `v_class_full` view first, then falls back to `classes` shim.
+- Canonical UUID (`cls.id`) is used for ALL downstream sub-queries (sessions, invitations, plan progress) regardless of which identifier was in the URL.
+
+**Teacher Portal (teachingwithlearningplus) MUST mirror this contract** so URLs like `/classes/IE-CB-A19-260501` work consistently across both portals when admins or teachers share links. Implementation pattern:
+
+```ts
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const isUuid = UUID_RE.test(idFromUrl);
+const lookupCol = isUuid ? "id" : "class_code";
+// ... query using lookupCol
+```
+
+Trade-offs:
+- ✅ Pros: human-readable URLs (e.g. `/classes/IE-CB-A19-260501`); UUIDs continue to work; no migration required.
+- ⚠️ Cons: `class_code` is mutable (admin can rename) → external links break if code changes. UUID-based URLs remain immutable. Recommend admins use UUID URLs for permanent bookmarks; code URLs for casual sharing within Vietnamese context.
+
+Internal `navigate()` calls in admin portal continue to use UUIDs (stable). Code-based URLs must be typed manually or shared externally.
+
 ## Aliases (not placeholders, just redirects)
 
 | Alias path | Target | Reason |
