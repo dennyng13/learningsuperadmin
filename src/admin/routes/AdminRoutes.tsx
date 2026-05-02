@@ -65,6 +65,7 @@ const CoursesPage = lazy(() => import("@admin/features/academic/pages/CoursesPag
 const CourseLevelsPage = lazy(() => import("@admin/features/academic/pages/CourseLevelsPage"));
 const ProgramsListPage = lazy(() => import("@admin/features/academic/pages/ProgramsListPage"));
 const ProgramDetailPage = lazy(() => import("@admin/features/academic/pages/ProgramDetailPage"));
+const CourseDetailPage = lazy(() => import("@admin/features/academic/pages/CourseDetailPage"));
 const LibraryHubPage = lazy(() => import("@admin/features/library/pages/LibraryHubPage"));
 const SchemaHealthPage = lazy(() => import("@admin/features/schema-health/pages/SchemaHealthPage"));
 
@@ -192,6 +193,7 @@ export default function AppRoutes() {
           <Route path="courses/programs/:key" element={<ProgramDetailPage />} />
           <Route path="courses/levels" element={<CourseLevelsPage />} />
           <Route path="courses/new" element={<Navigate to="/courses/programs" replace />} />
+          <Route path="courses/:id" element={<CourseDetailPage />} />
           <Route path="courses/:id/edit" element={<Navigate to="/courses/programs" replace />} />
           {/* Legacy redirects — bookmark cũ /settings/<id> → trang riêng */}
           <Route path="settings/ai-grading"       element={<Navigate to="/permissions?tab=ai-grading" replace />} />

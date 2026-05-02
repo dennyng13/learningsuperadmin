@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   BookOpen, CheckCircle2, Layers, Users, CalendarDays, ClipboardList,
-  Pencil, Trash2, EyeOff, PlayCircle, Sparkles, Plus, Star,
+  Pencil, Trash2, EyeOff, PlayCircle, Sparkles, Plus, Star, ExternalLink,
   Wallet, Clock, UserCheck, Target, Settings2,
 } from "lucide-react";
 import { Button } from "@shared/components/ui/button";
@@ -486,6 +486,21 @@ export default function CourseCard({
           >
             →
           </span>
+        </Button>
+        <Button
+          asChild
+          size="sm"
+          variant="ghost"
+          className={cn(
+            "h-7 w-7 p-0 transition-all duration-200",
+            "hover:bg-teal-500/10 hover:text-teal-600 hover:scale-110",
+            "focus-visible:ring-2 focus-visible:ring-teal-500/40",
+          )}
+          aria-label="Chi tiết khoá"
+        >
+          <Link to={`/courses/${course.id}`}>
+            <ExternalLink className="h-3.5 w-3.5" />
+          </Link>
         </Button>
         <Button
           size="sm"
