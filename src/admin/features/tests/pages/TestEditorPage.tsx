@@ -13,7 +13,7 @@ import {
 } from "@shared/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@shared/components/ui/popover";
 import {
-  ArrowLeft, Save, Eye, EyeOff, BookOpen, Headphones, PenTool, Mic, Plus, Trash2, GripVertical, Loader2, FileUp, ImageIcon, ChevronUp, ChevronDown, Copy, Undo2, Redo2, CheckCircle2, BookOpenText, ChevronRight, Search, ListChecks, ToggleLeft, FileText, Table2, Tag, MessageSquare, PenLine, MapPin, X, Check, Upload, ZoomIn,
+  ArrowLeft, Save, Eye, EyeOff, BookOpen, Headphones, PenTool, Mic, Plus, Trash2, GripVertical, Loader2, FileUp, ImageIcon, ChevronUp, ChevronDown, Copy, Undo2, Redo2, CheckCircle2, BookOpenText, ChevronRight, Search, ListChecks, CheckSquare, ToggleLeft, FileText, Table2, Tag, MessageSquare, PenLine, MapPin, X, Check, Upload, ZoomIn,
 } from "lucide-react";
 import { uploadToWorkDrive, deleteWorkDriveByEntity } from "@shared/utils/workdriveSync";
 import { IELTSSkill } from "@shared/types/admin";
@@ -32,7 +32,7 @@ import { toast } from "sonner";
 
 const QUESTION_TYPE_META: Record<string, { icon: React.ReactNode; color: string; category: string; desc: string }> = {
   multiple_choice:       { icon: <ListChecks className="h-4 w-4" />, color: "text-blue-600 bg-blue-50 border-blue-200 dark:text-blue-400 dark:bg-blue-950 dark:border-blue-800", category: "Selection", desc: "Chọn đáp án đúng A/B/C/D" },
-  multiple_choice_pick2: { icon: <ListChecks className="h-4 w-4" />, color: "text-blue-600 bg-blue-50 border-blue-200 dark:text-blue-400 dark:bg-blue-950 dark:border-blue-800", category: "Selection", desc: "Chọn 2 đáp án đúng trong 5" },
+  multiple_choice_pick2: { icon: <CheckSquare className="h-4 w-4" />, color: "text-fuchsia-600 bg-fuchsia-50 border-fuchsia-200 dark:text-fuchsia-400 dark:bg-fuchsia-950 dark:border-fuchsia-800", category: "Selection", desc: "Chọn 2 đáp án đúng (A–E)" },
   true_false_not_given:  { icon: <ToggleLeft className="h-4 w-4" />, color: "text-emerald-600 bg-emerald-50 border-emerald-200 dark:text-emerald-400 dark:bg-emerald-950 dark:border-emerald-800", category: "Judgment", desc: "TRUE / FALSE / NOT GIVEN" },
   yes_no_not_given:      { icon: <ToggleLeft className="h-4 w-4" />, color: "text-teal-600 bg-teal-50 border-teal-200 dark:text-teal-400 dark:bg-teal-950 dark:border-teal-800", category: "Judgment", desc: "YES / NO / NOT GIVEN" },
   matching_headings:     { icon: <Tag className="h-4 w-4" />, color: "text-purple-600 bg-purple-50 border-purple-200 dark:text-purple-400 dark:bg-purple-950 dark:border-purple-800", category: "Matching", desc: "Nối tiêu đề cho đoạn văn" },

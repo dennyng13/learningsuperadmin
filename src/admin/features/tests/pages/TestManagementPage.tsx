@@ -47,6 +47,15 @@ const statusLabels: Record<string, { label: string; className: string; dot: stri
   },
 };
 
+/* Day 7 polish: emojis make section filter chips playful per mockup
+   pages-test-create.jsx (Reading 📖 / Listening 🎧 / Writing ✍️ / Speaking 🎙️). */
+const SECTION_EMOJI: Record<string, string> = {
+  READING: "📖",
+  LISTENING: "🎧",
+  WRITING: "✍️",
+  SPEAKING: "🎙️",
+};
+
 const sectionTypeLabels: Record<string, string> = {
   READING: "Reading",
   LISTENING: "Listening",
@@ -500,6 +509,7 @@ export default function TestManagementPage() {
                     active ? `${sc.active} shadow-md scale-105 ring-1 ring-offset-1` : `${sc.bg} ${sc.text} ${sc.border} hover:shadow-md hover:scale-[1.02]`
                   )}
                 >
+                  <span className="text-base leading-none" aria-hidden>{SECTION_EMOJI[sec] ?? ""}</span>
                   {sectionTypeLabels[sec] || sec}
                   <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center", active ? `bg-white/40 ${sc.text}` : `bg-white/60 ${sc.text}`)}>
                     {count}
@@ -622,6 +632,9 @@ export default function TestManagementPage() {
                       "inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md font-bold border",
                       sec ? `${sec.bg} ${sec.text} ${sec.border}` : "bg-secondary text-secondary-foreground border-transparent",
                     )}>
+                      <span className="text-[11px] leading-none" aria-hidden>
+                        {SECTION_EMOJI[test.section_type] ?? null}
+                      </span>
                       <SecIcon className="h-3 w-3" />
                       {sectionTypeLabels[test.section_type] || test.section_type}
                     </span>
