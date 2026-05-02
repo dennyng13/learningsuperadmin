@@ -51,6 +51,7 @@ const PALETTE = {
 const KEY_ALIASES: Record<string, string> = {
   // Reading aliases
   multiple_choice: "r_multiple_choice",
+  multiple_choice_pick2: "r_multiple_choice_pick2",
   tfng: "r_identifying_information",
   ynng: "r_identifying_views",
   matching_headings: "r_matching_headings",
@@ -70,7 +71,7 @@ const KEY_ALIASES: Record<string, string> = {
 
   // Legacy SCREAMING_SNAKE
   MULTIPLE_CHOICE_ONE_ANSWER: "r_multiple_choice",
-  MULTIPLE_CHOICE_MORE_ANSWERS: "r_multiple_choice",
+  MULTIPLE_CHOICE_MORE_ANSWERS: "r_multiple_choice_pick2",
   IDENTIFYING_INFORMATION: "r_identifying_information",
   COMPLETION: "r_sentence_completion",
   MATCHING: "r_matching_information",
@@ -101,6 +102,7 @@ export function normalizeTypeKey(type: string): string {
 export const QUESTION_TYPE_META: Record<string, QuestionTypeMeta> = {
   // ── Reading ──────────────────────────────────────────────────
   r_multiple_choice:           { label: "Multiple Choice",         icon: ListChecks,  colors: PALETTE.sky },
+  r_multiple_choice_pick2:     { label: "Multiple Choice (Pick 2)", icon: CheckSquare, colors: PALETTE.fuchsia },
   r_identifying_information:   { label: "True / False / Not Given", icon: CheckSquare, colors: PALETTE.emerald },
   r_identifying_views:         { label: "Yes / No / Not Given",     icon: CheckSquare, colors: PALETTE.teal },
   r_matching_information:      { label: "Matching Information",    icon: GitBranch,   colors: PALETTE.violet },
@@ -114,6 +116,7 @@ export const QUESTION_TYPE_META: Record<string, QuestionTypeMeta> = {
 
   // ── Listening ────────────────────────────────────────────────
   l_multiple_choice:               { label: "Multiple Choice",       icon: ListChecks, colors: PALETTE.sky },
+  l_multiple_choice_pick2:         { label: "Multiple Choice (Pick 2)", icon: CheckSquare, colors: PALETTE.fuchsia },
   l_matching:                      { label: "Matching",              icon: GitBranch,  colors: PALETTE.violet },
   l_plan_map_diagram:              { label: "Plan / Map / Diagram",  icon: Map,        colors: PALETTE.teal },
   l_form_note_table_completion:    { label: "Form / Note / Table Completion", icon: Table2, colors: PALETTE.amber },

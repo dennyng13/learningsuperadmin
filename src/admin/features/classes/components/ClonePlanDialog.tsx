@@ -150,16 +150,6 @@ export function ClonePlanDialog({
     setSelectedPlanId(currentPlanQ.data);
   }, [currentPlanQ.data, selectedPlanId]);
 
-  /* Auto-expand picker khi không detect được plan hiện tại của lớp.
-     Nếu detected → giữ collapsed (banner mode), user click "Đổi plan khác"
-     để mở picker. */
-  useEffect(() => {
-    if (currentPlanQ.isLoading) return;
-    if (!currentPlanQ.data) {
-      setPlanPickerExpanded(true);
-    }
-  }, [currentPlanQ.isLoading, currentPlanQ.data]);
-
   /* ─── If detected plan not in candidate list (e.g., other course),
          fetch it once so we can render the row + auto-select. ─── */
   const detectedPlanInCandidates = useMemo(() => {
@@ -311,15 +301,20 @@ export function ClonePlanDialog({
         </DialogPopHeader>
 
         {/* ═══ Section 1: Source plan picker ═══
-            UX: nếu plan đã auto-detect (currentPlanQ.data), hiển thị banner
-            "Plan hiện tại + tóm tắt" + nút "Đổi plan khác" để mở picker.
-            Nếu không detect được, picker mở sẵn để user pick. */}
+            Banner shown ONLY khi:
+            - User chưa chủ động expand picker
+            - selectedPlan tồn tại (resolves to a real study_plans row)
+            Nếu currentPlanQ.data trỏ tới plan không tồn tại (Bug #2 template-id),
+            allPlans không chứa nó → selectedPlan undefined → fallback picker.
+            Tránh banner trống khi auto-select tham chiếu phantom plan. */}
         {!planPickerExpanded && selectedPlan ? (
           <div className="rounded-lg border-[1.5px] border-lp-teal/40 bg-lp-teal/5 p-3 flex items-start gap-3">
             <BookOpen className="h-4 w-4 text-lp-teal shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0 space-y-0.5">
               <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                Kế hoạch nguồn (plan hiện tại của lớp)
+                {isDetected(selectedPlan.id)
+                  ? "Kế hoạch nguồn (plan hiện tại của lớp)"
+                  : "Kế hoạch nguồn đã chọn"}
               </p>
               <p className="font-display text-sm font-bold truncate">
                 {selectedPlan.plan_name?.trim() || (

@@ -78,6 +78,10 @@ function getDefaultInstruction(type: string, start: number, end: number): string
 
 const readingQuestionTypes = [
   { value: "multiple_choice", label: "Multiple Choice" },
+  // BT#1 fix: type was implemented in editor logic (multiple_choice_pick2)
+  // but missing from picker — admin couldn't select. Now exposed for both
+  // Reading + Listening per IELTS spec (Choose TWO letters, A–E).
+  { value: "multiple_choice_pick2", label: "Multiple Choice (Chọn 2 đáp án)" },
   { value: "true_false_not_given", label: "True / False / Not Given" },
   { value: "yes_no_not_given", label: "Yes / No / Not Given" },
   { value: "matching_headings", label: "Matching Headings" },
@@ -91,6 +95,7 @@ const readingQuestionTypes = [
 
 const listeningQuestionTypes = [
   { value: "multiple_choice", label: "Multiple Choice" },
+  { value: "multiple_choice_pick2", label: "Multiple Choice (Chọn 2 đáp án)" },
   { value: "matching", label: "Matching" },
   { value: "plan_map_diagram", label: "Plan / Map / Diagram" },
   { value: "form_completion", label: "Form Completion" },
@@ -2044,6 +2049,20 @@ export default function TestEditorPage() {
                                 onChange={async (e) => {
                                   const file = e.target.files?.[0];
                                   if (!file) return;
+
+                                  // BT#2 — pre-validation + actionable error messages.
+                                  if (!file.type.startsWith("image/")) {
+                                    toast.error("File phải là hình ảnh (PNG/JPG/WebP/GIF).");
+                                    e.target.value = "";
+                                    return;
+                                  }
+                                  const MAX_SIZE_MB = 10;
+                                  if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+                                    toast.error(`Ảnh quá lớn (${(file.size / 1024 / 1024).toFixed(1)} MB). Tối đa ${MAX_SIZE_MB} MB.`);
+                                    e.target.value = "";
+                                    return;
+                                  }
+
                                   const ext = file.name.split(".").pop() || "png";
                                   // Structured file naming: {testName}_Part{n}_diagram_{groupIndex}.{ext}
                                   const safeName = (testName || "untitled").replace(/[^a-zA-Z0-9_\-\u00C0-\u024F\u1E00-\u1EFF ]/g, "").replace(/\s+/g, "_").slice(0, 60);
@@ -2056,8 +2075,25 @@ export default function TestEditorPage() {
                                   const toastId = toast.loading("Đang upload ảnh sơ đồ...");
 
                                   // 1. Upload to Supabase Storage
-                                  const { error } = await supabase.storage.from("exercise-images").upload(storagePath, file, { upsert: true });
-                                  if (error) { toast.error("Upload thất bại", { id: toastId }); return; }
+                                  const { error: uploadErr } = await supabase.storage.from("exercise-images").upload(storagePath, file, { upsert: true });
+                                  if (uploadErr) {
+                                    // BT#2: Surface actual error + console.error for debug.
+                                    // Common causes: bucket missing ("Bucket not found"), RLS
+                                    // denial, payload too large.
+                                    console.error("[diagram upload] storage error:", uploadErr);
+                                    const msg = (uploadErr as { message?: string }).message ?? String(uploadErr);
+                                    let hint = "";
+                                    if (/bucket not found|404/i.test(msg)) {
+                                      hint = "\nBucket 'exercise-images' chưa tồn tại — liên hệ Lovable tạo bucket.";
+                                    } else if (/row-level security|RLS|permission|denied/i.test(msg)) {
+                                      hint = "\nRLS policy chặn — admin chưa có quyền upload vào bucket này.";
+                                    } else if (/payload too large|413/i.test(msg)) {
+                                      hint = "\nFile vượt giới hạn server (cần config Supabase storage).";
+                                    }
+                                    toast.error(`Upload thất bại: ${msg}${hint}`, { id: toastId, duration: 8000 });
+                                    e.target.value = "";
+                                    return;
+                                  }
                                   const { data: urlData } = supabase.storage.from("exercise-images").getPublicUrl(storagePath);
                                   const publicUrl = urlData.publicUrl;
 

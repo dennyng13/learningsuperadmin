@@ -36,7 +36,10 @@ export const QUESTION_TYPE_LABELS_VI: Record<string, string> = {
 /* ───── Merged English label map (old generic + new r_/l_ types) ───── */
 export const ALL_TYPE_LABELS_EN: Record<string, string> = {
   MULTIPLE_CHOICE_ONE_ANSWER: "Multiple Choice",
-  MULTIPLE_CHOICE_MORE_ANSWERS: "Multiple Choice (Multi)",
+  MULTIPLE_CHOICE_MORE_ANSWERS: "Multiple Choice (Pick 2)",
+  multiple_choice_pick2: "Multiple Choice (Pick 2)",
+  r_multiple_choice_pick2: "Multiple Choice (Pick 2)",
+  l_multiple_choice_pick2: "Multiple Choice (Pick 2)",
   IDENTIFYING_INFORMATION: "True / False / Not Given",
   COMPLETION: "Completion / Gap Filling",
   MATCHING: "Matching",
@@ -59,6 +62,8 @@ export function getShortTypeLabel(type: string): string {
   const short: Record<string, string> = {
     r_multiple_choice: "MC", l_multiple_choice: "MC",
     r_identifying_information: "T/F/NG",
+    multiple_choice_pick2: "MC (Pick 2)",
+    r_multiple_choice_pick2: "MC (Pick 2)", l_multiple_choice_pick2: "MC (Pick 2)",
     r_identifying_views: "Y/N/NG",
     r_matching_information: "Match Info",
     r_matching_headings: "Headings",
@@ -85,6 +90,7 @@ export function getShortTypeLabel(type: string): string {
 /* ───── Exam type → practice URL mapping ───── */
 const EXAM_TO_PRACTICE_TYPE: Record<string, string> = {
   r_multiple_choice: "multiple_choice",
+  r_multiple_choice_pick2: "multiple_choice",
   r_identifying_information: "tfng",
   r_identifying_views: "ynng",
   r_matching_headings: "matching_headings",
@@ -96,6 +102,7 @@ const EXAM_TO_PRACTICE_TYPE: Record<string, string> = {
   r_diagram_label_completion: "diagram_labeling",
   r_short_answer: "short_answer",
   l_multiple_choice: "multiple_choice",
+  l_multiple_choice_pick2: "multiple_choice",
   l_matching: "multiple_choice",
   l_plan_map_diagram: "diagram_labeling",
   l_form_note_table_completion: "form_completion",
