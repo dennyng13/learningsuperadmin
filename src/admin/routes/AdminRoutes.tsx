@@ -24,6 +24,7 @@ const ClassManagementPage = lazy(() => import("@admin/features/classes/pages/Cla
 const CreateClassWizardPage = lazy(() => import("@admin/features/classes/pages/CreateClassWizardPage"));
 const ClassesListPage = lazy(() => import("@admin/features/classes/pages/ClassesListPage"));
 const AdminClassDetailPage = lazy(() => import("@admin/features/classes/pages/AdminClassDetailPage"));
+const ClassInvitationsListPage = lazy(() => import("@admin/features/classes/pages/ClassInvitationsListPage"));
 const PermissionsPage = lazy(() => import("@admin/features/permissions/pages/PermissionsPage"));
 const FlashcardSetsPage = lazy(() => import("@admin/features/flashcards/pages/FlashcardSetsPage"));
 const PracticeExerciseDetailPage = lazy(() => import("@admin/features/practice/pages/PracticeExerciseDetailPage"));
@@ -114,6 +115,7 @@ export default function AppRoutes() {
           {/* Classes & Schedule */}
           <Route path="classes" element={<ClassManagementPage />} />
           <Route path="classes/list" element={<ClassesListPage />} />
+          <Route path="classes/invitations" element={<ClassInvitationsListPage />} />
           <Route path="classes/new" element={<CreateClassWizardPage />} />
           <Route path="classes/:id" element={<AdminClassDetailPage />} />
           <Route path="schedule" element={<AdminSchedulePage />} />
