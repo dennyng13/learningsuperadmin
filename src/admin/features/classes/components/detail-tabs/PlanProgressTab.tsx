@@ -1,8 +1,8 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  BookOpen, ClipboardList, ExternalLink, AlertTriangle,
+  BookOpen, ClipboardList, ExternalLink, AlertTriangle, Pencil,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@shared/components/ui/button";
@@ -10,6 +10,7 @@ import { Badge } from "@shared/components/ui/badge";
 import { Skeleton } from "@shared/components/ui/skeleton";
 import { cn } from "@shared/lib/utils";
 import { formatDateDDMMYYYY } from "@shared/utils/dateFormat";
+import { ClassPlanEditDialog } from "@admin/features/classes/components/ClassPlanEditDialog";
 
 /* /classes/:id Tab "Tiến độ" — read-only Study Plan instance display.
    Replace placeholder BackendPendingTab. Scope: Bug #5 fix.
@@ -54,6 +55,8 @@ function formatDate(iso: string | null): string {
 }
 
 export function PlanProgressTab({ classId, studyPlanId }: Props) {
+  const qc = useQueryClient();
+  const [editOpen, setEditOpen] = useState(false);
   if (!studyPlanId) {
     return (
       <div className="rounded-2xl border border-dashed bg-muted/20 p-10 text-center space-y-3">
@@ -187,9 +190,18 @@ export function PlanProgressTab({ classId, studyPlanId }: Props) {
               );
             })()}
           </div>
-          {plan.status && (
-            <Badge variant="outline" className="text-[10px]">{plan.status}</Badge>
-          )}
+          <div className="flex items-center gap-2 shrink-0">
+            {plan.status && (
+              <Badge variant="outline" className="text-[10px]">{plan.status}</Badge>
+            )}
+            <Button
+              type="button" size="sm" variant="outline"
+              onClick={() => setEditOpen(true)}
+              className="h-7 gap-1 text-xs"
+            >
+              <Pencil className="h-3 w-3" /> Sửa kế hoạch
+            </Button>
+          </div>
         </div>
 
         <div className="space-y-1.5">
@@ -272,6 +284,19 @@ export function PlanProgressTab({ classId, studyPlanId }: Props) {
           </Link>
         </Button>
       </div>
+
+      {/* F3.6 Tier 2 instance edit dialog */}
+      {studyPlanId && (
+        <ClassPlanEditDialog
+          open={editOpen}
+          onOpenChange={setEditOpen}
+          studyPlanId={studyPlanId}
+          onUpdated={() => {
+            qc.invalidateQueries({ queryKey: ["plan-progress-plan", studyPlanId] });
+            qc.invalidateQueries({ queryKey: ["plan-progress-entries", studyPlanId] });
+          }}
+        />
+      )}
     </div>
   );
 }
