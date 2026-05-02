@@ -25,6 +25,17 @@ Source of truth for page metadata (title / icon / scope / ETA): `src/admin/featu
 | 2026-05-02 | `/expenses` | 6.2.2 Other expenses | NEW UI placeholder | `expenses` table + categories | TBD |
 | 2026-05-02 | `/documents` | 7.1 Documents | NEW UI placeholder | Storage bucket + `documents` metadata table | TBD |
 
+## Mock data placeholders (rendered inline, not separate routes)
+
+These are visible UI elements that show "Mock" labels because their backend data sources don't exist yet.
+
+| Date added | Component / Page | What's mocked | Backend dependency | Real data status |
+|------------|------------------|---------------|--------------------|------------------|
+| 2026-05-03 | ProgramDetailPage KPI strip | "Doanh thu (ước)" KPI card | Aggregation view: `revenue_by_program` (sum payments / class enrollment per program) | TBD |
+| 2026-05-03 | ProgramDetailPage KPI strip | "Hoàn thành (ước)" KPI card | Cohort tracking + completion percentage materialized view | TBD |
+
+Real data on same KPI strip: classes count + students count (from `classes` table query, scoped by `program` key).
+
 ## Aliases (not placeholders, just redirects)
 
 | Alias path | Target | Reason |

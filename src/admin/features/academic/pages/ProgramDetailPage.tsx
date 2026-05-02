@@ -1,9 +1,12 @@
 import { useMemo, useState } from "react";
 import { Link, useParams, Navigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   ArrowLeft, BookOpen, EyeOff, Layers, Loader2, Pencil, Plus,
+  School, Users, Wallet, Target,
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@shared/components/ui/button";
 import {
   useCoursesAdmin,
@@ -71,6 +74,34 @@ export default function ProgramDetailPage() {
     return levels.filter((l) => set.has(l.id));
   }, [program, levels]);
 
+  /* ─── KPI strip: real lớp + student counts từ classes table.
+     Doanh thu + completion là MOCK placeholders (chưa có backend). */
+  const kpiQ = useQuery({
+    queryKey: ["program-kpis", program?.key],
+    enabled: !!program?.key,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("classes")
+        .select("id, lifecycle_status, student_count, max_students")
+        .eq("program", program!.key);
+      if (error) throw error;
+      const rows = (data ?? []) as Array<{
+        id: string;
+        lifecycle_status: string | null;
+        student_count: number | null;
+        max_students: number | null;
+      }>;
+      const running = rows.filter((r) =>
+        r.lifecycle_status === "in_progress" || r.lifecycle_status === "ready",
+      ).length;
+      const totalStudents = rows.reduce((sum, r) => sum + (r.student_count ?? 0), 0);
+      const totalCapacity = rows.reduce((sum, r) => sum + (r.max_students ?? 0), 0);
+      const utilization = totalCapacity > 0 ? Math.round((totalStudents / totalCapacity) * 100) : 0;
+      return { totalClasses: rows.length, running, totalStudents, utilization };
+    },
+    staleTime: 60_000,
+  });
+
   if (programsLoading) {
     return (
       <div className="flex justify-center py-16">
@@ -134,6 +165,44 @@ export default function ProgramDetailPage() {
 
       {/* Note: Program chỉ giữ phạm vi (key/name/description ngắn).
           Mô tả chi tiết + đầu ra giờ thuộc về Course bên dưới. */}
+
+      {/* KPI strip — inspired by Admin Portal mockup pages-program-detail.
+         Real data: classes count + students. Mock placeholders: doanh thu
+         + completion (chưa có backend → đợi Lovable ship aggregation views). */}
+      <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <KpiCard
+          icon={School}
+          label="Lớp đang chạy"
+          value={kpiQ.data ? `${kpiQ.data.running}/${kpiQ.data.totalClasses}` : "—"}
+          hint={kpiQ.data ? `${kpiQ.data.totalClasses} lớp tổng` : undefined}
+          tone="teal"
+          loading={kpiQ.isLoading}
+        />
+        <KpiCard
+          icon={Users}
+          label="Học viên"
+          value={kpiQ.data ? String(kpiQ.data.totalStudents) : "—"}
+          hint={kpiQ.data ? `${kpiQ.data.utilization}% capacity` : undefined}
+          tone="coral"
+          loading={kpiQ.isLoading}
+        />
+        <KpiCard
+          icon={Wallet}
+          label="Doanh thu (ước)"
+          value="—"
+          hint="Chờ backend revenue aggregation"
+          tone="amber"
+          mock
+        />
+        <KpiCard
+          icon={Target}
+          label="Hoàn thành (ước)"
+          value="—"
+          hint="Chờ backend cohort tracking"
+          tone="violet"
+          mock
+        />
+      </section>
 
       {/* Cấp độ thuộc chương trình */}
       <ProgramLevelManager program={program} allLevels={levels} onChanged={onChanged} />
@@ -212,6 +281,65 @@ export default function ProgramDetailPage() {
         initial={program}
         onSubmit={handleProgramSubmit}
       />
+    </div>
+  );
+}
+
+/* ─── Inline KPI card ─── */
+
+interface KpiCardProps {
+  icon: typeof School;
+  label: string;
+  value: string;
+  hint?: string;
+  tone: "teal" | "coral" | "amber" | "violet";
+  loading?: boolean;
+  /** True if value là mock placeholder, không phải real data. */
+  mock?: boolean;
+}
+
+const TONE_BG: Record<KpiCardProps["tone"], string> = {
+  teal:   "bg-teal-50 border-teal-200 dark:bg-teal-950/40 dark:border-teal-900",
+  coral:  "bg-rose-50 border-rose-200 dark:bg-rose-950/40 dark:border-rose-900",
+  amber:  "bg-amber-50 border-amber-200 dark:bg-amber-950/40 dark:border-amber-900",
+  violet: "bg-violet-50 border-violet-200 dark:bg-violet-950/40 dark:border-violet-900",
+};
+
+const TONE_ICON: Record<KpiCardProps["tone"], string> = {
+  teal:   "text-teal-600 dark:text-teal-400",
+  coral:  "text-rose-600 dark:text-rose-400",
+  amber:  "text-amber-600 dark:text-amber-400",
+  violet: "text-violet-600 dark:text-violet-400",
+};
+
+function KpiCard({ icon: Icon, label, value, hint, tone, loading, mock }: KpiCardProps) {
+  return (
+    <div className={cn(
+      "rounded-xl border p-3.5 space-y-1.5 relative",
+      TONE_BG[tone],
+      mock && "opacity-70",
+    )}>
+      <div className="flex items-center justify-between">
+        <Icon className={cn("h-4 w-4", TONE_ICON[tone])} />
+        {mock && (
+          <span className="text-[9px] uppercase tracking-wider font-bold text-muted-foreground border border-muted-foreground/30 rounded px-1 py-0.5">
+            Mock
+          </span>
+        )}
+      </div>
+      <p className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">
+        {label}
+      </p>
+      {loading ? (
+        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+      ) : (
+        <p className="font-display text-xl font-extrabold tabular-nums leading-tight">
+          {value}
+        </p>
+      )}
+      {hint && (
+        <p className="text-[10px] text-muted-foreground leading-tight">{hint}</p>
+      )}
     </div>
   );
 }
