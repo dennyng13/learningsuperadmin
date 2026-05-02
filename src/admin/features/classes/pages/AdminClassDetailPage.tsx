@@ -7,6 +7,7 @@ import {
   GraduationCap, Calendar, Users, BarChart3, Activity, Megaphone,
   Settings, MoreVertical, RefreshCw, AlertTriangle,
   LayoutDashboard, Wallet, Banknote, Clock, Copy, FilePlus2,
+  Mail, Send, RotateCw,
 } from "lucide-react";
 import { DetailPageLayout } from "@shared/components/layouts/DetailPageLayout";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@shared/components/ui/tabs";
@@ -161,6 +162,65 @@ export default function AdminClassDetailPage() {
     onError: (e: Error) => toast.error(`Xoá thất bại: ${e.message}`),
   });
 
+  /* ─── Day 7 invitation flow — summary query + send/resend mutations ─── */
+  const invitationSummaryQ = useQuery({
+    queryKey: ["class-invitation-summary", classId],
+    enabled: !!classId,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("class_invitations")
+        .select("id, status, email_sent_at")
+        .eq("class_id", classId);
+      if (error) throw error;
+      const rows = (data ?? []) as { id: string; status: string; email_sent_at: string | null }[];
+      const total = rows.length;
+      const pending = rows.filter((r) => r.status === "pending").length;
+      const accepted = rows.filter((r) => r.status === "accepted").length;
+      const rejected = rows.filter((r) => r.status === "rejected").length;
+      const everSent = rows.some((r) => !!r.email_sent_at);
+      return { total, pending, accepted, rejected, everSent, rows };
+    },
+    staleTime: 30_000,
+  });
+
+  const sendInvitationsMut = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.functions.invoke("send-class-invitations", {
+        body: { class_id: classId },
+      });
+      if (error) throw new Error(error.message ?? "Edge function error");
+    },
+    onSuccess: () => {
+      toast.success("Đã gửi lời mời tới giáo viên.");
+      qc.invalidateQueries({ queryKey: ["class-invitation-summary", classId] });
+      qc.invalidateQueries({ queryKey: ["admin-class-invitations", classId] });
+    },
+    onError: (e: Error) => toast.error(`Không gửi được: ${e.message}`),
+  });
+
+  const resendInvitationsMut = useMutation({
+    mutationFn: async () => {
+      // Reset email_sent_at via batch_resend RPC, then re-invoke edge function.
+      const { error: clearErr } = await (supabase.rpc as any)("batch_resend_class_invitations", {
+        p_class_id: classId,
+        p_invitation_ids: null,
+      });
+      if (clearErr) throw new Error(clearErr.message);
+      const { error: sendErr } = await supabase.functions.invoke("send-class-invitations", {
+        body: { class_id: classId },
+      });
+      if (sendErr) throw new Error(sendErr.message ?? "Edge function error");
+    },
+    onSuccess: () => {
+      toast.success("Đã gửi lại lời mời.");
+      qc.invalidateQueries({ queryKey: ["class-invitation-summary", classId] });
+      qc.invalidateQueries({ queryKey: ["admin-class-invitations", classId] });
+    },
+    onError: (e: Error) => toast.error(`Gửi lại thất bại: ${e.message}`),
+  });
+
+  const [confirmResendInvites, setConfirmResendInvites] = useState(false);
+
   const handleStatusChange = (next: string) => {
     const status = next as ClassLifecycleStatus;
     if (status === "cancelled") {
@@ -251,6 +311,31 @@ export default function AdminClassDetailPage() {
           />
         )}
 
+      {/* Invitation status indicator — Day 7 UX */}
+      {invitationSummaryQ.data && (
+        <div className="hidden md:inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1.5 rounded-md border">
+          <Mail className="h-3 w-3 shrink-0" />
+          {invitationSummaryQ.data.total === 0 ? (
+            <span className="text-muted-foreground">Chưa có lời mời</span>
+          ) : !invitationSummaryQ.data.everSent ? (
+            <span className="text-amber-700 dark:text-amber-400">
+              Chưa gửi · {invitationSummaryQ.data.total} lời mời chờ
+            </span>
+          ) : (
+            <span className="text-foreground">
+              <strong>{invitationSummaryQ.data.accepted}</strong>
+              <span className="text-muted-foreground">/{invitationSummaryQ.data.total}</span>
+              <span className="ml-1 text-muted-foreground">đã đồng ý</span>
+              {invitationSummaryQ.data.pending > 0 && (
+                <span className="ml-1 text-amber-700 dark:text-amber-400">
+                  · {invitationSummaryQ.data.pending} chờ
+                </span>
+              )}
+            </span>
+          )}
+        </div>
+      )}
+
       {/* Status selector */}
       <Select
         value={cls.lifecycle_status ?? "planning"}
@@ -291,6 +376,28 @@ export default function AdminClassDetailPage() {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
+          {/* Day 7 invitation flow — Mời (lần đầu) hoặc Mời lại (đã gửi) */}
+          {invitationSummaryQ.data && invitationSummaryQ.data.total > 0 && (
+            invitationSummaryQ.data.everSent ? (
+              <DropdownMenuItem
+                onClick={() => setConfirmResendInvites(true)}
+                className="text-xs gap-1.5"
+                disabled={resendInvitationsMut.isPending}
+              >
+                <RotateCw className="h-3.5 w-3.5" /> Mời lại giáo viên
+              </DropdownMenuItem>
+            ) : (
+              <DropdownMenuItem
+                onClick={() => sendInvitationsMut.mutate()}
+                className="text-xs gap-1.5"
+                disabled={sendInvitationsMut.isPending}
+              >
+                <Send className="h-3.5 w-3.5" /> Mời giáo viên
+              </DropdownMenuItem>
+            )
+          )}
+          <DropdownMenuSeparator />
+
           {/* F3.3 Path B — clone plan to target class.
               Dialog tự resolve plan → empty state nếu không có. */}
           <DropdownMenuItem
@@ -484,6 +591,41 @@ export default function AdminClassDetailPage() {
       </Dialog>
 
       {/* ─── Delete confirm (gõ tên lớp để xác nhận) ─── */}
+      {/* Resend invitations confirm — Day 7 UX */}
+      <AlertDialog open={confirmResendInvites} onOpenChange={setConfirmResendInvites}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Gửi lại lời mời tới giáo viên?</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p>
+                  Sẽ gửi lại email tới{" "}
+                  <strong>{invitationSummaryQ.data?.pending ?? 0} giáo viên đang chờ phản hồi</strong>.
+                  Email gửi trước đó sẽ bị reset (email_sent_at xoá) và gửi mới ngay.
+                </p>
+                {invitationSummaryQ.data?.accepted ? (
+                  <p className="text-xs text-muted-foreground">
+                    {invitationSummaryQ.data.accepted} giáo viên đã đồng ý — sẽ KHÔNG được gửi lại.
+                  </p>
+                ) : null}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Hủy</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                resendInvitationsMut.mutate();
+                setConfirmResendInvites(false);
+              }}
+              disabled={resendInvitationsMut.isPending}
+            >
+              {resendInvitationsMut.isPending ? "Đang gửi..." : "Gửi lại"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
         <AlertDialogContent>
           <AlertDialogHeader>

@@ -9,7 +9,7 @@ import {
   DialogPop, DialogPopContent, DialogPopHeader, DialogPopTitle, DialogPopDescription,
 } from "@shared/components/ui/dialog-pop";
 import { PopButton } from "@shared/components/ui/pop-button";
-import { ArrowLeft, ArrowRight, CalendarDays, Check, Loader2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, CalendarDays, Check, Loader2, Mail } from "lucide-react";
 import { format as fmtDate } from "date-fns";
 import { toast } from "sonner";
 import Step1ClassInfo from "../components/wizard/Step1ClassInfo";
@@ -159,6 +159,13 @@ export default function CreateClassWizardPage() {
   const [showEndDateChangeConfirm, setShowEndDateChangeConfirm] = useState(false);
   const [pendingEndDate, setPendingEndDate] = useState<string | null>(null);
   const [previousEndDate, setPreviousEndDate] = useState<string | null>(null);
+
+  /* User-controlled invitation flow (per Day 7 UX request "không tự động
+     gửi thư mời"). Default OFF → admin chủ động gửi sau từ class detail.
+     `invitationDeadlineDate` ISO yyyy-MM-dd; auto-default = 7 ngày trước
+     start_date (min hôm nay+1) khi user toggle ON. */
+  const [sendInvitationsOnCreate, setSendInvitationsOnCreate] = useState(false);
+  const [invitationDeadlineDate, setInvitationDeadlineDate] = useState<string>("");
 
   const createMutation = useCreateClass();
   const createWithTemplateMutation = useCreateClassWithTemplate();
@@ -448,33 +455,26 @@ export default function CreateClassWizardPage() {
 
       toast.success(`Đã tạo lớp "${classInfo.class_name}" với ${teachers.length} giáo viên + ${active.length} buổi`);
 
-      // Stage P1 — set a sensible default respond_deadline for every newly-created
-      // pending invitation: 7 days before class start, but at least 24h from now.
-      // Failures here are non-fatal (admin can still set deadline manually in
-      // ClassInvitationsDialog).
-      if (newClassId && classInfo.start_date) {
+      // Day 7 UX — set respond_deadline cho các invitations mới chỉ khi user
+      // chọn "Gửi thư mời ngay" + có invitationDeadlineDate. Nếu không, admin
+      // sẽ set deadline manual sau qua ClassInvitationsDialog.
+      if (newClassId && sendInvitationsOnCreate && invitationDeadlineDate) {
         try {
-          const startMs = new Date(classInfo.start_date + "T00:00:00").getTime();
-          if (!Number.isNaN(startMs)) {
-            const minDeadlineMs = Date.now() + 24 * 60 * 60 * 1000;
-            const desiredDeadlineMs = startMs - 7 * 24 * 60 * 60 * 1000;
-            const deadlineMs = Math.max(minDeadlineMs, desiredDeadlineMs);
-            const deadlineIso = new Date(deadlineMs).toISOString();
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const { data: invs } = await (supabase.from as any)("class_invitations")
-              .select("id")
-              .eq("class_id", newClassId)
-              .eq("status", "pending");
-            await Promise.all(
-              (invs ?? []).map((row: { id: string }) =>
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                (supabase.rpc as any)("set_invitation_deadline", {
-                  p_invitation_id: row.id,
-                  p_deadline: deadlineIso,
-                }),
-              ),
-            );
-          }
+          const deadlineIso = new Date(invitationDeadlineDate + "T23:59:59").toISOString();
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { data: invs } = await (supabase.from as any)("class_invitations")
+            .select("id")
+            .eq("class_id", newClassId)
+            .eq("status", "pending");
+          await Promise.all(
+            (invs ?? []).map((row: { id: string }) =>
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              (supabase.rpc as any)("set_invitation_deadline", {
+                p_invitation_id: row.id,
+                p_deadline: deadlineIso,
+              }),
+            ),
+          );
         } catch {
           // best-effort; ignore
         }
@@ -497,16 +497,16 @@ export default function CreateClassWizardPage() {
         }
       }
 
-      // Stage P1 — best-effort auto-send invitation emails. Cron at 07:05 ICT
-      // serves as safety net for any failures here. Admin can also manually
-      // resend via LifecycleTab > "Quản lý lời mời".
-      if (newClassId) {
+      // Day 7 UX — gửi email invitations chỉ khi user opt-in.
+      // Default OFF: admin chủ động gửi từ /classes/:id 3-dot menu sau.
+      if (newClassId && sendInvitationsOnCreate) {
         try {
           await supabase.functions.invoke("send-class-invitations", {
             body: { class_id: newClassId },
           });
-        } catch {
-          // best-effort; ignore
+          toast.success(`Đã gửi ${teachers.length} lời mời cho giáo viên.`);
+        } catch (e: any) {
+          toast.error(`Không gửi được email lời mời: ${e?.message ?? "lỗi không rõ"}`);
         }
       }
 
@@ -602,7 +602,79 @@ export default function CreateClassWizardPage() {
           />
         )}
         {step === 4 && <Step3Sessions sessions={sessions} setSessions={setSessions} teachers={teachers} />}
-        {step === 5 && <Step4Confirm classInfo={classInfo} teachers={teachers} sessions={sessions} />}
+        {step === 5 && (
+          <>
+            <Step4Confirm classInfo={classInfo} teachers={teachers} sessions={sessions} />
+
+            {/* Invitation control — manual send + custom deadline (Day 7 UX) */}
+            <section className="border rounded-lg p-4 mt-4 space-y-3 bg-card">
+              <header className="flex items-start justify-between gap-3">
+                <div>
+                  <h3 className="font-display text-sm font-bold inline-flex items-center gap-1.5">
+                    <Mail className="h-4 w-4 text-primary" /> Lời mời giáo viên
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Lớp vẫn được tạo + sinh các bản ghi lời mời (status=pending).
+                    Toggle bên dưới quyết định có gửi email ngay không.
+                  </p>
+                </div>
+                <label className="inline-flex items-center gap-2 cursor-pointer shrink-0">
+                  <input
+                    type="checkbox"
+                    checked={sendInvitationsOnCreate}
+                    onChange={(e) => {
+                      const next = e.target.checked;
+                      setSendInvitationsOnCreate(next);
+                      if (next && !invitationDeadlineDate && classInfo.start_date) {
+                        // Default = 7 ngày trước start_date (min hôm nay+1)
+                        const startMs = new Date(classInfo.start_date + "T00:00:00").getTime();
+                        if (!Number.isNaN(startMs)) {
+                          const minMs = Date.now() + 24 * 60 * 60 * 1000;
+                          const desiredMs = startMs - 7 * 24 * 60 * 60 * 1000;
+                          const deadlineMs = Math.max(minMs, desiredMs);
+                          setInvitationDeadlineDate(
+                            new Date(deadlineMs).toISOString().slice(0, 10),
+                          );
+                        }
+                      }
+                    }}
+                    className="size-4 rounded accent-primary"
+                  />
+                  <span className="text-xs font-semibold">
+                    Gửi thư mời ngay sau khi tạo
+                  </span>
+                </label>
+              </header>
+
+              {sendInvitationsOnCreate && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t">
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-muted-foreground">
+                      Hạn chấp nhận lời mời
+                    </label>
+                    <input
+                      type="date"
+                      value={invitationDeadlineDate}
+                      onChange={(e) => setInvitationDeadlineDate(e.target.value)}
+                      min={new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10)}
+                      max={classInfo.start_date || undefined}
+                      className="h-9 w-full px-2 rounded-md border bg-background text-sm"
+                    />
+                    <p className="text-[10px] text-muted-foreground">
+                      Mặc định 7 ngày trước ngày bắt đầu, tối thiểu 24h kể từ bây giờ.
+                    </p>
+                  </div>
+                  <div className="text-xs text-muted-foreground bg-muted/30 rounded p-2.5 leading-relaxed">
+                    <strong className="text-foreground">Lưu ý:</strong> Email sẽ gửi
+                    đến <strong>{teachers.length}</strong> giáo viên đã chọn. Nếu
+                    không gửi ngay, anh có thể vào trang chi tiết lớp → 3-dot menu →
+                    "Mời giáo viên" để gửi sau.
+                  </div>
+                </div>
+              )}
+            </section>
+          </>
+        )}
       </div>
 
       {/* Nav */}
