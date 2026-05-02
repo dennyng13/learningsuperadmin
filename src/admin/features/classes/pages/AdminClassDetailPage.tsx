@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import {
   GraduationCap, Calendar, Users, BarChart3, Activity, Megaphone,
   Settings, MoreVertical, RefreshCw, AlertTriangle,
-  LayoutDashboard, Wallet, Banknote, Clock,
+  LayoutDashboard, Wallet, Banknote, Clock, Copy,
 } from "lucide-react";
 import { DetailPageLayout } from "@shared/components/layouts/DetailPageLayout";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@shared/components/ui/tabs";
@@ -39,6 +39,7 @@ import {
   type ClassDetail,
 } from "@admin/features/classes/components/ClassInfoCard";
 import RequestReplacementTeacherButton from "@admin/features/classes/components/RequestReplacementTeacherButton";
+import { ClonePlanDialog } from "@admin/features/classes/components/ClonePlanDialog";
 import {
   SessionsTab, StudentsTab, PlanProgressTab, ActivityTab,
   AnnouncementsTab, SettingsTab,
@@ -140,6 +141,9 @@ export default function AdminClassDetailPage() {
   /* ─── Delete dialog (Danger zone) ─── */
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleteTypedName, setDeleteTypedName] = useState("");
+
+  /* ─── F3.3 Path B: clone study plan to target class ─── */
+  const [clonePlanOpen, setClonePlanOpen] = useState(false);
   const deleteMut = useMutation({
     mutationFn: async () => {
       const { error } = await (supabase as any)
@@ -287,6 +291,18 @@ export default function AdminClassDetailPage() {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-52">
+          {/* F3.3 Path B — chỉ enable khi lớp có plan để clone. */}
+          {cls.study_plan_id && (
+            <>
+              <DropdownMenuItem
+                onClick={() => setClonePlanOpen(true)}
+                className="text-xs gap-1.5"
+              >
+                <Copy className="h-3.5 w-3.5" /> Sao chép kế hoạch học
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+            </>
+          )}
           {cls.lifecycle_status !== "archived" ? (
             <DropdownMenuItem onClick={() => setConfirmArchive(true)} className="text-xs">
               Lưu trữ lớp
@@ -476,6 +492,18 @@ export default function AdminClassDetailPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* F3.3 Path B clone study plan to target class */}
+      {cls.study_plan_id && (
+        <ClonePlanDialog
+          open={clonePlanOpen}
+          onOpenChange={setClonePlanOpen}
+          sourceClassId={cls.id}
+          sourcePlanId={cls.study_plan_id}
+          sourcePlanName={cls.study_plan_name ?? null}
+          sourceProgram={cls.program ?? null}
+        />
+      )}
     </DetailPageLayout>
   );
 }
