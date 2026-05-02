@@ -95,7 +95,24 @@ export default function ClassesListPage() {
   const [statuses, setStatuses] = useState<ClassLifecycleStatus[]>(parseStatuses(params.get("status")));
   const [sortKey, setSortKey] = useState<SortKey>((params.get("sort") as SortKey) || "start_date");
   const [sortDir, setSortDir] = useState<SortDir>((params.get("dir") as SortDir) || "desc");
-  const [view, setView] = useState<ViewMode>((params.get("view") as ViewMode) || "table");
+  /* View preference: URL param (sharable) → localStorage (per-user default)
+     → "table" (factory default). Day 7: localStorage layer added cho UX
+     persistence khi user prefer cards mode. */
+  const [view, setView] = useState<ViewMode>(() => {
+    const fromUrl = params.get("view") as ViewMode | null;
+    if (fromUrl === "table" || fromUrl === "grid") return fromUrl;
+    if (typeof window !== "undefined") {
+      const stored = window.localStorage.getItem("admin-classes-view");
+      if (stored === "table" || stored === "grid") return stored;
+    }
+    return "table";
+  });
+
+  /* Persist view to localStorage on change. */
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try { window.localStorage.setItem("admin-classes-view", view); } catch { /* ignore quota */ }
+  }, [view]);
 
   /* ─── Persist to URL ─── */
   useEffect(() => {
@@ -348,28 +365,38 @@ export default function ClassesListPage() {
                 <RotateCw className="h-3 w-3" /> Reset
               </button>
             )}
-            <div className="flex items-center rounded-pop border-[2px] border-lp-ink bg-white overflow-hidden">
+            <div
+              role="tablist"
+              aria-label="Chế độ hiển thị danh sách"
+              className="flex items-center rounded-pop border-[2px] border-lp-ink bg-white overflow-hidden"
+            >
               <button
                 type="button"
+                role="tab"
+                aria-selected={view === "table"}
                 onClick={() => setView("table")}
                 className={cn(
-                  "px-2.5 py-2 transition-colors",
+                  "inline-flex items-center gap-1.5 px-2.5 py-2 transition-colors font-display text-xs font-bold",
                   view === "table" ? "bg-lp-yellow text-lp-ink" : "text-lp-body hover:bg-lp-yellow/20",
                 )}
-                aria-label="Bảng"
+                aria-label="View bảng (List)"
               >
                 <ListIcon className="h-4 w-4" />
+                <span className="hidden sm:inline">List</span>
               </button>
               <button
                 type="button"
+                role="tab"
+                aria-selected={view === "grid"}
                 onClick={() => setView("grid")}
                 className={cn(
-                  "px-2.5 py-2 transition-colors border-l-[2px] border-lp-ink",
+                  "inline-flex items-center gap-1.5 px-2.5 py-2 transition-colors border-l-[2px] border-lp-ink font-display text-xs font-bold",
                   view === "grid" ? "bg-lp-yellow text-lp-ink" : "text-lp-body hover:bg-lp-yellow/20",
                 )}
-                aria-label="Lưới"
+                aria-label="View thẻ (Cards)"
               >
                 <LayoutGrid className="h-4 w-4" />
+                <span className="hidden sm:inline">Cards</span>
               </button>
             </div>
           </div>
