@@ -291,18 +291,23 @@ export default function AdminClassDetailPage() {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-52">
-          {/* F3.3 Path B — chỉ enable khi lớp có plan để clone. */}
-          {cls.study_plan_id && (
-            <>
-              <DropdownMenuItem
-                onClick={() => setClonePlanOpen(true)}
-                className="text-xs gap-1.5"
-              >
-                <Copy className="h-3.5 w-3.5" /> Sao chép kế hoạch học
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-            </>
-          )}
+          {/* F3.3 Path B — luôn show item; nếu chưa có plan thì hint qua toast. */}
+          <DropdownMenuItem
+            onClick={() => {
+              if (!cls.study_plan_id) {
+                toast.info(
+                  "Lớp chưa có kế hoạch học để sao chép. Vào tab Cấu hình để gán study plan trước.",
+                  { duration: 5000 },
+                );
+                return;
+              }
+              setClonePlanOpen(true);
+            }}
+            className="text-xs gap-1.5"
+          >
+            <Copy className="h-3.5 w-3.5" /> Sao chép kế hoạch học
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
           {cls.lifecycle_status !== "archived" ? (
             <DropdownMenuItem onClick={() => setConfirmArchive(true)} className="text-xs">
               Lưu trữ lớp
