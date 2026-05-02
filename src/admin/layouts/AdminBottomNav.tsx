@@ -7,22 +7,23 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@sha
 import { adminNavItems } from "@shared/config/navigation";
 
 // Primary 4 quick-access items on bottom bar (mobile).
-// Day 7 IA refactor: dashboard / classes / users / library (tests bucket).
-const PRIMARY_IDS = ["dashboard", "classes", "users", "library"];
+// Day 7 IA overhaul: dashboard / classes / users / teachers (most-used per IA).
+const PRIMARY_IDS = ["dashboard", "classes", "users", "teachers"];
 
 const primaryItems = PRIMARY_IDS
   .map(id => adminNavItems.find(i => i.id === id)!)
   .filter(Boolean);
 
 // "Thêm" sheet: tất cả item còn lại, giữ thứ tự theo group + order.
-// Day 7: 7-section IA — non-system groups span hub/people/study/center/teaching/financial/documents.
+// Day 7 IA: 7 main groups + review (modules dư) + system (super_admin).
 const NON_SYSTEM_GROUPS = [
   "hub", "people", "study", "center", "teaching", "financial", "documents",
 ] as const;
 const moreMainItems = adminNavItems
   .filter(i => NON_SYSTEM_GROUPS.includes(i.group as typeof NON_SYSTEM_GROUPS[number]) && !PRIMARY_IDS.includes(i.id))
   .sort((a, b) => a.order - b.order);
-const moreHrItems: typeof moreMainItems = []; // legacy slot — preserved API surface, no items now
+// Modules dư — "Đang xem xét" muted ở cuối sheet.
+const moreHrItems = adminNavItems.filter(i => i.group === "review").sort((a, b) => a.order - b.order);
 const moreSystemItems = adminNavItems.filter(i => i.group === "system").sort((a, b) => a.order - b.order);
 
 function triggerHaptic() {

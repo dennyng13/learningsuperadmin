@@ -6,7 +6,7 @@ import {
 import { adminNavItems } from "@shared/config/navigation";
 
 // Group label hiển thị trong breadcrumb (không phải route — render plain text).
-// Day 7 IA refactor: 7-section structure + system (super_admin).
+// Day 7 IA refactor: 7-section structure + system (super_admin) + review.
 const GROUP_LABELS: Record<string, string> = {
   hub:       "Trang chủ",
   people:    "Quản lý nhân sự",
@@ -16,13 +16,14 @@ const GROUP_LABELS: Record<string, string> = {
   financial: "Quản lý tài chính",
   documents: "Tài liệu",
   system:    "Hệ thống",
+  review:    "Đang xem xét",
 };
 
-// Chỉ chèn cấp "group" vào breadcrumb cho các nhóm con (people / center /
-// teaching / financial / documents / system). Group "hub" + "study" ở top-level
-// (sidebar mặc định mở rộng) nên bỏ qua để tránh lặp lại "Quản lý học tập".
+// Chỉ chèn cấp "group" vào breadcrumb cho các nhóm con (people / study / center /
+// teaching / financial / documents / system / review). Group "hub" ở top-level
+// nên bỏ qua.
 const SHOW_GROUP_FOR = new Set([
-  "people", "center", "teaching", "financial", "documents", "system",
+  "people", "study", "center", "teaching", "financial", "documents", "system", "review",
 ]);
 const routeGroup: Record<string, string> = Object.fromEntries(
   adminNavItems

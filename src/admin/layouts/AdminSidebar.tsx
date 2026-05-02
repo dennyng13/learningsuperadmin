@@ -3,7 +3,7 @@ import { NavLink } from "@shared/components/misc/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@shared/hooks/useAuth";
 import { cn } from "@shared/lib/utils";
-import { adminNavItems } from "@shared/config/navigation";
+import { adminNavItems, type NavItem } from "@shared/config/navigation";
 import { usePendingDraftCount } from "@shared/hooks/useAvailabilityDrafts";
 import { useBrandAsset } from "@shared/hooks/useBrandAsset";
 import { useOrgShortName } from "@shared/hooks/useOrgShortName";
@@ -16,7 +16,8 @@ type GroupKey =
   | "teaching"
   | "financial"
   | "documents"
-  | "system";
+  | "system"
+  | "review";
 
 const GROUP_LABELS: Record<GroupKey, string> = {
   hub:       "Trang chủ",
@@ -27,10 +28,12 @@ const GROUP_LABELS: Record<GroupKey, string> = {
   financial: "Quản lý tài chính",
   documents: "Tài liệu",
   system:    "Hệ thống",
+  review:    "Đang xem xét",
 };
 
 const GROUP_ORDER: GroupKey[] = [
-  "hub", "people", "study", "center", "teaching", "financial", "documents", "system",
+  "hub", "people", "study", "center", "teaching", "financial", "documents",
+  "review", "system",
 ];
 
 const byOrder = (a: { order: number }, b: { order: number }) => a.order - b.order;
@@ -65,12 +68,71 @@ export function AdminSidebar() {
 
   const visibleItems = adminNavItems.filter((i) => !i.superAdminOnly || isSuperAdmin);
 
+  /* Group items theo group key, giữ nguyên thứ tự trong array. */
+  const itemsByGroup = (groupKey: GroupKey) =>
+    visibleItems.filter((i) => i.group === groupKey).sort(byOrder);
+
+  /* Cluster items by subheader within a group, preserving order. Items
+     without subheader come first in a "no header" cluster. */
+  const clusterBySubheader = (items: NavItem[]) => {
+    const clusters: { subheader: string | null; items: NavItem[] }[] = [];
+    items.forEach((item) => {
+      const sub = item.subheader ?? null;
+      const last = clusters[clusters.length - 1];
+      if (last && last.subheader === sub) {
+        last.items.push(item);
+      } else {
+        clusters.push({ subheader: sub, items: [item] });
+      }
+    });
+    return clusters;
+  };
+
+  const renderItem = (item: NavItem, opts?: { muted?: boolean }) => {
+    const active = isActive(item.route);
+    const badgeCount = item.id === "availability-drafts" ? pendingDrafts : 0;
+    const Icon = item.icon;
+    const muted = opts?.muted ?? false;
+    return (
+      <li key={item.id}>
+        <NavLink
+          to={item.route}
+          end={item.end}
+          className={cn(
+            "group w-full flex items-center gap-3 px-3 py-2 rounded-pop text-left text-sm font-body font-medium",
+            "transition-all duration-200 ease-bounce",
+            active
+              ? "bg-lp-teal text-white shadow-pop-xs"
+              : muted
+                ? "text-white/45 hover:bg-white/5 hover:text-white/70"
+                : "text-white/80 hover:bg-white/10 hover:text-white hover:translate-x-1",
+          )}
+        >
+          <Icon className="size-[18px] shrink-0" strokeWidth={2} />
+          <span className="flex-1 truncate">{item.label}</span>
+          {badgeCount > 0 && (
+            <span
+              className={cn(
+                "shrink-0 inline-flex items-center justify-center min-w-5 h-5 px-1.5 text-[10px] font-bold rounded-full border-[1.5px]",
+                active
+                  ? "bg-white text-lp-ink border-lp-ink/40"
+                  : "bg-lp-coral text-white border-white/80",
+              )}
+            >
+              {badgeCount > 99 ? "99+" : badgeCount}
+            </span>
+          )}
+        </NavLink>
+      </li>
+    );
+  };
+
   return (
     <aside
       className="sticky top-0 self-start h-screen w-64 flex flex-col bg-lp-ink text-white shrink-0"
       data-portal="admin"
     >
-      {/* Scoped scrollbar style — teal indicator on the nav scroll area */}
+      {/* Scoped scrollbar style */}
       <style>{`
         .admin-sidebar-scroll {
           scrollbar-width: thin;
@@ -113,51 +175,45 @@ export function AdminSidebar() {
       <nav className="admin-sidebar-scroll flex-1 py-3 px-2 overflow-y-auto" aria-label="Admin navigation">
         {GROUP_ORDER.map((groupKey) => {
           if (groupKey === "system" && !isSuperAdmin) return null;
-          const items = visibleItems.filter((i) => i.group === groupKey).sort(byOrder);
+          const items = itemsByGroup(groupKey);
           if (items.length === 0) return null;
 
+          const isReview = groupKey === "review";
+          const clusters = clusterBySubheader(items);
+
           return (
-            <div key={groupKey} className="mb-4 last:mb-0">
-              <div className="px-3 mb-1.5 text-[10px] uppercase tracking-[0.1em] font-display font-bold text-white/50">
+            <div
+              key={groupKey}
+              className={cn(
+                "mb-4 last:mb-0",
+                isReview && "mt-6 pt-3 border-t-2 border-white/10",
+              )}
+            >
+              <div
+                className={cn(
+                  "px-3 mb-1.5 text-[10px] uppercase tracking-[0.1em] font-display font-bold",
+                  isReview ? "text-white/35" : "text-white/50",
+                )}
+              >
                 {GROUP_LABELS[groupKey]}
+                {isReview && (
+                  <span className="ml-1.5 text-white/30 normal-case font-normal tracking-normal">
+                    · review
+                  </span>
+                )}
               </div>
-              <ul className="space-y-1">
-                {items.map((item) => {
-                  const active = isActive(item.route);
-                  const badgeCount = item.id === "availability-drafts" ? pendingDrafts : 0;
-                  const Icon = item.icon;
-                  return (
-                    <li key={item.id}>
-                      <NavLink
-                        to={item.route}
-                        end={item.end}
-                        className={cn(
-                          "group w-full flex items-center gap-3 px-3 py-2 rounded-pop text-left text-sm font-body font-medium",
-                          "transition-all duration-200 ease-bounce",
-                          active
-                            ? "bg-lp-teal text-white shadow-pop-xs"
-                            : "text-white/80 hover:bg-white/10 hover:text-white hover:translate-x-1",
-                        )}
-                      >
-                        <Icon className="size-[18px] shrink-0" strokeWidth={2} />
-                        <span className="flex-1 truncate">{item.label}</span>
-                        {badgeCount > 0 && (
-                          <span
-                            className={cn(
-                              "shrink-0 inline-flex items-center justify-center min-w-5 h-5 px-1.5 text-[10px] font-bold rounded-full border-[1.5px]",
-                              active
-                                ? "bg-white text-lp-ink border-lp-ink/40"
-                                : "bg-lp-coral text-white border-white/80",
-                            )}
-                          >
-                            {badgeCount > 99 ? "99+" : badgeCount}
-                          </span>
-                        )}
-                      </NavLink>
-                    </li>
-                  );
-                })}
-              </ul>
+              {clusters.map((cluster, ci) => (
+                <div key={ci} className={ci > 0 ? "mt-2" : undefined}>
+                  {cluster.subheader && (
+                    <div className="px-3 mb-1 text-[9px] uppercase tracking-wider text-white/35 font-semibold">
+                      {cluster.subheader}
+                    </div>
+                  )}
+                  <ul className="space-y-1">
+                    {cluster.items.map((item) => renderItem(item, { muted: isReview }))}
+                  </ul>
+                </div>
+              ))}
             </div>
           );
         })}

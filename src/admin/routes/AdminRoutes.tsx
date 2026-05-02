@@ -6,6 +6,7 @@ import { ProtectedAdminRoute } from "@admin/guards/ProtectedAdminRoute";
 import { SuperAdminRoute } from "@admin/guards/SuperAdminRoute";
 import { ModuleAccessRoute } from "@admin/guards/ModuleAccessRoute";
 import { ADMIN_MODULE_KEYS } from "@shared/hooks/useUserModuleAccess";
+import { PLACEHOLDER_ROUTES } from "@admin/features/placeholder/placeholders";
 
 const AdminLayout = lazy(() => import("@admin/layouts/AdminLayout"));
 
@@ -66,6 +67,11 @@ const ProgramsListPage = lazy(() => import("@admin/features/academic/pages/Progr
 const ProgramDetailPage = lazy(() => import("@admin/features/academic/pages/ProgramDetailPage"));
 const LibraryHubPage = lazy(() => import("@admin/features/library/pages/LibraryHubPage"));
 const SchemaHealthPage = lazy(() => import("@admin/features/schema-health/pages/SchemaHealthPage"));
+
+// Day 7 IA placeholder pages — single shared component dispatching by route metadata.
+const PlaceholderPage = lazy(() =>
+  import("@admin/features/placeholder/PlaceholderPage").then((m) => ({ default: m.PlaceholderPage })),
+);
 
 function PageLoader() {
   return (
@@ -203,6 +209,31 @@ export default function AppRoutes() {
           <Route path="brand-assets" element={<SuperAdminRoute><BrandAssetsPage /></SuperAdminRoute>} />
           <Route path="brand-assets/quotes" element={<SuperAdminRoute><MaxQuotesPage /></SuperAdminRoute>} />
           <Route path="schema-health" element={<SuperAdminRoute><SchemaHealthPage /></SuperAdminRoute>} />
+
+          {/* ─── Day 7 IA aliases ─── */}
+          <Route path="invitations" element={<Navigate to="/classes/invitations" replace />} />
+          <Route path="students" element={<Navigate to="/users" replace />} />
+          <Route path="schedules" element={<Navigate to="/schedule" replace />} />
+          <Route path="classes/create" element={<Navigate to="/classes/new" replace />} />
+          <Route path="programs" element={<Navigate to="/courses/programs" replace />} />
+
+          {/* ─── Day 7 IA placeholder routes ─── */}
+          {PLACEHOLDER_ROUTES.map((p) => (
+            <Route
+              key={p.path}
+              path={p.path}
+              element={
+                <PlaceholderPage
+                  title={p.title}
+                  subtitle={p.subtitle}
+                  icon={p.icon}
+                  description={p.description}
+                  scope={p.scope}
+                  eta={p.eta}
+                />
+              }
+            />
+          ))}
 
           {/* 404 */}
           <Route path="404" element={<NotFoundPage />} />
