@@ -13,6 +13,7 @@ import { DetailPageLayout } from "@shared/components/layouts/DetailPageLayout";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@shared/components/ui/tabs";
 import { Button } from "@shared/components/ui/button";
 import { Skeleton } from "@shared/components/ui/skeleton";
+import { cn } from "@shared/lib/utils";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@shared/components/ui/select";
