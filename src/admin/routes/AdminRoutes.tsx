@@ -21,6 +21,7 @@ const ImportPage = lazy(() => import("@admin/features/tests/pages/ImportPage"));
 const UserManagementPage = lazy(() => import("@admin/features/users/pages/UserManagementPage"));
 const TeacherManagementPage = lazy(() => import("@admin/features/users/pages/TeacherManagementPage"));
 const TeacherProfilePage = lazy(() => import("@admin/features/users/pages/TeacherProfilePage"));
+const TeachersBoardPage = lazy(() => import("@admin/features/users/pages/TeachersBoardPage"));
 const ClassManagementPage = lazy(() => import("@admin/features/classes/pages/ClassManagementPage"));
 const CreateClassWizardPage = lazy(() => import("@admin/features/classes/pages/CreateClassWizardPage"));
 const ClassesListPage = lazy(() => import("@admin/features/classes/pages/ClassesListPage"));
@@ -114,6 +115,7 @@ export default function AppRoutes() {
           {/* Users (with nested performance) */}
           <Route path="users" element={<UserManagementPage />} />
           <Route path="teachers" element={<TeacherManagementPage />} />
+          <Route path="teachers/board" element={<TeachersBoardPage />} />
           <Route path="teachers/directory" element={<TeacherManagementPage />} />
           <Route path="teachers/availability" element={<TeacherManagementPage />} />
           <Route path="teachers/performance" element={<TeacherManagementPage />} />
