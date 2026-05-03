@@ -114,6 +114,9 @@ interface BadgeRow {
   status: string;
   created_by: string;
   created_at: string;
+  color?: string; // badge display color (yellow, teal, coral, violet, sky)
+  audience?: string; // student | teacher
+  active?: boolean; // status flag for UI display
 }
 
 interface BadgeForm {
@@ -294,71 +297,120 @@ export default function BadgeManagementPage() {
             Người dùng · Badges & Achievements
           </p>
           <h1 className="font-display text-2xl md:text-3xl font-black tracking-tight">
-            Huy hiệu & <span className="text-rose-500">vinh danh</span>
+            Huy hiệu & <span style={{ color: "#FA7D64" }}>vinh danh</span>
           </h1>
           <p className="text-sm text-slate-500 mt-1.5 font-medium">
             {badges.length} huy hiệu · {activeCount} đang phát hành · {totalEarned.toLocaleString("vi-VN")} lượt nhận tới hôm nay · cập nhật realtime
           </p>
         </div>
         <div className="flex gap-2 flex-wrap">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="gap-1.5 border-2 border-slate-800 bg-white hover:bg-slate-50 shadow-[2px_2px_0_0_#0f172a]"
+          {/* pop-btn white */}
+          <button 
+            className="px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 bg-white border-2 border-slate-800 hover:bg-slate-50 transition-colors"
+            style={{ boxShadow: "2px 2px 0 0 #0f172a" }}
           >
             <Download className="h-3.5 w-3.5" /> Export thống kê
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="gap-1.5 border-2 border-amber-500 bg-amber-50 text-amber-700 hover:bg-amber-100 shadow-[2px_2px_0_0_#f59e0b]"
+          </button>
+          {/* pop-btn yellow */}
+          <button 
+            className="px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 border-2 border-slate-800 transition-colors hover:brightness-95"
+            style={{ 
+              backgroundColor: "#FCD34D", 
+              boxShadow: "2px 2px 0 0 #0f172a",
+              color: "#0f172a"
+            }}
           >
             <Sparkles className="h-3.5 w-3.5" /> Trao thủ công
-          </Button>
-          <Button 
-            size="sm" 
-            className="gap-1.5 bg-rose-500 hover:bg-rose-600 text-white border-2 border-rose-600 shadow-[2px_2px_0_0_#e11d48]"
+          </button>
+          {/* pop-btn coral */}
+          <button 
+            className="px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 border-2 border-slate-800 transition-colors hover:brightness-95"
+            style={{ 
+              backgroundColor: "#FA7D64", 
+              boxShadow: "2px 2px 0 0 #0f172a",
+              color: "#fff"
+            }}
             onClick={openCreate}
           >
             <Plus className="h-3.5 w-3.5" /> Tạo huy hiệu
-          </Button>
+          </button>
         </div>
       </div>
 
-      {/* KPI Stats - pop-card kpi style from mockup */}
+      {/* KPI Stats - pop-card kpi style matching mockup exactly */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { l: "Tổng huy hiệu", v: String(badges.length), sub: `${studentBadges} HV · ${teacherBadges} GV`, color: "rose", icon: Award },
+          { l: "Tổng huy hiệu", v: String(badges.length), sub: `${studentBadges} HV · ${teacherBadges} GV`, color: "coral", icon: Award },
           { l: "Lượt trao tháng", v: "4,182", sub: "+18% so với tháng trước", color: "teal", icon: Sparkles },
-          { l: "Tỉ lệ active", v: "67%", sub: "HV nhận ≥1 badge / tuần", color: "amber", icon: FlameIcon },
+          { l: "Tỉ lệ active", v: "67%", sub: "HV nhận ≥1 badge / tuần", color: "yellow", icon: FlameIcon },
           { l: "Top streak", v: "184d", sub: "Phạm Tuấn Anh", color: "violet", icon: Star },
         ].map(k => {
-          const colorClasses = {
-            rose: { bg: "bg-rose-500", soft: "bg-rose-50", text: "text-rose-700", border: "border-rose-200" },
-            teal: { bg: "bg-teal-500", soft: "bg-teal-50", text: "text-teal-700", border: "border-teal-200" },
-            amber: { bg: "bg-amber-400", soft: "bg-amber-50", text: "text-amber-700", border: "border-amber-200" },
-            violet: { bg: "bg-violet-500", soft: "bg-violet-50", text: "text-violet-700", border: "border-violet-200" },
+          // Color config matching mockup CSS variables
+          const colorConfig = {
+            coral: { 
+              bg: "#FA7D64", 
+              soft: "#FEF2F2", 
+              text: "#BE123C",
+              border: "#FECDD3"
+            },
+            teal: { 
+              bg: "#14B8A6", 
+              soft: "#F0FDFA", 
+              text: "#0F766E",
+              border: "#99F6E4"
+            },
+            yellow: { 
+              bg: "#FCD34D", 
+              soft: "#FEFCE8", 
+              text: "#A16207",
+              border: "#FEF08A"
+            },
+            violet: { 
+              bg: "#8B5CF6", 
+              soft: "#FAF5FF", 
+              text: "#6B21A8",
+              border: "#E9D5FF"
+            },
           }[k.color];
           const Icon = k.icon;
           return (
             <div
               key={k.l}
-              className={cn(
-                "rounded-xl border-2 p-4 min-h-[130px] transition-transform hover:-translate-y-0.5",
-                colorClasses.soft, colorClasses.border,
-                "shadow-[4px_4px_0_0_#0f172a]"
-              )}
+              className="rounded-xl border-2 border-slate-800 p-4 min-h-[130px] transition-transform hover:-translate-y-0.5"
+              style={{ 
+                backgroundColor: colorConfig.soft,
+                boxShadow: "4px 4px 0 0 #0f172a"
+              }}
             >
               <div className="flex justify-between items-start">
-                <span className={cn("text-[10px] font-extrabold uppercase tracking-wider", colorClasses.text)}>{k.l}</span>
-                <div className={cn("w-9 h-9 rounded-lg flex items-center justify-center border-2 border-slate-800", colorClasses.bg, k.color === "amber" ? "text-slate-900" : "text-white")}>
+                <span 
+                  className="text-[10px] font-extrabold uppercase tracking-wider"
+                  style={{ color: colorConfig.text }}
+                >
+                  {k.l}
+                </span>
+                <div 
+                  className="w-9 h-9 rounded-lg flex items-center justify-center border-2 border-slate-800"
+                  style={{ 
+                    backgroundColor: colorConfig.bg,
+                    color: k.color === "yellow" ? "#0f172a" : "#fff"
+                  }}
+                >
                   <Icon className="h-4 w-4" />
                 </div>
               </div>
-              <div className={cn("font-display text-[38px] font-black tracking-tight mt-3.5 leading-none", colorClasses.text)}>
+              <div 
+                className="font-display text-[38px] font-black tracking-tight mt-3.5 leading-none"
+                style={{ color: colorConfig.text }}
+              >
                 {k.v}
               </div>
-              <div className={cn("text-[11px] font-bold mt-1.5 opacity-85", colorClasses.text)}>{k.sub}</div>
+              <div 
+                className="text-[11px] font-bold mt-1.5"
+                style={{ color: colorConfig.text, opacity: 0.85 }}
+              >
+                {k.sub}
+              </div>
             </div>
           );
         })}
@@ -738,35 +790,62 @@ function inferCategory(badge: BadgeRow): string {
 const HARD_SHADOW = "shadow-[4px_4px_0_0_#0f172a]";
 const HARD_SHADOW_SM = "shadow-[2px_2px_0_0_#0f172a]";
 
+// Color mapping for badge outer ring - matches mockup CAT_META colors
+const BADGE_COLOR_MAP: Record<string, string> = {
+  yellow: "#FCD34D", // amber-300
+  teal: "#14B8A6",   // teal-500
+  coral: "#FA7D64",  // coral/rose
+  violet: "#8B5CF6", // violet-500
+  sky: "#0EA5E9",    // sky-500
+};
+
+function getBadgeColor(badge: BadgeRow): string {
+  // 1. Use explicit badge color if available
+  if (badge.color && BADGE_COLOR_MAP[badge.color]) {
+    return BADGE_COLOR_MAP[badge.color];
+  }
+  // 2. Infer from category
+  const cat = inferCategory(badge);
+  const catMeta = CAT_META[cat];
+  if (catMeta?.color && BADGE_COLOR_MAP[catMeta.color]) {
+    return BADGE_COLOR_MAP[catMeta.color];
+  }
+  // 3. Fallback based on icon
+  if (badge.icon?.includes("flame") || badge.icon?.includes("fire")) return BADGE_COLOR_MAP.yellow;
+  if (badge.icon?.includes("star") || badge.icon?.includes("award")) return BADGE_COLOR_MAP.coral;
+  if (badge.icon?.includes("book") || badge.icon?.includes("check")) return BADGE_COLOR_MAP.teal;
+  if (badge.icon?.includes("zap") || badge.icon?.includes("bolt")) return BADGE_COLOR_MAP.violet;
+  return BADGE_COLOR_MAP.yellow;
+}
+
 function BadgeSticker({ badge, size = 88 }: { badge: BadgeRow; size?: number }) {
   const tier = TIER_META[badge.tier] || TIER_META.bronze;
   const Icon = ICON_MAP[badge.icon || "award"] || Award;
-  const colorKey = inferColorKey(badge);
-  const bgColor = COLOR_MAP[colorKey] || "bg-slate-500";
+  const bgColor = getBadgeColor(badge);
   const rotation = ((badge.id.charCodeAt(0) % 7) - 3);
 
   return (
     <div className="relative shrink-0" style={{ width: size, height: size }}>
       {/* Outer ring - sticker style with thick border and hard shadow */}
       <div
-        className={cn(
-          "absolute inset-0 rounded-full border-[3px] border-slate-800 flex items-center justify-center",
-          bgColor,
-          HARD_SHADOW_SM
-        )}
-        style={{ transform: `rotate(${rotation}deg)` }}
+        className="absolute inset-0 rounded-full border-[3px] border-slate-800 flex items-center justify-center"
+        style={{ 
+          backgroundColor: bgColor,
+          boxShadow: "4px 4px 0 0 #0f172a",
+          transform: `rotate(${rotation}deg)` 
+        }}
       >
         {/* Inner dashed circle */}
         <div
           className="rounded-full bg-white border-[3px] border-dashed border-slate-800 flex items-center justify-center"
           style={{ width: size * 0.66, height: size * 0.66 }}
         >
-          <Icon className="h-5 w-5 text-slate-800" style={{ width: size * 0.32, height: size * 0.32 }} />
+          <Icon className="text-slate-800" style={{ width: size * 0.32, height: size * 0.32 }} />
         </div>
       </div>
       {/* Tier ribbon - small badge */}
       <div
-        className="absolute -bottom-1 left-1/2 -translate-x-1/2 text-white text-[8px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border-[2px] border-slate-800 shadow-sm"
+        className="absolute -bottom-1 left-1/2 -translate-x-1/2 text-white text-[9px] font-black uppercase tracking-[0.12em] px-2 py-0.5 rounded-full border-[2px] border-slate-800"
         style={{ background: tier.ring }}
       >
         {tier.label}
@@ -783,6 +862,17 @@ function inferColorKey(badge: BadgeRow): string {
   return "yellow";
 }
 
+// Category color mapping for badges
+const CAT_COLOR_STYLES: Record<string, { bg: string; text: string }> = {
+  coral: { bg: "#FEF2F2", text: "#BE123C" },
+  yellow: { bg: "#FEFCE8", text: "#A16207" },
+  teal: { bg: "#F0FDFA", text: "#0F766E" },
+  violet: { bg: "#FAF5FF", text: "#6B21A8" },
+  sky: { bg: "#F0F9FF", text: "#0369A1" },
+  rose: { bg: "#FFF1F2", text: "#9F1239" },
+  slate: { bg: "#F8FAFC", text: "#475569" },
+};
+
 function GridViewEnhanced({ badges, onEdit, onDelete }: {
   badges: BadgeRow[];
   onEdit: (b: BadgeRow) => void;
@@ -794,7 +884,8 @@ function GridViewEnhanced({ badges, onEdit, onDelete }: {
         const cat = CAT_META[inferCategory(b)] || { label: "Khác", color: "slate" };
         const tier = TIER_META[b.tier] || TIER_META.bronze;
         const earned = Math.floor(Math.random() * 1000) + 10; // Mock - sẽ lấy từ API
-        const colorKey = inferColorKey(b);
+        const badgeColor = getBadgeColor(b);
+        const catColors = CAT_COLOR_STYLES[cat.color] || CAT_COLOR_STYLES.slate;
 
         return (
           <div
@@ -825,8 +916,8 @@ function GridViewEnhanced({ badges, onEdit, onDelete }: {
                   <span 
                     className="text-[10px] font-extrabold px-2 py-0.5 rounded-full"
                     style={{ 
-                      background: `var(--${cat.color}-soft, #fef2f2)`, 
-                      color: `var(--${cat.color}-deep, #be123c)`
+                      backgroundColor: catColors.bg, 
+                      color: catColors.text
                     }}
                   >
                     {cat.label}
@@ -853,7 +944,7 @@ function GridViewEnhanced({ badges, onEdit, onDelete }: {
               <div>
                 <div 
                   className="font-display text-lg font-black"
-                  style={{ color: `var(--${colorKey}-deep, #0f172a)` }}
+                  style={{ color: badgeColor }}
                 >
                   {earned.toLocaleString("vi-VN")}
                 </div>
@@ -909,6 +1000,7 @@ function RulesViewEnhanced({ badges, onEdit, onDelete }: {
             const cat = CAT_META[inferCategory(b)] || { label: "Khác", color: "slate" };
             const tier = TIER_META[b.tier] || TIER_META.bronze;
             const earned = Math.floor(Math.random() * 1000) + 10; // Mock
+            const catColors = CAT_COLOR_STYLES[cat.color] || CAT_COLOR_STYLES.slate;
 
             return (
               <tr key={b.id} className="border-b border-slate-200 last:border-0 hover:bg-slate-50/50">
@@ -925,8 +1017,8 @@ function RulesViewEnhanced({ badges, onEdit, onDelete }: {
                   <span 
                     className="text-[11px] font-extrabold px-2.5 py-1 rounded-full"
                     style={{ 
-                      background: `var(--${cat.color}-soft, #fef2f2)`, 
-                      color: `var(--${cat.color}-deep, #be123c)`
+                      backgroundColor: catColors.bg, 
+                      color: catColors.text
                     }}
                   >
                     {cat.label}
@@ -1013,19 +1105,22 @@ function RecentAwardsSection({ badges }: { badges: BadgeRow[] }) {
       <div className="flex flex-col gap-2.5">
         {MOCK_RECENT_AWARDS.map((a, i) => {
           const badge = getBadgeById(a.badgeId);
-          const colorKey = inferColorKey(badge);
+          const badgeColor = getBadgeColor(badge);
           return (
             <div 
               key={i} 
-              className="flex items-center gap-3.5 p-2.5 rounded-xl bg-amber-50/50"
-              style={{ border: "1.5px solid #0f172a" }}
+              className="flex items-center gap-3.5 p-2.5 rounded-xl"
+              style={{ 
+                border: "1.5px solid #0f172a",
+                backgroundColor: "#FFFBEB" // amber-50
+              }}
             >
               <BadgeSticker badge={badge} size={44} />
               <div className="flex-1 min-w-0">
                 <div className="text-sm">
                   <span className="font-bold">{a.who}</span>
                   <span className="text-slate-500 font-medium"> nhận </span>
-                  <span className="font-bold" style={{ color: `var(--${colorKey}-600, #0f172a)` }}>
+                  <span className="font-bold" style={{ color: badgeColor }}>
                     {badge?.name || a.badgeId}
                   </span>
                 </div>

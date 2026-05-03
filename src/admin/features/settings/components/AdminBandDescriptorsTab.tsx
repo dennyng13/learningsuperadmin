@@ -178,75 +178,193 @@ function ScoreConversionSection({ skill }: { skill: string }) {
   const coveredMarks = new Set<number>();
   rows.forEach(r => { for (let i = r.min_marks; i <= r.max_marks; i++) coveredMarks.add(i); });
 
-  if (loading) return <div className="flex items-center justify-center py-16"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>;
+  if (loading) return (
+    <div style={{ display: "flex", justifyContent: "center", padding: "48px 0" }}>
+      <Loader2 className="h-5 w-5 animate-spin" style={{ color: "var(--lp-body)" }} />
+    </div>
+  );
+
+  /* Band colour map: band score → solid hex */
+  const BAND_HEX: Record<string, string> = {
+    "9": "#7C3AED", "8.5": "#6D28D9", "8": "#0EA5E9", "7.5": "#0284C7",
+    "7": "#10B981", "6.5": "#059669", "6": "#F59E0B", "5.5": "#D97706",
+    "5": "#FA7D64", "4.5": "#F87171", "4": "#94A3B8",
+    "3.5": "#EF4444", "3": "#DC2626", "2": "#B91C1C",
+  };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <BarChart3 className="h-4 w-4 text-primary" />
-          <span className="text-sm font-bold">Bảng quy đổi điểm — {skill === "reading" ? "Reading" : "Listening"}</span>
+    <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+
+      {/* ── Action row ── */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <BarChart3 style={{ width: 16, height: 16, color: "var(--lp-body)" }} />
+          <span style={{ fontSize: 13, fontWeight: 800, color: "var(--lp-ink)" }}>
+            Bảng quy đổi điểm · {skill === "reading" ? "Reading" : "Listening"}
+          </span>
+          {/* Coverage badge */}
+          <span style={{
+            fontSize: 10, fontWeight: 800, padding: "2px 9px", borderRadius: 99,
+            background: coveredMarks.size === totalMarks + 1 ? "#D1FAE5" : "#FFF1EF",
+            color: coveredMarks.size === totalMarks + 1 ? "#065F46" : "#C43B1E",
+            border: "1.5px solid var(--lp-line)",
+          }}>
+            {coveredMarks.size}/{totalMarks + 1} marks
+            {coveredMarks.size < totalMarks + 1 && ` · thiếu ${totalMarks + 1 - coveredMarks.size}`}
+          </span>
         </div>
-        <Button onClick={handleSave} disabled={saving || !dirty} size="sm" className="gap-1.5">
-          {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+        <PopButton tone="coral" size="sm" onClick={handleSave} disabled={saving || !dirty}>
+          {saving ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1.5" />}
           Lưu
-        </Button>
+        </PopButton>
       </div>
 
-      {/* Visual band bar */}
-      <div className="space-y-2">
-        <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Phân bổ điểm (0–40)</p>
-        <div className="flex gap-px h-8 rounded-lg overflow-hidden bg-muted/50">
+      {/* ── Visual band bar ── */}
+      <div style={{
+        background: "#fff",
+        border: "2px solid var(--lp-ink, #0B0C0E)",
+        borderRadius: 14,
+        padding: "14px 16px",
+        boxShadow: "3px 3px 0 0 var(--lp-ink)",
+      }}>
+        <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--lp-body)", marginBottom: 10 }}>
+          Phân bổ điểm (0–40)
+        </div>
+        {/* Bar */}
+        <div style={{
+          display: "flex", gap: 1, height: 28,
+          border: "2px solid var(--lp-ink, #0B0C0E)",
+          borderRadius: 8, overflow: "hidden",
+          background: "var(--lp-cream, #F9F8F4)",
+        }}>
           {Array.from({ length: totalMarks + 1 }, (_, i) => {
             const row = rows.find(r => i >= r.min_marks && i <= r.max_marks);
-            const bandKey = row ? String(row.band_score) : "";
-            const bgColor = bandKey ? (BAND_COLORS[bandKey] || "bg-primary/30") : "bg-muted";
+            const hex = row ? (BAND_HEX[String(row.band_score)] || "#94A3B8") : undefined;
             return (
-              <div key={i} className={cn("flex-1 transition-colors relative group", bgColor)} title={row ? `${i} marks → Band ${row.band_score}` : `${i} marks — chưa gán`}>
-                {(i % 5 === 0) && <span className="absolute -bottom-4 left-1/2 -translate-x-1/2 text-[8px] text-muted-foreground">{i}</span>}
-              </div>
+              <div
+                key={i}
+                title={row ? `${i} marks → Band ${row.band_score}` : `${i} marks — chưa gán`}
+                style={{
+                  flex: 1, background: hex ?? "transparent",
+                  transition: "background .15s",
+                  position: "relative",
+                }}
+              />
             );
           })}
         </div>
-        <div className="h-4" />
-      </div>
-
-      {/* Table */}
-      <div className="border rounded-xl overflow-hidden bg-card">
-        <div className="grid grid-cols-[60px_1fr_1fr_1fr_40px] gap-0 text-[11px] font-bold text-muted-foreground uppercase tracking-wider bg-muted/40 px-3 py-2.5">
-          <span>#</span><span>Band Score</span><span>Min Marks</span><span>Max Marks</span><span />
-        </div>
-        <div className="divide-y">
-          {rows.map((row, idx) => (
-            <div key={idx} className="grid grid-cols-[60px_1fr_1fr_1fr_40px] gap-0 items-center px-3 py-2 hover:bg-accent/30 transition-colors">
-              <span className="text-xs text-muted-foreground">{idx + 1}</span>
-              <div className="flex items-center gap-2">
-                <div className={cn("w-3 h-3 rounded-full shrink-0", BAND_COLORS[String(row.band_score)] || "bg-muted")} />
-                <Input type="number" step="0.5" min="1" max="9" value={row.band_score} onChange={e => updateRow(idx, "band_score", parseFloat(e.target.value) || 0)} className="h-8 w-20 text-xs font-bold" />
-              </div>
-              <Input type="number" min="0" max="40" value={row.min_marks} onChange={e => updateRow(idx, "min_marks", parseInt(e.target.value) || 0)} className="h-8 w-20 text-xs" />
-              <Input type="number" min="0" max="40" value={row.max_marks} onChange={e => updateRow(idx, "max_marks", parseInt(e.target.value) || 0)} className="h-8 w-20 text-xs" />
-              <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => removeRow(idx)}>
-                <Trash2 className="h-3.5 w-3.5" />
-              </Button>
-            </div>
+        {/* Tick labels */}
+        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, paddingLeft: 2, paddingRight: 2 }}>
+          {[0, 5, 10, 15, 20, 25, 30, 35, 40].map(n => (
+            <span key={n} style={{ fontSize: 9, fontWeight: 700, color: "var(--lp-body)" }}>{n}</span>
           ))}
         </div>
+        {/* Legend */}
+        {rows.length > 0 && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 12, paddingTop: 10, borderTop: "1.5px dashed var(--lp-line, #E5E7EB)" }}>
+            {[...rows].sort((a, b) => b.band_score - a.band_score).map((r, i) => (
+              <span key={i} style={{
+                display: "inline-flex", alignItems: "center", gap: 5,
+                fontSize: 10.5, fontWeight: 700,
+                padding: "3px 9px", borderRadius: 99,
+                background: BAND_HEX[String(r.band_score)] || "#94A3B8",
+                color: "#fff",
+                border: "1.5px solid var(--lp-ink, #0B0C0E)",
+              }}>
+                Band {r.band_score} · {r.min_marks}–{r.max_marks}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
-      <Button variant="outline" size="sm" className="gap-1.5" onClick={addRow}>
-        <Plus className="h-3.5 w-3.5" /> Thêm dòng
-      </Button>
-
-      <div className="flex items-center gap-4 text-[11px] text-muted-foreground">
-        <span>{rows.length} band scores</span>
-        <span>•</span>
-        <span>{coveredMarks.size}/{totalMarks + 1} marks được gán</span>
-        {coveredMarks.size < totalMarks + 1 && (
-          <Badge variant="outline" className="text-[9px] text-amber-600 border-amber-300">
-            Thiếu {totalMarks + 1 - coveredMarks.size} marks
-          </Badge>
+      {/* ── Table ── */}
+      <div style={{
+        background: "#fff",
+        border: "2.5px solid var(--lp-ink, #0B0C0E)",
+        borderRadius: 16,
+        boxShadow: "4px 4px 0 0 var(--lp-ink)",
+        overflow: "hidden",
+      }}>
+        {/* Table head */}
+        <div style={{
+          display: "grid", gridTemplateColumns: "52px 1fr 1fr 1fr 44px",
+          background: "var(--lp-ink, #0B0C0E)", padding: "9px 14px",
+          fontSize: 10, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "#fff",
+        }}>
+          <span>#</span><span>Band Score</span><span>Min Marks</span><span>Max Marks</span><span />
+        </div>
+        {/* Rows */}
+        {rows.map((row, idx) => {
+          const hex = BAND_HEX[String(row.band_score)];
+          return (
+            <div key={idx} style={{
+              display: "grid", gridTemplateColumns: "52px 1fr 1fr 1fr 44px",
+              alignItems: "center", padding: "8px 14px",
+              borderBottom: "1.5px solid var(--lp-line, #E5E7EB)",
+              background: idx % 2 === 0 ? "#fff" : "var(--lp-cream, #F9F8F4)",
+              transition: "background .1s",
+            }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: "var(--lp-body)" }}>{idx + 1}</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <div style={{
+                  width: 22, height: 22, borderRadius: 6,
+                  background: hex ?? "#E5E7EB",
+                  border: "2px solid var(--lp-ink, #0B0C0E)",
+                  flexShrink: 0,
+                  display: "grid", placeItems: "center",
+                  fontFamily: "var(--ff-display, inherit)", fontWeight: 900, fontSize: 9, color: "#fff",
+                }}>
+                  {row.band_score}
+                </div>
+                <Input type="number" step="0.5" min="1" max="9" value={row.band_score}
+                  onChange={e => updateRow(idx, "band_score", parseFloat(e.target.value) || 0)}
+                  className="h-8 w-20 text-xs font-bold" />
+              </div>
+              <Input type="number" min="0" max="40" value={row.min_marks}
+                onChange={e => updateRow(idx, "min_marks", parseInt(e.target.value) || 0)}
+                className="h-8 w-20 text-xs" />
+              <Input type="number" min="0" max="40" value={row.max_marks}
+                onChange={e => updateRow(idx, "max_marks", parseInt(e.target.value) || 0)}
+                className="h-8 w-20 text-xs" />
+              <button
+                onClick={() => removeRow(idx)}
+                style={{
+                  width: 28, height: 28, borderRadius: 7, border: "1.5px solid var(--lp-line, #E5E7EB)",
+                  background: "#fff", cursor: "pointer", display: "grid", placeItems: "center",
+                  color: "var(--lp-body)",
+                }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = "var(--lp-coral)"; (e.currentTarget as HTMLElement).style.color = "var(--lp-coral)"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = "var(--lp-line, #E5E7EB)"; (e.currentTarget as HTMLElement).style.color = "var(--lp-body)"; }}
+              >
+                <Trash2 style={{ width: 13, height: 13 }} />
+              </button>
+            </div>
+          );
+        })}
+        {rows.length === 0 && (
+          <div style={{ padding: "28px 0", textAlign: "center", color: "var(--lp-body)", fontSize: 13 }}>
+            Chưa có dòng nào — nhấn "Thêm dòng" để bắt đầu
+          </div>
         )}
+      </div>
+
+      {/* ── Add row ── */}
+      <div>
+        <button
+          onClick={addRow}
+          style={{
+            display: "inline-flex", alignItems: "center", gap: 6,
+            padding: "7px 16px", borderRadius: 99,
+            border: "1.5px dashed var(--lp-line, #E5E7EB)", background: "#fff",
+            fontFamily: "var(--ff-display, inherit)", fontWeight: 700, fontSize: 12,
+            cursor: "pointer", transition: "all .12s",
+          }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = "var(--lp-ink)"; (e.currentTarget as HTMLElement).style.boxShadow = "2px 2px 0 0 var(--lp-ink)"; (e.currentTarget as HTMLElement).style.transform = "translate(-1px,-1px)"; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = "var(--lp-line, #E5E7EB)"; (e.currentTarget as HTMLElement).style.boxShadow = "none"; (e.currentTarget as HTMLElement).style.transform = "none"; }}
+        >
+          <Plus style={{ width: 13, height: 13 }} /> Thêm dòng
+        </button>
       </div>
     </div>
   );
