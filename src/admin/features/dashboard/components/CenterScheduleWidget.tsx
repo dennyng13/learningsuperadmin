@@ -13,12 +13,12 @@
  * session-level (admins typically think class-first).
  */
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
-  Calendar, Filter, Clock, GraduationCap, MapPin, ChevronRight,
-  Loader2,
+  Calendar, CalendarDays, Filter, Clock, GraduationCap, MapPin, ChevronRight,
+  Loader2, List as ListIcon, LayoutGrid,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@shared/lib/utils";
@@ -84,6 +84,17 @@ export function CenterScheduleWidget() {
   const [teacherId, setTeacherId] = useState<string>("__all__");
   const [room, setRoom] = useState<string>("__all__");
   const [windowDays, setWindowDays] = useState<7 | 14 | 30>(7);
+  /* View mode toggle (Day 7 user request "Tích hợp xem theo 2 views toggle
+     dạng lịch và view theo list"). Persist in localStorage cho UX. */
+  const [view, setView] = useState<"list" | "calendar">(() => {
+    if (typeof window === "undefined") return "list";
+    const stored = window.localStorage.getItem("center-schedule-view");
+    return stored === "calendar" ? "calendar" : "list";
+  });
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try { window.localStorage.setItem("center-schedule-view", view); } catch { /* ignore */ }
+  }, [view]);
 
   const startDate = useMemo(() => todayIso(), []);
   const endDate = useMemo(() => plusDaysIso(windowDays - 1), [windowDays]);
@@ -234,7 +245,36 @@ export function CenterScheduleWidget() {
         <h2 className="font-display text-sm font-extrabold text-lp-body uppercase tracking-[0.12em] inline-flex items-center gap-2">
           <Calendar className="h-3.5 w-3.5" /> Lịch toàn trung tâm
         </h2>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* View mode toggle (list ↔ calendar) */}
+          <div role="tablist" aria-label="Chế độ hiển thị" className="flex items-center rounded-pop border-[1.5px] border-lp-ink/60 bg-white overflow-hidden">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={view === "list"}
+              onClick={() => setView("list")}
+              className={cn(
+                "inline-flex items-center gap-1 px-2 py-1 text-[10px] font-display font-bold transition-colors",
+                view === "list" ? "bg-lp-yellow text-lp-ink" : "text-lp-body hover:bg-lp-yellow/20",
+              )}
+              aria-label="View list"
+            >
+              <ListIcon className="h-3 w-3" /> List
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={view === "calendar"}
+              onClick={() => setView("calendar")}
+              className={cn(
+                "inline-flex items-center gap-1 px-2 py-1 text-[10px] font-display font-bold transition-colors border-l-[1.5px] border-lp-ink/60",
+                view === "calendar" ? "bg-lp-yellow text-lp-ink" : "text-lp-body hover:bg-lp-yellow/20",
+              )}
+              aria-label="View calendar"
+            >
+              <LayoutGrid className="h-3 w-3" /> Lịch
+            </button>
+          </div>
           <Select value={String(windowDays)} onValueChange={(v) => setWindowDays(Number(v) as 7 | 14 | 30)}>
             <SelectTrigger className="h-7 w-[110px] text-[11px]">
               <SelectValue />
@@ -302,6 +342,85 @@ export function CenterScheduleWidget() {
         <div className="text-xs text-muted-foreground text-center py-10 space-y-2">
           <Calendar className="h-7 w-7 mx-auto text-muted-foreground/50" />
           <p>{hasFilter ? "Không có buổi học khớp filter." : `Không có buổi học trong ${windowDays} ngày tới.`}</p>
+        </div>
+      ) : view === "calendar" ? (
+        /* Calendar view — horizontal scroll of day columns. Each column shows
+           sessions stacked vertically (compact agenda). Hôm nay highlight
+           coral header. Click session → navigate /classes/:id. */
+        <div className="overflow-x-auto pb-2">
+          <div
+            className="grid gap-2 min-w-fit"
+            style={{ gridTemplateColumns: `repeat(${windowDays}, minmax(140px, 1fr))` }}
+          >
+            {Array.from({ length: windowDays }).map((_, i) => {
+              const dateStr = plusDaysIso(i);
+              const sessions = (grouped.find(([d]) => d === dateStr)?.[1]) ?? [];
+              const d = new Date(dateStr + "T00:00:00");
+              const dow = DAY_VI[d.getDay()];
+              const isToday = dateStr === todayIso();
+              const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+              return (
+                <div
+                  key={dateStr}
+                  className={cn(
+                    "rounded-pop border-[1.5px] flex flex-col min-h-[180px]",
+                    isToday ? "border-lp-coral bg-lp-coral/5" : "border-lp-ink/15 bg-white",
+                    isWeekend && !isToday && "bg-muted/20",
+                  )}
+                >
+                  <div className={cn(
+                    "px-2 py-1.5 border-b-[1.5px] flex items-center justify-between gap-1",
+                    isToday ? "border-lp-coral/40 bg-lp-coral text-white" : "border-lp-ink/10",
+                  )}>
+                    <span className="text-[10px] font-display font-extrabold uppercase tracking-wider">
+                      {dow}
+                    </span>
+                    <span className={cn(
+                      "text-[10px] font-mono tabular-nums",
+                      isToday ? "text-white/90" : "text-muted-foreground",
+                    )}>
+                      {dateStr.slice(8)}/{dateStr.slice(5, 7)}
+                    </span>
+                  </div>
+                  <div className="flex-1 p-1.5 space-y-1">
+                    {sessions.length === 0 ? (
+                      <p className="text-[10px] text-muted-foreground/60 italic text-center py-4">
+                        —
+                      </p>
+                    ) : sessions.map((s) => {
+                      const cls = classMap.get(s.class_id);
+                      const tName = (s.teacher_id && teacherMap.get(s.teacher_id))
+                        ?? (cls?.teacher_id && teacherMap.get(cls.teacher_id))
+                        ?? cls?.teacher_name
+                        ?? "";
+                      const className = cls?.name ?? cls?.class_name ?? cls?.class_code ?? "?";
+                      const effectiveRoom = s.room ?? cls?.room ?? "";
+                      return (
+                        <button
+                          key={s.id}
+                          type="button"
+                          onClick={() => navigate(`/classes/${s.class_id}`)}
+                          className="w-full text-left p-1.5 rounded border-[1.5px] border-lp-ink/15 bg-white hover:border-lp-ink/50 hover:shadow-pop-xs transition-all group"
+                        >
+                          <p className="text-[9px] font-mono font-bold text-lp-ink tabular-nums leading-tight">
+                            {fmtTime(s.start_time)}–{fmtTime(s.end_time)}
+                          </p>
+                          <p className="text-[10px] font-display font-bold text-lp-ink truncate leading-tight mt-0.5">
+                            {className}
+                          </p>
+                          {(tName || effectiveRoom) && (
+                            <p className="text-[9px] text-muted-foreground truncate leading-tight">
+                              {tName} {tName && effectiveRoom && "·"} {effectiveRoom}
+                            </p>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       ) : (
         <ul className="space-y-2 max-h-[480px] overflow-y-auto pr-1">
