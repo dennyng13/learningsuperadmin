@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@shared/hooks/useAuth";
+import { useAuth } from "../hooks/useAuth";
 import { Bell, X } from "lucide-react";
 import { cn } from "@shared/lib/utils";
 import { formatDistanceToNow } from "date-fns";
