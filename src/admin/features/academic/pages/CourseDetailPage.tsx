@@ -21,8 +21,8 @@ import { Button } from "@shared/components/ui/button";
 import { Skeleton } from "@shared/components/ui/skeleton";
 import { Badge } from "@shared/components/ui/badge";
 import { useCoursesAdmin } from "@admin/features/academic/hooks/useCoursesAdmin";
-import { useCourses } from "@admin/features/academic/hooks/useCourses";
 import { useCourseLevels } from "@shared/hooks/useCourseLevels";
+import type { Course, CourseInput } from "@admin/features/academic/hooks/useCourses";
 import CourseEditorDialog from "@admin/features/academic/components/CourseEditorDialog";
 import { getProgramPalette } from "@shared/utils/programColors";
 import { cn } from "@shared/lib/utils";
@@ -133,18 +133,57 @@ export default function CourseDetailPage() {
 
   /* Levels resolution (chỉ dùng cho editor — load all). */
   const { levels } = useCourseLevels({ includeOrphans: true });
-  const { courses, getStats, update } = useCourses({
-    programId: courseQ.data?.program_id,
-    withStats: true,
+
+  /* Lazy load editingCourse data ONLY when editor opens — avoid heavy
+     useCourses() fetch on initial render of detail page. Includes
+     level_ids + study_plan_ids needed cho CourseEditorDialog. */
+  const editingCourseQ = useQuery({
+    queryKey: ["course-detail-editing", id],
+    enabled: !!id && editorOpen,
+    queryFn: async (): Promise<Course | null> => {
+      // Re-fetch course với level/plan link arrays
+      const [courseRes, levelLinksRes, planLinksRes] = await Promise.all([
+        (supabase as any)
+          .from("courses")
+          .select("*")
+          .eq("id", id)
+          .maybeSingle(),
+        (supabase as any)
+          .from("course_level_links")
+          .select("level_id, sort_order")
+          .eq("course_id", id)
+          .order("sort_order", { ascending: true }),
+        (supabase as any)
+          .from("course_study_plans")
+          .select("study_plan_id, sort_order")
+          .eq("course_id", id)
+          .order("sort_order", { ascending: true }),
+      ]);
+      if (!courseRes.data) return null;
+      const c = courseRes.data;
+      return {
+        ...c,
+        outcomes: c.outcomes ?? [],
+        level_ids: (levelLinksRes.data ?? []).map((r: { level_id: string }) => r.level_id),
+        study_plan_ids: (planLinksRes.data ?? []).map((r: { study_plan_id: string }) => r.study_plan_id),
+      } as Course;
+    },
   });
-  const editingCourse = useMemo(
-    () => courses.find((c) => c.id === id),
-    [courses, id],
-  );
-  const stats = useMemo(
-    () => (id ? getStats(id) : { totalClasses: 0, activeClasses: 0, uniqueStudents: 0 }),
-    [getStats, id],
-  );
+  const editingCourse = editingCourseQ.data ?? null;
+
+  /* Class count stats derived từ classesUsingQ (already fetched). */
+  const stats = useMemo(() => {
+    const list = classesUsingQ.data ?? [];
+    const activeClasses = list.filter(
+      (c) => c.lifecycle_status === "in_progress" || c.lifecycle_status === "ready",
+    ).length;
+    const totalStudents = list.reduce((sum, c) => sum + (c.student_count ?? 0), 0);
+    return {
+      totalClasses: list.length,
+      activeClasses,
+      uniqueStudents: totalStudents,
+    };
+  }, [classesUsingQ.data]);
 
   if (courseQ.isLoading) {
     return (
@@ -162,10 +201,42 @@ export default function CourseDetailPage() {
   const isInactive = course.status === "inactive";
   const outcomes = course.outcomes ?? [];
 
-  const handleEditSubmit = async (input: any) => {
+  /* Direct update — avoids useCourses hook chain. CourseEditorDialog passes
+     all fields including level_ids + study_plan_ids; we update the row +
+     re-write link tables. */
+  const handleEditSubmit = async (input: CourseInput) => {
     if (!editingCourse) return;
-    await update(editingCourse.id, input);
+    const { level_ids = [], study_plan_ids = [], ...row } = input;
+
+    // 1) Update courses row
+    const { error: updErr } = await (supabase as any)
+      .from("courses")
+      .update(row)
+      .eq("id", editingCourse.id);
+    if (updErr) throw updErr;
+
+    // 2) Re-write course_level_links
+    await (supabase as any).from("course_level_links").delete().eq("course_id", editingCourse.id);
+    if (level_ids.length > 0) {
+      await (supabase as any).from("course_level_links").insert(
+        level_ids.map((level_id, idx) => ({
+          course_id: editingCourse.id, level_id, sort_order: idx,
+        })),
+      );
+    }
+
+    // 3) Re-write course_study_plans
+    await (supabase as any).from("course_study_plans").delete().eq("course_id", editingCourse.id);
+    if (study_plan_ids.length > 0) {
+      await (supabase as any).from("course_study_plans").insert(
+        study_plan_ids.map((study_plan_id, idx) => ({
+          course_id: editingCourse.id, study_plan_id, sort_order: idx,
+        })),
+      );
+    }
+
     courseQ.refetch();
+    studyPlansQ.refetch();
   };
 
   return (
