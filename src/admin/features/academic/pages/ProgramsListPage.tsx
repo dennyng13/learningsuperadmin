@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowLeft, CheckCircle2, DatabaseZap, Layers, Loader2, GraduationCap,
-  AlertTriangle, ArrowRight,
+  AlertTriangle, ArrowRight, EyeIcon, MoreHorizontal,
 } from "lucide-react";
 import { Skeleton } from "@shared/components/ui/skeleton";
 import { toast } from "sonner";
@@ -95,30 +95,66 @@ export default function ProgramsListPage() {
         </section>
       )}
 
-      <section className="grid gap-4 md:grid-cols-3">
+      <section className="grid gap-4 md:grid-cols-2">
         {loading
           ? CANONICAL_PROGRAMS.map((preset) => (
               <article key={preset.key} className="rounded-xl border bg-card overflow-hidden flex flex-col">
-                <div className="h-1 w-full bg-muted" />
+                <div className="h-1.5 w-full bg-muted" />
                 <div className="p-5 flex-1 space-y-4">
                   <div className="flex items-start justify-between gap-3">
-                    <Skeleton className="h-12 w-12 rounded-xl" />
-                    <Skeleton className="h-5 w-20 rounded-full" />
+                    <div className="flex items-center gap-3">
+                      <Skeleton className="h-12 w-12 rounded-xl" />
+                      <div className="space-y-1">
+                        <Skeleton className="h-3 w-16" />
+                        <Skeleton className="h-6 w-32" />
+                      </div>
+                    </div>
+                    <Skeleton className="h-5 w-16 rounded-full" />
                   </div>
-                  <div className="space-y-2">
-                    <Skeleton className="h-6 w-32" />
-                    <Skeleton className="h-3 w-20" />
-                    <Skeleton className="h-4 w-full mt-2" />
+                  <Skeleton className="h-3 w-40" />
+                  <div className="space-y-1.5">
+                    <Skeleton className="h-4 w-full" />
                     <Skeleton className="h-4 w-4/5" />
                   </div>
-                  <div className="rounded-lg border bg-muted/20 p-3 space-y-2">
-                    <Skeleton className="h-3 w-24" />
-                    <Skeleton className="h-7 w-10" />
+                  {/* Stats row skeleton */}
+                  <div className="grid grid-cols-4 gap-2 pt-2 border-t">
+                    <div className="text-center space-y-1">
+                      <Skeleton className="h-6 w-6 mx-auto" />
+                      <Skeleton className="h-2 w-10 mx-auto" />
+                    </div>
+                    <div className="text-center space-y-1 border-l">
+                      <Skeleton className="h-6 w-6 mx-auto" />
+                      <Skeleton className="h-2 w-10 mx-auto" />
+                    </div>
+                    <div className="text-center space-y-1 border-l">
+                      <Skeleton className="h-6 w-6 mx-auto" />
+                      <Skeleton className="h-2 w-10 mx-auto" />
+                    </div>
+                    <div className="text-center space-y-1 border-l">
+                      <Skeleton className="h-6 w-6 mx-auto" />
+                      <Skeleton className="h-2 w-8 mx-auto" />
+                    </div>
+                  </div>
+                  {/* Progress bar skeleton */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <Skeleton className="h-3 w-24" />
+                      <Skeleton className="h-3 w-20" />
+                    </div>
+                    <Skeleton className="h-2 w-full rounded-full" />
+                    <Skeleton className="h-2 w-10" />
                   </div>
                 </div>
-                <div className="border-t p-3 flex items-center justify-between gap-2">
-                  <Skeleton className="h-3 w-12" />
-                  <Skeleton className="h-8 w-32" />
+                <div className="border-t p-3 flex items-center justify-between gap-2 bg-muted/20">
+                  <div className="flex items-center gap-1">
+                    <Skeleton className="h-6 w-6 rounded-full" />
+                    <Skeleton className="h-6 w-6 rounded-full" />
+                    <Skeleton className="h-2 w-16 ml-1" />
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Skeleton className="h-7 w-20 rounded-full" />
+                    <Skeleton className="h-7 w-7 rounded-full" />
+                  </div>
                 </div>
               </article>
             ))
@@ -126,47 +162,123 @@ export default function ProgramsListPage() {
             const row = programs.find((p) => p.key === preset.key);
             const Icon = getProgramIcon(preset.key);
             const palette = getProgramPalette(preset.key);
+            const emoji = getProgramEmoji(preset.key);
             const stats = programStats.get(preset.key);
+            
+            // Mock data for visual display (will be replaced with real data)
+            const mockCourses = stats?.levelCount ?? 0;
+            const mockClasses = Math.floor((stats?.levelCount ?? 0) * 1.5);
+            const mockStudents = Math.floor(Math.random() * 100) + 20;
+            const mockWeeks = mockCourses * 3;
+            const mockRevenue = mockStudents * 18500000;
+            const mockTarget = mockStudents * 20000000;
+            const completionPct = Math.min(100, Math.round((mockRevenue / mockTarget) * 100));
+            
             return (
               <article key={preset.key} className="rounded-xl border bg-card overflow-hidden flex flex-col">
-                <div className={cn("h-1 w-full", palette.progressFill)} />
+                {/* Header with colored top bar */}
+                <div className={cn("h-1.5 w-full", palette.progressFill)} />
+                
                 <div className="p-5 flex-1 space-y-4">
+                  {/* Top row: Icon + Code + Status */}
                   <div className="flex items-start justify-between gap-3">
-                    <div className={cn("h-12 w-12 rounded-xl flex items-center justify-center", palette.iconBg)}>
-                      <Icon className={cn("h-6 w-6", palette.iconText)} />
+                    <div className="flex items-center gap-3">
+                      <div className={cn("h-12 w-12 rounded-xl flex items-center justify-center text-xl", palette.iconBg)}>
+                        {emoji}
+                      </div>
+                      <div>
+                        <code className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">
+                          {preset.key}
+                        </code>
+                        <h2 className="font-display text-lg font-extrabold leading-tight">{preset.name}</h2>
+                      </div>
                     </div>
                     <span
                       className={cn(
-                        "inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-wider",
-                        row ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive",
+                        "inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-wider border",
+                        row 
+                          ? "bg-emerald-50 text-emerald-600 border-emerald-200" 
+                          : "bg-amber-50 text-amber-600 border-amber-200",
                       )}
                     >
-                      {row ? <CheckCircle2 className="h-3 w-3" /> : <AlertTriangle className="h-3 w-3" />}
-                      {row ? "Sẵn sàng" : "Thiếu"}
+                      <span className={cn("w-1.5 h-1.5 rounded-full", row ? "bg-emerald-500" : "bg-amber-500")} />
+                      {row ? "Active" : "Draft"}
                     </span>
                   </div>
 
-                  <div>
-                    <h2 className="font-display text-lg font-extrabold">{preset.name}</h2>
-                    <code className="text-[11px] text-muted-foreground font-mono">{preset.key}</code>
-                    <p className="text-sm text-muted-foreground mt-2 leading-relaxed line-clamp-2 min-h-[2.75rem]">
-                      {row?.description || preset.description}
-                    </p>
+                  {/* Tagline */}
+                  <p className="text-xs text-muted-foreground">
+                    {(row as any)?.tagline || (preset as any).tagline || `${preset.key.toUpperCase()} Program`}
+                  </p>
+
+                  {/* Description */}
+                  <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2">
+                    {row?.description || preset.description}
+                  </p>
+
+                  {/* Stats Row */}
+                  <div className="grid grid-cols-4 gap-2 pt-2 border-t">
+                    <div className="text-center">
+                      <p className="font-display text-lg font-bold">{mockCourses}</p>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Courses</p>
+                    </div>
+                    <div className="text-center border-l">
+                      <p className="font-display text-lg font-bold">{mockClasses}</p>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Classes</p>
+                    </div>
+                    <div className="text-center border-l">
+                      <p className="font-display text-lg font-bold">{mockStudents}</p>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Học viên</p>
+                    </div>
+                    <div className="text-center border-l">
+                      <p className="font-display text-lg font-bold">{mockWeeks}</p>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Tuần</p>
+                    </div>
                   </div>
 
-                  <div className="rounded-lg border bg-muted/20 p-3">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Cấp độ đang gắn</p>
-                    <p className="font-display text-2xl font-extrabold leading-tight">{stats?.levelCount ?? 0}</p>
+                  {/* Revenue Progress */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground uppercase tracking-wider">Doanh thu QTD</span>
+                      <span className="font-medium">
+                        {Math.round(mockRevenue / 1000000)}M / {Math.round(mockTarget / 1000000)}M
+                      </span>
+                    </div>
+                    <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
+                      <div 
+                        className={cn("h-full rounded-full", palette.progressFill)} 
+                        style={{ width: `${completionPct}%` }}
+                      />
+                    </div>
+                    <p className="text-[10px] text-muted-foreground">{completionPct}% target</p>
                   </div>
                 </div>
 
-                <div className="border-t p-3 flex items-center justify-between gap-2">
-                  <span className="text-[11px] text-muted-foreground">Sort #{preset.sort_order}</span>
-                  <Button asChild size="sm" variant="ghost" className="h-8 text-xs gap-1.5">
-                    <Link to={`/programs/${preset.key}`}>
-                      Chi tiết <ArrowRight className="h-3 w-3" />
-                    </Link>
-                  </Button>
+                {/* Footer: Teachers + Actions */}
+                <div className="border-t p-3 flex items-center justify-between gap-2 bg-muted/20">
+                  {/* Mock teacher avatars */}
+                  <div className="flex items-center gap-1">
+                    <div className="flex -space-x-2">
+                      <div className={cn("w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-medium text-white", palette.progressFill)}>
+                        T
+                      </div>
+                      <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-[10px] font-medium text-white">
+                        L
+                      </div>
+                    </div>
+                    <span className="text-[10px] text-muted-foreground ml-1">2 teachers</span>
+                  </div>
+                  
+                  <div className="flex items-center gap-1">
+                    <Button asChild size="sm" variant="outline" className="h-7 text-xs gap-1.5 rounded-full px-3">
+                      <Link to={`/programs/${preset.key}`}>
+                        <EyeIcon className="h-3 w-3" /> Detail
+                      </Link>
+                    </Button>
+                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0 rounded-full">
+                      <MoreHorizontal className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 </div>
               </article>
             );

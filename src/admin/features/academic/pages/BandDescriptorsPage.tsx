@@ -43,20 +43,6 @@ export default function BandDescriptorsPage() {
         </div>
       </div>
 
-      {/* Note: Writing Task 2 uses Task Response */}
-      <div style={{
-        background: "var(--lp-yellow-soft, #FFFBEB)",
-        border: "2px solid var(--lp-ink, #0B0C0E)",
-        borderRadius: 12,
-        padding: "10px 16px",
-        fontSize: 13,
-        boxShadow: "3px 3px 0 0 var(--lp-ink, #0B0C0E)",
-      }}>
-        <span style={{ fontWeight: 800 }}>ℹ️ Lưu ý:</span>{" "}
-        Writing Task 2 sử dụng tiêu chí <strong>"Task Response" (TR)</strong>, không phải "Task Achievement" như Task 1.
-        Đã được cấu hình đúng trong hệ thống.
-      </div>
-
       <AdminBandDescriptorsTab />
     </div>
   );

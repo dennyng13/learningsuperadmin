@@ -1,10 +1,10 @@
-import { useState, useEffect, useCallback, KeyboardEvent } from "react";
+import React, { useState, useEffect, useCallback, KeyboardEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@shared/components/ui/button";
 import { PopButton } from "@shared/components/ui/pop-button";
 import { Input } from "@shared/components/ui/input";
-import { Loader2, Save, CheckCircle2, ChevronLeft, ChevronRight, Plus, X, Trash2, BarChart3 } from "lucide-react";
+import { Loader2, Save, CheckCircle2, ChevronLeft, ChevronRight, Plus, X, Trash2, BarChart3, Pen, AlignLeft, BookOpen, Mic, Volume2, Headphones, CheckSquare, MessageSquare } from "lucide-react";
 import { cn } from "@shared/lib/utils";
 import { Badge } from "@shared/components/ui/badge";
 import { clearConversionCache } from "@shared/utils/scoreConversion";
@@ -51,11 +51,28 @@ const DESCRIPTOR_SKILLS = [
 ];
 
 const ALL_SKILLS = [
-  { key: "writing", label: "Writing" },
-  { key: "speaking", label: "Speaking" },
-  { key: "reading", label: "Reading" },
-  { key: "listening", label: "Listening" },
+  { key: "writing",   label: "Writing",   icon: "pen",       color: "#FA7D64", soft: "#FFF1EF" },
+  { key: "speaking",  label: "Speaking",  icon: "mic",       color: "#A78BFA", soft: "#F5F3FF" },
+  { key: "reading",   label: "Reading",   icon: "book",      color: "#10B981", soft: "#ECFDF5" },
+  { key: "listening", label: "Listening", icon: "headphones", color: "#0EA5E9", soft: "#E0F2FE" },
 ];
+
+const SKILL_ICON: Record<string, React.ReactNode> = {
+  writing:   <Pen size={13} />,
+  speaking:  <Mic size={13} />,
+  reading:   <BookOpen size={13} />,
+  listening: <Headphones size={13} />,
+};
+
+const CRITERIA_ICON: Record<string, React.ReactNode> = {
+  task_achievement:  <CheckSquare size={14} />,
+  task_response:     <MessageSquare size={14} />,
+  coherence_cohesion:<AlignLeft size={14} />,
+  lexical_resource:  <BookOpen size={14} />,
+  grammar_accuracy:  <CheckSquare size={14} />,
+  fluency_coherence: <Volume2 size={14} />,
+  pronunciation:     <Mic size={14} />,
+};
 
 const BANDS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
@@ -352,50 +369,64 @@ export default function AdminBandDescriptorsTab() {
 
       {/* ── Skill + Task tab bar ── */}
       <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
-        {/* Skill pill tabs */}
+        {/* Skill pill tabs — icon + color per skill */}
         <div style={{
-          display: "flex", gap: 0,
+          display: "flex", gap: 4, padding: 4,
           background: "var(--lp-cream, #F9F8F4)",
-          border: "2px solid var(--lp-ink, #0B0C0E)",
-          borderRadius: 10, overflow: "hidden",
+          border: "2.5px solid var(--lp-ink, #0B0C0E)",
+          borderRadius: 14,
+          boxShadow: "3px 3px 0 0 var(--lp-ink, #0B0C0E)",
         }}>
-          {ALL_SKILLS.map(s => (
-            <button
-              key={s.key}
-              onClick={() => setSkill(s.key)}
-              style={{
-                padding: "6px 16px", fontSize: 12, fontWeight: 700,
-                background: skill === s.key ? "var(--lp-ink, #0B0C0E)" : "transparent",
-                color: skill === s.key ? "#fff" : "var(--lp-ink, #0B0C0E)",
-                border: "none", cursor: "pointer", transition: "all .1s",
-                borderRight: "1.5px solid var(--lp-line, #E5E7EB)",
-              }}
-            >{s.label}</button>
-          ))}
+          {ALL_SKILLS.map(s => {
+            const isActive = skill === s.key;
+            return (
+              <button
+                key={s.key}
+                onClick={() => setSkill(s.key)}
+                style={{
+                  display: "flex", alignItems: "center", gap: 6,
+                  padding: "6px 14px", fontSize: 12, fontWeight: 800,
+                  background: isActive ? s.color : "transparent",
+                  color: isActive ? "#fff" : "var(--lp-ink, #0B0C0E)",
+                  border: isActive ? "2px solid var(--lp-ink, #0B0C0E)" : "2px solid transparent",
+                  borderRadius: 10, cursor: "pointer", transition: "all .12s",
+                  boxShadow: isActive ? "2px 2px 0 0 var(--lp-ink)" : "none",
+                }}
+              >
+                <span style={{ display: "flex", opacity: isActive ? 1 : 0.5 }}>{SKILL_ICON[s.key]}</span>
+                {s.label}
+              </button>
+            );
+          })}
         </div>
 
-        {/* Task type sub-tabs (Writing only) */}
-        {currentSkill && currentSkill.taskTypes.length > 1 && (
-          <div style={{
-            display: "flex", gap: 0,
-            border: "2px solid var(--lp-line, #E5E7EB)",
-            borderRadius: 10, overflow: "hidden",
-          }}>
-            {currentSkill.taskTypes.map(t => (
-              <button
-                key={t.key}
-                onClick={() => setTaskType(t.key)}
-                style={{
-                  padding: "6px 14px", fontSize: 11, fontWeight: 700,
-                  background: taskType === t.key ? "var(--lp-teal-soft, #E6F7F6)" : "#fff",
-                  color: "var(--lp-ink, #0B0C0E)",
-                  border: "none", cursor: "pointer", transition: "all .1s",
-                  borderRight: "1.5px solid var(--lp-line, #E5E7EB)",
-                }}
-              >{t.label}</button>
-            ))}
-          </div>
-        )}
+        {/* Task type sub-tabs — colored with active skill color */}
+        {currentSkill && currentSkill.taskTypes.length > 1 && (() => {
+          const activeSkillMeta = ALL_SKILLS.find(s => s.key === skill);
+          return (
+            <div style={{
+              display: "flex", gap: 0,
+              border: "2px solid var(--lp-ink, #0B0C0E)",
+              borderRadius: 10, overflow: "hidden",
+              boxShadow: "2px 2px 0 0 var(--lp-ink)",
+            }}>
+              {currentSkill.taskTypes.map((t, idx) => (
+                <button
+                  key={t.key}
+                  onClick={() => setTaskType(t.key)}
+                  style={{
+                    padding: "6px 16px", fontSize: 11,
+                    fontWeight: taskType === t.key ? 900 : 700,
+                    background: taskType === t.key ? (activeSkillMeta?.soft ?? "#fff") : "#fff",
+                    color: "var(--lp-ink, #0B0C0E)",
+                    border: "none", cursor: "pointer", transition: "all .1s",
+                    borderRight: idx < currentSkill.taskTypes.length - 1 ? "1.5px solid var(--lp-line, #E5E7EB)" : "none",
+                  }}
+                >{t.label}</button>
+              ))}
+            </div>
+          );
+        })()}
 
         <div style={{ flex: 1 }} />
 
@@ -433,7 +464,39 @@ export default function AdminBandDescriptorsTab() {
 
       {/* ── Content ── */}
       {isScoreConversion ? (
-        <ScoreConversionSection skill={skill} />
+        <div style={{
+          background: "#fff",
+          border: "2.5px solid var(--lp-ink, #0B0C0E)",
+          borderRadius: 18,
+          boxShadow: "4px 4px 0 0 var(--lp-ink, #0B0C0E)",
+          overflow: "hidden",
+        }}>
+          {/* Skill header bar */}
+          <div style={{
+            padding: "14px 20px",
+            borderBottom: "2px solid var(--lp-ink, #0B0C0E)",
+            background: ALL_SKILLS.find(s => s.key === skill)?.soft ?? "var(--lp-cream, #F9F8F4)",
+            display: "flex", alignItems: "center", gap: 10,
+          }}>
+            <div style={{
+              width: 32, height: 32, borderRadius: 8,
+              background: ALL_SKILLS.find(s => s.key === skill)?.color ?? "var(--lp-ink)",
+              border: "2px solid var(--lp-ink, #0B0C0E)",
+              display: "grid", placeItems: "center", color: "#fff", flexShrink: 0,
+            }}>
+              {SKILL_ICON[skill]}
+            </div>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--lp-body)" }}>Score Conversion</div>
+              <div className="font-display" style={{ fontSize: 16, fontWeight: 900, letterSpacing: "-0.01em" }}>
+                {skill === "reading" ? "Reading" : "Listening"} · Bảng quy đổi điểm
+              </div>
+            </div>
+          </div>
+          <div style={{ padding: "20px 24px" }}>
+            <ScoreConversionSection skill={skill} />
+          </div>
+        </div>
       ) : loading ? (
         <div style={{ display: "flex", justifyContent: "center", padding: "64px 0" }}>
           <Loader2 className="h-6 w-6 animate-spin" style={{ color: "var(--lp-body)" }} />
@@ -541,6 +604,7 @@ export default function AdminBandDescriptorsTab() {
                     const color = CRITERIA_COLORS[i] || "coral";
                     const desc = descriptors[makeKey(c.key, activeBand)] || "";
                     const firstLine = desc.split("\n").find(l => l.trim()) || "";
+                    const iconColor = color === "yellow" ? "var(--lp-ink)" : "#fff";
                     return (
                       <button
                         key={c.key}
@@ -555,19 +619,24 @@ export default function AdminBandDescriptorsTab() {
                         onMouseEnter={e => { (e.currentTarget as HTMLElement).style.boxShadow = "3px 3px 0 0 var(--lp-ink)"; (e.currentTarget as HTMLElement).style.transform = "translate(-1px,-1px)"; }}
                         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.boxShadow = "none"; (e.currentTarget as HTMLElement).style.transform = "none"; }}
                       >
-                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                          {/* Icon square with flat icon + abbr below */}
                           <div style={{
-                            width: 28, height: 28, borderRadius: 7,
+                            width: 36, height: 36, borderRadius: 9,
                             background: CRITERIA_ACCENT[color],
                             border: "2px solid var(--lp-ink, #0B0C0E)",
-                            display: "grid", placeItems: "center", flexShrink: 0,
+                            display: "flex", flexDirection: "column",
+                            alignItems: "center", justifyContent: "center",
+                            flexShrink: 0, gap: 1,
                           }}>
-                            <span style={{ fontFamily: "var(--ff-mono, monospace)", fontSize: 9, fontWeight: 900, color: color === "yellow" ? "var(--lp-ink)" : "#fff" }}>{c.short}</span>
+                            <span style={{ color: iconColor, display: "flex", lineHeight: 1 }}>{CRITERIA_ICON[c.key]}</span>
+                            <span style={{ fontFamily: "var(--ff-mono, monospace)", fontSize: 7, fontWeight: 900, color: iconColor, letterSpacing: "0.04em" }}>{c.short}</span>
                           </div>
-                          <div>
-                            <div className="font-display" style={{ fontSize: 13, fontWeight: 900, lineHeight: 1.1 }}>{c.label}</div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: CRITERIA_ACCENT[color], marginBottom: 1 }}>{c.short}</div>
+                            <div className="font-display" style={{ fontSize: 13, fontWeight: 900, lineHeight: 1.15 }}>{c.label}</div>
                           </div>
-                          <ChevronRight className="h-3.5 w-3.5 ml-auto" style={{ color: "var(--lp-body)", flexShrink: 0 }} />
+                          <ChevronRight className="h-3.5 w-3.5" style={{ color: "var(--lp-body)", flexShrink: 0 }} />
                         </div>
                         <div style={{ fontSize: 12, color: "var(--lp-ink)", lineHeight: 1.5, minHeight: 36 }}>
                           {firstLine || <span style={{ color: "var(--lp-body)", fontStyle: "italic" }}>Chưa có mô tả — nhấn để thêm</span>}
