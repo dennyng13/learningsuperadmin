@@ -4,14 +4,10 @@ import { AdminBreadcrumb } from "./AdminBreadcrumb";
 import { GlobalBackButton } from "./GlobalBackButton";
 import { Outlet } from "react-router-dom";
 import { useIsMobile } from "@shared/hooks/use-mobile";
-import { Bell, Search, BellOff } from "lucide-react";
+import { Search } from "lucide-react";
 import { useAuth } from "@shared/hooks/useAuth";
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@shared/components/ui/popover";
+import NotificationBell from "@shared/components/NotificationBell";
 
 function getGreeting() {
   const h = new Date().getHours();
@@ -85,46 +81,10 @@ export default function AdminLayout() {
             </button>
           )}
 
-          {/* Notification bell — sticker IconButton */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <button
-                type="button"
-                aria-label="Thông báo"
-                className="relative h-10 w-10 rounded-pop bg-white border-[2px] border-lp-ink shadow-pop-xs hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-pop-sm active:translate-x-0.5 active:translate-y-0.5 active:shadow-none flex items-center justify-center transition-all duration-150 text-lp-ink"
-              >
-                <Bell className="h-[18px] w-[18px]" strokeWidth={2.2} />
-                <span
-                  aria-hidden="true"
-                  className="absolute -top-1 -right-1 inline-flex h-2.5 w-2.5 rounded-full bg-lp-coral border-2 border-lp-ink animate-pulse-dot"
-                />
-              </button>
-            </PopoverTrigger>
-            <PopoverContent
-              align="end"
-              sideOffset={10}
-              className="w-80 p-0 overflow-hidden border-2 border-lp-ink rounded-pop shadow-pop"
-            >
-              <div className="flex items-center justify-between px-4 py-3 border-b-2 border-lp-ink/15 bg-lp-cream">
-                <p className="font-display text-sm font-bold text-lp-ink">Thông báo</p>
-                <span className="text-[10px] uppercase tracking-wider text-lp-body font-semibold">
-                  Sắp ra mắt
-                </span>
-              </div>
-              <div className="px-5 py-8 flex flex-col items-center text-center gap-2 bg-white">
-                <div className="h-10 w-10 rounded-full bg-lp-cream flex items-center justify-center border-[1.5px] border-lp-ink/20">
-                  <BellOff className="h-5 w-5 text-lp-body" />
-                </div>
-                <p className="text-sm font-semibold text-lp-ink">
-                  Chưa có thông báo mới
-                </p>
-                <p className="text-xs text-lp-body leading-relaxed">
-                  Trung tâm thông báo đang được hoàn thiện. Các sự kiện về lớp,
-                  duyệt lịch, payroll và đồng bộ sẽ hiển thị tại đây.
-                </p>
-              </div>
-            </PopoverContent>
-          </Popover>
+          {/* Notification bell — Migration A */}
+          <div className="relative h-10 w-10">
+            <NotificationBell />
+          </div>
 
           {/* Avatar — sticker ring */}
           <button

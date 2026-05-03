@@ -65,6 +65,11 @@ export interface ProgramPalette {
   accentBorderHover: string;
   /** Focus ring color */
   ring: string;
+  /** Soft background color for hero sections */
+  bgSoft?: string;
+  /** Soft border color */
+  borderSoft?: string;
+  borderColor?: string;
 }
 
 // ---- Whitelisted Tailwind colors (must match safelist) ---------------------
@@ -127,6 +132,9 @@ function buildPalette(c: AllowedColor): ProgramPalette {
     accentBorder: `border-${c}-500/20`,
     accentBorderHover: `hover:border-${c}-500/50`,
     ring: `ring-${c}-500/40`,
+    bgSoft: `bg-${c}-50`,
+    borderSoft: `border-${c}-200`,
+    borderColor: `border-${c}-500`,
   };
 }
 
@@ -229,4 +237,52 @@ export function getProgramLabel(program?: string | null): string {
 
   // Last resort — humanise the raw input
   return program.trim();
+}
+
+// ---- Emoji helpers --------------------------------------------------------
+
+const PROGRAM_EMOJIS: Record<string, string> = {
+  ielts: "🎯",
+  wre: "💼",
+  private: "👤",
+  "1-1": "👤",
+  customized: "✨",
+  toefl: "🌎",
+  sat: "📚",
+  gre: "🎓",
+};
+
+export function getProgramEmoji(program?: string | null): string {
+  if (!program) return "📚";
+  const key = program.trim().toLowerCase();
+  if (!key) return "📚";
+
+  // Check exact match
+  if (PROGRAM_EMOJIS[key]) return PROGRAM_EMOJIS[key];
+
+  // Check partial match
+  for (const [progKey, emoji] of Object.entries(PROGRAM_EMOJIS)) {
+    if (key.includes(progKey)) return emoji;
+  }
+
+  return "📚";
+}
+
+export function getCourseEmoji(codeOrName?: string | null): string {
+  if (!codeOrName) return "📚";
+  const key = codeOrName.toLowerCase();
+
+  if (key.includes('listening')) return '🎧';
+  if (key.includes('reading')) return '📖';
+  if (key.includes('writing')) return '✍️';
+  if (key.includes('speaking')) return '🎙️';
+  if (key.includes('mock')) return '🏁';
+  if (key.includes('foundation') || key.includes('pre')) return '🌱';
+  if (key.includes('intensive')) return '⚡';
+  if (key.includes('bridge')) return '🌉';
+  if (key.includes('grammar')) return '📝';
+  if (key.includes('vocab')) return '📚';
+  if (key.includes('test') || key.includes('ielts academic')) return '📋';
+
+  return "📚";
 }

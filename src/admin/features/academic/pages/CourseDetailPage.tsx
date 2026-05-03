@@ -1,12 +1,9 @@
 /**
- * CourseDetailPage — /courses/:id Day 7 build per mockup
+ * CourseDetailPage — /courses/:id Enhanced UI from mockup
  * (`~Projects/Admin WebApp UI (Template)/pages-course-detail.jsx`).
  *
- * Hero + 5-card stat strip + sections (description, outcomes, study plans
- * linked, classes using). Most fields are real data từ courses table; lesson
- * list + difficulty bars defer cho sprint sau (no backend tables).
- *
- * Edit button reuses existing CourseEditorDialog. Delete + clone defer.
+ * Hero + emoji + difficulty bars + stats strip + tabs (lessons, outcomes, materials, classes).
+ * Edit button reuses existing CourseEditorDialog.
  */
 
 import { useMemo, useState } from "react";
@@ -14,18 +11,38 @@ import { Link, Navigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft, BookOpen, CheckCircle2, Clock, GraduationCap,
-  Layers, Pencil, School, Target, Users, Wallet,
+  Layers, Pencil, School, Target, Users, Wallet, Copy, Users2,
+  ChevronRight, FileText, Volume2, Sparkles, ClipboardList,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@shared/components/ui/button";
 import { Skeleton } from "@shared/components/ui/skeleton";
 import { Badge } from "@shared/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@shared/components/ui/tabs";
+import { Progress } from "@shared/components/ui/progress";
 import { useCoursesAdmin } from "@admin/features/academic/hooks/useCoursesAdmin";
 import { useCourseLevels } from "@shared/hooks/useCourseLevels";
 import type { Course, CourseInput } from "@admin/features/academic/hooks/useCourses";
 import CourseEditorDialog from "@admin/features/academic/components/CourseEditorDialog";
-import { getProgramPalette } from "@shared/utils/programColors";
+import { getProgramPalette, getCourseEmoji } from "@shared/utils/programColors";
 import { cn } from "@shared/lib/utils";
+
+interface LessonData {
+  idx: number;
+  week: number;
+  name: string;
+  dur: number;
+  type: 'lesson' | 'practice' | 'flashcard' | 'test' | 'review';
+  objs: string[];
+  status: 'done' | 'active' | 'upcoming';
+}
+
+interface MaterialData {
+  kind: 'pdf' | 'audio' | 'flashcard' | 'plan';
+  name: string;
+  size?: string;
+  count?: number;
+}
 
 interface ClassUsingCourse {
   id: string;
@@ -57,6 +74,31 @@ const VND_FMT = (n: number) => {
 export default function CourseDetailPage() {
   const { id = "" } = useParams<{ id: string }>();
   const [editorOpen, setEditorOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("lessons");
+
+  /* Mock lesson data - will be replaced with real backend data */
+  const lessons: LessonData[] = useMemo(() => [
+    { idx: 1, week: 1, name: 'Form & Note Completion', dur: 90, type: 'lesson', objs: ['Số, tên, địa chỉ', 'Form filling'], status: 'done' },
+    { idx: 2, week: 1, name: 'Numbers, Dates, Times', dur: 90, type: 'lesson', objs: ['Spelling numbers', 'Dates'], status: 'done' },
+    { idx: 3, week: 1, name: 'Practice — Section 1', dur: 90, type: 'practice', objs: ['Mock section 1'], status: 'done' },
+    { idx: 4, week: 1, name: 'Vocab Drill — Travel & Booking', dur: 60, type: 'flashcard', objs: ['80 từ chủ đề'], status: 'done' },
+    { idx: 5, week: 2, name: 'Map Labelling Strategy', dur: 90, type: 'lesson', objs: ['Hướng & vị trí', 'Theo dõi map'], status: 'active' },
+    { idx: 6, week: 2, name: 'Diagram & Plan Labelling', dur: 90, type: 'lesson', objs: ['Diagrams', 'Floor plans'], status: 'upcoming' },
+    { idx: 7, week: 2, name: 'Practice — Section 2', dur: 90, type: 'practice', objs: ['Mock section 2'], status: 'upcoming' },
+    { idx: 8, week: 2, name: 'Mid-course Quick Test', dur: 45, type: 'test', objs: ['Quiz section 1-2'], status: 'upcoming' },
+    { idx: 9, week: 3, name: 'Section 3 — Conversation', dur: 90, type: 'lesson', objs: ['Multiple speakers', 'Opinions'], status: 'upcoming' },
+    { idx: 10, week: 3, name: 'Section 4 — Lecture', dur: 90, type: 'lesson', objs: ['Note structure', 'Summary'], status: 'upcoming' },
+    { idx: 11, week: 3, name: 'Mock Listening Full', dur: 90, type: 'test', objs: ['Full listening test'], status: 'upcoming' },
+    { idx: 12, week: 3, name: 'Review & Strategy', dur: 60, type: 'review', objs: ['Tổng ôn'], status: 'upcoming' },
+  ], []);
+
+  /* Mock materials data */
+  const materials: MaterialData[] = useMemo(() => [
+    { kind: 'pdf', name: 'Listening Bridge — Student Book', size: '12 MB' },
+    { kind: 'audio', name: 'Audio Pack — 24 tracks', size: '180 MB' },
+    { kind: 'flashcard', name: 'Numbers & Dates Vocab Set', count: 120 },
+    { kind: 'plan', name: 'PRE-03 Study Plan (3 weeks)', count: 12 },
+  ], []);
 
   /* Resolve course → program (for back link + palette). */
   const courseQ = useQuery({
@@ -239,8 +281,12 @@ export default function CourseDetailPage() {
     studyPlansQ.refetch();
   };
 
+  const emoji = getCourseEmoji(course.code || course.name);
+  const difficulty = 3; // Mock difficulty 1-5
+  const totalHours = (course.total_sessions || 12) * (course.hours_per_session || 1.5);
+
   return (
-    <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-5">
+    <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-5 pb-16">
       {/* Back */}
       <Button asChild size="sm" variant="ghost" className="h-8 -ml-2 gap-1.5 text-xs text-muted-foreground">
         <Link to={program ? `/courses/programs/${program.key}` : "/courses"}>
@@ -249,225 +295,315 @@ export default function CourseDetailPage() {
         </Link>
       </Button>
 
-      {/* Hero */}
-      <section className={cn("rounded-2xl border bg-card overflow-hidden", isInactive && "opacity-80")}>
-        <div className={cn("h-1.5 w-full", palette.progressFill)} />
-        <div className="p-5 md:p-6 flex items-start gap-4">
-          <div className={cn("h-16 w-16 rounded-xl flex items-center justify-center shrink-0", palette.iconBg)}>
-            <BookOpen className={cn("h-8 w-8", palette.iconText)} />
-          </div>
-          <div className="flex-1 min-w-0 space-y-2">
-            <div className="flex items-center gap-2 flex-wrap">
-              {course.code && (
-                <code className="text-[11px] font-mono px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-bold">
-                  {course.code}
-                </code>
-              )}
-              {program && (
-                <Badge variant="outline" className="text-[10px]">
-                  {program.name}
-                </Badge>
-              )}
-              {course.cefr_range && (
-                <Badge variant="outline" className="text-[10px] inline-flex items-center gap-1">
-                  <Target className="h-3 w-3" /> {course.cefr_range}
-                </Badge>
-              )}
-              <span className={cn(
-                "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider",
-                isInactive ? "bg-muted text-muted-foreground" : "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
-              )}>
-                <span className={cn("h-1.5 w-1.5 rounded-full",
-                  isInactive ? "bg-muted-foreground" : "bg-emerald-500",
-                )} />
-                {course.status}
-              </span>
-            </div>
-            <h1 className="font-display text-2xl md:text-3xl font-extrabold leading-tight">
-              {course.name}
-            </h1>
-            {course.description && (
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {course.description}
-              </p>
-            )}
-          </div>
+      {/* Enhanced Hero */}
+      <section className={cn(
+        "rounded-2xl border-2 overflow-hidden",
+        palette.bgSoft || "bg-teal-50",
+        palette.borderSoft || "border-teal-200",
+        isInactive && "opacity-80"
+      )}>
+        <div className="p-6 md:p-8">
           <Button
             size="sm"
             variant="outline"
-            className="shrink-0 gap-1.5"
+            className="mb-4 gap-1.5"
             onClick={() => setEditorOpen(true)}
             disabled={!editingCourse}
           >
-            <Pencil className="h-3.5 w-3.5" /> Sửa khoá
+            <ArrowLeft className="h-3.5 w-3.5" />
+            {program ? `${program.name} · ${program.key}` : "Tất cả khoá học"}
           </Button>
+
+          <div className="flex items-start gap-6">
+            {/* Emoji */}
+            <div className="w-20 h-20 rounded-2xl bg-white border-2 border-slate-800 flex items-center justify-center text-4xl shadow-md transform -rotate-3 shrink-0">
+              {emoji}
+            </div>
+
+            <div className="flex-1 min-w-0">
+              {/* Meta row */}
+              <div className="flex items-center gap-2 flex-wrap mb-2">
+                {course.code && (
+                  <code className="text-[11px] font-mono px-2 py-0.5 rounded bg-white border font-bold">
+                    {course.code}
+                  </code>
+                )}
+                <Badge variant={isInactive ? "secondary" : "default"} className="text-[10px]">
+                  {isInactive ? "inactive" : "active"}
+                </Badge>
+                {course.cefr_range && (
+                  <Badge variant="outline" className="text-[10px] bg-amber-100 border-amber-200 text-amber-800">
+                    🎯 {course.cefr_range}
+                  </Badge>
+                )}
+              </div>
+
+              <h1 className="font-display text-3xl font-extrabold tracking-tight mb-2">
+                {course.name}
+              </h1>
+
+              {course.description && (
+                <p className="text-sm text-muted-foreground leading-relaxed max-w-2xl mb-3">
+                  {course.description}
+                </p>
+              )}
+
+              {/* Difficulty bars */}
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/70 rounded-full border">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Độ khó</span>
+                <div className="flex gap-1">
+                  {[1,2,3,4,5].map(n => (
+                    <div
+                      key={n}
+                      className={cn(
+                        "w-4 h-2 rounded-sm border",
+                        n <= difficulty ? "bg-rose-500 border-rose-600" : "bg-white border-slate-300"
+                      )}
+                    />
+                  ))}
+                </div>
+                <span className="text-[11px] font-medium">{difficulty}/5 · Trung bình</span>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="hidden md:flex flex-col gap-2 shrink-0">
+              <Button variant="outline" size="sm" className="gap-1.5 justify-start">
+                <Copy className="h-3.5 w-3.5" /> Duplicate
+              </Button>
+              <Button variant="outline" size="sm" className="gap-1.5 justify-start" onClick={() => setEditorOpen(true)}>
+                <Pencil className="h-3.5 w-3.5" /> Sửa khoá
+              </Button>
+              <Button size="sm" className="gap-1.5 justify-start">
+                <Users2 className="h-3.5 w-3.5" /> Gán cho lớp
+              </Button>
+            </div>
+          </div>
+
+          {/* Stats row */}
+          <div className="grid grid-cols-5 gap-4 mt-6 pt-6 border-t border-dashed border-slate-300/50">
+            <CdStat label="tuần" value={String(Math.ceil((course.total_sessions || 12) / 4))} />
+            <CdStat label="bài học" value={String(course.total_sessions || 12)} />
+            <CdStat label="tổng giờ" value={`${totalHours}h`} sub={`${course.hours_per_session || 1.5}h/buổi`} />
+            <CdStat label="lớp đang chạy" value={String(stats.activeClasses)} />
+            <CdStat label="học viên" value={String(stats.uniqueStudents)} />
+          </div>
         </div>
       </section>
 
-      {/* Stat strip */}
-      <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <StatCard
-          icon={Clock}
-          label="Số buổi"
-          value={course.total_sessions != null ? String(course.total_sessions) : "—"}
-          hint={course.duration_label ?? undefined}
-        />
-        <StatCard
-          icon={Clock}
-          label="Giờ/buổi"
-          value={course.hours_per_session != null ? String(course.hours_per_session) : "—"}
-          hint={course.hours_per_session != null && course.total_sessions != null
-            ? `${course.hours_per_session * course.total_sessions}h tổng`
-            : undefined}
-        />
-        <StatCard
-          icon={Users}
-          label="Sĩ số tối đa"
-          value={course.max_students != null ? String(course.max_students) : "—"}
-          hint="HV/lớp"
-        />
-        <StatCard
-          icon={Wallet}
-          label="Học phí"
-          value={course.price_vnd != null && course.price_vnd > 0 ? VND_FMT(course.price_vnd) : "—"}
-          hint={course.duration_label ?? undefined}
-        />
-      </section>
+      {/* Tabs Navigation */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <TabsList className="bg-muted/50">
+          <TabsTrigger value="lessons" className="gap-1.5 text-xs">
+            <BookOpen className="h-3.5 w-3.5" /> Bài học ({lessons.length})
+          </TabsTrigger>
+          <TabsTrigger value="outcomes" className="gap-1.5 text-xs">
+            <Target className="h-3.5 w-3.5" /> Mục tiêu
+          </TabsTrigger>
+          <TabsTrigger value="materials" className="gap-1.5 text-xs">
+            <Layers className="h-3.5 w-3.5" /> Học liệu ({materials.length})
+          </TabsTrigger>
+          <TabsTrigger value="classes" className="gap-1.5 text-xs">
+            <GraduationCap className="h-3.5 w-3.5" /> Lớp đang dùng ({classesUsingQ.data?.length || 0})
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Long description / Target audience / Problem solving */}
-      {(course.long_description || course.target_audience || course.problem_solving) && (
-        <section className="grid gap-3 md:grid-cols-2">
-          {course.long_description && (
-            <article className="rounded-xl border bg-card p-4 md:col-span-2">
-              <h3 className="font-display text-sm font-bold mb-2 inline-flex items-center gap-1.5">
-                <BookOpen className="h-3.5 w-3.5 text-primary" /> Mô tả chi tiết
-              </h3>
-              <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
-                {course.long_description}
-              </p>
-            </article>
-          )}
-          {course.target_audience && (
-            <article className="rounded-xl border bg-card p-4">
-              <h3 className="font-display text-sm font-bold mb-2 inline-flex items-center gap-1.5">
-                <Users className="h-3.5 w-3.5 text-violet-600" /> Đối tượng phù hợp
-              </h3>
-              <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
-                {course.target_audience}
-              </p>
-            </article>
-          )}
-          {course.problem_solving && (
-            <article className="rounded-xl border bg-card p-4">
-              <h3 className="font-display text-sm font-bold mb-2 inline-flex items-center gap-1.5">
-                <Target className="h-3.5 w-3.5 text-rose-600" /> Khoá này giải quyết vấn đề gì
-              </h3>
-              <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
-                {course.problem_solving}
-              </p>
-            </article>
-          )}
-        </section>
-      )}
-
-      {/* Outcomes */}
-      {outcomes.length > 0 && (
-        <section className="rounded-xl border bg-card p-4">
-          <h3 className="font-display text-sm font-bold mb-3 inline-flex items-center gap-1.5">
-            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> Đầu ra học tập ({outcomes.length})
-          </h3>
-          <ul className="space-y-1.5">
-            {outcomes.map((o, i) => (
-              <li key={i} className="text-sm flex items-start gap-2">
-                <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
-                <span>{o}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {/* Linked study plans */}
-      <section className="rounded-xl border bg-card p-4 space-y-3">
-        <header className="flex items-center justify-between gap-2">
-          <h3 className="font-display text-sm font-bold inline-flex items-center gap-1.5">
-            <Layers className="h-3.5 w-3.5 text-amber-600" />
-            Kế hoạch học liên kết ({studyPlansQ.data?.length ?? 0})
-          </h3>
-          <Button asChild size="sm" variant="ghost" className="h-7 text-xs gap-1">
-            <Link to="/study-plans">Quản lý plans</Link>
-          </Button>
-        </header>
-        {studyPlansQ.isLoading ? (
-          <Skeleton className="h-12 w-full" />
-        ) : !studyPlansQ.data?.length ? (
-          <p className="text-xs text-muted-foreground italic">Chưa gắn study plan nào.</p>
-        ) : (
-          <ul className="divide-y">
-            {studyPlansQ.data.map((p) => (
-              <li key={p.id} className="flex items-center gap-3 py-2 text-sm">
-                <BookOpen className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                <span className="font-medium truncate flex-1">
-                  {p.plan_name || <span className="italic text-muted-foreground">(chưa đặt tên)</span>}
-                </span>
-                {p.cefr_level && <Badge variant="outline" className="text-[10px]">{p.cefr_level}</Badge>}
-                {p.total_sessions != null && (
-                  <span className="text-[11px] text-muted-foreground tabular-nums">
-                    {p.total_sessions} buổi
-                  </span>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      {/* Classes using */}
-      <section className="rounded-xl border bg-card p-4 space-y-3">
-        <header className="flex items-center justify-between gap-2">
-          <h3 className="font-display text-sm font-bold inline-flex items-center gap-1.5">
-            <School className="h-3.5 w-3.5 text-teal-600" />
-            Lớp đang dùng ({classesUsingQ.data?.length ?? 0})
-          </h3>
-          <span className="text-[11px] text-muted-foreground">
-            <strong>{stats.activeClasses}</strong> đang chạy ·{" "}
-            <strong>{stats.uniqueStudents}</strong> HV
-          </span>
-        </header>
-        {classesUsingQ.isLoading ? (
-          <Skeleton className="h-16 w-full" />
-        ) : !classesUsingQ.data?.length ? (
-          <p className="text-xs text-muted-foreground italic">Chưa có lớp nào dùng khoá này.</p>
-        ) : (
-          <ul className="divide-y">
-            {classesUsingQ.data.map((c) => (
-              <li key={c.id}>
-                <Link
-                  to={`/classes/${c.id}`}
-                  className="flex items-center gap-3 py-2 text-sm hover:bg-muted/40 -mx-2 px-2 rounded-md transition-colors"
-                >
-                  <School className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">
-                      {c.name ?? c.class_name ?? c.class_code ?? "(không tên)"}
-                    </p>
-                    <p className="text-[11px] text-muted-foreground truncate">
-                      {c.class_code && <span>{c.class_code} · </span>}
-                      {c.teacher_name ?? "Chưa có GV"} ·{" "}
-                      <GraduationCap className="h-2.5 w-2.5 inline" /> {c.student_count ?? 0} HV
-                    </p>
+        {/* Lessons Tab */}
+        <TabsContent value="lessons">
+          <div className="rounded-xl border-2 bg-card p-5">
+            {[1, 2, 3].map((wk) => {
+              const weekLessons = lessons.filter(l => l.week === wk);
+              if (weekLessons.length === 0) return null;
+              return (
+                <div key={wk} className="mb-6 last:mb-0">
+                  <div className="flex items-center gap-3 mb-3 pb-2 border-b border-dashed">
+                    <span className="px-2 py-0.5 rounded-full bg-slate-800 text-white text-[10px] font-bold">TUẦN {wk}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {weekLessons.length} bài · {weekLessons.reduce((s, l) => s + l.dur, 0)} phút
+                    </span>
                   </div>
-                  {c.lifecycle_status && (
-                    <Badge variant="outline" className="text-[9px] uppercase">
-                      {c.lifecycle_status}
-                    </Badge>
+                  <div className="space-y-2">
+                    {weekLessons.map((l) => (
+                      <div
+                        key={l.idx}
+                        className={cn(
+                          "flex items-center gap-3 p-3 rounded-xl border transition-all",
+                          l.status === 'done' ? "opacity-60 bg-slate-50" :
+                          l.status === 'active' ? "bg-white border-teal-300 shadow-sm" :
+                          "bg-cream-50"
+                        )}
+                      >
+                        {/* Lesson number */}
+                        <div className={cn(
+                          "w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold shrink-0",
+                          l.status === 'done' ? "bg-teal-500 text-white" :
+                          l.status === 'active' ? "bg-amber-300 text-slate-800" :
+                          "bg-white border text-slate-600"
+                        )}>
+                          {l.status === 'done' ? '✓' : l.idx}
+                        </div>
+
+                        {/* Content */}
+                        <div className="flex-1 min-w-0">
+                          <div className="font-bold text-sm">{l.name}</div>
+                          <div className="text-[11px] text-muted-foreground">
+                            {l.objs.map((o, i) => <span key={i} className="mr-2">· {o}</span>)}
+                          </div>
+                        </div>
+
+                        {/* Meta */}
+                        <div className="flex items-center gap-2 shrink-0">
+                          <LessonTypeBadge type={l.type} />
+                          <span className="text-[11px] font-medium w-8 text-right">{l.dur}'</span>
+                        </div>
+
+                        <Button variant="outline" size="sm" className="h-7 text-xs shrink-0">Mở</Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </TabsContent>
+
+        {/* Outcomes Tab */}
+        <TabsContent value="outcomes">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="md:col-span-2 rounded-xl border-2 bg-card p-5">
+              <h3 className="font-display text-base font-bold mb-4 flex items-center gap-2">
+                <Target className="h-4 w-4 text-emerald-600" /> Mục tiêu sau khoá
+              </h3>
+              {outcomes.length > 0 ? (
+                <ul className="space-y-3">
+                  {outcomes.map((o, i) => (
+                    <li key={i} className="flex gap-3 text-sm">
+                      <span className="w-6 h-6 rounded-full bg-rose-100 border border-rose-200 flex items-center justify-center text-[10px] font-bold text-rose-600 shrink-0">
+                        {String(i + 1).padStart(2, '0')}
+                      </span>
+                      <span className="leading-relaxed">{o}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-muted-foreground italic">Chưa có mục tiêu nào được định nghĩa.</p>
+              )}
+            </div>
+
+            <div className="rounded-xl border-2 bg-amber-50 border-amber-200 p-5">
+              <h3 className="font-display text-sm font-bold mb-3 flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-amber-700" /> Yêu cầu đầu vào
+              </h3>
+              <ul className="space-y-2 text-sm mb-4">
+                <li className="flex items-center gap-2">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> Hoàn thành khoá trước
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> Vocab base 800+ từ
+                </li>
+              </ul>
+
+              {/* Band progression */}
+              <div className="pt-4 border-t border-dashed border-amber-300">
+                <div className="flex items-center justify-center gap-3">
+                  <span className="text-2xl font-display font-extrabold text-slate-400">5.0</span>
+                  <ArrowRight className="h-5 w-5 text-slate-300" />
+                  <span className="text-2xl font-display font-extrabold text-rose-600">5.5</span>
+                </div>
+                <p className="text-center text-[11px] text-muted-foreground mt-2">
+                  Mức band trung bình học viên đạt sau khoá
+                </p>
+              </div>
+            </div>
+          </div>
+        </TabsContent>
+
+        {/* Materials Tab */}
+        <TabsContent value="materials">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {materials.map((m, i) => {
+              const icon = m.kind === 'pdf' ? FileText : m.kind === 'audio' ? Volume2 : m.kind === 'flashcard' ? Sparkles : ClipboardList;
+              const color = m.kind === 'pdf' ? 'rose' : m.kind === 'audio' ? 'violet' : m.kind === 'flashcard' ? 'amber' : 'teal';
+              const bgColors = {
+                rose: 'bg-rose-50 border-rose-200',
+                violet: 'bg-violet-50 border-violet-200',
+                amber: 'bg-amber-50 border-amber-200',
+                teal: 'bg-teal-50 border-teal-200',
+              };
+              return (
+                <div
+                  key={i}
+                  className={cn(
+                    "rounded-xl border-2 p-4 flex flex-col transition-all hover:shadow-md cursor-pointer",
+                    bgColors[color as keyof typeof bgColors]
                   )}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+                >
+                  <div className="w-10 h-10 rounded-lg bg-slate-800 text-white flex items-center justify-center mb-3">
+                    <icon className="h-5 w-5" />
+                  </div>
+                  <div className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground mb-1">
+                    {m.kind}
+                  </div>
+                  <div className="font-bold text-sm leading-tight mb-1">{m.name}</div>
+                  <div className="text-[11px] text-muted-foreground">
+                    {m.size || `${m.count} items`}
+                  </div>
+                  <Button variant="outline" size="sm" className="mt-3 text-xs w-full">Mở</Button>
+                </div>
+              );
+            })}
+          </div>
+        </TabsContent>
+
+        {/* Classes Tab */}
+        <TabsContent value="classes">
+          <div className="rounded-xl border-2 bg-card overflow-hidden">
+            <div className="p-4 border-b flex items-center justify-between">
+              <h3 className="font-display font-bold flex items-center gap-2">
+                <School className="h-4 w-4" />
+                Lớp đang dùng ({classesUsingQ.data?.length || 0})
+              </h3>
+              <span className="text-[11px] text-muted-foreground">
+                <strong>{stats.activeClasses}</strong> đang chạy · <strong>{stats.uniqueStudents}</strong> HV
+              </span>
+            </div>
+            {classesUsingQ.isLoading ? (
+              <div className="p-4">
+                <Skeleton className="h-16 w-full" />
+              </div>
+            ) : !classesUsingQ.data?.length ? (
+              <div className="p-8 text-center text-sm text-muted-foreground">
+                <School className="h-8 w-8 mx-auto mb-2 text-muted-foreground/40" />
+                <p>Chưa có lớp nào dùng khoá này.</p>
+              </div>
+            ) : (
+              <div className="divide-y">
+                {classesUsingQ.data.map((c) => (
+                  <Link
+                    key={c.id}
+                    to={`/classes/${c.id}`}
+                    className="flex items-center gap-3 p-4 text-sm hover:bg-muted/40 transition-colors"
+                  >
+                    <School className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate">{c.name ?? c.class_name ?? c.class_code ?? "(không tên)"}</p>
+                      <p className="text-[11px] text-muted-foreground">
+                        {c.class_code && <span>{c.class_code} · </span>}
+                        {c.teacher_name ?? "Chưa có GV"} · {c.student_count ?? 0} HV
+                      </p>
+                    </div>
+                    {c.lifecycle_status && (
+                      <Badge variant="outline" className="text-[9px] uppercase">
+                        {c.lifecycle_status}
+                      </Badge>
+                    )}
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        </TabsContent>
+      </Tabs>
 
       {/* Editor dialog */}
       {editingCourse && program && (
@@ -485,6 +621,8 @@ export default function CourseDetailPage() {
     </div>
   );
 }
+
+/* ─── Helper Components ─── */
 
 interface StatCardProps {
   icon: typeof Clock;
@@ -509,6 +647,38 @@ function StatCard({ icon: Icon, label, value, hint }: StatCardProps) {
         <p className="text-[10px] text-muted-foreground leading-tight">{hint}</p>
       )}
     </div>
+  );
+}
+
+function CdStat({ label, value, sub }: { label: string; value: string; sub?: string }) {
+  return (
+    <div className="text-center">
+      <div className="font-display text-2xl font-extrabold">{value}</div>
+      <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mt-1">{label}</div>
+      {sub && <div className="text-[9px] text-muted-foreground mt-0.5">{sub}</div>}
+    </div>
+  );
+}
+
+function LessonTypeBadge({ type }: { type: LessonData['type'] }) {
+  const styles = {
+    lesson: 'bg-teal-100 text-teal-700 border-teal-200',
+    practice: 'bg-violet-100 text-violet-700 border-violet-200',
+    flashcard: 'bg-amber-100 text-amber-700 border-amber-200',
+    test: 'bg-rose-100 text-rose-700 border-rose-200',
+    review: 'bg-slate-100 text-slate-700 border-slate-200',
+  };
+  const labels = {
+    lesson: 'BÀI HỌC',
+    practice: 'LUYỆN TẬP',
+    flashcard: 'FLASHCARD',
+    test: 'KIỂM TRA',
+    review: 'ÔN TẬP',
+  };
+  return (
+    <span className={cn("text-[8px] font-bold px-1.5 py-0.5 rounded border", styles[type])}>
+      {labels[type]}
+    </span>
   );
 }
 

@@ -6,6 +6,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@shared/lib/utils";
 import type { ClassDetail } from "@admin/features/classes/components/ClassInfoCard";
 import { formatDateTimeDDMMYYYY, formatDateDDMMYYYY } from "@shared/utils/dateFormat";
+import {
+  ClassHealthSnapshot,
+  NextSessionCard,
+  AttendanceHeatmap,
+  PerformanceChart,
+  RosterPreview,
+  PinnedAnnouncement,
+  RisksPanel,
+} from "./overview";
 
 function formatVNDCompact(n: number): string {
   if (n >= 1_000_000_000) return (n / 1_000_000_000).toFixed(1).replace(/\.0$/, "") + "T₫";
@@ -105,30 +114,40 @@ export function OverviewTab({
         )}
       </div>
 
-      {/* Secondary row — chỉ admin: study plan + payroll placeholder */}
-      {mode === "admin" && (
-        <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-          <KpiCard
-            icon={BookOpen}
-            label="Study plan"
-            value={cls.study_plan_name ?? "Chưa gắn"}
-            tone="violet"
-            subtext={cls.study_plan_total_sessions ? `${cls.study_plan_total_sessions} buổi tổng` : "—"}
-          />
-          <KpiCard
-            icon={Banknote}
-            label="Payroll dự kiến"
-            value="—"
-            tone="slate"
-            subtext="Chờ module Payroll"
-          />
-        </div>
-      )}
+      {/* ═══ NEW: Class Health Snapshot (mockup pattern) ═══ */}
+      {mode === "admin" && <ClassHealthSnapshot />}
 
-      {/* Curriculum strip — visual timeline of buổi học per mockup
+      {/* ═══ NEW: Next Session Card (mockup pattern) ═══ */}
+      {mode === "admin" && <NextSessionCard />}
+
+      {/* ═══ Main content grid (2-col layout per mockup) ═══ */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4">
+        {/* Left column */}
+        <div className="space-y-4">
+          {/* Curriculum strip — visual timeline of buổi học per mockup
          pages-class-detail "Lộ trình 18 buổi" track. Status-colored dots,
          next session has pulse. Click → navigate /classes/:id?tab=sessions. */}
-      <CurriculumStrip classId={cls.id} totalPlanned={cls.study_plan_total_sessions ?? 0} />
+          <CurriculumStrip classId={cls.id} totalPlanned={cls.study_plan_total_sessions ?? 0} />
+
+          {/* ═══ NEW: Attendance Heatmap (mockup pattern) ═══ */}
+          <AttendanceHeatmap classId={cls.id} />
+
+          {/* ═══ NEW: Performance Chart (mockup pattern) ═══ */}
+          <PerformanceChart />
+        </div>
+
+        {/* Right column — sidebar */}
+        <div className="space-y-4">
+          {/* ═══ NEW: Roster Preview (mockup pattern) ═══ */}
+          <RosterPreview onViewAll={() => {}} onSelectStudent={() => {}} />
+
+          {/* ═══ NEW: Pinned Announcement (mockup pattern) ═══ */}
+          <PinnedAnnouncement />
+
+          {/* ═══ NEW: Risks Panel (mockup pattern) ═══ */}
+          <RisksPanel />
+        </div>
+      </div>
 
       {/* Course inheritance card */}
       {cls.course_id && cls.course_name && (
@@ -161,6 +180,26 @@ export function OverviewTab({
             </div>
           </div>
         </Card>
+      )}
+
+      {/* Secondary row — chỉ admin: study plan + payroll placeholder */}
+      {mode === "admin" && (
+        <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+          <KpiCard
+            icon={BookOpen}
+            label="Study plan"
+            value={cls.study_plan_name ?? "Chưa gắn"}
+            tone="violet"
+            subtext={cls.study_plan_total_sessions ? `${cls.study_plan_total_sessions} buổi tổng` : "—"}
+          />
+          <KpiCard
+            icon={Banknote}
+            label="Payroll dự kiến"
+            value="—"
+            tone="slate"
+            subtext="Chờ module Payroll"
+          />
+        </div>
       )}
 
       {/* Lifecycle banner — admin only */}
