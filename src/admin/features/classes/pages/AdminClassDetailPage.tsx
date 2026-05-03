@@ -41,6 +41,7 @@ import {
 } from "@admin/features/classes/components/ClassInfoCard";
 import RequestReplacementTeacherButton from "@admin/features/classes/components/RequestReplacementTeacherButton";
 import { ClonePlanDialog } from "@admin/features/classes/components/ClonePlanDialog";
+import ClassInvitationsDialog from "@admin/features/classes/components/ClassInvitationsDialog";
 import {
   SessionsTab, StudentsTab, PlanProgressTab, ActivityTab,
   AnnouncementsTab, SettingsTab,
@@ -192,6 +193,37 @@ export default function AdminClassDetailPage() {
     onError: (e: Error) => toast.error(`Xoá thất bại: ${e.message}`),
   });
 
+  /* ─── Resolve attached study_plan_id via 2-path lookup (mirrors
+     PlanProgressTab + ClonePlanDialog). Class có thể gắn plan qua:
+     (1) app_classes.study_plan_id direct, hoặc
+     (2) study_plans.class_ids @> [classId] (F3 v2 reverse).
+     Khi #1 null nhưng #2 has value, KPI vẫn show "Đã gắn". */
+  const attachedPlanQ = useQuery({
+    queryKey: ["class-attached-plan", classId, cls?.study_plan_id],
+    enabled: !!classId,
+    queryFn: async (): Promise<{ id: string; plan_name: string | null } | null> => {
+      // Path 1: direct study_plan_id
+      if (cls?.study_plan_id) {
+        const { data } = await (supabase as any)
+          .from("study_plans")
+          .select("id, plan_name")
+          .eq("id", cls.study_plan_id)
+          .maybeSingle();
+        if (data) return data as { id: string; plan_name: string | null };
+      }
+      // Path 2: reverse class_ids[]
+      const { data } = await (supabase as any)
+        .from("study_plans")
+        .select("id, plan_name")
+        .contains("class_ids", [classId])
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return (data as { id: string; plan_name: string | null } | null) ?? null;
+    },
+    staleTime: 60_000,
+  });
+
   /* ─── Day 7 invitation flow — summary query + send/resend mutations ─── */
   const invitationSummaryQ = useQuery({
     queryKey: ["class-invitation-summary", classId],
@@ -250,6 +282,10 @@ export default function AdminClassDetailPage() {
   });
 
   const [confirmResendInvites, setConfirmResendInvites] = useState(false);
+  /* Day 7 verify fix: rich invitation manager dialog (swap GV chính / TA /
+     phụ + reassign + deadline + negotiation). Replaces brittle binary
+     "Mời/Mời lại" toggle with always-visible "Quản lý lời mời". */
+  const [inviteManagerOpen, setInviteManagerOpen] = useState(false);
 
   const handleStatusChange = (next: string) => {
     const status = next as ClassLifecycleStatus;
@@ -405,8 +441,20 @@ export default function AdminClassDetailPage() {
             <MoreVertical className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56">
-          {/* Day 7 invitation flow — Mời (lần đầu) hoặc Mời lại (đã gửi) */}
+        <DropdownMenuContent align="end" className="w-60">
+          {/* Day 7 verify fix — invitation actions luôn show 2 items để
+              UX rõ ràng (binary toggle trước đây gây nhầm). */}
+          <DropdownMenuItem
+            onClick={() => setInviteManagerOpen(true)}
+            className="text-xs gap-1.5"
+          >
+            <Mail className="h-3.5 w-3.5" /> Quản lý lời mời
+            {invitationSummaryQ.data && invitationSummaryQ.data.total > 0 && (
+              <span className="ml-auto text-[10px] text-muted-foreground tabular-nums">
+                {invitationSummaryQ.data.accepted}/{invitationSummaryQ.data.total}
+              </span>
+            )}
+          </DropdownMenuItem>
           {invitationSummaryQ.data && invitationSummaryQ.data.total > 0 && (
             invitationSummaryQ.data.everSent ? (
               <DropdownMenuItem
@@ -414,7 +462,7 @@ export default function AdminClassDetailPage() {
                 className="text-xs gap-1.5"
                 disabled={resendInvitationsMut.isPending}
               >
-                <RotateCw className="h-3.5 w-3.5" /> Mời lại giáo viên
+                <RotateCw className="h-3.5 w-3.5" /> Gửi lại email lời mời
               </DropdownMenuItem>
             ) : (
               <DropdownMenuItem
@@ -422,7 +470,7 @@ export default function AdminClassDetailPage() {
                 className="text-xs gap-1.5"
                 disabled={sendInvitationsMut.isPending}
               >
-                <Send className="h-3.5 w-3.5" /> Mời giáo viên
+                <Send className="h-3.5 w-3.5" /> Gửi email lời mời
               </DropdownMenuItem>
             )
           )}
@@ -560,8 +608,8 @@ export default function AdminClassDetailPage() {
         <ClassKpi
           icon={BookOpen}
           label="Study plan"
-          value={cls.study_plan_id ? "Đã gắn" : "Chưa gắn"}
-          hint={cls.study_plan_name ?? undefined}
+          value={attachedPlanQ.data ? "Đã gắn" : attachedPlanQ.isLoading ? "..." : "Chưa gắn"}
+          hint={attachedPlanQ.data?.plan_name ?? cls.study_plan_name ?? undefined}
           tone="coral"
         />
       </section>
@@ -744,6 +792,20 @@ export default function AdminClassDetailPage() {
         sourceClassId={cls.id}
         sourceProgram={cls.program ?? null}
         sourceCourseId={cls.course_id ?? null}
+      />
+
+      {/* Day 7 verify fix: rich invitation manager dialog (swap GV chính,
+          GV phụ, TA + reassign + deadline + negotiation). User direction
+          "Khi gửi lời mời lại có thể cho thay giảng viên, TA, giảng viên
+          phụ, Ai accept thì sẽ được ghi đè làm dữ liệu chính." Backend
+          ClassInvitationsDialog đã có reassign + send-class-invitations +
+          batch_resend. Multi-row pattern (mỗi candidate = 1 invitation row,
+          ai accept → ghi đè teacher_id ở app_classes thông qua RLS rule). */}
+      <ClassInvitationsDialog
+        open={inviteManagerOpen}
+        onOpenChange={setInviteManagerOpen}
+        classId={cls.id}
+        className={cls.name ?? cls.class_name ?? undefined}
       />
     </DetailPageLayout>
   );
