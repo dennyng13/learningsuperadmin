@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@shared/hooks/useAuth";
 import { Bell, X } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@shared/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
 
@@ -137,8 +137,9 @@ export default function NotificationBell() {
 
   const bellButton = (
     <button
+      type="button"
       onClick={() => setOpen(!open)}
-      className="relative p-2 rounded-xl hover:bg-muted/60 transition-all"
+      className="relative p-2 rounded-xl hover:bg-muted/60 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       <Bell className="w-5 h-5 text-muted-foreground" />
       {unreadCount > 0 && (
@@ -155,7 +156,7 @@ export default function NotificationBell() {
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full mt-2 w-80 bg-card border border-border/60 rounded-2xl shadow-xl z-50 animate-fade-in overflow-hidden">
+          <div className="absolute right-0 top-full mt-2 w-80 bg-card border border-border/60 rounded-2xl shadow-xl z-[100] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between px-4 py-3 border-b">
               <h3 className="font-display font-bold text-sm">Thông báo</h3>
               <button onClick={() => setOpen(false)} className="p-1 rounded-lg hover:bg-muted transition-colors">
