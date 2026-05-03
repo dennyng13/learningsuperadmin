@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useMemo } from "react";
+import { PopButton } from "@shared/components/ui/pop-button";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@shared/hooks/useAuth";
@@ -431,198 +432,373 @@ export default function FlashcardSetsPage() {
   };
 
   // Editor view
+  const [editorTab, setEditorTab] = useState<"cards" | "meta" | "link" | "tools">("cards");
+
   if (editingSet) {
     return (
-      <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-6">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" onClick={handleBackClick}>
-            <ArrowLeft className="h-4 w-4 mr-1" /> Quay lại
-          </Button>
-          <h2 className="font-display text-lg font-bold flex-1">Chỉnh sửa bộ flashcard</h2>
-          <Button size="sm" variant="ghost" className="text-destructive" onClick={() => setDeleteFromEditorId(editingSet)}>
-            <Trash2 className="h-4 w-4" />
-          </Button>
-          <Button size="sm" onClick={saveSet} disabled={saving}>
-            {saving ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Save className="h-4 w-4 mr-1" />}
-            Lưu
-          </Button>
-        </div>
+      <div
+        style={{
+          display: "flex", flexDirection: "column",
+          height: "calc(100vh - 56px)",
+          background: "var(--lp-cream, #F9F8F4)",
+        }}
+      >
+        {/* ── Topbar ── */}
+        <div style={{
+          display: "flex", alignItems: "center", gap: 12,
+          padding: "10px 20px",
+          background: "#fff",
+          borderBottom: "2px solid var(--lp-ink, #0B0C0E)",
+          flexShrink: 0,
+        }}>
+          <button
+            onClick={handleBackClick}
+            style={{
+              display: "flex", alignItems: "center", gap: 6,
+              background: "none", border: "2px solid var(--lp-line, #E5E7EB)",
+              borderRadius: 8, padding: "5px 10px",
+              fontSize: 12, fontWeight: 700, cursor: "pointer",
+              color: "var(--lp-ink, #0B0C0E)",
+            }}
+          >
+            <ArrowLeft className="h-3.5 w-3.5" /> Quay lại
+          </button>
 
-        {/* Set metadata */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div>
-            <label className="text-xs font-bold text-muted-foreground mb-1 block">Tên bộ</label>
-            <Input value={editTitle} onChange={e => setEditTitle(e.target.value)} placeholder="e.g. IELTS Environment" />
-          </div>
-          <div>
-            <label className="text-xs font-bold text-muted-foreground mb-1 block">Mô tả</label>
-            <Input value={editDesc} onChange={e => setEditDesc(e.target.value)} placeholder="Từ vựng về môi trường" />
-          </div>
-          <div>
-            <label className="text-xs font-bold text-muted-foreground mb-1 block">Chương trình</label>
-            <Select value={editProgram || "none"} onValueChange={v => setEditProgram(v === "none" ? null : v)}>
-              <SelectTrigger className="text-sm"><SelectValue placeholder="Chung" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Chung</SelectItem>
-                <SelectItem value="ielts">IELTS</SelectItem>
-                <SelectItem value="wre">WRE</SelectItem>
-                <SelectItem value="customized">Customized</SelectItem>
-                <SelectItem value="other">Khác</SelectItem>
-              </SelectContent>
-            </Select>
-            {linkedExerciseId && editProgram && (
-              <p className="text-[10px] text-muted-foreground mt-1">Tự động gán từ bài tập liên kết</p>
-            )}
-          </div>
-          <div>
-            <label className="text-xs font-bold text-muted-foreground mb-1 block">Level</label>
-            <Select value={editLevel || "none"} onValueChange={v => setEditLevel(v === "none" ? null : v)}>
-              <SelectTrigger className="text-sm"><SelectValue placeholder="Tất cả" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Tất cả</SelectItem>
-                {courseLevels.map(l => (
-                  <SelectItem key={l.id} value={l.name}>{l.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        {/* Course assignments — drives global Study Plan filtering */}
-        {editingSet && (
-          <div className="bg-card border rounded-xl p-4">
-            <CourseAssignmentPanel kind="flashcard_set" resourceId={editingSet} />
-          </div>
-        )}
-
-        {/* Linking */}
-        <div className="bg-card border rounded-xl p-4 space-y-3">
-          <h3 className="font-bold text-sm flex items-center gap-2"><Link2 className="h-4 w-4 text-primary" /> Liên kết</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs font-bold text-muted-foreground mb-1 block">Bài thi (Assessment)</label>
-              <Select value={linkedAssessmentId || "none"} onValueChange={v => setLinkedAssessmentId(v === "none" ? null : v)}>
-                <SelectTrigger className="text-sm"><SelectValue placeholder="Chung" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Chung</SelectItem>
-                  {assessments.map(a => (
-                    <SelectItem key={a.id} value={a.id}>{a.name} ({a.section_type})</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <label className="text-xs font-bold text-muted-foreground mb-1 block">Bài tập (Exercise)</label>
-              <Select value={linkedExerciseId || "none"} onValueChange={v => setLinkedExerciseId(v === "none" ? null : v)}>
-                <SelectTrigger className="text-sm"><SelectValue placeholder="Chung" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Chung</SelectItem>
-                  {exercises.map(e => (
-                    <SelectItem key={e.id} value={e.id}>{e.title} ({e.skill})</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <Input
+              value={editTitle}
+              onChange={e => setEditTitle(e.target.value)}
+              placeholder="Tên bộ flashcard..."
+              style={{
+                fontFamily: "var(--ff-display, inherit)",
+                fontWeight: 900, fontSize: 18,
+                border: "none", background: "transparent",
+                padding: 0, height: "auto", outline: "none",
+                boxShadow: "none",
+              }}
+              className="focus-visible:ring-0 focus-visible:ring-offset-0"
+            />
+            <div style={{ fontSize: 11, color: "var(--lp-body, #6B7280)", marginTop: 1 }}>
+              {editItems.length} thẻ
+              {editProgram && <> · <span style={{ fontWeight: 700 }}>{editProgram.toUpperCase()}</span></>}
+              {editLevel && <> · {editLevel}</>}
+              {isDirty && <span style={{ color: "var(--lp-coral, #FA7D64)", marginLeft: 4 }}>● chưa lưu</span>}
             </div>
           </div>
-        </div>
 
-        {/* AI Generation */}
-        <div className="bg-card border rounded-xl p-4 space-y-3">
-          <h3 className="font-bold text-sm flex items-center gap-2"><Sparkles className="h-4 w-4 text-accent" /> Tạo bằng AI</h3>
-          <div className="flex gap-2">
-            <Input
-              value={aiTopic}
-              onChange={e => setAiTopic(e.target.value)}
-              placeholder="Chủ đề: Environment, Education, Technology..."
-              className="flex-1"
-              onKeyDown={e => e.key === "Enter" && handleAIGenerate()}
-            />
-            <Input
-              value={aiCount}
-              onChange={e => setAiCount(e.target.value)}
-              placeholder="Số lượng"
-              className="w-20"
-              type="number"
-              min={5}
-              max={50}
-            />
-            <Button size="sm" onClick={handleAIGenerate} disabled={generating || !aiTopic.trim()}>
-              {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-            </Button>
-          </div>
-        </div>
-
-        {/* Bulk Import */}
-        <div className="bg-card border rounded-xl p-4 space-y-3">
-          <h3 className="font-bold text-sm flex items-center gap-2"><Upload className="h-4 w-4 text-primary" /> Import hàng loạt</h3>
-          <Textarea
-            value={bulkText}
-            onChange={e => setBulkText(e.target.value)}
-            placeholder={"ubiquitous | Có mặt ở khắp nơi\nmitigate | Giảm nhẹ, làm dịu\nsustainable | Bền vững"}
-            rows={4}
-          />
-          <Button size="sm" variant="outline" onClick={handleBulkImport} disabled={!bulkText.trim()}>
-            <Upload className="h-4 w-4 mr-1" /> Import
-          </Button>
-        </div>
-
-        {/* Items */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <h3 className="font-bold text-sm text-muted-foreground">{editItems.length} flashcard</h3>
-            <Button size="sm" variant="ghost" onClick={addBlankItem}><Plus className="h-4 w-4 mr-1" /> Thêm thẻ</Button>
-          </div>
-          {editItems.map((item, idx) => (
-            <div key={idx} className="p-3 bg-muted/30 rounded-lg space-y-2">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-muted-foreground w-6 text-center">{idx + 1}</span>
-                <Input
-                  value={item.front}
-                  onChange={e => updateItem(idx, "front", e.target.value)}
-                  placeholder="Mặt trước"
-                  className="flex-1 h-9 text-sm"
-                />
-                <Input
-                  value={item.back}
-                  onChange={e => updateItem(idx, "back", e.target.value)}
-                  placeholder="Mặt sau"
-                  className="flex-1 h-9 text-sm"
-                />
-                <button onClick={() => removeItem(idx)} className="p-1 text-muted-foreground hover:text-destructive">
-                  <Trash2 className="h-4 w-4" />
+          {/* Tab pills */}
+          <div style={{
+            display: "flex", gap: 0,
+            background: "var(--lp-cream, #F9F8F4)",
+            border: "2px solid var(--lp-ink, #0B0C0E)",
+            borderRadius: 10, overflow: "hidden",
+          }}>
+            {(["cards", "meta", "link", "tools"] as const).map((tab) => {
+              const labels: Record<string, string> = { cards: "Thẻ", meta: "Thông tin", link: "Liên kết", tools: "Công cụ" };
+              return (
+                <button
+                  key={tab}
+                  onClick={() => setEditorTab(tab)}
+                  style={{
+                    padding: "6px 14px", fontSize: 12, fontWeight: 700,
+                    background: editorTab === tab ? "var(--lp-ink, #0B0C0E)" : "transparent",
+                    color: editorTab === tab ? "#fff" : "var(--lp-ink, #0B0C0E)",
+                    border: "none", cursor: "pointer", transition: "all .1s",
+                    borderRight: "1.5px solid var(--lp-line, #E5E7EB)",
+                  }}
+                >
+                  {labels[tab]}
                 </button>
+              );
+            })}
+          </div>
+
+          <button
+            onClick={() => setDeleteFromEditorId(editingSet)}
+            style={{
+              display: "flex", alignItems: "center", gap: 4,
+              background: "none", border: "2px solid var(--lp-line, #E5E7EB)",
+              borderRadius: 8, padding: "5px 10px",
+              fontSize: 11, fontWeight: 700, cursor: "pointer",
+              color: "#EF4444",
+            }}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+
+          <PopButton tone="coral" size="sm" onClick={saveSet} disabled={saving}>
+            {saving ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1.5" />}
+            Lưu
+          </PopButton>
+        </div>
+
+        {/* ── Body ── */}
+        <div style={{ flex: 1, overflowY: "auto", padding: "20px" }}>
+
+          {/* ── TAB: Cards ── */}
+          {editorTab === "cards" && (
+            <div style={{ maxWidth: 860, margin: "0 auto" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+                <p style={{ fontWeight: 800, fontSize: 14, color: "var(--lp-ink)" }}>{editItems.length} flashcard</p>
+                <PopButton tone="teal" size="sm" onClick={addBlankItem}>
+                  <Plus className="h-3.5 w-3.5 mr-1" /> Thêm thẻ
+                </PopButton>
               </div>
-              {/* Image */}
-              <div className="flex items-center gap-2 ml-8">
-                {item.image_url ? (
-                  <div className="flex items-center gap-2">
-                    <img src={item.image_url} alt="" className="h-10 w-10 rounded object-cover border" />
-                    <button
-                      onClick={() => updateItem(idx, "image_url", "")}
-                      className="text-xs text-muted-foreground hover:text-destructive flex items-center gap-0.5"
-                    >
-                      <X className="h-3 w-3" /> Xóa ảnh
-                    </button>
-                  </div>
-                ) : (
-                  <label className="flex items-center gap-1.5 cursor-pointer text-xs text-muted-foreground hover:text-foreground transition-colors">
-                    {uploadingIdx === idx ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <Image className="h-3.5 w-3.5" />
-                    )}
-                    <span>{uploadingIdx === idx ? "Đang upload..." : "Thêm ảnh"}</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={e => e.target.files?.[0] && handleItemImageUpload(idx, e.target.files[0])}
+
+              {editItems.length === 0 && (
+                <div style={{
+                  textAlign: "center", padding: "48px 20px",
+                  border: "2px dashed var(--lp-line, #E5E7EB)", borderRadius: 16,
+                  color: "var(--lp-body, #6B7280)",
+                }}>
+                  <Layers className="h-12 w-12 mx-auto mb-3 opacity-25" />
+                  <p style={{ fontWeight: 700, fontSize: 15 }}>Bộ trống</p>
+                  <p style={{ fontSize: 13, marginTop: 4 }}>Thêm thẻ thủ công hoặc dùng tab Công cụ để import / tạo AI</p>
+                </div>
+              )}
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {editItems.map((item, idx) => (
+                  <div
+                    key={idx}
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "28px 1fr 1fr auto",
+                      gap: 8, alignItems: "center",
+                      padding: "10px 12px",
+                      background: "#fff",
+                      border: "2px solid var(--lp-line, #E5E7EB)",
+                      borderRadius: 12,
+                      transition: "border-color .1s",
+                    }}
+                  >
+                    <span style={{ fontSize: 11, fontWeight: 800, color: "var(--lp-body, #6B7280)", textAlign: "center" }}>{idx + 1}</span>
+                    <Input
+                      value={item.front}
+                      onChange={e => updateItem(idx, "front", e.target.value)}
+                      placeholder="Mặt trước"
+                      style={{ height: 36, fontSize: 13 }}
                     />
-                  </label>
-                )}
+                    <Input
+                      value={item.back}
+                      onChange={e => updateItem(idx, "back", e.target.value)}
+                      placeholder="Mặt sau"
+                      style={{ height: 36, fontSize: 13 }}
+                    />
+                    <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "center" }}>
+                      {item.image_url ? (
+                        <div style={{ position: "relative" }}>
+                          <img src={item.image_url} alt="" style={{ height: 36, width: 36, borderRadius: 6, objectFit: "cover", border: "1.5px solid var(--lp-line)" }} />
+                          <button
+                            onClick={() => updateItem(idx, "image_url", "")}
+                            style={{
+                              position: "absolute", top: -6, right: -6,
+                              background: "#EF4444", border: "none", borderRadius: "50%",
+                              width: 14, height: 14, cursor: "pointer",
+                              display: "flex", alignItems: "center", justifyContent: "center",
+                            }}
+                          >
+                            <X className="h-2 w-2 text-white" />
+                          </button>
+                        </div>
+                      ) : (
+                        <label style={{ cursor: "pointer", color: "var(--lp-body, #6B7280)", display: "flex", alignItems: "center" }}>
+                          {uploadingIdx === idx
+                            ? <Loader2 className="h-4 w-4 animate-spin" />
+                            : <Image className="h-4 w-4" />
+                          }
+                          <input type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && handleItemImageUpload(idx, e.target.files[0])} />
+                        </label>
+                      )}
+                      <button onClick={() => removeItem(idx)} style={{ background: "none", border: "none", cursor: "pointer", color: "#EF4444", display: "flex" }}>
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
-          ))}
+          )}
+
+          {/* ── TAB: Meta ── */}
+          {editorTab === "meta" && (
+            <div style={{ maxWidth: 600, margin: "0 auto" }} className="space-y-5">
+              <div style={{
+                padding: "16px",
+                background: "#fff",
+                border: "2px solid var(--lp-ink, #0B0C0E)",
+                borderRadius: 14,
+                boxShadow: "4px 4px 0 0 var(--lp-ink, #0B0C0E)",
+              }}>
+                <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--lp-coral, #FA7D64)", marginBottom: 12 }}>✦ Thông tin bộ</div>
+                <div className="space-y-4">
+                  <div>
+                    <label style={{ display: "block", fontSize: 11, fontWeight: 800, color: "var(--lp-body)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Tên bộ</label>
+                    <Input value={editTitle} onChange={e => setEditTitle(e.target.value)} placeholder="e.g. IELTS Environment" />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: 11, fontWeight: 800, color: "var(--lp-body)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Mô tả</label>
+                    <Input value={editDesc} onChange={e => setEditDesc(e.target.value)} placeholder="Từ vựng về môi trường" />
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                    <div>
+                      <label style={{ display: "block", fontSize: 11, fontWeight: 800, color: "var(--lp-body)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Chương trình</label>
+                      <Select value={editProgram || "none"} onValueChange={v => setEditProgram(v === "none" ? null : v)}>
+                        <SelectTrigger className="text-sm"><SelectValue placeholder="Chung" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Chung</SelectItem>
+                          <SelectItem value="ielts">IELTS</SelectItem>
+                          <SelectItem value="wre">WRE</SelectItem>
+                          <SelectItem value="customized">Customized</SelectItem>
+                          <SelectItem value="other">Khác</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {linkedExerciseId && editProgram && (
+                        <p className="text-[10px] text-muted-foreground mt-1">Tự động gán từ bài tập liên kết</p>
+                      )}
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: 11, fontWeight: 800, color: "var(--lp-body)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Level</label>
+                      <Select value={editLevel || "none"} onValueChange={v => setEditLevel(v === "none" ? null : v)}>
+                        <SelectTrigger className="text-sm"><SelectValue placeholder="Tất cả" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Tất cả</SelectItem>
+                          {courseLevels.map(l => (
+                            <SelectItem key={l.id} value={l.name}>{l.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {editingSet && (
+                <div style={{
+                  padding: "16px",
+                  background: "#fff",
+                  border: "2px solid var(--lp-line, #E5E7EB)",
+                  borderRadius: 14,
+                }}>
+                  <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--lp-body)", marginBottom: 12 }}>Khoá học</div>
+                  <CourseAssignmentPanel kind="flashcard_set" resourceId={editingSet} />
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── TAB: Link ── */}
+          {editorTab === "link" && (
+            <div style={{ maxWidth: 600, margin: "0 auto" }}>
+              <div style={{
+                padding: "16px",
+                background: "#fff",
+                border: "2px solid var(--lp-ink, #0B0C0E)",
+                borderRadius: 14,
+                boxShadow: "4px 4px 0 0 var(--lp-ink, #0B0C0E)",
+              }} className="space-y-4">
+                <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--lp-coral, #FA7D64)", marginBottom: 4 }}>✦ Liên kết tài nguyên</div>
+                <div>
+                  <label style={{ display: "block", fontSize: 11, fontWeight: 800, color: "var(--lp-body)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Bài thi (Assessment)</label>
+                  <Select value={linkedAssessmentId || "none"} onValueChange={v => setLinkedAssessmentId(v === "none" ? null : v)}>
+                    <SelectTrigger className="text-sm"><SelectValue placeholder="Chung" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Chung</SelectItem>
+                      {assessments.map(a => (
+                        <SelectItem key={a.id} value={a.id}>{a.name} ({a.section_type})</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: 11, fontWeight: 800, color: "var(--lp-body)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Bài tập (Exercise)</label>
+                  <Select value={linkedExerciseId || "none"} onValueChange={v => setLinkedExerciseId(v === "none" ? null : v)}>
+                    <SelectTrigger className="text-sm"><SelectValue placeholder="Chung" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Chung</SelectItem>
+                      {exercises.map(e => (
+                        <SelectItem key={e.id} value={e.id}>{e.title} ({e.skill})</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── TAB: Tools ── */}
+          {editorTab === "tools" && (
+            <div style={{ maxWidth: 640, margin: "0 auto" }} className="space-y-5">
+              {/* AI Generation */}
+              <div style={{
+                background: "var(--lp-teal-soft, #E6F7F6)",
+                border: "2px solid var(--lp-ink, #0B0C0E)",
+                borderRadius: 14,
+                boxShadow: "4px 4px 0 0 var(--lp-ink, #0B0C0E)",
+                padding: "18px",
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                  <Sparkles className="h-4 w-4" style={{ color: "var(--lp-ink)" }} />
+                  <span style={{ fontWeight: 900, fontSize: 15, color: "var(--lp-ink)" }}>Tạo bằng AI</span>
+                  <span style={{
+                    marginLeft: "auto", fontSize: 10, fontWeight: 800,
+                    padding: "2px 8px", background: "var(--lp-ink)", color: "#fff",
+                    borderRadius: 20, letterSpacing: "0.06em",
+                  }}>AI ✦</span>
+                </div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <Input
+                    value={aiTopic}
+                    onChange={e => setAiTopic(e.target.value)}
+                    placeholder="Chủ đề: Environment, Education..."
+                    style={{ flex: 1 }}
+                    onKeyDown={e => e.key === "Enter" && handleAIGenerate()}
+                  />
+                  <Input
+                    value={aiCount}
+                    onChange={e => setAiCount(e.target.value)}
+                    placeholder="SL"
+                    style={{ width: 70 }}
+                    type="number" min={5} max={50}
+                  />
+                  <PopButton tone="ink" size="sm" onClick={handleAIGenerate} disabled={generating || !aiTopic.trim()}>
+                    {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                  </PopButton>
+                </div>
+              </div>
+
+              {/* Bulk Import */}
+              <div style={{
+                background: "#fff",
+                border: "2px solid var(--lp-ink, #0B0C0E)",
+                borderRadius: 14,
+                boxShadow: "4px 4px 0 0 var(--lp-ink, #0B0C0E)",
+                padding: "18px",
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                  <Upload className="h-4 w-4" />
+                  <span style={{ fontWeight: 900, fontSize: 15, color: "var(--lp-ink)" }}>Import hàng loạt</span>
+                </div>
+                <p style={{ fontSize: 11, color: "var(--lp-body)", marginBottom: 8 }}>Mỗi dòng: <code>từ | nghĩa</code> hoặc dùng Tab</p>
+                <Textarea
+                  value={bulkText}
+                  onChange={e => setBulkText(e.target.value)}
+                  placeholder={"ubiquitous | Có mặt ở khắp nơi\nmitigate | Giảm nhẹ, làm dịu\nsustainable | Bền vững"}
+                  rows={5}
+                />
+                {bulkText.trim() && (
+                  <p style={{ fontSize: 11, color: "var(--lp-body)", marginTop: 4 }}>
+                    {bulkText.trim().split("\n").filter(l => l.includes("|") || l.includes("\t")).length} dòng nhận dạng
+                  </p>
+                )}
+                <div style={{ marginTop: 10 }}>
+                  <PopButton tone="teal" size="sm" onClick={handleBulkImport} disabled={!bulkText.trim()}>
+                    <Upload className="h-3.5 w-3.5 mr-1.5" /> Import
+                  </PopButton>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Unsaved changes dialog */}
