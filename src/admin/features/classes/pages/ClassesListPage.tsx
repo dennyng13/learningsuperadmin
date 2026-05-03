@@ -52,6 +52,8 @@ interface ClassRow {
   room: string | null;
   teacher_name: string | null;
   student_count: number | null;
+  /** Sĩ số tối đa — driver cho CapacityBar trong GridView card. */
+  max_students: number | null;
   data_source: string | null;
   lifecycle_status: ClassLifecycleStatus | null;
   cancellation_reason: string | null;
@@ -626,69 +628,82 @@ function GridView({
 }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-      {rows.map((cls) => (
-        <PopCard
-          key={cls.id}
-          tone="white"
-          shadow="sm"
-          hover="lift"
-          className="group relative p-3 space-y-2"
-        >
-          <button
-            type="button"
-            onClick={() => onOpen(cls.id)}
-            aria-label={`Mở lớp ${displayName(cls)}`}
-            className="absolute inset-0 rounded-pop-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-lp-coral"
-          />
-          <div className="absolute top-2 right-2 flex items-center gap-1 z-10">
-            <ClassStatusBadge
-              status={cls.lifecycle_status}
-              reason={cls.cancellation_reason}
-              size="sm"
+      {rows.map((cls) => {
+        const vibe = getProgramVibe(cls.program);
+        return (
+          <PopCard
+            key={cls.id}
+            tone="white"
+            shadow="sm"
+            hover="lift"
+            className="group relative p-3 space-y-2"
+          >
+            <button
+              type="button"
+              onClick={() => onOpen(cls.id)}
+              aria-label={`Mở lớp ${displayName(cls)}`}
+              className="absolute inset-0 rounded-pop-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-lp-coral"
             />
-            <div onClick={(e) => e.stopPropagation()}>
-              <RowActions cls={cls} onArchive={onArchive} onRestore={onRestore} />
+            <div className="absolute top-2 right-2 flex items-center gap-1 z-10">
+              <ClassStatusBadge
+                status={cls.lifecycle_status}
+                reason={cls.cancellation_reason}
+                size="sm"
+              />
+              <div onClick={(e) => e.stopPropagation()}>
+                <RowActions cls={cls} onArchive={onArchive} onRestore={onRestore} />
+              </div>
             </div>
-          </div>
-          <div className="relative pr-28 pointer-events-none">
-            <p className="font-mono text-[10px] text-lp-body/80 truncate">{cls.class_code ?? "—"}</p>
-            <h3 className="font-display font-extrabold text-sm text-lp-ink leading-tight mt-0.5 line-clamp-2">
-              {displayName(cls)}
-            </h3>
-            <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
-              {cls.program && (
-                <span className="text-[10px] font-display font-bold text-lp-body">{cls.program}</span>
+
+            {/* Header row: emoji block + name+code+chips */}
+            <div className="relative flex items-start gap-2.5 pr-28 pointer-events-none">
+              <ProgramEmojiBlock vibe={vibe} />
+              <div className="flex-1 min-w-0">
+                <p className="font-mono text-[10px] text-lp-body/80 truncate">{cls.class_code ?? "—"}</p>
+                <h3 className="font-display font-extrabold text-sm text-lp-ink leading-tight mt-0.5 line-clamp-2">
+                  {displayName(cls)}
+                </h3>
+                <div className="flex items-center gap-1 flex-wrap mt-1.5">
+                  {cls.program && <ProgramVibeChip vibe={vibe} />}
+                  {cls.level && <LevelChip level={cls.level} />}
+                </div>
+              </div>
+            </div>
+
+            {(cls.branch || cls.mode || cls.room) && (
+              <div className="relative flex flex-wrap gap-1 pointer-events-none">
+                {cls.branch && <MetaTag>{cls.branch}</MetaTag>}
+                {cls.mode && <MetaTag>{cls.mode}</MetaTag>}
+                {cls.room && <MetaTag>P. {cls.room}</MetaTag>}
+              </div>
+            )}
+
+            {/* Capacity bar — only render khi có max_students. */}
+            <div className="relative pointer-events-none">
+              <CapacityBar students={cls.student_count ?? 0} capacity={cls.max_students} />
+            </div>
+
+            <div className="relative flex flex-wrap gap-x-2.5 gap-y-1 text-[10.5px] text-lp-body pointer-events-none pt-2 border-t-[2px] border-lp-ink/10">
+              {cls.teacher_name && (
+                <span className="inline-flex items-center gap-1 truncate max-w-[140px]">
+                  <User className="h-3 w-3" />
+                  <span className="truncate">{cls.teacher_name}</span>
+                </span>
               )}
-              {cls.level && <LevelChip level={cls.level} />}
-            </div>
-          </div>
-          {(cls.branch || cls.mode || cls.room) && (
-            <div className="relative flex flex-wrap gap-1 pointer-events-none">
-              {cls.branch && <MetaTag>{cls.branch}</MetaTag>}
-              {cls.mode && <MetaTag>{cls.mode}</MetaTag>}
-              {cls.room && <MetaTag>P. {cls.room}</MetaTag>}
-            </div>
-          )}
-          <div className="relative flex flex-wrap gap-x-2.5 gap-y-1 text-[10.5px] text-lp-body pointer-events-none pt-2 border-t-[2px] border-lp-ink/10">
-            {cls.teacher_name && (
-              <span className="inline-flex items-center gap-1 truncate max-w-[140px]">
-                <User className="h-3 w-3" />
-                <span className="truncate">{cls.teacher_name}</span>
-              </span>
-            )}
-            <span className="inline-flex items-center gap-1">
-              <Users className="h-3 w-3" />
-              <span className="tabular-nums font-display font-bold text-lp-ink">{cls.student_count ?? 0}</span> HV
-            </span>
-            {cls.start_date && (
               <span className="inline-flex items-center gap-1">
-                <Calendar className="h-3 w-3" />
-                {formatRange(cls.start_date, cls.end_date)}
+                <Users className="h-3 w-3" />
+                <span className="tabular-nums font-display font-bold text-lp-ink">{cls.student_count ?? 0}</span> HV
               </span>
-            )}
-          </div>
-        </PopCard>
-      ))}
+              {cls.start_date && (
+                <span className="inline-flex items-center gap-1">
+                  <Calendar className="h-3 w-3" />
+                  {formatRange(cls.start_date, cls.end_date)}
+                </span>
+              )}
+            </div>
+          </PopCard>
+        );
+      })}
     </div>
   );
 }
@@ -715,6 +730,106 @@ function MetaTag({ children }: { children: React.ReactNode }) {
     <PopChip tone="cream" className="px-1.5 py-0 text-[10px] leading-4">
       {children}
     </PopChip>
+  );
+}
+
+/* Day 7 verify follow-up: mockup pages-class-detail vibe — emoji + color
+   per program. Sticker-pop block (rotate -3deg) + dot-color chip. */
+const PROGRAM_VIBE: Record<string, { emoji: string; bg: string; border: string; chipBg: string; chipText: string; dot: string; label: string }> = {
+  ielts: {
+    emoji: "🎯",
+    bg: "bg-teal-50 dark:bg-teal-950/40",
+    border: "border-teal-300 dark:border-teal-800",
+    chipBg: "bg-teal-100 dark:bg-teal-900/40",
+    chipText: "text-teal-700 dark:text-teal-300",
+    dot: "bg-teal-500",
+    label: "IELTS",
+  },
+  wre: {
+    emoji: "✏️",
+    bg: "bg-rose-50 dark:bg-rose-950/40",
+    border: "border-rose-300 dark:border-rose-800",
+    chipBg: "bg-rose-100 dark:bg-rose-900/40",
+    chipText: "text-rose-700 dark:text-rose-300",
+    dot: "bg-rose-500",
+    label: "WRE",
+  },
+  customized: {
+    emoji: "🎨",
+    bg: "bg-amber-50 dark:bg-amber-950/40",
+    border: "border-amber-300 dark:border-amber-800",
+    chipBg: "bg-amber-100 dark:bg-amber-900/40",
+    chipText: "text-amber-700 dark:text-amber-300",
+    dot: "bg-amber-500",
+    label: "Customized",
+  },
+};
+
+const FALLBACK_VIBE = {
+  emoji: "📚",
+  bg: "bg-slate-50 dark:bg-slate-900/40",
+  border: "border-slate-300 dark:border-slate-700",
+  chipBg: "bg-slate-100 dark:bg-slate-800",
+  chipText: "text-slate-700 dark:text-slate-300",
+  dot: "bg-slate-500",
+  label: "Khác",
+};
+
+function getProgramVibe(program: string | null | undefined) {
+  if (!program) return FALLBACK_VIBE;
+  return PROGRAM_VIBE[program.toLowerCase()] ?? { ...FALLBACK_VIBE, label: program };
+}
+
+/** Small emoji block — sticker-pop style. Replaces plain text affordance. */
+function ProgramEmojiBlock({ vibe }: { vibe: ReturnType<typeof getProgramVibe> }) {
+  return (
+    <div className={cn(
+      "shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-pop border-[2px] border-lp-ink shadow-pop-xs text-lg leading-none -rotate-3",
+      vibe.bg,
+    )}>
+      {vibe.emoji}
+    </div>
+  );
+}
+
+/** Topic-style chip với dot color matching program. */
+function ProgramVibeChip({ vibe }: { vibe: ReturnType<typeof getProgramVibe> }) {
+  return (
+    <span className={cn(
+      "inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-display font-bold leading-4 border",
+      vibe.chipBg, vibe.chipText, vibe.border,
+    )}>
+      <span className={cn("w-1.5 h-1.5 rounded-full", vibe.dot)} />
+      {vibe.label}
+    </span>
+  );
+}
+
+/** Capacity progress bar — students/max_students. Color shifts from teal
+ *  → amber → coral as fill approaches/exceeds capacity. */
+function CapacityBar({ students, capacity }: { students: number; capacity: number | null | undefined }) {
+  if (!capacity || capacity <= 0) return null;
+  const pct = Math.min(100, Math.round((students / capacity) * 100));
+  const overFull = students > capacity;
+  const fillColor = overFull
+    ? "bg-rose-500"
+    : pct >= 90
+      ? "bg-amber-500"
+      : pct >= 60
+        ? "bg-teal-500"
+        : "bg-teal-400";
+  return (
+    <div className="space-y-0.5">
+      <div className="flex items-center justify-between text-[9px] text-lp-body">
+        <span className="font-display font-bold uppercase tracking-wider">Capacity</span>
+        <span className="tabular-nums font-mono">
+          {students}/{capacity} ({pct}%)
+        </span>
+      </div>
+      <div className="h-1 w-full rounded-full bg-lp-ink/10 overflow-hidden">
+        <div className={cn("h-full transition-all", fillColor)} style={{ width: `${pct}%` }} />
+      </div>
+    </div>
   );
 }
 
