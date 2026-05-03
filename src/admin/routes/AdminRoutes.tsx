@@ -59,6 +59,7 @@ const PayrollPayslipDetailPage = lazy(() => import("@admin/features/payroll/page
 const CompensationPage = lazy(() => import("@admin/features/compensation/pages/CompensationPage"));
 const BrandAssetsPage = lazy(() => import("@admin/features/brand-assets/pages/BrandAssetsPage"));
 const MaxQuotesPage = lazy(() => import("@admin/features/max-quotes/pages/MaxQuotesPage"));
+const RequestsPage = lazy(() => import("@admin/features/requests/pages/RequestsPage"));
 const BandDescriptorsPage = lazy(() => import("@admin/features/academic/pages/BandDescriptorsPage"));
 const FeedbackTemplatesPage = lazy(() => import("@admin/features/academic/pages/FeedbackTemplatesPage"));
 const CoursesPage = lazy(() => import("@admin/features/academic/pages/CoursesPage"));
@@ -178,6 +179,9 @@ export default function AppRoutes() {
           <Route path="timesheet/:periodId" element={<TimesheetPeriodDetailPage />} />
           <Route path="payroll/batches/:batchId" element={<PayrollBatchDetailPage />} />
           <Route path="payroll/payslips/:payslipId" element={<PayrollPayslipDetailPage />} />
+
+          {/* Migration A: Requests Inbox (F-Requests-Inbox-Admin) */}
+          <Route path="requests" element={<RequestsPage />} />
 
           {/* Misc */}
           <Route path="flashcards" element={<ModuleAccessRoute moduleKey={ADMIN_MODULE_KEYS.FLASHCARDS}><FlashcardSetsPage /></ModuleAccessRoute>} />

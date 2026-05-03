@@ -7,6 +7,7 @@ import {
   ListTodo, ClipboardSignature, Send, Building2, Wrench,
   Banknote, FolderOpen, Globe, BookOpenCheck, Receipt,
   PlusSquare, BookCopy, Telescope, MessagesSquare, ReceiptText,
+  ClipboardList,
 } from "lucide-react";
 
 export interface NavItem {
@@ -83,6 +84,7 @@ export const adminNavItems: NavItem[] = [
   { id: "classes-new",  label: "Tạo lớp mới",     icon: PlusSquare,    route: "/classes/new",      group: "study", order: 42, subheader: "Lớp học" },
   { id: "class-invitations", label: "Lời mời lớp", icon: Send,         route: "/classes/invitations", group: "study", order: 43, subheader: "Lớp học",
     aliasPaths: ["/invitations"] },
+  { id: "requests",         label: "Yêu cầu GV",   icon: ClipboardList,  route: "/requests",          group: "study", order: 44, subheader: "Lớp học" },
 
   // ═══ 4. Center Management ═══
   { id: "facility",            label: "Cơ sở vật chất", icon: Building2, route: "/facility",            group: "center", order: 50, subheader: "Cơ sở" },
