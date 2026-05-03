@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@shared/components/ui/
 import { ScrollArea, ScrollBar } from "@shared/components/ui/scroll-area";
 import { useCoursesAdmin } from "@admin/features/academic/hooks/useCoursesAdmin";
 import { useCourseLevels } from "@shared/hooks/useCourseLevels";
-import ProgramDetailTab from "@admin/features/academic/components/ProgramDetailTab";
+import ProgramDetailNew from "@admin/features/academic/components/ProgramDetailNew";
 import { getProgramIcon, getProgramPalette } from "@shared/utils/programColors";
 import { cn } from "@shared/lib/utils";
 
@@ -121,7 +121,7 @@ export default function CoursesPage() {
 
           {programs.map((p) => (
             <TabsContent key={p.id} value={p.key} className="mt-4 space-y-4">
-              <ProgramDetailTab
+              <ProgramDetailNew
                 program={p}
                 levels={levels}
                 onChanged={handleProgramChanged}

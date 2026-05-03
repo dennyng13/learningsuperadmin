@@ -686,7 +686,11 @@ function inferCategory(badge: BadgeRow): string {
   return "milestone";
 }
 
-function BadgeSticker({ badge, size = 72 }: { badge: BadgeRow; size?: number }) {
+// Hard shadow style matching template
+const HARD_SHADOW = "shadow-[4px_4px_0_0_#0f172a]";
+const HARD_SHADOW_SM = "shadow-[2px_2px_0_0_#0f172a]";
+
+function BadgeSticker({ badge, size = 88 }: { badge: BadgeRow; size?: number }) {
   const tier = TIER_META[badge.tier] || TIER_META.bronze;
   const Icon = ICON_MAP[badge.icon || "award"] || Award;
   const colorKey = inferColorKey(badge);
@@ -695,24 +699,26 @@ function BadgeSticker({ badge, size = 72 }: { badge: BadgeRow; size?: number }) 
 
   return (
     <div className="relative shrink-0" style={{ width: size, height: size }}>
-      {/* Outer ring */}
+      {/* Outer ring - sticker style with thick border and hard shadow */}
       <div
         className={cn(
-          "absolute inset-0 rounded-full border-2 border-slate-800 shadow-md flex items-center justify-center",
-          bgColor
+          "absolute inset-0 rounded-full border-[3px] border-slate-800 flex items-center justify-center",
+          bgColor,
+          HARD_SHADOW_SM
         )}
         style={{ transform: `rotate(${rotation}deg)` }}
       >
+        {/* Inner dashed circle */}
         <div
-          className="rounded-full bg-white border-2 border-dashed border-slate-800 flex items-center justify-center"
-          style={{ width: size * 0.6, height: size * 0.6 }}
+          className="rounded-full bg-white border-[3px] border-dashed border-slate-800 flex items-center justify-center"
+          style={{ width: size * 0.66, height: size * 0.66 }}
         >
-          <Icon className="h-5 w-5 text-slate-800" />
+          <Icon className="h-5 w-5 text-slate-800" style={{ width: size * 0.32, height: size * 0.32 }} />
         </div>
       </div>
-      {/* Tier ribbon */}
+      {/* Tier ribbon - small badge */}
       <div
-        className="absolute -bottom-1 left-1/2 -translate-x-1/2 text-white text-[8px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border border-slate-800"
+        className="absolute -bottom-1 left-1/2 -translate-x-1/2 text-white text-[8px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border-[2px] border-slate-800 shadow-sm"
         style={{ background: tier.ring }}
       >
         {tier.label}
@@ -737,22 +743,28 @@ function StatCardEnhanced({ label, value, sub, color, icon: Icon }: {
   icon: typeof Award;
 }) {
   const colorMap = {
-    rose: "bg-rose-50 border-rose-200 text-rose-600",
-    teal: "bg-teal-50 border-teal-200 text-teal-600",
-    amber: "bg-amber-50 border-amber-200 text-amber-600",
-    violet: "bg-violet-50 border-violet-200 text-violet-600",
+    rose: { bg: "bg-rose-500", soft: "bg-rose-50", border: "border-rose-200", text: "text-rose-700", iconBg: "bg-rose-100" },
+    teal: { bg: "bg-teal-500", soft: "bg-teal-50", border: "border-teal-200", text: "text-teal-700", iconBg: "bg-teal-100" },
+    amber: { bg: "bg-amber-400", soft: "bg-amber-50", border: "border-amber-200", text: "text-amber-700", iconBg: "bg-amber-100" },
+    violet: { bg: "bg-violet-500", soft: "bg-violet-50", border: "border-violet-200", text: "text-violet-700", iconBg: "bg-violet-100" },
   };
 
+  const c = colorMap[color];
+
   return (
-    <div className={cn("rounded-xl border-2 p-4", colorMap[color])}>
+    <div className={cn(
+      "rounded-xl border-2 p-4 transition-transform hover:-translate-y-0.5",
+      c.soft, c.border, c.text,
+      HARD_SHADOW
+    )}>
       <div className="flex items-center justify-between mb-2">
-        <span className="text-[10px] font-bold uppercase tracking-wider">{label}</span>
-        <div className="w-8 h-8 rounded-lg bg-white/80 flex items-center justify-center">
+        <span className="text-[10px] font-bold uppercase tracking-wider opacity-80">{label}</span>
+        <div className={cn("w-9 h-9 rounded-lg border-2 border-slate-800 flex items-center justify-center", c.bg, color === "amber" ? "text-slate-900" : "text-white")}>
           <Icon className="h-4 w-4" />
         </div>
       </div>
-      <div className="font-display text-3xl font-extrabold">{value}</div>
-      <div className="text-xs font-medium mt-1 opacity-80">{sub}</div>
+      <div className="font-display text-3xl font-extrabold tracking-tight">{value}</div>
+      <div className="text-xs font-bold mt-1 opacity-70">{sub}</div>
     </div>
   );
 }
@@ -763,57 +775,63 @@ function GridViewEnhanced({ badges, onEdit, onDelete }: {
   onDelete: (id: string) => void;
 }) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-      {badges.map(b => {
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+      {badges.map((b, i) => {
         const cat = CAT_META[inferCategory(b)] || { label: "Khác", color: "slate" };
         const tier = TIER_META[b.tier] || TIER_META.bronze;
         const earned = Math.floor(Math.random() * 1000) + 10; // Mock - sẽ lấy từ API
+        const rotation = ((i % 5) - 2); // Slight rotation for playful effect
 
         return (
           <div
             key={b.id}
             className={cn(
-              "rounded-xl border-2 bg-card p-4 flex flex-col",
-              b.status !== "active" && "opacity-55"
+              "relative rounded-xl border-[3px] border-slate-800 bg-white p-4 flex flex-col transition-all hover:-translate-y-1",
+              HARD_SHADOW,
+              b.status !== "active" && "opacity-55 grayscale"
             )}
+            style={{ transform: `rotate(${rotation}deg)` }}
           >
             {b.status !== "active" && (
-              <div className="absolute top-2 right-2 bg-slate-800 text-white text-[9px] font-bold uppercase px-2 py-0.5 rounded-full">
+              <div className="absolute -top-2 -right-2 bg-slate-800 text-white text-[9px] font-bold uppercase px-2 py-0.5 rounded-full border-2 border-white shadow-md z-10">
                 Tạm tắt
               </div>
             )}
             <div className="flex items-center gap-3 mb-3">
-              <BadgeSticker badge={b} size={56} />
+              <BadgeSticker badge={b} size={64} />
               <div className="flex-1 min-w-0">
                 <div className="font-display font-bold text-sm truncate">{b.name}</div>
-                <code className="text-[10px] text-muted-foreground">{b.id.slice(0, 6)}</code>
-                <div className="flex gap-1 mt-1">
-                  <span className={cn("text-[9px] font-bold px-1.5 py-0.5 rounded-full border", `bg-${cat.color}-100 text-${cat.color}-700 border-${cat.color}-200`)}>
+                <code className="text-[10px] font-mono text-muted-foreground bg-slate-100 px-1 rounded">{b.id.slice(0, 6)}</code>
+                <div className="flex gap-1 mt-1.5">
+                  <span
+                    className="text-[9px] font-bold px-2 py-0.5 rounded-full border-[2px] border-slate-800 bg-white"
+                    style={{ transform: `rotate(-1deg)` }}
+                  >
                     {cat.label}
                   </span>
                   <span
-                    className="text-[9px] font-bold px-1.5 py-0.5 rounded-full border"
-                    style={{ background: tier.soft, color: tier.ring, borderColor: tier.ring }}
+                    className="text-[9px] font-bold px-2 py-0.5 rounded-full border-[2px] border-slate-800"
+                    style={{ background: tier.soft, color: tier.ring, transform: `rotate(1deg)` }}
                   >
                     {tier.label}
                   </span>
                 </div>
               </div>
             </div>
-            <p className="text-xs text-muted-foreground mb-3 flex-1 line-clamp-2">
-              <span className="font-semibold text-foreground">Điều kiện:</span> {b.description || "—"}
+            <p className="text-xs text-slate-600 mb-3 flex-1 line-clamp-2">
+              <span className="font-bold text-slate-900">Điều kiện:</span> {b.description || "—"}
             </p>
-            <div className="flex items-center justify-between pt-3 border-t border-dashed">
+            <div className="flex items-center justify-between pt-3 border-t-2 border-dashed border-slate-200">
               <div>
-                <div className="font-display font-bold text-lg">{earned.toLocaleString("vi-VN")}</div>
-                <div className="text-[9px] font-bold uppercase text-muted-foreground">lượt nhận</div>
+                <div className="font-display font-bold text-xl text-slate-900">{earned.toLocaleString("vi-VN")}</div>
+                <div className="text-[9px] font-bold uppercase tracking-wider text-slate-500">lượt nhận</div>
               </div>
               <div className="flex gap-1">
-                <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => onEdit(b)}>
-                  <Eye className="h-3 w-3" />
+                <Button size="icon" variant="outline" className="h-8 w-8 border-2 border-slate-800 hover:bg-slate-50" onClick={() => onEdit(b)}>
+                  <Eye className="h-3.5 w-3.5" />
                 </Button>
-                <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => onEdit(b)}>
-                  <Pencil className="h-3 w-3" />
+                <Button size="icon" variant="outline" className="h-8 w-8 border-2 border-slate-800 hover:bg-slate-50" onClick={() => onEdit(b)}>
+                  <Pencil className="h-3.5 w-3.5" />
                 </Button>
               </div>
             </div>

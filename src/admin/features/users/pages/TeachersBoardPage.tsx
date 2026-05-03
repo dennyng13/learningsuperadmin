@@ -279,6 +279,10 @@ export default function TeachersBoardPage() {
 
 /* ─── Components ─── */
 
+// Hard shadow style matching template
+const HARD_SHADOW = "shadow-[4px_4px_0_0_#0f172a]";
+const HARD_SHADOW_SM = "shadow-[2px_2px_0_0_#0f172a]";
+
 function StatCard({ label, value, sub, color, icon: Icon }: {
   label: string;
   value: string;
@@ -287,58 +291,101 @@ function StatCard({ label, value, sub, color, icon: Icon }: {
   icon: typeof Award;
 }) {
   const colorMap = {
-    rose: "bg-rose-50 border-rose-200 text-rose-600",
-    teal: "bg-teal-50 border-teal-200 text-teal-600",
-    amber: "bg-amber-50 border-amber-200 text-amber-600",
-    violet: "bg-violet-50 border-violet-200 text-violet-600",
+    rose: {
+      bg: "bg-rose-500",
+      border: "border-rose-600",
+      text: "text-white",
+      softBg: "bg-rose-50",
+      softBorder: "border-rose-200",
+      softText: "text-rose-700"
+    },
+    teal: {
+      bg: "bg-teal-500",
+      border: "border-teal-600",
+      text: "text-white",
+      softBg: "bg-teal-50",
+      softBorder: "border-teal-200",
+      softText: "text-teal-700"
+    },
+    amber: {
+      bg: "bg-amber-400",
+      border: "border-amber-600",
+      text: "text-slate-900",
+      softBg: "bg-amber-50",
+      softBorder: "border-amber-200",
+      softText: "text-amber-700"
+    },
+    violet: {
+      bg: "bg-violet-500",
+      border: "border-violet-600",
+      text: "text-white",
+      softBg: "bg-violet-50",
+      softBorder: "border-violet-200",
+      softText: "text-violet-700"
+    },
   };
 
+  const c = colorMap[color];
+
   return (
-    <div className={cn("rounded-xl border-2 p-4", colorMap[color])}>
+    <div className={cn(
+      "rounded-xl border-2 p-4 transition-transform hover:-translate-y-0.5",
+      c.softBg, c.softBorder, c.softText,
+      HARD_SHADOW
+    )}>
       <div className="flex items-center justify-between mb-2">
-        <span className="text-[10px] font-bold uppercase tracking-wider">{label}</span>
-        <div className="w-8 h-8 rounded-lg bg-white/80 flex items-center justify-center">
+        <span className="text-[10px] font-bold uppercase tracking-wider opacity-80">{label}</span>
+        <div className={cn("w-9 h-9 rounded-lg flex items-center justify-center border-2", c.bg, c.border, c.text)}>
           <Icon className="h-4 w-4" />
         </div>
       </div>
-      <div className="font-display text-3xl font-extrabold">{value}</div>
-      <div className="text-xs font-medium mt-1 opacity-80">{sub}</div>
+      <div className="font-display text-3xl font-extrabold tracking-tight">{value}</div>
+      <div className="text-xs font-bold mt-1 opacity-70">{sub}</div>
     </div>
   );
 }
 
 function GridView({ teachers, onSelect }: { teachers: TeacherData[]; onSelect: (t: TeacherData) => void }) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {teachers.map((t) => {
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+      {teachers.map((t, i) => {
         const tier = TIER_COLORS[t.tier];
+        // Rotation for sticker effect: -3 to +3 degrees
+        const rotation = ((i % 7) - 3);
         return (
           <div
             key={t.id}
-            className="rounded-xl border-2 bg-card overflow-hidden cursor-pointer hover:shadow-lg transition-all"
+            className={cn(
+              "rounded-xl border-2 border-slate-800 bg-white overflow-hidden cursor-pointer transition-all hover:-translate-y-1",
+              HARD_SHADOW
+            )}
             onClick={() => onSelect(t)}
           >
-            {/* Tier bar */}
-            <div className={cn("h-1.5", tier.bg)} />
+            {/* Tier bar - thick */}
+            <div className={cn("h-2 border-b-2 border-slate-800", tier.bg)} />
 
             {/* Header */}
-            <div className="p-4 border-b border-dashed">
+            <div className="p-4 border-b-2 border-dashed border-slate-200">
               <div className="flex items-center gap-3">
+                {/* Sticker avatar with rotation */}
                 <div className="relative shrink-0">
                   <div
                     className={cn(
-                      "w-12 h-12 rounded-xl flex items-center justify-center text-xl font-bold text-white border-2 border-slate-800 shadow-sm",
+                      "w-14 h-14 rounded-xl flex items-center justify-center text-xl font-bold border-2 border-slate-800",
                       ROLE_COLOR_MAP[t.color] || "bg-slate-500",
-                      t.color === "yellow" && "text-slate-900"
+                      t.color === "yellow" ? "text-slate-900" : "text-white",
+                      HARD_SHADOW_SM
                     )}
-                    style={{ transform: "rotate(-3deg)" }}
+                    style={{ transform: `rotate(${rotation}deg)` }}
                   >
                     {t.name.split(" ").pop()?.[0]}
                   </div>
+                  {/* Tier badge - small sticker */}
                   <div
                     className={cn(
-                      "absolute -bottom-1 -right-1 w-5 h-5 rounded-md flex items-center justify-center text-[9px] font-bold border border-slate-800",
-                      tier.bg, tier.fg
+                      "absolute -bottom-1.5 -right-1.5 w-6 h-6 rounded-md flex items-center justify-center text-[9px] font-bold border-2 border-slate-800",
+                      tier.bg, tier.fg,
+                      HARD_SHADOW_SM
                     )}
                   >
                     {t.tier}
@@ -346,44 +393,58 @@ function GridView({ teachers, onSelect }: { teachers: TeacherData[]; onSelect: (
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="font-display font-bold text-sm truncate">{t.name}</div>
-                  <div className="text-xs text-muted-foreground">{t.role}</div>
+                  <div className="text-xs text-muted-foreground font-medium">{t.role}</div>
                 </div>
                 <div className="text-right">
-                  <div className="font-display font-bold text-lg text-amber-600">{t.rating}★</div>
-                  <div className="text-[9px] font-bold uppercase text-muted-foreground">rating</div>
+                  <div className="font-display font-bold text-xl text-amber-600">{t.rating}★</div>
+                  <div className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">rating</div>
                 </div>
               </div>
             </div>
 
-            {/* Metrics */}
-            <div className="grid grid-cols-4 gap-2 p-3">
+            {/* Metrics - boxed style */}
+            <div className="grid grid-cols-4 gap-0 p-2 bg-slate-50">
               {[
-                { l: "Giờ", v: t.hours, c: "text-teal-600" },
-                { l: "HV", v: t.students, c: "text-rose-600" },
-                { l: "Ret", v: `${t.retention}%`, c: "text-amber-600" },
-                { l: "Lift", v: `+${t.bandLift}`, c: "text-violet-600" },
-              ].map(m => (
-                <div key={m.l} className="text-center">
-                  <div className={cn("font-display font-bold text-base", m.c)}>{m.v}</div>
-                  <div className="text-[9px] font-bold uppercase text-muted-foreground">{m.l}</div>
+                { l: "Giờ", v: t.hours, c: "text-teal-600", bg: "bg-teal-50" },
+                { l: "HV", v: t.students, c: "text-rose-600", bg: "bg-rose-50" },
+                { l: "Ret", v: `${t.retention}%`, c: "text-amber-600", bg: "bg-amber-50" },
+                { l: "Lift", v: `+${t.bandLift}`, c: "text-violet-600", bg: "bg-violet-50" },
+              ].map((m, idx) => (
+                <div
+                  key={m.l}
+                  className={cn(
+                    "text-center p-2",
+                    m.bg,
+                    idx < 3 && "border-r-2 border-dashed border-slate-200"
+                  )}
+                >
+                  <div className={cn("font-display font-bold text-lg", m.c)}>{m.v}</div>
+                  <div className="text-[9px] font-bold uppercase tracking-wider text-slate-500">{m.l}</div>
                 </div>
               ))}
             </div>
 
             {/* Badges */}
-            <div className="p-3 pt-0 border-t border-dashed flex flex-wrap gap-1.5 items-center min-h-[52px]">
-              {t.badges.slice(0, 3).map(b => (
+            <div className="p-3 border-t-2 border-slate-800 flex flex-wrap gap-1.5 items-center min-h-[56px] bg-white">
+              {t.badges.slice(0, 3).map((b, bi) => (
                 <span
                   key={b}
-                  className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-muted border"
+                  className={cn(
+                    "text-[10px] font-bold px-2.5 py-1 rounded-full border-2 border-slate-800 bg-white",
+                    HARD_SHADOW_SM
+                  )}
+                  style={{ transform: `rotate(${(bi % 3) - 1}deg)` }}
                 >
                   {BADGE_LABELS[b] || b}
                 </span>
               ))}
+              <div className="flex-1" />
               <span
                 className={cn(
-                  "ml-auto text-[10px] font-bold",
-                  t.growth > 0 ? "text-teal-600" : t.growth < 0 ? "text-rose-600" : "text-muted-foreground"
+                  "text-xs font-bold px-2 py-0.5 rounded-lg border",
+                  t.growth > 0 ? "bg-teal-100 text-teal-700 border-teal-300" :
+                  t.growth < 0 ? "bg-rose-100 text-rose-700 border-rose-300" :
+                  "bg-slate-100 text-slate-600 border-slate-300"
                 )}
               >
                 {t.growth > 0 ? "↑" : t.growth < 0 ? "↓" : "→"} {Math.abs(t.growth)}%

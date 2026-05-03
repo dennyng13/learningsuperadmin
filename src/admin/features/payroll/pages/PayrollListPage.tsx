@@ -188,34 +188,34 @@ export default function PayrollListPage() {
       }
     >
       {/* Enhanced Hero Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* Hero Total Card */}
-        <div className="rounded-2xl border-2 border-slate-800 bg-gradient-to-br from-rose-500 via-orange-400 to-amber-400 p-6 text-white shadow-lg relative overflow-hidden">
+        <div className="rounded-2xl border-[3px] border-slate-800 bg-gradient-to-br from-rose-500 via-orange-400 to-amber-400 p-6 text-white shadow-[6px_6px_0_0_#0f172a] relative overflow-hidden">
           <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-white/10" />
           <p className="text-[11px] font-bold uppercase tracking-wider opacity-90">Tổng chi kỳ này</p>
-          <div className="font-display text-4xl font-extrabold mt-2">{formatVnd(totalNet)}</div>
+          <div className="font-display text-4xl font-extrabold mt-2 tracking-tight">{formatVnd(totalNet)}</div>
           <div className="flex gap-6 mt-4 text-sm">
             <div>
-              <p className="text-[10px] uppercase opacity-80">So với T3</p>
-              <p className="font-mono font-bold">+12.4%</p>
+              <p className="text-[10px] uppercase opacity-80 font-bold">So với T3</p>
+              <p className="font-mono font-bold text-lg">+12.4%</p>
             </div>
             <div>
-              <p className="text-[10px] uppercase opacity-80">Rate TB</p>
-              <p className="font-mono font-bold">297k/h</p>
+              <p className="text-[10px] uppercase opacity-80 font-bold">Rate TB</p>
+              <p className="font-mono font-bold text-lg">297k/h</p>
             </div>
             <div>
-              <p className="text-[10px] uppercase opacity-80">Hạn duyệt</p>
-              <p className="font-mono font-bold">2d 4h</p>
+              <p className="text-[10px] uppercase opacity-80 font-bold">Hạn duyệt</p>
+              <p className="font-mono font-bold text-lg">2d 4h</p>
             </div>
           </div>
         </div>
 
         {/* Breakdown Card */}
-        <div className="rounded-xl border-2 bg-card p-5">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Cấu trúc lương</p>
-          <h3 className="font-display font-bold mb-3">Cơ bản · Thưởng · Trừ</h3>
+        <div className="rounded-xl border-[3px] border-slate-800 bg-white p-5 shadow-[4px_4px_0_0_#0f172a]">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Cấu trúc lương</p>
+          <h3 className="font-display font-bold text-lg mb-3">Cơ bản · Thưởng · Trừ</h3>
           {/* Stacked bar */}
-          <div className="flex h-7 rounded-lg overflow-hidden border-2 mb-3">
+          <div className="flex h-8 rounded-lg overflow-hidden border-2 border-slate-800 mb-3 shadow-sm">
             <div className="bg-rose-500 flex items-center justify-center text-white text-[10px] font-bold" style={{ flex: totalBase }}>
               {Math.round(totalBase/totalNet*100)}%
             </div>
@@ -229,23 +229,23 @@ export default function PayrollListPage() {
             )}
           </div>
           <div className="space-y-2 text-xs">
-            <div className="flex items-center justify-between">
-              <span className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded bg-rose-500 border" />
+            <div className="flex items-center justify-between py-1 border-b border-dashed border-slate-200">
+              <span className="flex items-center gap-2 font-medium">
+                <span className="w-3 h-3 rounded bg-rose-500 border border-slate-800" />
                 Lương cơ bản
               </span>
               <span className="font-mono font-bold">{formatVnd(totalBase)}</span>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded bg-teal-500 border" />
+            <div className="flex items-center justify-between py-1 border-b border-dashed border-slate-200">
+              <span className="flex items-center gap-2 font-medium">
+                <span className="w-3 h-3 rounded bg-teal-500 border border-slate-800" />
                 Thưởng + phụ cấp
               </span>
               <span className="font-mono font-bold text-teal-600">+{formatVnd(totalBonus)}</span>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded bg-slate-800 border" />
+            <div className="flex items-center justify-between py-1">
+              <span className="flex items-center gap-2 font-medium">
+                <span className="w-3 h-3 rounded bg-slate-800 border border-slate-800" />
                 Khấu trừ / phạt
               </span>
               <span className="font-mono font-bold text-rose-600">−{formatVnd(totalDed)}</span>
@@ -254,9 +254,9 @@ export default function PayrollListPage() {
         </div>
 
         {/* Status Pipeline */}
-        <div className="rounded-xl border-2 bg-card p-5">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Trạng thái duyệt</p>
-          <h3 className="font-display font-bold mb-3">Pipeline tháng 4</h3>
+        <div className="rounded-xl border-[3px] border-slate-800 bg-white p-5 shadow-[4px_4px_0_0_#0f172a]">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Trạng thái duyệt</p>
+          <h3 className="font-display font-bold text-lg mb-3">Pipeline tháng 4</h3>
           <div className="space-y-3">
             {[
               { l: "Đã chuẩn bị", n: 6, color: "bg-teal-500", pct: 100 },
@@ -269,8 +269,8 @@ export default function PayrollListPage() {
                   <span>{s.l}</span>
                   <span className="font-mono">{s.n}/{MOCK_PAYROLL.length}</span>
                 </div>
-                <div className="h-2 bg-muted rounded-full overflow-hidden border">
-                  <div className={cn("h-full", s.color)} style={{ width: `${s.pct}%` }} />
+                <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden border border-slate-800">
+                  <div className={cn("h-full border-r border-slate-800", s.color)} style={{ width: `${s.pct}%` }} />
                 </div>
               </div>
             ))}
@@ -404,68 +404,72 @@ export default function PayrollListPage() {
         </div>
 
         {/* Payroll Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {MOCK_PAYROLL.map(p => {
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+          {MOCK_PAYROLL.map((p, i) => {
             const base = p.hours * p.rate * 1000;
             const total = base + p.bonus - p.deduction;
             const isSel = selected.has(p.id);
+            const rotation = ((i % 5) - 2); // Playful rotation
 
             return (
               <div
                 key={p.id}
                 className={cn(
-                  "rounded-xl border-2 bg-card overflow-hidden transition-all",
-                  isSel ? "border-rose-500 shadow-md" : "border-slate-200"
+                  "rounded-xl border-[3px] border-slate-800 bg-white overflow-hidden transition-all hover:-translate-y-1",
+                  isSel ? "border-rose-500 shadow-[4px_4px_0_0_#f43f5e]" : "shadow-[4px_4px_0_0_#0f172a]"
                 )}
+                style={{ transform: `rotate(${rotation}deg)` }}
               >
                 {/* Header */}
                 <div className={cn(
-                  "p-4 border-b-2 flex items-center gap-3",
+                  "p-4 border-b-[3px] border-slate-800 flex items-center gap-3",
                   isSel ? "bg-rose-50" : "bg-white"
                 )}>
                   <input
                     type="checkbox"
                     checked={isSel}
                     onChange={() => toggle(p.id)}
-                    className="w-4 h-4 rounded border-slate-300"
+                    className="w-4 h-4 rounded border-2 border-slate-800"
                   />
+                  {/* Sticker avatar with rotation */}
                   <div
                     className={cn(
-                      "w-10 h-10 rounded-full flex items-center justify-center text-base font-bold text-white border-2 border-slate-800",
+                      "w-12 h-12 rounded-xl flex items-center justify-center text-lg font-bold text-white border-[3px] border-slate-800 shadow-[2px_2px_0_0_#0f172a]",
                       COLOR_MAP[p.color] || "bg-slate-500"
                     )}
+                    style={{ transform: `rotate(${rotation * 1.5}deg)` }}
                   >
                     {p.avatarInit}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="font-display font-bold text-sm truncate">{p.name}</div>
-                    <div className="text-xs text-muted-foreground">{p.role} · <code>{p.id}</code></div>
+                    <div className="text-xs text-slate-500 font-medium">{p.role} · <code className="bg-slate-100 px-1 rounded">{p.id}</code></div>
                   </div>
-                  <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
+                  <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border-2 border-amber-600 bg-amber-100 text-amber-700 shadow-sm">
                     {p.status}
                   </span>
                 </div>
 
                 {/* Total */}
                 <div className="p-4 pb-2">
-                  <div className="font-mono text-2xl font-extrabold">{formatVnd(total)}</div>
-                  <div className="text-[10px] font-bold uppercase text-muted-foreground">Lương kỳ này</div>
+                  <div className="font-mono text-2xl font-extrabold text-slate-900">{formatVnd(total)}</div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Lương kỳ này</div>
                 </div>
 
                 {/* Breakdown */}
                 <div className="px-4 py-2 space-y-1 text-xs">
-                  <div className="flex justify-between py-1 border-b border-dashed">
+                  <div className="flex justify-between py-1 border-b-2 border-dashed border-slate-200">
                     <span className="font-medium">Giảng dạy ({p.hours}h × {p.rate}k)</span>
                     <span className="font-mono font-bold">{formatVnd(base)}</span>
                   </div>
                   {p.bonus > 0 && (
-                    <div className="flex justify-between py-1 border-b border-dashed">
+                    <div className="flex justify-between py-1 border-b-2 border-dashed border-slate-200">
                       <span className="font-medium">Thưởng KPI</span>
                       <span className="font-mono font-bold text-teal-600">+{formatVnd(p.bonus)}</span>
                     </div>
                   )}
                   {p.deduction > 0 && (
-                    <div className="flex justify-between py-1 border-b border-dashed">
+                    <div className="flex justify-between py-1 border-b-2 border-dashed border-slate-200">
                       <span className="font-medium">Khấu trừ</span>
                       <span className="font-mono font-bold text-rose-600">−{formatVnd(p.deduction)}</span>
                     </div>
@@ -473,14 +477,14 @@ export default function PayrollListPage() {
                 </div>
 
                 {/* Meta strip */}
-                <div className="grid grid-cols-3 gap-0 p-4 bg-muted/30 border-t-2">
-                  <div className="text-center">
-                    <div className="font-mono font-bold text-lg">{p.classes}</div>
-                    <div className="text-[9px] font-bold uppercase text-muted-foreground">Lớp</div>
+                <div className="grid grid-cols-3 gap-0 p-4 bg-slate-50 border-t-[3px] border-slate-800">
+                  <div className="text-center border-r-2 border-dashed border-slate-200">
+                    <div className="font-mono font-bold text-lg text-slate-900">{p.classes}</div>
+                    <div className="text-[9px] font-bold uppercase tracking-wider text-slate-500">Lớp</div>
                   </div>
-                  <div className="text-center">
-                    <div className="font-mono font-bold text-lg">{p.hours}h</div>
-                    <div className="text-[9px] font-bold uppercase text-muted-foreground">Đã giảng</div>
+                  <div className="text-center border-r-2 border-dashed border-slate-200">
+                    <div className="font-mono font-bold text-lg text-slate-900">{p.hours}h</div>
+                    <div className="text-[9px] font-bold uppercase tracking-wider text-slate-500">Đã giảng</div>
                   </div>
                   <div className="text-center">
                     <div className={cn(
@@ -489,19 +493,19 @@ export default function PayrollListPage() {
                     )}>
                       {p.attendance}%
                     </div>
-                    <div className="text-[9px] font-bold uppercase text-muted-foreground">Att.</div>
+                    <div className="text-[9px] font-bold uppercase tracking-wider text-slate-500">Att.</div>
                   </div>
                 </div>
 
                 {/* Actions */}
-                <div className="flex gap-2 p-3 border-t">
-                  <Button variant="outline" size="sm" className="flex-1 gap-1 text-xs">
+                <div className="flex gap-2 p-3 border-t-[3px] border-slate-800 bg-white">
+                  <Button variant="outline" size="sm" className="flex-1 gap-1 text-xs border-2 border-slate-800 hover:bg-slate-50">
                     <Eye className="h-3 w-3" /> Chi tiết
                   </Button>
-                  <Button variant="outline" size="sm" className="flex-1 gap-1 text-xs">
+                  <Button variant="outline" size="sm" className="flex-1 gap-1 text-xs border-2 border-slate-800 hover:bg-slate-50">
                     <FileText className="h-3 w-3" /> Payslip
                   </Button>
-                  <Button size="sm" className="flex-1 gap-1 text-xs">
+                  <Button size="sm" className="flex-1 gap-1 text-xs bg-teal-500 hover:bg-teal-600 text-white border-2 border-teal-600">
                     <CheckCircle className="h-3 w-3" /> Duyệt
                   </Button>
                 </div>
@@ -510,27 +514,27 @@ export default function PayrollListPage() {
           })}
         </div>
 
-        {/* Compact totals */}
-        <div className="bg-slate-800 text-white rounded-xl p-4 grid grid-cols-5 gap-4 items-center">
-          <div>
-            <div className="text-[10px] uppercase opacity-70">Tổng cộng</div>
-            <div className="font-display font-bold">{MOCK_PAYROLL.length} giáo viên</div>
+        {/* Compact totals - playful style */}
+        <div className="bg-slate-800 text-white rounded-xl border-[3px] border-slate-800 shadow-[4px_4px_0_0_#0f172a] p-4 grid grid-cols-5 gap-4 items-center">
+          <div className="border-r-2 border-dashed border-slate-600 pr-4">
+            <div className="text-[10px] uppercase font-bold opacity-70 tracking-wider">Tổng cộng</div>
+            <div className="font-display font-bold text-lg">{MOCK_PAYROLL.length} <span className="text-sm opacity-70">giáo viên</span></div>
           </div>
-          <div>
-            <div className="text-[10px] uppercase opacity-70">Giờ giảng</div>
-            <div className="font-mono font-bold text-lg">{totalHours}h</div>
+          <div className="border-r-2 border-dashed border-slate-600 pr-4">
+            <div className="text-[10px] uppercase font-bold opacity-70 tracking-wider">Giờ giảng</div>
+            <div className="font-mono font-bold text-xl">{totalHours}h</div>
           </div>
-          <div>
-            <div className="text-[10px] uppercase opacity-70">Cơ bản</div>
+          <div className="border-r-2 border-dashed border-slate-600 pr-4">
+            <div className="text-[10px] uppercase font-bold opacity-70 tracking-wider">Cơ bản</div>
             <div className="font-mono font-bold">{formatVnd(totalBase)}</div>
           </div>
-          <div>
-            <div className="text-[10px] uppercase opacity-70">+/−</div>
-            <div className="font-mono font-bold text-amber-400">+{formatVnd(totalBonus - totalDed)}</div>
+          <div className="border-r-2 border-dashed border-slate-600 pr-4">
+            <div className="text-[10px] uppercase font-bold opacity-70 tracking-wider">+/−</div>
+            <div className="font-mono font-bold text-lg text-amber-400">+{formatVnd(totalBonus - totalDed)}</div>
           </div>
           <div className="text-right">
-            <div className="text-[10px] uppercase opacity-70">Tổng chi</div>
-            <div className="font-mono font-bold text-xl text-amber-400">{formatVnd(totalNet)}</div>
+            <div className="text-[10px] uppercase font-bold opacity-70 tracking-wider">Tổng chi</div>
+            <div className="font-mono font-bold text-2xl text-amber-400">{formatVnd(totalNet)}</div>
           </div>
         </div>
       </section>
