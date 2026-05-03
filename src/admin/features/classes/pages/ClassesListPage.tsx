@@ -10,7 +10,7 @@ import { ScrollArea } from "@shared/components/ui/scroll-area";
 import {
   GraduationCap, Search, Filter, RotateCw, LayoutGrid, List as ListIcon,
   Plus, ArrowUpDown, Inbox, User, Users, Calendar, Loader2, MoreHorizontal,
-  Archive, ArchiveRestore,
+  Archive, ArchiveRestore, ChevronRight,
 } from "lucide-react";
 import ClassStatusBadge, {
   CLASS_STATUS_META, CLASS_STATUS_OPTIONS, type ClassLifecycleStatus,
@@ -52,8 +52,13 @@ interface ClassRow {
   room: string | null;
   teacher_name: string | null;
   student_count: number | null;
-  /** Sĩ số tối đa — driver cho CapacityBar trong GridView card. */
+  /** Sĩ số tối đa — driver "Sĩ số" stat row trong GridView card. */
   max_students: number | null;
+  /** Buổi học đã hoàn thành / tổng — drive Tiến độ progress bar trong card. */
+  sessions_completed: number | null;
+  sessions_total: number | null;
+  /** Course display name (from view JOIN) cho secondary chip. */
+  course_name?: string | null;
   data_source: string | null;
   lifecycle_status: ClassLifecycleStatus | null;
   cancellation_reason: string | null;
@@ -627,83 +632,195 @@ function GridView({
   onRestore: (cls: ClassRow) => void;
 }) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-      {rows.map((cls) => {
-        const vibe = getProgramVibe(cls.program);
-        return (
-          <PopCard
-            key={cls.id}
-            tone="white"
-            shadow="sm"
-            hover="lift"
-            className="group relative p-3 space-y-2"
-          >
-            <button
-              type="button"
-              onClick={() => onOpen(cls.id)}
-              aria-label={`Mở lớp ${displayName(cls)}`}
-              className="absolute inset-0 rounded-pop-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-lp-coral"
-            />
-            <div className="absolute top-2 right-2 flex items-center gap-1 z-10">
-              <ClassStatusBadge
-                status={cls.lifecycle_status}
-                reason={cls.cancellation_reason}
-                size="sm"
-              />
-              <div onClick={(e) => e.stopPropagation()}>
-                <RowActions cls={cls} onArchive={onArchive} onRestore={onRestore} />
-              </div>
-            </div>
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+      {rows.map((cls) => (
+        <ClassCard
+          key={cls.id}
+          cls={cls}
+          onOpen={onOpen}
+          onArchive={onArchive}
+          onRestore={onRestore}
+        />
+      ))}
+    </div>
+  );
+}
 
-            {/* Header row: emoji block + name+code+chips */}
-            <div className="relative flex items-start gap-2.5 pr-28 pointer-events-none">
-              <ProgramEmojiBlock vibe={vibe} />
-              <div className="flex-1 min-w-0">
-                <p className="font-mono text-[10px] text-lp-body/80 truncate">{cls.class_code ?? "—"}</p>
-                <h3 className="font-display font-extrabold text-sm text-lp-ink leading-tight mt-0.5 line-clamp-2">
-                  {displayName(cls)}
-                </h3>
-                <div className="flex items-center gap-1 flex-wrap mt-1.5">
-                  {cls.program && <ProgramVibeChip vibe={vibe} />}
-                  {cls.level && <LevelChip level={cls.level} />}
+/* ─────────── Class card (mockup pages-users-classes hd/bd/ft pattern) ─────────── */
+
+function ClassCard({
+  cls, onOpen, onArchive, onRestore,
+}: {
+  cls: ClassRow;
+  onOpen: (id: string) => void;
+  onArchive: (cls: ClassRow) => void;
+  onRestore: (cls: ClassRow) => void;
+}) {
+  const vibe = getProgramVibe(cls.program);
+  const sessionsDone = cls.sessions_completed ?? 0;
+  const sessionsTotal = cls.sessions_total ?? 0;
+  const sessionPct = sessionsTotal > 0 ? Math.min(100, Math.round((sessionsDone / sessionsTotal) * 100)) : 0;
+  const fillColor = sessionPct > 80
+    ? "bg-teal-500"
+    : sessionPct > 50
+      ? "bg-amber-500"
+      : "bg-rose-500";
+
+  /** Schedule string — prefer cls.schedule (free text), fallback to time. */
+  const scheduleText = cls.schedule
+    || formatRange(cls.start_date, cls.end_date)
+    || "—";
+
+  return (
+    <PopCard
+      tone="white"
+      shadow="sm"
+      hover="lift"
+      className="group relative p-0 overflow-hidden flex flex-col"
+    >
+      {/* Click-through layer */}
+      <button
+        type="button"
+        onClick={() => onOpen(cls.id)}
+        aria-label={`Mở lớp ${displayName(cls)}`}
+        className="absolute inset-0 z-0 rounded-pop-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-lp-coral"
+      />
+
+      {/* ─── Header (colored soft bg per program vibe) ─── */}
+      <div
+        className={cn(
+          "relative px-4 pt-4 pb-3 border-b-[2px] border-lp-ink/10",
+          vibe.bg,
+        )}
+      >
+        {/* Top-right: status badge + actions */}
+        <div className="absolute top-2.5 right-2.5 flex items-center gap-1 z-10">
+          <ClassStatusBadge
+            status={cls.lifecycle_status}
+            reason={cls.cancellation_reason}
+            size="sm"
+          />
+          <div onClick={(e) => e.stopPropagation()}>
+            <RowActions cls={cls} onArchive={onArchive} onRestore={onRestore} />
+          </div>
+        </div>
+
+        {/* Code mono */}
+        <div className="relative pr-24 pointer-events-none">
+          <p className="font-mono text-[10px] text-lp-body/80 truncate font-bold tracking-wider">
+            {cls.class_code ?? "—"}
+          </p>
+          {/* Class name */}
+          <h3 className="font-display font-extrabold text-base md:text-lg text-lp-ink leading-tight mt-1 line-clamp-2">
+            {displayName(cls)}
+          </h3>
+          {/* Teacher */}
+          <div className="flex items-center gap-1.5 mt-2 text-[11px] text-lp-body">
+            <User className="h-3 w-3 shrink-0" />
+            <span className="truncate font-medium">
+              {cls.teacher_name ?? <span className="italic">Chưa có GV</span>}
+            </span>
+          </div>
+        </div>
+
+        {/* Tags row (program + level) */}
+        <div className="relative flex items-center gap-1 flex-wrap mt-2 pointer-events-none">
+          {cls.program && <ProgramVibeChip vibe={vibe} />}
+          {cls.level && <LevelChip level={cls.level} />}
+          {cls.course_name && (
+            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-display font-bold leading-4 border border-lp-ink/15 bg-white/60 text-lp-body truncate max-w-[120px]">
+              {cls.course_name}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* ─── Body (stat rows) ─── */}
+      <div className="relative px-4 py-3 space-y-2 flex-1 pointer-events-none">
+        <StatRow
+          label="Lịch học"
+          value={scheduleText}
+          icon={Calendar}
+        />
+        <StatRow
+          label="Sĩ số"
+          value={cls.max_students
+            ? `${cls.student_count ?? 0}/${cls.max_students}`
+            : `${cls.student_count ?? 0} HV`}
+          icon={Users}
+          extra={cls.max_students && cls.student_count != null ? (
+            <span className="text-[10px] text-muted-foreground tabular-nums ml-auto">
+              ({Math.round(((cls.student_count ?? 0) / cls.max_students) * 100)}%)
+            </span>
+          ) : null}
+        />
+        {sessionsTotal > 0 ? (
+          <div className="space-y-1">
+            <div className="flex items-center text-[11px]">
+              <span className="text-lp-body w-[70px] shrink-0">Tiến độ</span>
+              <div className="flex-1 flex items-center gap-2">
+                <div className="flex-1 h-1.5 rounded-full bg-lp-ink/10 overflow-hidden">
+                  <div className={cn("h-full transition-all", fillColor)} style={{ width: `${sessionPct}%` }} />
                 </div>
+                <span className="font-mono text-[10px] font-bold tabular-nums text-lp-ink shrink-0 w-9 text-right">
+                  {sessionPct}%
+                </span>
               </div>
             </div>
+            <p className="text-[10px] text-muted-foreground pl-[70px]">
+              {sessionsDone}/{sessionsTotal} buổi
+            </p>
+          </div>
+        ) : (
+          <StatRow
+            label="Buổi học"
+            value="Chưa lên lịch"
+            icon={Calendar}
+            muted
+          />
+        )}
+      </div>
 
-            {(cls.branch || cls.mode || cls.room) && (
-              <div className="relative flex flex-wrap gap-1 pointer-events-none">
-                {cls.branch && <MetaTag>{cls.branch}</MetaTag>}
-                {cls.mode && <MetaTag>{cls.mode}</MetaTag>}
-                {cls.room && <MetaTag>P. {cls.room}</MetaTag>}
-              </div>
-            )}
+      {/* ─── Footer (chips + CTA) ─── */}
+      <div className="relative px-4 py-2.5 border-t-[2px] border-lp-ink/10 bg-muted/20 flex items-center gap-2 pointer-events-none">
+        <div className="flex flex-wrap gap-1 flex-1 min-w-0">
+          {cls.branch && <MetaTag>{cls.branch}</MetaTag>}
+          {cls.mode && <MetaTag>{cls.mode}</MetaTag>}
+          {cls.room && <MetaTag>P. {cls.room}</MetaTag>}
+        </div>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onOpen(cls.id);
+          }}
+          className="pointer-events-auto inline-flex items-center gap-1 px-2.5 py-1 rounded-pop bg-lp-ink text-white text-[10px] font-display font-bold border-[1.5px] border-lp-ink shadow-pop-xs hover:-translate-y-0.5 hover:shadow-pop-sm transition-all shrink-0"
+        >
+          Xem <ChevronRight className="h-3 w-3" />
+        </button>
+      </div>
+    </PopCard>
+  );
+}
 
-            {/* Capacity bar — only render khi có max_students. */}
-            <div className="relative pointer-events-none">
-              <CapacityBar students={cls.student_count ?? 0} capacity={cls.max_students} />
-            </div>
+interface StatRowProps {
+  label: string;
+  value: string;
+  icon: typeof Calendar;
+  extra?: React.ReactNode;
+  muted?: boolean;
+}
 
-            <div className="relative flex flex-wrap gap-x-2.5 gap-y-1 text-[10.5px] text-lp-body pointer-events-none pt-2 border-t-[2px] border-lp-ink/10">
-              {cls.teacher_name && (
-                <span className="inline-flex items-center gap-1 truncate max-w-[140px]">
-                  <User className="h-3 w-3" />
-                  <span className="truncate">{cls.teacher_name}</span>
-                </span>
-              )}
-              <span className="inline-flex items-center gap-1">
-                <Users className="h-3 w-3" />
-                <span className="tabular-nums font-display font-bold text-lp-ink">{cls.student_count ?? 0}</span> HV
-              </span>
-              {cls.start_date && (
-                <span className="inline-flex items-center gap-1">
-                  <Calendar className="h-3 w-3" />
-                  {formatRange(cls.start_date, cls.end_date)}
-                </span>
-              )}
-            </div>
-          </PopCard>
-        );
-      })}
+function StatRow({ label, value, icon: Icon, extra, muted }: StatRowProps) {
+  return (
+    <div className="flex items-center text-[11px] gap-2">
+      <span className={cn("text-lp-body w-[70px] shrink-0 inline-flex items-center gap-1", muted && "opacity-70")}>
+        <Icon className="h-3 w-3" /> {label}
+      </span>
+      <span className={cn("flex-1 font-medium text-lp-ink truncate", muted && "italic text-muted-foreground font-normal")}>
+        {value}
+      </span>
+      {extra}
     </div>
   );
 }
@@ -780,18 +897,6 @@ function getProgramVibe(program: string | null | undefined) {
   return PROGRAM_VIBE[program.toLowerCase()] ?? { ...FALLBACK_VIBE, label: program };
 }
 
-/** Small emoji block — sticker-pop style. Replaces plain text affordance. */
-function ProgramEmojiBlock({ vibe }: { vibe: ReturnType<typeof getProgramVibe> }) {
-  return (
-    <div className={cn(
-      "shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-pop border-[2px] border-lp-ink shadow-pop-xs text-lg leading-none -rotate-3",
-      vibe.bg,
-    )}>
-      {vibe.emoji}
-    </div>
-  );
-}
-
 /** Topic-style chip với dot color matching program. */
 function ProgramVibeChip({ vibe }: { vibe: ReturnType<typeof getProgramVibe> }) {
   return (
@@ -802,34 +907,6 @@ function ProgramVibeChip({ vibe }: { vibe: ReturnType<typeof getProgramVibe> }) 
       <span className={cn("w-1.5 h-1.5 rounded-full", vibe.dot)} />
       {vibe.label}
     </span>
-  );
-}
-
-/** Capacity progress bar — students/max_students. Color shifts from teal
- *  → amber → coral as fill approaches/exceeds capacity. */
-function CapacityBar({ students, capacity }: { students: number; capacity: number | null | undefined }) {
-  if (!capacity || capacity <= 0) return null;
-  const pct = Math.min(100, Math.round((students / capacity) * 100));
-  const overFull = students > capacity;
-  const fillColor = overFull
-    ? "bg-rose-500"
-    : pct >= 90
-      ? "bg-amber-500"
-      : pct >= 60
-        ? "bg-teal-500"
-        : "bg-teal-400";
-  return (
-    <div className="space-y-0.5">
-      <div className="flex items-center justify-between text-[9px] text-lp-body">
-        <span className="font-display font-bold uppercase tracking-wider">Capacity</span>
-        <span className="tabular-nums font-mono">
-          {students}/{capacity} ({pct}%)
-        </span>
-      </div>
-      <div className="h-1 w-full rounded-full bg-lp-ink/10 overflow-hidden">
-        <div className={cn("h-full transition-all", fillColor)} style={{ width: `${pct}%` }} />
-      </div>
-    </div>
   );
 }
 
