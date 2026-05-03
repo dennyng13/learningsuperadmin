@@ -5,9 +5,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
   GraduationCap, Calendar, Users, BarChart3, Activity, Megaphone,
-  Settings, MoreVertical, RefreshCw, AlertTriangle, BookOpen,
+  Settings, MoreVertical, RefreshCw, AlertTriangle,
   LayoutDashboard, Wallet, Banknote, Clock, Copy, FilePlus2,
-  Mail, Send, RotateCw, type LucideIcon,
+  Mail, Send, RotateCw, ArrowLeft,
 } from "lucide-react";
 import { DetailPageLayout } from "@shared/components/layouts/DetailPageLayout";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@shared/components/ui/tabs";
@@ -559,60 +559,186 @@ export default function AdminClassDetailPage() {
     </div>
   );
 
-  return (
-    <DetailPageLayout
-      title={cls.name ?? cls.class_name ?? "(không tên)"}
-      subtitle={cls.class_code ?? undefined}
-      icon={GraduationCap}
-      backRoute="/classes/list"
-      backLabel="Danh sách lớp"
-      actions={headerActions}
-    >
-      {/* Info header */}
-      <ClassInfoCard cls={cls} />
+  /* Day 7 verify deep refactor — full hero replacing
+     DetailPageLayout + ClassInfoCard per mockup pages-class-detail.jsx.
+     Computed values cho hero: progress ring %, week info, vibe colors. */
+  const sessionsDone = cls.sessions_completed ?? 0;
+  const sessionsTotal = cls.sessions_total ?? 0;
+  const progressPct = sessionsTotal > 0 ? Math.min(100, Math.round((sessionsDone / sessionsTotal) * 100)) : 0;
 
-      {/* Day 7 polish: KPI stats strip per mockup pages-class-detail.jsx
-         hero stats. 4 cards: HV / Buổi học / Lời mời / Plan. */}
-      <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
-        <ClassKpi
-          icon={Users}
-          label="Học viên"
-          value={`${cls.student_count ?? 0}${cls.max_students ? `/${cls.max_students}` : ""}`}
-          hint={cls.max_students && cls.student_count != null
-            ? `${Math.round(((cls.student_count ?? 0) / cls.max_students) * 100)}% capacity`
-            : undefined}
-          tone="teal"
+  /* Vibe color from program — matches /classes/list card header tones. */
+  const HERO_VIBE: Record<string, { bg: string; ring: string; ringTrack: string; chipBg: string; chipText: string; dot: string; label: string }> = {
+    ielts:      { bg: "from-teal-100 via-teal-50 to-white",   ring: "stroke-teal-500",   ringTrack: "stroke-teal-100",   chipBg: "bg-teal-100",   chipText: "text-teal-800",   dot: "bg-teal-500",   label: "IELTS" },
+    wre:        { bg: "from-rose-100 via-rose-50 to-white",   ring: "stroke-rose-500",   ringTrack: "stroke-rose-100",   chipBg: "bg-rose-100",   chipText: "text-rose-800",   dot: "bg-rose-500",   label: "WRE" },
+    customized: { bg: "from-amber-100 via-amber-50 to-white", ring: "stroke-amber-500", ringTrack: "stroke-amber-100", chipBg: "bg-amber-100", chipText: "text-amber-800", dot: "bg-amber-500", label: "Customized" },
+  };
+  const heroVibe = HERO_VIBE[cls.program?.toLowerCase() ?? ""] ?? HERO_VIBE.ielts;
+
+  return (
+    <div className="max-w-5xl mx-auto px-4 py-5 md:py-6">
+      {/* Breadcrumb */}
+      <div className="flex items-center gap-2 text-xs font-bold mb-3 text-muted-foreground">
+        <button
+          type="button"
+          onClick={() => navigate("/classes/list")}
+          className="inline-flex items-center justify-center h-7 w-7 rounded-pop border-[1.5px] border-lp-ink/30 hover:border-lp-ink/60 hover:bg-lp-yellow/20 transition-colors text-lp-ink"
+          aria-label="Quay lại danh sách lớp"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+        </button>
+        <button type="button" onClick={() => navigate("/classes/list")} className="hover:text-lp-ink transition-colors">
+          Lớp học
+        </button>
+        <span className="text-lp-ink/30">/</span>
+        <span className="font-mono text-lp-ink">{cls.class_code ?? "—"}</span>
+        <span className="text-lp-ink/30">/</span>
+        <span className="text-lp-ink/60">Chi tiết</span>
+      </div>
+
+      {/* ═══ Hero card — mockup pages-class-detail vibe ═══ */}
+      <section className={cn(
+        "relative rounded-2xl border-[2.5px] border-lp-ink overflow-hidden mb-5",
+        "bg-gradient-to-br", heroVibe.bg,
+      )}>
+        {/* Decorative dot grid (subtle) */}
+        <div
+          className="absolute top-0 right-20 w-40 h-24 opacity-10 pointer-events-none"
+          style={{
+            backgroundImage: "radial-gradient(circle, currentColor 1px, transparent 1.5px)",
+            backgroundSize: "12px 12px",
+          }}
         />
-        <ClassKpi
-          icon={Calendar}
-          label="Buổi học"
-          value={`${cls.sessions_completed ?? 0}/${cls.sessions_total ?? 0}`}
-          hint={cls.sessions_total
-            ? `${Math.round(((cls.sessions_completed ?? 0) / cls.sessions_total) * 100)}% xong`
-            : undefined}
-          tone="violet"
-        />
-        <ClassKpi
-          icon={Mail}
-          label="Lời mời GV"
-          value={invitationSummaryQ.data
-            ? `${invitationSummaryQ.data.accepted}/${invitationSummaryQ.data.total}`
-            : "—"}
-          hint={invitationSummaryQ.data?.pending
-            ? `${invitationSummaryQ.data.pending} chờ`
-            : invitationSummaryQ.data?.everSent === false && invitationSummaryQ.data.total > 0
-              ? "Chưa gửi"
-              : undefined}
-          tone="amber"
-        />
-        <ClassKpi
-          icon={BookOpen}
-          label="Study plan"
-          value={attachedPlanQ.data ? "Đã gắn" : attachedPlanQ.isLoading ? "..." : "Chưa gắn"}
-          hint={attachedPlanQ.data?.plan_name ?? cls.study_plan_name ?? undefined}
-          tone="coral"
-        />
+
+        <div className="relative p-5 md:p-6 grid grid-cols-1 md:grid-cols-[1fr_auto] gap-5 items-start">
+          {/* Left — main info */}
+          <div className="min-w-0 space-y-2">
+            {/* Top badges row */}
+            <div className="flex items-center gap-2 flex-wrap">
+              {cls.program && (
+                <span className={cn(
+                  "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-display font-bold border border-lp-ink/15",
+                  heroVibe.chipBg, heroVibe.chipText,
+                )}>
+                  <span className={cn("h-1.5 w-1.5 rounded-full", heroVibe.dot)} />
+                  {heroVibe.label}
+                  {cls.level && <span className="opacity-70">· {cls.level}</span>}
+                </span>
+              )}
+              {sessionsTotal > 0 && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-display font-bold bg-white/70 border-[1.5px] border-lp-ink/30 text-lp-ink">
+                  {sessionsTotal} buổi
+                </span>
+              )}
+              <ClassStatusBadge
+                status={cls.lifecycle_status}
+                reason={cls.cancellation_reason}
+                size="sm"
+              />
+            </div>
+
+            {/* Code mono */}
+            <p className="font-mono text-[11px] font-bold text-lp-body tracking-wider">
+              {cls.class_code ?? "—"}
+            </p>
+
+            {/* Class title */}
+            <h1 className="font-display text-2xl md:text-3xl font-extrabold leading-tight text-lp-ink">
+              {cls.name ?? cls.class_name ?? "(không tên)"}
+            </h1>
+
+            {/* Description */}
+            {cls.description && (
+              <p className="text-sm text-lp-body max-w-2xl leading-relaxed">
+                {cls.description}
+              </p>
+            )}
+
+            {/* Meta row: teacher + schedule */}
+            <div className="flex flex-wrap gap-x-5 gap-y-2 pt-2">
+              {cls.teacher_name && (
+                <div className="flex items-center gap-2 min-w-0">
+                  {cls.teacher_avatar_url ? (
+                    <img
+                      src={cls.teacher_avatar_url}
+                      alt={cls.teacher_name}
+                      className="h-9 w-9 rounded-full border-[2px] border-lp-ink object-cover shrink-0"
+                    />
+                  ) : (
+                    <div className="h-9 w-9 rounded-full border-[2px] border-lp-ink bg-lp-coral text-white font-display font-extrabold text-sm flex items-center justify-center shrink-0">
+                      {cls.teacher_name.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <p className="font-display font-bold text-sm text-lp-ink truncate">
+                      {cls.teacher_name}
+                    </p>
+                    <p className="text-[10px] text-lp-body">Giáo viên chính</p>
+                  </div>
+                </div>
+              )}
+              {(cls.schedule || (cls.default_start_time && cls.default_end_time)) && (
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-lp-body shrink-0" />
+                  <div>
+                    <p className="font-display font-bold text-sm text-lp-ink">
+                      {cls.schedule || `${cls.default_start_time?.slice(0, 5)} → ${cls.default_end_time?.slice(0, 5)}`}
+                    </p>
+                    <p className="text-[10px] text-lp-body">
+                      {cls.room ? `Phòng ${cls.room}` : "Chưa gán phòng"}
+                      {cls.branch && ` · ${cls.branch}`}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Right — progress ring + actions */}
+          <div className="flex flex-col items-end gap-3 shrink-0">
+            {sessionsTotal > 0 && (
+              <ProgressRing pct={progressPct} vibeRing={heroVibe.ring} vibeTrack={heroVibe.ringTrack} />
+            )}
+            <div className="flex items-center gap-1.5">
+              {headerActions}
+            </div>
+          </div>
+        </div>
+
+        {/* Hero stat strip (6 cards) */}
+        <div className="relative border-t-[2px] border-lp-ink/10 bg-white/40 backdrop-blur-sm grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 divide-x-[1.5px] divide-lp-ink/10">
+          <HeroStat
+            value={`${cls.student_count ?? 0}${cls.max_students ? ` / ${cls.max_students}` : ""}`}
+            label="Học viên"
+          />
+          <HeroStat
+            value={`${sessionsDone} / ${sessionsTotal || "—"}`}
+            label="Buổi đã học"
+          />
+          <HeroStat
+            value={invitationSummaryQ.data
+              ? `${invitationSummaryQ.data.accepted} / ${invitationSummaryQ.data.total}`
+              : "—"}
+            label="Giáo viên đồng ý"
+            extraClass={invitationSummaryQ.data?.everSent === false && (invitationSummaryQ.data?.total ?? 0) > 0 ? "text-amber-700" : undefined}
+          />
+          <HeroStat
+            value={attachedPlanQ.data ? "Đã gắn" : attachedPlanQ.isLoading ? "…" : "Chưa gắn"}
+            label="Study plan"
+            extraClass={attachedPlanQ.data ? "text-teal-700" : "text-muted-foreground"}
+          />
+          <HeroStat
+            value={cls.start_date ? formatDateDDMMYYYY(cls.start_date) : "—"}
+            label="Ngày khai giảng"
+          />
+          <HeroStat
+            value={cls.end_date ? formatDateDDMMYYYY(cls.end_date) : "—"}
+            label="Ngày kết thúc"
+          />
+        </div>
       </section>
+
+      {/* Info header — chi tiết metadata (giữ existing card cho deep info) */}
+      <ClassInfoCard cls={cls} />
 
       {/* Tabs */}
       <Tabs defaultValue="overview" className="mt-6">
@@ -807,41 +933,66 @@ export default function AdminClassDetailPage() {
         classId={cls.id}
         className={cls.name ?? cls.class_name ?? undefined}
       />
-    </DetailPageLayout>
+    </div>
   );
 }
 
-/* ─── Inline KPI card cho hero stats strip (Day 7 polish per mockup) ─── */
+/* ─── Hero progress ring + stat cells (Day 7 deep refactor) ─── */
 
-interface ClassKpiProps {
-  icon: LucideIcon;
-  label: string;
-  value: string;
-  hint?: string;
-  tone: "teal" | "violet" | "amber" | "coral";
+interface ProgressRingProps {
+  pct: number;
+  vibeRing: string;
+  vibeTrack: string;
 }
 
-const KPI_TONE: Record<ClassKpiProps["tone"], { bg: string; icon: string }> = {
-  teal:   { bg: "bg-teal-50 border-teal-200 dark:bg-teal-950/40 dark:border-teal-900",     icon: "text-teal-600 dark:text-teal-400" },
-  violet: { bg: "bg-violet-50 border-violet-200 dark:bg-violet-950/40 dark:border-violet-900", icon: "text-violet-600 dark:text-violet-400" },
-  amber:  { bg: "bg-amber-50 border-amber-200 dark:bg-amber-950/40 dark:border-amber-900",  icon: "text-amber-600 dark:text-amber-400" },
-  coral:  { bg: "bg-rose-50 border-rose-200 dark:bg-rose-950/40 dark:border-rose-900",      icon: "text-rose-600 dark:text-rose-400" },
-};
-
-function ClassKpi({ icon: Icon, label, value, hint, tone }: ClassKpiProps) {
-  const palette = KPI_TONE[tone];
+function ProgressRing({ pct, vibeRing, vibeTrack }: ProgressRingProps) {
+  // SVG ring — 88×88 viewBox, r=38, circumference ~239.
+  const r = 38;
+  const c = 2 * Math.PI * r;
+  const offset = c - (Math.min(100, Math.max(0, pct)) / 100) * c;
   return (
-    <div className={`rounded-xl border p-3 space-y-1 ${palette.bg}`}>
-      <div className="flex items-center justify-between">
-        <Icon className={`h-4 w-4 ${palette.icon}`} />
+    <div className="relative inline-flex items-center justify-center w-24 h-24 shrink-0">
+      <svg viewBox="0 0 88 88" className="absolute inset-0 -rotate-90">
+        <circle
+          cx="44" cy="44" r={r}
+          fill="none" strokeWidth="8"
+          className={vibeTrack}
+        />
+        <circle
+          cx="44" cy="44" r={r}
+          fill="none" strokeWidth="8" strokeLinecap="round"
+          className={cn("transition-all duration-500", vibeRing)}
+          strokeDasharray={c}
+          strokeDashoffset={offset}
+        />
+      </svg>
+      <div className="relative text-center">
+        <p className="font-display text-2xl font-extrabold leading-none text-lp-ink tabular-nums">
+          {pct}<span className="text-base">%</span>
+        </p>
+        <p className="text-[9px] text-lp-body uppercase tracking-wider font-semibold mt-0.5">
+          tiến độ
+        </p>
       </div>
-      <p className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">
-        {label}
-      </p>
-      <p className="font-display text-lg font-extrabold tabular-nums leading-tight">
+    </div>
+  );
+}
+
+interface HeroStatProps {
+  value: string;
+  label: string;
+  extraClass?: string;
+}
+
+function HeroStat({ value, label, extraClass }: HeroStatProps) {
+  return (
+    <div className="px-3 py-2.5 text-center md:text-left">
+      <p className={cn("font-display text-lg md:text-xl font-extrabold leading-tight tabular-nums truncate", extraClass)}>
         {value}
       </p>
-      {hint && <p className="text-[10px] text-muted-foreground leading-tight">{hint}</p>}
+      <p className="text-[10px] text-lp-body uppercase tracking-wider font-semibold mt-0.5">
+        {label}
+      </p>
     </div>
   );
 }
