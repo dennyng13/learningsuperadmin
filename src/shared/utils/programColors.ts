@@ -286,3 +286,29 @@ export function getCourseEmoji(codeOrName?: string | null): string {
 
   return "📚";
 }
+
+/**
+ * Map program key to a ProgramHero-compatible color name
+ */
+export function getProgramColorKey(program?: string | null): "coral" | "teal" | "sky" | "violet" | "yellow" {
+  if (!program) return "coral";
+  const key = program.trim().toLowerCase();
+  if (!key) return "coral";
+
+  // Static mappings for known programs
+  const COLOR_MAPPINGS: Record<string, "coral" | "teal" | "sky" | "violet" | "yellow"> = {
+    ielts: "teal",
+    wre: "violet",
+    private: "yellow",
+    "1-1": "yellow",
+    customized: "yellow",
+  };
+
+  for (const [progKey, color] of Object.entries(COLOR_MAPPINGS)) {
+    if (key === progKey || key.includes(progKey)) return color;
+  }
+
+  // Hash-based fallback
+  const colors: ("coral" | "teal" | "sky" | "violet" | "yellow")[] = ["coral", "teal", "sky", "violet", "yellow"];
+  return colors[hash(key) % colors.length];
+}

@@ -21,9 +21,10 @@ import { useCourseLevels } from "@shared/hooks/useCourseLevels";
 import { useCourses, type Course, type CourseInput } from "@admin/features/academic/hooks/useCourses";
 import ProgramLevelManager from "@admin/features/academic/components/ProgramLevelManager";
 import CourseCard from "@admin/features/academic/components/CourseCard";
+import { ProgramHero } from "@admin/features/academic/components/program-detail";
 import CourseEditorDialog from "@admin/features/academic/components/CourseEditorDialog";
 import ProgramEditorDialog from "@admin/features/academic/components/ProgramEditorDialog";
-import { getProgramIcon, getProgramPalette, getProgramEmoji } from "@shared/utils/programColors";
+import { getProgramPalette, getProgramEmoji, getProgramColorKey } from "@shared/utils/programColors";
 import { cn } from "@shared/lib/utils";
 
 interface CohortData {
@@ -193,110 +194,31 @@ export default function ProgramDetailPage() {
         </Link>
       </Button>
 
-      {/* Enhanced Hero */}
-      <section className={cn("rounded-2xl border-2 bg-card overflow-hidden shadow-sm", isInactive && "opacity-80")}>
-        {/* Top gradient bar */}
-        <div className={cn("h-2 w-full", palette.progressFill)} />
-
-        <div className="p-6 md:p-8">
-          <div className="flex items-start gap-6">
-            {/* Emoji sticker */}
-            <div className={cn(
-              "h-20 w-20 rounded-2xl flex items-center justify-center shrink-0 text-4xl",
-              "bg-white border-2 shadow-md transform -rotate-3",
-              palette.borderColor
-            )}>
-              {emoji}
-            </div>
-
-            <div className="flex-1 min-w-0 space-y-3">
-              {/* Meta row */}
-              <div className="flex items-center gap-2 flex-wrap">
-                <code className="text-[11px] font-mono px-2 py-0.5 rounded bg-muted font-bold">
-                  {program.key}
-                </code>
-                <Badge variant={isInactive ? "secondary" : "default"} className="text-[10px]">
-                  {isInactive ? "Đã ẩn" : "Đang hoạt động"}
-                </Badge>
-                {program.cefr_range && (
-                  <Badge variant="outline" className="text-[10px]">
-                    <Target className="h-3 w-3 mr-1" /> {program.cefr_range}
-                  </Badge>
-                )}
-                <Badge className="text-[10px] bg-amber-100 text-amber-800 hover:bg-amber-100 border-amber-200">
-                  ⭐ Bestseller
-                </Badge>
-              </div>
-
-              {/* Title */}
-              <div>
-                <h1 className="font-display text-3xl md:text-4xl font-extrabold tracking-tight">{program.name}</h1>
-                <p className="text-sm text-muted-foreground mt-1">{program.tagline || "Chương trình học phổ biến nhất"}</p>
-              </div>
-
-              {/* Description */}
-              {program.description && (
-                <p className="text-sm text-muted-foreground leading-relaxed max-w-2xl">{program.description}</p>
-              )}
-
-              {/* Actions */}
-              <div className="flex items-center gap-2 pt-2">
-                <Button size="sm" className="gap-1.5">
-                  <Plus className="h-3.5 w-3.5" /> Mở lớp mới
-                </Button>
-                <Button size="sm" variant="outline" className="gap-1.5">
-                  <BookOpen className="h-3.5 w-3.5" /> Duplicate
-                </Button>
-                <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setProgramEditorOpen(true)}>
-                  <Pencil className="h-3.5 w-3.5" /> Sửa chương trình
-                </Button>
-                <Button size="sm" variant="secondary" className="gap-1.5">
-                  <ArrowRight className="h-3.5 w-3.5" /> Brochure PDF
-                </Button>
-              </div>
-            </div>
-
-            {/* Quick stats grid */}
-            <div className="hidden lg:grid grid-cols-2 gap-3 min-w-[280px]">
-              <StatBlock
-                label="Học viên"
-                value={kpiQ.data ? String(kpiQ.data.totalStudents) : "—"}
-                sub="đang theo học"
-                color="rose"
-                loading={kpiQ.isLoading}
-              />
-              <StatBlock
-                label="Lớp active"
-                value={kpiQ.data ? `${kpiQ.data.running}/${kpiQ.data.totalClasses}` : "—"}
-                sub={kpiQ.data ? `+1 sắp mở` : undefined}
-                color="teal"
-                loading={kpiQ.isLoading}
-              />
-              <StatBlock
-                label="Khoá học"
-                value={String(courses.length)}
-                sub={`${courses.length * 3} tuần`}
-                color="amber"
-              />
-              <StatBlock
-                label="Band lift"
-                value="+1.2"
-                sub="TB / cohort"
-                color="violet"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Sub stats row */}
-        <div className="grid grid-cols-5 border-t-2 divide-x">
-          <SubStat label="Học phí" value="18.5M" sub="~1.028k/tuần" />
-          <SubStat label="Doanh thu QTD" value={kpiQ.data ? `${Math.round(kpiQ.data.totalStudents * 18500000 / 1000000)}M` : "—"} sub="Ước tính" />
-          <SubStat label="Hoàn thành" value={`${avgCompletion}%`} sub={`> ngưỡng 75%`} />
-          <SubStat label="Hài lòng" value="92%" sub="feedback HV" />
-          <SubStat label="Retention" value="94%" sub="tuần 1 → kết thúc" />
-        </div>
-      </section>
+      <ProgramHero
+        program={{
+          code: program.key,
+          name: program.name,
+          tagline: program.tagline || "Chương trình học phổ biến nhất",
+          level: program.cefr_range || "",
+          emoji: emoji,
+          color: getProgramColorKey(program.key),
+          status: (isInactive ? "archived" : (program.status === "active" ? "active" : "draft")) as "active" | "draft" | "archived",
+          desc: (program as any).description || "",
+          students: kpiQ.data?.totalStudents || 0,
+          classes: kpiQ.data?.running || 0,
+          courses: courses.length,
+          weeks: courses.length * 3,
+          bandLiftAvg: 1.2,
+          pricing: { full: 18500000, perWeek: 1028000 },
+          revenue: kpiQ.data ? Math.round(kpiQ.data.totalStudents * 18500000 / 1000000) : 0,
+          target: kpiQ.data?.totalStudents || 0,
+          completion: avgCompletion,
+          satisfaction: 92,
+          retention: 94,
+        }}
+        loading={kpiQ.isLoading}
+        onEdit={() => setProgramEditorOpen(true)}
+      />
 
       {/* Level Manager */}
       <ProgramLevelManager program={program} allLevels={levels} onChanged={onChanged} />

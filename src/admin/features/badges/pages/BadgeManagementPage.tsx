@@ -287,160 +287,208 @@ export default function BadgeManagementPage() {
 
   return (
     <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      {/* Header - matching mockup BadgeHero */}
+      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1">
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-slate-500 mb-1.5">
             Người dùng · Badges & Achievements
           </p>
-          <h1 className="font-display text-2xl md:text-3xl font-extrabold">
+          <h1 className="font-display text-2xl md:text-3xl font-black tracking-tight">
             Huy hiệu & <span className="text-rose-500">vinh danh</span>
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {badges.length} huy hiệu · {activeCount} đang phát hành · {totalEarned.toLocaleString("vi-VN")} lượt nhận · cập nhật realtime
+          <p className="text-sm text-slate-500 mt-1.5 font-medium">
+            {badges.length} huy hiệu · {activeCount} đang phát hành · {totalEarned.toLocaleString("vi-VN")} lượt nhận tới hôm nay · cập nhật realtime
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="gap-1.5">
-            <Download className="h-3.5 w-3.5" /> Export
+        <div className="flex gap-2 flex-wrap">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="gap-1.5 border-2 border-slate-800 bg-white hover:bg-slate-50 shadow-[2px_2px_0_0_#0f172a]"
+          >
+            <Download className="h-3.5 w-3.5" /> Export thống kê
           </Button>
-          <Button variant="outline" size="sm" className="gap-1.5">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="gap-1.5 border-2 border-amber-500 bg-amber-50 text-amber-700 hover:bg-amber-100 shadow-[2px_2px_0_0_#f59e0b]"
+          >
             <Sparkles className="h-3.5 w-3.5" /> Trao thủ công
           </Button>
-          <Button size="sm" className="gap-1.5" onClick={openCreate}>
+          <Button 
+            size="sm" 
+            className="gap-1.5 bg-rose-500 hover:bg-rose-600 text-white border-2 border-rose-600 shadow-[2px_2px_0_0_#e11d48]"
+            onClick={openCreate}
+          >
             <Plus className="h-3.5 w-3.5" /> Tạo huy hiệu
           </Button>
         </div>
       </div>
 
-      {/* KPI Stats */}
+      {/* KPI Stats - pop-card kpi style from mockup */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCardEnhanced
-          label="Tổng huy hiệu"
-          value={String(badges.length)}
-          sub={`${studentBadges} HV · ${teacherBadges} GV`}
-          color="rose"
-          icon={Award}
-        />
-        <StatCardEnhanced
-          label="Lượt trao tháng"
-          value="4,182"
-          sub="+18% so với tháng trước"
-          color="teal"
-          icon={Sparkles}
-        />
-        <StatCardEnhanced
-          label="Tỉ lệ active"
-          value="67%"
-          sub="HV nhận ≥1 badge / tuần"
-          color="amber"
-          icon={FlameIcon}
-        />
-        <StatCardEnhanced
-          label="Top streak"
-          value="184d"
-          sub="Phạm Tuấn Anh"
-          color="violet"
-          icon={Star}
-        />
+        {[
+          { l: "Tổng huy hiệu", v: String(badges.length), sub: `${studentBadges} HV · ${teacherBadges} GV`, color: "rose", icon: Award },
+          { l: "Lượt trao tháng", v: "4,182", sub: "+18% so với tháng trước", color: "teal", icon: Sparkles },
+          { l: "Tỉ lệ active", v: "67%", sub: "HV nhận ≥1 badge / tuần", color: "amber", icon: FlameIcon },
+          { l: "Top streak", v: "184d", sub: "Phạm Tuấn Anh", color: "violet", icon: Star },
+        ].map(k => {
+          const colorClasses = {
+            rose: { bg: "bg-rose-500", soft: "bg-rose-50", text: "text-rose-700", border: "border-rose-200" },
+            teal: { bg: "bg-teal-500", soft: "bg-teal-50", text: "text-teal-700", border: "border-teal-200" },
+            amber: { bg: "bg-amber-400", soft: "bg-amber-50", text: "text-amber-700", border: "border-amber-200" },
+            violet: { bg: "bg-violet-500", soft: "bg-violet-50", text: "text-violet-700", border: "border-violet-200" },
+          }[k.color];
+          const Icon = k.icon;
+          return (
+            <div
+              key={k.l}
+              className={cn(
+                "rounded-xl border-2 p-4 min-h-[130px] transition-transform hover:-translate-y-0.5",
+                colorClasses.soft, colorClasses.border,
+                "shadow-[4px_4px_0_0_#0f172a]"
+              )}
+            >
+              <div className="flex justify-between items-start">
+                <span className={cn("text-[10px] font-extrabold uppercase tracking-wider", colorClasses.text)}>{k.l}</span>
+                <div className={cn("w-9 h-9 rounded-lg flex items-center justify-center border-2 border-slate-800", colorClasses.bg, k.color === "amber" ? "text-slate-900" : "text-white")}>
+                  <Icon className="h-4 w-4" />
+                </div>
+              </div>
+              <div className={cn("font-display text-[38px] font-black tracking-tight mt-3.5 leading-none", colorClasses.text)}>
+                {k.v}
+              </div>
+              <div className={cn("text-[11px] font-bold mt-1.5 opacity-85", colorClasses.text)}>{k.sub}</div>
+            </div>
+          );
+        })}
       </div>
 
-      {/* Audience Toggle + View Toggle */}
+      {/* Audience Toggle + View Toggle - page-tabs style */}
       <div className="flex flex-wrap gap-3 items-center">
-        <div className="flex gap-1 p-1 bg-muted/50 rounded-lg">
-          <Button
-            variant={audience === "student" ? "default" : "ghost"}
-            size="sm"
-            className="gap-1.5 text-xs"
+        <div className="flex rounded-lg border-2 border-slate-800 bg-white overflow-hidden shadow-[2px_2px_0_0_#0f172a]">
+          <button
+            className={cn(
+              "px-3 py-2 text-xs font-bold flex items-center gap-1.5 transition-colors",
+              audience === "student" 
+                ? "bg-slate-800 text-white" 
+                : "bg-white text-slate-600 hover:bg-slate-50"
+            )}
             onClick={() => setAudience("student")}
           >
             <Users className="h-3.5 w-3.5" /> Học viên ({studentBadges})
-          </Button>
-          <Button
-            variant={audience === "teacher" ? "default" : "ghost"}
-            size="sm"
-            className="gap-1.5 text-xs"
+          </button>
+          <div className="w-px bg-slate-800" />
+          <button
+            className={cn(
+              "px-3 py-2 text-xs font-bold flex items-center gap-1.5 transition-colors",
+              audience === "teacher" 
+                ? "bg-slate-800 text-white" 
+                : "bg-white text-slate-600 hover:bg-slate-50"
+            )}
             onClick={() => setAudience("teacher")}
           >
             <GraduationCap className="h-3.5 w-3.5" /> Giáo viên ({teacherBadges})
-          </Button>
+          </button>
         </div>
         <div className="flex-1" />
-        <div className="flex gap-1 p-1 bg-muted/50 rounded-lg">
-          <Button
-            variant={view === "grid" ? "default" : "ghost"}
-            size="sm"
-            className="gap-1.5 text-xs"
+        <div className="flex rounded-lg border-2 border-slate-800 bg-white overflow-hidden shadow-[2px_2px_0_0_#0f172a]">
+          <button
+            className={cn(
+              "px-3 py-2 text-xs font-bold flex items-center gap-1.5 transition-colors",
+              view === "grid" 
+                ? "bg-slate-800 text-white" 
+                : "bg-white text-slate-600 hover:bg-slate-50"
+            )}
             onClick={() => setView("grid")}
           >
             <LayoutGrid className="h-3.5 w-3.5" /> Bộ sưu tập
-          </Button>
-          <Button
-            variant={view === "rules" ? "default" : "ghost"}
-            size="sm"
-            className="gap-1.5 text-xs"
+          </button>
+          <div className="w-px bg-slate-800" />
+          <button
+            className={cn(
+              "px-3 py-2 text-xs font-bold flex items-center gap-1.5 transition-colors",
+              view === "rules" 
+                ? "bg-slate-800 text-white" 
+                : "bg-white text-slate-600 hover:bg-slate-50"
+            )}
             onClick={() => setView("rules")}
           >
             <List className="h-3.5 w-3.5" /> Bảng rules
-          </Button>
+          </button>
         </div>
       </div>
 
-      {/* Category Tabs + Search */}
-      <div className="flex flex-wrap gap-2 items-center">
+      {/* Category Tabs + Search - table-toolbar style */}
+      <div className="flex flex-wrap gap-2 items-center p-2 bg-white rounded-xl border-2 border-slate-800 shadow-[2px_2px_0_0_#0f172a]">
         {[
           { id: "all", label: "Tất cả" },
           ...Object.entries(CAT_META).map(([k, v]) => ({ id: k, label: v.label })),
           { id: "inactive", label: "Tạm tắt" },
-        ].map(t => (
-          <Button
-            key={t.id}
-            variant={tab === t.id ? "default" : "outline"}
-            size="sm"
-            className="text-xs"
-            onClick={() => setTab(t.id)}
-          >
-            {t.label}
-            {tab === t.id && <span className="ml-1.5 text-[10px]">({filteredBadges.length})</span>}
-          </Button>
-        ))}
+        ].map(t => {
+          const isActive = tab === t.id;
+          return (
+            <button
+              key={t.id}
+              className={cn(
+                "px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5",
+                isActive
+                  ? "bg-slate-800 text-white shadow-[2px_2px_0_0_#0f172a]"
+                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              )}
+              onClick={() => setTab(t.id)}
+            >
+              {t.label}
+              {isActive && (
+                <span className="bg-white/20 px-1.5 py-0.5 rounded-full text-[10px]">
+                  {filteredBadges.length}
+                </span>
+              )}
+            </button>
+          );
+        })}
         <div className="flex-1" />
         <div className="relative">
-          <Search className="h-3.5 w-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Search className="h-3.5 w-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
           <Input
-            placeholder="Tìm huy hiệu..."
+            placeholder="Tìm huy hiệu…"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            className="pl-8 h-8 text-xs w-48"
+            className="pl-8 h-8 text-xs w-48 border-2 border-slate-200 focus:border-slate-800"
           />
         </div>
       </div>
 
       {/* Content */}
-      {badges.length === 0 ? (
-        <div className="bg-card rounded-xl border-2 p-12 text-center">
-          <Award className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
-          <p className="text-muted-foreground font-medium">Chưa có huy hiệu nào</p>
-          <Button className="mt-4" onClick={openCreate}>
-            <Plus className="h-4 w-4 mr-2" /> Tạo huy hiệu đầu tiên
-          </Button>
-        </div>
-      ) : view === "grid" ? (
-        <GridViewEnhanced 
-          badges={filteredBadges} 
-          onEdit={openEdit} 
-          onDelete={(id) => setDeleteConfirm(id)} 
-        />
-      ) : (
-        <RulesViewEnhanced 
-          badges={filteredBadges} 
-          onEdit={openEdit} 
-          onDelete={(id) => setDeleteConfirm(id)} 
-        />
-      )}
+      <div className="bg-amber-50/50 rounded-2xl border-2 border-slate-800 p-6 shadow-[4px_4px_0_0_#0f172a]">
+        {badges.length === 0 ? (
+          <div className="bg-white rounded-xl border-2 border-slate-200 p-12 text-center">
+            <Award className="h-12 w-12 mx-auto text-slate-300 mb-4" />
+            <p className="text-slate-500 font-medium">Chưa có huy hiệu nào</p>
+            <Button 
+              className="mt-4 bg-rose-500 hover:bg-rose-600 text-white border-2 border-rose-600 shadow-[2px_2px_0_0_#e11d48]" 
+              onClick={openCreate}
+            >
+              <Plus className="h-4 w-4 mr-2" /> Tạo huy hiệu đầu tiên
+            </Button>
+          </div>
+        ) : view === "grid" ? (
+          <GridViewEnhanced 
+            badges={filteredBadges} 
+            onEdit={openEdit} 
+            onDelete={(id) => setDeleteConfirm(id)} 
+          />
+        ) : (
+          <RulesViewEnhanced 
+            badges={filteredBadges} 
+            onEdit={openEdit} 
+            onDelete={(id) => setDeleteConfirm(id)} 
+          />
+        )}
+      </div>
 
       {/* Recent Awards & Hall of Fame */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-[18px]">
         <RecentAwardsSection badges={badges} />
         <HallOfFameSection />
       </div>
@@ -735,104 +783,99 @@ function inferColorKey(badge: BadgeRow): string {
   return "yellow";
 }
 
-function StatCardEnhanced({ label, value, sub, color, icon: Icon }: {
-  label: string;
-  value: string;
-  sub: string;
-  color: "rose" | "teal" | "amber" | "violet";
-  icon: typeof Award;
-}) {
-  const colorMap = {
-    rose: { bg: "bg-rose-500", soft: "bg-rose-50", border: "border-rose-200", text: "text-rose-700", iconBg: "bg-rose-100" },
-    teal: { bg: "bg-teal-500", soft: "bg-teal-50", border: "border-teal-200", text: "text-teal-700", iconBg: "bg-teal-100" },
-    amber: { bg: "bg-amber-400", soft: "bg-amber-50", border: "border-amber-200", text: "text-amber-700", iconBg: "bg-amber-100" },
-    violet: { bg: "bg-violet-500", soft: "bg-violet-50", border: "border-violet-200", text: "text-violet-700", iconBg: "bg-violet-100" },
-  };
-
-  const c = colorMap[color];
-
-  return (
-    <div className={cn(
-      "rounded-xl border-2 p-4 transition-transform hover:-translate-y-0.5",
-      c.soft, c.border, c.text,
-      HARD_SHADOW
-    )}>
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-[10px] font-bold uppercase tracking-wider opacity-80">{label}</span>
-        <div className={cn("w-9 h-9 rounded-lg border-2 border-slate-800 flex items-center justify-center", c.bg, color === "amber" ? "text-slate-900" : "text-white")}>
-          <Icon className="h-4 w-4" />
-        </div>
-      </div>
-      <div className="font-display text-3xl font-extrabold tracking-tight">{value}</div>
-      <div className="text-xs font-bold mt-1 opacity-70">{sub}</div>
-    </div>
-  );
-}
-
 function GridViewEnhanced({ badges, onEdit, onDelete }: {
   badges: BadgeRow[];
   onEdit: (b: BadgeRow) => void;
   onDelete: (id: string) => void;
 }) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-      {badges.map((b, i) => {
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-[18px]">
+      {badges.map((b) => {
         const cat = CAT_META[inferCategory(b)] || { label: "Khác", color: "slate" };
         const tier = TIER_META[b.tier] || TIER_META.bronze;
         const earned = Math.floor(Math.random() * 1000) + 10; // Mock - sẽ lấy từ API
-        const rotation = ((i % 5) - 2); // Slight rotation for playful effect
+        const colorKey = inferColorKey(b);
 
         return (
           <div
             key={b.id}
-            className={cn(
-              "relative rounded-xl border-[3px] border-slate-800 bg-white p-4 flex flex-col transition-all hover:-translate-y-1",
-              HARD_SHADOW,
-              b.status !== "active" && "opacity-55 grayscale"
-            )}
-            style={{ transform: `rotate(${rotation}deg)` }}
+            className="relative bg-white rounded-[18px] p-5 pb-4 flex flex-col"
+            style={{
+              border: "2.5px solid #0f172a",
+              boxShadow: "4px 4px 0 0 #0f172a",
+              opacity: b.status !== "active" ? 0.55 : 1,
+            }}
           >
-            {b.status !== "active" && (
-              <div className="absolute -top-2 -right-2 bg-slate-800 text-white text-[9px] font-bold uppercase px-2 py-0.5 rounded-full border-2 border-white shadow-md z-10">
+            {!b.active && (
+              <div 
+                className="absolute top-2.5 right-2.5 text-white text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full z-10"
+                style={{ background: "#0f172a", letterSpacing: "0.1em" }}
+              >
                 Tạm tắt
               </div>
             )}
-            <div className="flex items-center gap-3 mb-3">
-              <BadgeSticker badge={b} size={64} />
+            <div className="flex items-center gap-3.5 mb-3.5">
+              <BadgeSticker badge={b} size={88} />
               <div className="flex-1 min-w-0">
-                <div className="font-display font-bold text-sm truncate">{b.name}</div>
-                <code className="text-[10px] font-mono text-muted-foreground bg-slate-100 px-1 rounded">{b.id.slice(0, 6)}</code>
-                <div className="flex gap-1 mt-1.5">
-                  <span
-                    className="text-[9px] font-bold px-2 py-0.5 rounded-full border-[2px] border-slate-800 bg-white"
-                    style={{ transform: `rotate(-1deg)` }}
+                <div className="font-display text-lg font-black tracking-tight leading-tight truncate">
+                  {b.name}
+                </div>
+                <code className="font-mono text-[10px] text-slate-500">{b.id}</code>
+                <div className="flex gap-1.5 mt-2 flex-wrap">
+                  <span 
+                    className="text-[10px] font-extrabold px-2 py-0.5 rounded-full"
+                    style={{ 
+                      background: `var(--${cat.color}-soft, #fef2f2)`, 
+                      color: `var(--${cat.color}-deep, #be123c)`
+                    }}
                   >
                     {cat.label}
                   </span>
-                  <span
-                    className="text-[9px] font-bold px-2 py-0.5 rounded-full border-[2px] border-slate-800"
-                    style={{ background: tier.soft, color: tier.ring, transform: `rotate(1deg)` }}
+                  <span 
+                    className="text-[10px] font-extrabold px-2 py-0.5 rounded-full"
+                    style={{ background: tier.soft, color: tier.ring }}
                   >
                     {tier.label}
                   </span>
                 </div>
               </div>
             </div>
-            <p className="text-xs text-slate-600 mb-3 flex-1 line-clamp-2">
+            <div 
+              className="text-xs text-slate-600 leading-relaxed pb-3 mb-3 flex-1 line-clamp-2"
+              style={{ 
+                borderBottom: "1.5px dashed #0f172a",
+                minHeight: 36
+              }}
+            >
               <span className="font-bold text-slate-900">Điều kiện:</span> {b.description || "—"}
-            </p>
-            <div className="flex items-center justify-between pt-3 border-t-2 border-dashed border-slate-200">
+            </div>
+            <div className="flex items-center justify-between gap-2.5">
               <div>
-                <div className="font-display font-bold text-xl text-slate-900">{earned.toLocaleString("vi-VN")}</div>
-                <div className="text-[9px] font-bold uppercase tracking-wider text-slate-500">lượt nhận</div>
+                <div 
+                  className="font-display text-lg font-black"
+                  style={{ color: `var(--${colorKey}-deep, #0f172a)` }}
+                >
+                  {earned.toLocaleString("vi-VN")}
+                </div>
+                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                  lượt nhận
+                </div>
               </div>
-              <div className="flex gap-1">
-                <Button size="icon" variant="outline" className="h-8 w-8 border-2 border-slate-800 hover:bg-slate-50" onClick={() => onEdit(b)}>
+              <div className="flex gap-1.5">
+                <button
+                  className="w-8 h-8 rounded-lg bg-white border-2 border-slate-800 flex items-center justify-center hover:bg-slate-50 transition-colors"
+                  style={{ boxShadow: "2px 2px 0 0 #0f172a" }}
+                  onClick={() => onEdit(b)}
+                >
                   <Eye className="h-3.5 w-3.5" />
-                </Button>
-                <Button size="icon" variant="outline" className="h-8 w-8 border-2 border-slate-800 hover:bg-slate-50" onClick={() => onEdit(b)}>
+                </button>
+                <button
+                  className="w-8 h-8 rounded-lg bg-white border-2 border-slate-800 flex items-center justify-center hover:bg-slate-50 transition-colors"
+                  style={{ boxShadow: "2px 2px 0 0 #0f172a" }}
+                  onClick={() => onEdit(b)}
+                >
                   <Pencil className="h-3.5 w-3.5" />
-                </Button>
+                </button>
               </div>
             </div>
           </div>
@@ -848,16 +891,16 @@ function RulesViewEnhanced({ badges, onEdit, onDelete }: {
   onDelete: (id: string) => void;
 }) {
   return (
-    <div className="rounded-xl border-2 bg-card overflow-hidden">
+    <div className="bg-white rounded-xl border-2 border-slate-800 overflow-hidden shadow-[2px_2px_0_0_#0f172a]">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b bg-muted/50">
-            <th className="px-4 py-3 text-left">Huy hiệu</th>
-            <th className="px-4 py-3 text-left">Loại</th>
-            <th className="px-4 py-3 text-left">Tier</th>
-            <th className="px-4 py-3 text-left">Điều kiện</th>
-            <th className="px-4 py-3 text-right">Lượt nhận</th>
-            <th className="px-4 py-3 text-center">Trạng thái</th>
+          <tr className="border-b-2 border-slate-800 bg-slate-50">
+            <th className="px-4 py-3 text-left font-extrabold text-xs uppercase tracking-wider">Huy hiệu</th>
+            <th className="px-4 py-3 text-left font-extrabold text-xs uppercase tracking-wider">Loại</th>
+            <th className="px-4 py-3 text-left font-extrabold text-xs uppercase tracking-wider">Tier</th>
+            <th className="px-4 py-3 text-left font-extrabold text-xs uppercase tracking-wider">Điều kiện trao</th>
+            <th className="px-4 py-3 text-right font-extrabold text-xs uppercase tracking-wider">Lượt nhận</th>
+            <th className="px-4 py-3 text-center font-extrabold text-xs uppercase tracking-wider">Trạng thái</th>
             <th className="px-4 py-3 text-right"></th>
           </tr>
         </thead>
@@ -868,49 +911,68 @@ function RulesViewEnhanced({ badges, onEdit, onDelete }: {
             const earned = Math.floor(Math.random() * 1000) + 10; // Mock
 
             return (
-              <tr key={b.id} className="border-b last:border-0 hover:bg-muted/30">
+              <tr key={b.id} className="border-b border-slate-200 last:border-0 hover:bg-slate-50/50">
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-3">
-                    <BadgeSticker badge={b} size={40} />
-                    <div>
-                      <div className="font-bold text-sm">{b.name}</div>
-                      <code className="text-[10px] text-muted-foreground">{b.id.slice(0, 6)}</code>
+                    <BadgeSticker badge={b} size={48} />
+                    <div className="ml-1.5">
+                      <div className="font-extrabold text-sm">{b.name}</div>
+                      <code className="font-mono text-[10px] text-slate-500">{b.id}</code>
                     </div>
                   </div>
                 </td>
                 <td className="px-4 py-3">
-                  <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-full", `bg-${cat.color}-100 text-${cat.color}-700`)}>
+                  <span 
+                    className="text-[11px] font-extrabold px-2.5 py-1 rounded-full"
+                    style={{ 
+                      background: `var(--${cat.color}-soft, #fef2f2)`, 
+                      color: `var(--${cat.color}-deep, #be123c)`
+                    }}
+                  >
                     {cat.label}
                   </span>
                 </td>
                 <td className="px-4 py-3">
                   <span
-                    className="text-[10px] font-bold px-2 py-0.5 rounded-full border"
+                    className="text-[11px] font-extrabold px-2.5 py-1 rounded-full border"
                     style={{ background: tier.soft, color: tier.ring, borderColor: tier.ring }}
                   >
                     {tier.label}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-xs text-muted-foreground max-w-[300px] truncate">
+                <td className="px-4 py-3 text-xs text-slate-600 max-w-[340px] leading-relaxed">
                   {b.description || "—"}
                 </td>
-                <td className="px-4 py-3 text-right font-mono font-bold">{earned.toLocaleString("vi-VN")}</td>
+                <td className="px-4 py-3 text-right">
+                  <span className="font-mono font-extrabold text-sm">{earned.toLocaleString("vi-VN")}</span>
+                </td>
                 <td className="px-4 py-3 text-center">
-                  <span className={cn(
-                    "inline-block px-2 py-0.5 rounded-full text-[9px] font-bold uppercase",
-                    b.status === "active" ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600"
-                  )}>
-                    {b.status === "active" ? "active" : "paused"}
-                  </span>
+                  {b.active ? (
+                    <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-extrabold uppercase bg-emerald-100 text-emerald-700">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"/> active
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-extrabold uppercase bg-slate-100 text-slate-600">
+                      <span className="w-1.5 h-1.5 rounded-full bg-slate-400"/> paused
+                    </span>
+                  )}
                 </td>
                 <td className="px-4 py-3 text-right">
-                  <div className="flex gap-1 justify-end">
-                    <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onEdit(b)}>
+                  <div className="flex gap-1.5 justify-end">
+                    <button
+                      className="w-[30px] h-[30px] rounded-lg bg-white border-2 border-slate-800 flex items-center justify-center hover:bg-slate-50 transition-colors"
+                      style={{ boxShadow: "2px 2px 0 0 #0f172a" }}
+                      onClick={() => onEdit(b)}
+                    >
                       <Pencil className="h-3 w-3" />
-                    </Button>
-                    <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onDelete(b.id)}>
+                    </button>
+                    <button
+                      className="w-[30px] h-[30px] rounded-lg bg-white border-2 border-slate-800 flex items-center justify-center hover:bg-slate-50 transition-colors"
+                      style={{ boxShadow: "2px 2px 0 0 #0f172a" }}
+                      onClick={() => onDelete(b.id)}
+                    >
                       <MoreHorizontal className="h-3 w-3" />
-                    </Button>
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -926,32 +988,55 @@ function RecentAwardsSection({ badges }: { badges: BadgeRow[] }) {
   const getBadgeById = (id: string) => badges.find(b => b.id.startsWith(id)) || badges[0];
 
   return (
-    <div className="lg:col-span-2 rounded-xl border-2 bg-card p-4">
-      <div className="flex items-center justify-between mb-4">
+    <div 
+      className="lg:col-span-2 rounded-[18px] p-5"
+      style={{ 
+        background: "#fff",
+        border: "2.5px solid #0f172a",
+        boxShadow: "4px 4px 0 0 #0f172a"
+      }}
+    >
+      <div className="flex items-center justify-between mb-3.5">
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Hoạt động gần đây</p>
-          <h3 className="font-display text-lg font-bold">15 huy hiệu vừa được trao hôm nay</h3>
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-slate-500">Hoạt động gần đây</p>
+          <h3 className="font-display text-[22px] font-black tracking-tight leading-none mt-0.5">
+            15 huy hiệu vừa được trao hôm nay
+          </h3>
         </div>
-        <Button variant="outline" size="sm">Xem tất cả</Button>
+        <button 
+          className="px-3 py-1.5 rounded-lg text-xs font-bold border-2 border-slate-800 bg-white hover:bg-slate-50 transition-colors"
+          style={{ boxShadow: "2px 2px 0 0 #0f172a" }}
+        >
+          Xem tất cả
+        </button>
       </div>
-      <div className="space-y-2">
+      <div className="flex flex-col gap-2.5">
         {MOCK_RECENT_AWARDS.map((a, i) => {
           const badge = getBadgeById(a.badgeId);
           const colorKey = inferColorKey(badge);
           return (
-            <div key={i} className="flex items-center gap-3 p-2 rounded-lg border bg-muted/30">
-              <BadgeSticker badge={badge} size={36} />
+            <div 
+              key={i} 
+              className="flex items-center gap-3.5 p-2.5 rounded-xl bg-amber-50/50"
+              style={{ border: "1.5px solid #0f172a" }}
+            >
+              <BadgeSticker badge={badge} size={44} />
               <div className="flex-1 min-w-0">
                 <div className="text-sm">
                   <span className="font-bold">{a.who}</span>
-                  <span className="text-muted-foreground"> nhận </span>
-                  <span className={cn("font-bold", `text-${colorKey}-600`)}>{badge?.name || a.badgeId}</span>
+                  <span className="text-slate-500 font-medium"> nhận </span>
+                  <span className="font-bold" style={{ color: `var(--${colorKey}-600, #0f172a)` }}>
+                    {badge?.name || a.badgeId}
+                  </span>
                 </div>
-                <div className="text-[11px] text-muted-foreground">{a.role} · {a.when} · qua {a.via}</div>
+                <div className="text-[11px] text-slate-500 mt-0.5">{a.role} · {a.when} · qua {a.via}</div>
               </div>
-              <Button size="icon" variant="ghost" className="h-6 w-6">
+              <button
+                className="w-[30px] h-[30px] rounded-lg bg-white border-2 border-slate-800 flex items-center justify-center hover:bg-slate-50 transition-colors"
+                style={{ boxShadow: "2px 2px 0 0 #0f172a" }}
+              >
                 <X className="h-3 w-3" />
-              </Button>
+              </button>
             </div>
           );
         })}
@@ -962,22 +1047,36 @@ function RecentAwardsSection({ badges }: { badges: BadgeRow[] }) {
 
 function HallOfFameSection() {
   return (
-    <div className="rounded-xl border-2 bg-gradient-to-br from-amber-50 to-white p-4">
-      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Top huy hiệu tháng</p>
-      <h3 className="font-display text-base font-bold mb-3">Hall of Fame · 04/26</h3>
-      <div className="space-y-2">
+    <div 
+      className="rounded-[18px] p-5"
+      style={{ 
+        background: "linear-gradient(135deg, #fef9c3 0%, #fff 70%)",
+        border: "2.5px solid #0f172a",
+        boxShadow: "4px 4px 0 0 #0f172a"
+      }}
+    >
+      <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-slate-500">Top huy hiệu tháng</p>
+      <h3 className="font-display text-xl font-black tracking-tight mb-3.5">Hall of Fame · 04/26</h3>
+      <div className="flex flex-col">
         {MOCK_HALL_OF_FAME.map(t => (
-          <div key={t.rank} className="flex items-center gap-3 py-2 border-b border-dashed last:border-0">
+          <div 
+            key={t.rank} 
+            className="flex items-center gap-3 py-2.5"
+            style={{ borderBottom: t.rank < 5 ? "1.5px dashed #0f172a" : "none" }}
+          >
             <div
               className={cn(
-                "w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold border border-slate-800 text-white",
-                COLOR_MAP[t.color] || "bg-slate-500"
+                "w-7 h-7 rounded-full flex items-center justify-center text-sm font-black border-2 border-slate-800",
+                COLOR_MAP[t.color] || "bg-slate-500",
+                t.color === "amber" ? "text-slate-900" : "text-white"
               )}
             >
               {t.rank}
             </div>
             <div className="flex-1 font-bold text-sm truncate">{t.name}</div>
-            <div className="font-mono font-bold">{t.count} <span className="text-[10px] text-muted-foreground">badges</span></div>
+            <div className="font-mono font-black text-sm">
+              {t.count} <span className="text-[10px] text-slate-500 font-bold">badges</span>
+            </div>
           </div>
         ))}
       </div>
