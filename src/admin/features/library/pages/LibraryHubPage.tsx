@@ -7,8 +7,6 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@shared/lib/utils";
-import { useBrandShapes } from "@shared/hooks/useBrandShapes";
-import type { ShapePalette } from "@admin/features/brand-assets/types";
 import { useMyModuleAccess, ADMIN_MODULE_KEYS, type AdminModuleKey } from "@shared/hooks/useUserModuleAccess";
 
 /* ═══════════════════════════════════════════
@@ -27,7 +25,6 @@ interface LibrarySection {
   blurb: string;
   icon: LucideIcon;
   route: string;
-  palette: ShapePalette;
   bg: string;
   accent: string;
   stats: { label: string; v: string }[];
@@ -35,8 +32,6 @@ interface LibrarySection {
   cta: string;
   extraLinks?: { label: string; route: string }[];
   moduleKey?: AdminModuleKey;
-  preferredShape?: string;
-  preferredShapeFallbacks?: string[];
 }
 
 const SECTIONS: LibrarySection[] = [
@@ -46,7 +41,6 @@ const SECTIONS: LibrarySection[] = [
     blurb: "Quản lý đề thi và bài luyện cho học viên trên toàn hệ thống.",
     icon: FileText,
     route: "/tests",
-    palette: "teal",
     bg: "var(--lp-teal-soft, #E6F7F6)",
     accent: "var(--lp-teal, #2DD4BF)",
     stats: [{ label: "Đề thi", v: "284" }, { label: "Skill", v: "4" }, { label: "Đã chạy", v: "1.2k" }],
@@ -54,8 +48,6 @@ const SECTIONS: LibrarySection[] = [
     cta: "Mở ngân hàng đề",
     extraLinks: [{ label: "Nhập đề từ file", route: "/tests/import" }],
     moduleKey: ADMIN_MODULE_KEYS.TESTS,
-    preferredShape: "blob",
-    preferredShapeFallbacks: ["pebble", "oval", "circle", "bean"],
   },
   {
     id: "flashcards",
@@ -63,15 +55,12 @@ const SECTIONS: LibrarySection[] = [
     blurb: "Bộ thẻ từ vựng dùng chung cho học viên và các lớp học.",
     icon: BookOpen,
     route: "/flashcards",
-    palette: "amber",
     bg: "var(--lp-yellow-soft, #FFFBEB)",
     accent: "var(--lp-yellow, #F59E0B)",
     stats: [{ label: "Bộ thẻ", v: "42" }, { label: "Cards", v: "3.8k" }, { label: "Active", v: "38" }],
     extras: ["IELTS", "TOEIC", "Foundation", "Business"],
     cta: "Vào Flashcard",
     moduleKey: ADMIN_MODULE_KEYS.FLASHCARDS,
-    preferredShape: "star",
-    preferredShapeFallbacks: ["burst", "spark", "sun", "flower", "petal"],
   },
   {
     id: "study-plans",
@@ -79,7 +68,6 @@ const SECTIONS: LibrarySection[] = [
     blurb: "Lộ trình học chuẩn và template gán cho lớp hoặc học viên.",
     icon: ClipboardList,
     route: "/study-plans",
-    palette: "coral",
     bg: "var(--lp-coral-soft, #FFF1EF)",
     accent: "var(--lp-coral, #FA7D64)",
     stats: [{ label: "Templates", v: "18" }, { label: "Active", v: "156" }, { label: "Hoàn thành", v: "72%" }],
@@ -90,8 +78,6 @@ const SECTIONS: LibrarySection[] = [
       { label: "Plans của tôi", route: "/my-plans" },
     ],
     moduleKey: ADMIN_MODULE_KEYS.STUDY_PLANS,
-    preferredShape: "wave",
-    preferredShapeFallbacks: ["curve", "ribbon", "arc", "cloud", "drop"],
   },
   {
     id: "band-descriptors",
@@ -99,14 +85,11 @@ const SECTIONS: LibrarySection[] = [
     blurb: "Bảng tiêu chí chấm điểm theo skill (Writing/Speaking) chuẩn IELTS.",
     icon: ScrollText,
     route: "/band-descriptors",
-    palette: "indigo",
     bg: "#EEF2FF",
     accent: "#6366F1",
     stats: [{ label: "Skills", v: "4" }, { label: "Criteria", v: "16" }, { label: "Bands", v: "9" }],
     extras: ["Writing", "Speaking", "Reading", "Listening"],
     cta: "Xem tiêu chí",
-    preferredShape: "ribbon",
-    preferredShapeFallbacks: ["wave", "arc", "curve"],
   },
   {
     id: "feedback-templates",
@@ -114,14 +97,11 @@ const SECTIONS: LibrarySection[] = [
     blurb: "Thư viện mẫu phản hồi giáo viên dùng khi chấm bài và nhận xét lớp.",
     icon: MessageSquareQuote,
     route: "/feedback-templates",
-    palette: "slate",
     bg: "#F1F5F9",
     accent: "#64748B",
     stats: [{ label: "Mẫu", v: "38" }, { label: "Skill", v: "4" }, { label: "Đang dùng", v: "24" }],
     extras: ["Writing", "Speaking", "Tổng quát", "Mock"],
     cta: "Quản lý mẫu",
-    preferredShape: "petal",
-    preferredShapeFallbacks: ["flower", "blob", "pebble"],
   },
 ];
 
@@ -250,72 +230,75 @@ export default function LibraryHubPage() {
         </div>
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 18 }}>
-          {(() => {
-            const used: string[] = [];
-            return visible.map((s) => (
-              <SectionCard
-                key={s.id}
-                section={s}
-                excludeUrls={used}
-                onPicked={(u) => { if (u) used.push(u); }}
-              />
-            ));
-          })()}
+          {visible.map((s) => (
+            <SectionCard key={s.id} section={s} />
+          ))}
         </div>
       )}
 
       {/* ── Bottom two-column: Recent + Pinned ── */}
       <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: 18 }} className="max-sm:grid-cols-1">
 
-        {/* Recent activity */}
+        {/* Recent activity — prominent ink card */}
         <div style={{
-          background: "#fff",
+          background: "var(--lp-ink, #0B0C0E)",
           border: "2.5px solid var(--lp-ink, #0B0C0E)",
-          borderRadius: 18, padding: "18px 20px",
-          boxShadow: "4px 4px 0 0 var(--lp-ink, #0B0C0E)",
+          borderRadius: 22,
+          overflow: "hidden",
+          boxShadow: "6px 6px 0 0 rgba(11,12,14,0.35)",
         }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-            <h3 style={{ margin: 0, fontFamily: "var(--ff-display, inherit)", fontSize: 16, fontWeight: 900, display: "flex", alignItems: "center", gap: 7 }}>
-              <Clock style={{ width: 15, height: 15, color: "var(--lp-body)" }} /> Hoạt động gần đây
-            </h3>
+          {/* Panel header */}
+          <div style={{
+            padding: "18px 22px 14px",
+            display: "flex", justifyContent: "space-between", alignItems: "center",
+            borderBottom: "1.5px solid rgba(255,255,255,0.1)",
+          }}>
+            <div>
+              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(255,255,255,0.5)", marginBottom: 3 }}>ACTIVITY</div>
+              <h3 style={{ margin: 0, fontFamily: "var(--ff-display, inherit)", fontSize: 20, fontWeight: 900, color: "#fff", display: "flex", alignItems: "center", gap: 8 }}>
+                <Clock style={{ width: 17, height: 17, color: "var(--lp-teal, #2DD4BF)" }} /> Hoạt động gần đây
+              </h3>
+            </div>
             <button style={{
-              fontSize: 11, fontWeight: 800, padding: "4px 10px", borderRadius: 8,
-              background: "var(--lp-cream, #F9F8F4)",
-              border: "1.5px solid var(--lp-ink, #0B0C0E)",
-              cursor: "pointer",
-            }}>Xem tất cả</button>
+              fontSize: 11, fontWeight: 800, padding: "6px 14px", borderRadius: 99,
+              background: "rgba(255,255,255,0.1)",
+              border: "1.5px solid rgba(255,255,255,0.2)",
+              color: "#fff", cursor: "pointer", letterSpacing: "0.03em",
+            }}>Xem tất cả →</button>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {/* Items */}
+          <div style={{ padding: "14px 22px 18px", display: "flex", flexDirection: "column", gap: 10 }}>
             {RECENT_ITEMS.map((r, i) => {
               const ks = KIND_STYLE[r.kind] ?? KIND_STYLE.test;
               return (
                 <div key={i} style={{
-                  display: "flex", alignItems: "center", gap: 12,
-                  padding: "10px 12px", borderRadius: 12,
-                  border: "1.5px solid var(--lp-line, #E5E7EB)", background: "#fff",
-                  cursor: "pointer", transition: "all .12s",
+                  display: "flex", alignItems: "center", gap: 14,
+                  padding: "12px 14px", borderRadius: 14,
+                  background: "rgba(255,255,255,0.07)",
+                  border: "1.5px solid rgba(255,255,255,0.1)",
+                  cursor: "pointer", transition: "all .15s",
                 }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = "var(--lp-ink)"; (e.currentTarget as HTMLElement).style.boxShadow = "2px 2px 0 0 var(--lp-ink)"; (e.currentTarget as HTMLElement).style.transform = "translate(-1px,-1px)"; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = "var(--lp-line, #E5E7EB)"; (e.currentTarget as HTMLElement).style.boxShadow = "none"; (e.currentTarget as HTMLElement).style.transform = "none"; }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.13)"; (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.3)"; (e.currentTarget as HTMLElement).style.transform = "translateX(3px)"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.07)"; (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.1)"; (e.currentTarget as HTMLElement).style.transform = "none"; }}
                 >
                   <div style={{
-                    width: 32, height: 32, borderRadius: 8,
-                    background: "var(--lp-cream, #F9F8F4)",
-                    border: "1.5px solid var(--lp-ink, #0B0C0E)",
+                    width: 38, height: 38, borderRadius: 10,
+                    background: ks.bg,
+                    border: `2px solid ${ks.border}`,
                     display: "grid", placeItems: "center", flexShrink: 0,
-                    color: "var(--lp-ink)",
+                    color: ks.color,
                   }}>
-                    <r.Icon style={{ width: 14, height: 14 }} />
+                    <r.Icon style={{ width: 16, height: 16 }} />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 700, fontSize: 13.5, color: "var(--lp-ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.label}</div>
-                    <div style={{ fontSize: 11.5, color: "var(--lp-body)" }}>{r.author} · {r.when}</div>
+                    <div style={{ fontWeight: 800, fontSize: 14, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginBottom: 2 }}>{r.label}</div>
+                    <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)" }}>{r.author} · {r.when}</div>
                   </div>
                   <span style={{
-                    fontSize: 9.5, fontWeight: 800, padding: "3px 8px", borderRadius: 99,
+                    fontSize: 9.5, fontWeight: 800, padding: "4px 10px", borderRadius: 99,
                     textTransform: "uppercase", letterSpacing: "0.05em", flexShrink: 0,
                     background: ks.bg, color: ks.color,
-                    border: `1px solid ${ks.border}`,
+                    border: `1.5px solid ${ks.border}`,
                   }}>{r.kind}</span>
                 </div>
               );
@@ -323,39 +306,49 @@ export default function LibraryHubPage() {
           </div>
         </div>
 
-        {/* Pinned */}
+        {/* Pinned — yellow pop-card, bigger & bolder */}
         <div style={{
-          background: "var(--lp-yellow-soft, #FFFBEB)",
+          background: "var(--lp-yellow, #F59E0B)",
           border: "2.5px solid var(--lp-ink, #0B0C0E)",
-          borderRadius: 18, padding: "18px 20px",
-          boxShadow: "4px 4px 0 0 var(--lp-ink, #0B0C0E)",
+          borderRadius: 22,
+          overflow: "hidden",
+          boxShadow: "6px 6px 0 0 var(--lp-ink, #0B0C0E)",
         }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-            <h3 style={{ margin: 0, fontFamily: "var(--ff-display, inherit)", fontSize: 16, fontWeight: 900, display: "flex", alignItems: "center", gap: 7 }}>
-              <Pin style={{ width: 14, height: 14, color: "var(--lp-body)" }} /> Pinned
-            </h3>
+          {/* Panel header */}
+          <div style={{
+            padding: "18px 22px 14px",
+            display: "flex", justifyContent: "space-between", alignItems: "center",
+            borderBottom: "1.5px solid rgba(11,12,14,0.15)",
+          }}>
+            <div>
+              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(11,12,14,0.5)", marginBottom: 3 }}>PINNED</div>
+              <h3 style={{ margin: 0, fontFamily: "var(--ff-display, inherit)", fontSize: 20, fontWeight: 900, color: "var(--lp-ink, #0B0C0E)", display: "flex", alignItems: "center", gap: 8 }}>
+                <Pin style={{ width: 17, height: 17 }} /> Đánh dấu
+              </h3>
+            </div>
             <button style={{
-              fontSize: 11, fontWeight: 800, padding: "4px 10px", borderRadius: 8,
-              background: "rgba(255,255,255,0.8)",
-              border: "1.5px solid var(--lp-ink, #0B0C0E)",
-              cursor: "pointer",
+              fontSize: 11, fontWeight: 800, padding: "6px 14px", borderRadius: 99,
+              background: "rgba(11,12,14,0.1)",
+              border: "1.5px solid rgba(11,12,14,0.25)",
+              color: "var(--lp-ink, #0B0C0E)", cursor: "pointer",
             }}>+ Pin</button>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {/* Items */}
+          <div style={{ padding: "14px 22px 18px", display: "flex", flexDirection: "column", gap: 10 }}>
             {PINNED_ITEMS.map((p, i) => (
               <div key={i} style={{
-                padding: "10px 12px", borderRadius: 12,
+                padding: "14px 16px", borderRadius: 14,
                 background: "#fff",
                 border: "2px solid var(--lp-ink, #0B0C0E)",
-                boxShadow: "2px 2px 0 0 var(--lp-ink)",
-                cursor: "pointer", transition: "all .12s",
+                boxShadow: "3px 3px 0 0 var(--lp-ink)",
+                cursor: "pointer", transition: "all .15s",
               }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "translate(-1px,-1px)"; (e.currentTarget as HTMLElement).style.boxShadow = "3px 3px 0 0 var(--lp-ink)"; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = "none"; (e.currentTarget as HTMLElement).style.boxShadow = "2px 2px 0 0 var(--lp-ink)"; }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "translate(-2px,-2px)"; (e.currentTarget as HTMLElement).style.boxShadow = "5px 5px 0 0 var(--lp-ink)"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = "none"; (e.currentTarget as HTMLElement).style.boxShadow = "3px 3px 0 0 var(--lp-ink)"; }}
               >
-                <div style={{ fontSize: 9.5, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.06em", color: ACCENT_COLOR[p.accent] ?? "var(--lp-coral)", marginBottom: 2 }}>{p.tag}</div>
-                <div style={{ fontWeight: 800, fontSize: 14, color: "var(--lp-ink)", margin: "2px 0" }}>{p.label}</div>
-                <div style={{ fontSize: 11.5, color: "var(--lp-body)" }}>{p.count.toLocaleString()} item</div>
+                <div style={{ fontSize: 9.5, fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.08em", color: ACCENT_COLOR[p.accent] ?? "var(--lp-coral)", marginBottom: 3 }}>{p.tag}</div>
+                <div style={{ fontWeight: 900, fontSize: 15, color: "var(--lp-ink)", fontFamily: "var(--ff-display, inherit)", margin: "2px 0 4px" }}>{p.label}</div>
+                <div style={{ fontSize: 12, color: "var(--lp-body)", fontWeight: 700 }}>{p.count.toLocaleString()} items</div>
               </div>
             ))}
           </div>
@@ -370,61 +363,27 @@ export default function LibraryHubPage() {
 
 const SectionCard = forwardRef<
   HTMLButtonElement,
-  { section: LibrarySection; excludeUrls?: string[]; onPicked?: (url: string | null) => void }
+  { section: LibrarySection }
 >(function SectionCard(
-  { section, excludeUrls = [], onPicked },
+  { section },
   ref,
 ) {
   const Icon = section.icon;
   const navigate = useNavigate();
-  const { urls, isLoading } = useBrandShapes(section.palette);
-
-  // Tone class theo palette — chỉ ảnh hưởng icon top-right (subtle).
-  const ICON_TONE: Record<ShapePalette, string> = {
-    teal:   "text-primary",
-    amber:  "text-amber-600",
-    indigo: "text-indigo-600",
-    coral:  "text-rose-600",
-    slate:  "text-slate-600",
-  };
-
-  // Pick a stable shape from the palette using section.id as seed —
-  // tránh render khác nhau giữa các lần re-mount (sẽ nhấp nháy).
-  // `excludeUrls` đảm bảo mỗi card chọn shape khác nhau ngay cả khi
-  // các card share palette hoặc DB chỉ có vài shape.
-  const shapeUrl = pickStableShape(
-    urls,
-    section.id,
-    section.preferredShape,
-    section.preferredShapeFallbacks,
-    excludeUrls,
-  );
-  // Notify parent (sync, trong render — chỉ push string vào array, idempotent).
-  onPicked?.(shapeUrl);
-
-  // Debug helper — log một lần khi không tìm được shape, để dễ phát hiện
-  // palette nào chưa upload asset trong /brand-assets.
-  if (typeof window !== "undefined" && !isLoading && !shapeUrl) {
-    // eslint-disable-next-line no-console
-    console.warn(
-      `[LibraryHub] Không có brand shape nào cho palette "${section.palette}" (card "${section.id}"). ` +
-        `Hãy upload shape vào /brand-assets với asset_key dạng "shape-${section.palette}-{name}".`,
-    );
-  }
 
   return (
     <button
       ref={ref}
       onClick={() => navigate(section.route)}
       className={cn(
-        "group relative flex flex-col text-left overflow-hidden",
+        "group flex flex-col text-left",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
       )}
       style={{
         background: section.bg,
         border: "2.5px solid var(--lp-ink, #0B0C0E)",
         borderRadius: 22,
-        padding: 20,
+        padding: 22,
         minHeight: 260,
         boxShadow: "6px 6px 0 0 var(--lp-ink, #0B0C0E)",
         transition: "transform .2s, box-shadow .2s",
@@ -432,8 +391,6 @@ const SectionCard = forwardRef<
       onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "translate(-3px,-3px)"; (e.currentTarget as HTMLElement).style.boxShadow = "9px 9px 0 0 var(--lp-ink, #0B0C0E)"; }}
       onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = "none"; (e.currentTarget as HTMLElement).style.boxShadow = "6px 6px 0 0 var(--lp-ink, #0B0C0E)"; }}
     >
-      {/* Brand shape — decorative background layer */}
-      <BrandShapeFigure url={shapeUrl} palette={section.palette} />
 
       {/* Icon badge */}
       <div style={{
@@ -500,110 +457,3 @@ const SectionCard = forwardRef<
     </button>
   );
 });
-
-/* ─────────── Stable shape picker ───────────
-   Ưu tiên các shape "mềm" (blob, wave, curve, drop, circle, leaf, petal,
-   cloud) — tránh các shape góc cạnh (stairs, chevron, arrow, zigzag, grid)
-   vì chúng trông như icon thay vì decoration. Nếu không có shape nào trong
-   whitelist, fallback hash ổn định để vẫn deterministic.
-*/
-const SOFT_SHAPE_KEYWORDS = ["blob", "wave", "curve", "drop", "circle", "oval", "leaf", "petal", "cloud", "moon", "pebble", "bean"];
-const HARSH_SHAPE_KEYWORDS = ["stair", "chevron", "arrow", "zigzag", "grid", "cross", "plus", "triangle", "square", "rect"];
-
-function pickStableShape(
-  urls: string[],
-  seed: string,
-  preferred?: string,
-  fallbacks?: string[],
-  excludeUrls: string[] = [],
-): string | null {
-  if (urls.length === 0) return null;
-  const available = urls.filter((u) => !excludeUrls.includes(u));
-  // Nếu loại trừ hết → đành dùng pool gốc (chấp nhận trùng còn hơn không có).
-  const baseUrls = available.length > 0 ? available : urls;
-  // 1. Ưu tiên explicit keyword (preferred → fallbacks theo thứ tự).
-  const keywords = [preferred, ...(fallbacks ?? [])].filter(Boolean) as string[];
-  for (const kw of keywords) {
-    const match = baseUrls.find((u) => u.toLowerCase().includes(kw.toLowerCase()));
-    if (match) return match;
-  }
-  const soft = baseUrls.filter((u) => SOFT_SHAPE_KEYWORDS.some((k) => u.toLowerCase().includes(k)));
-  const safe = (soft.length > 0 ? soft : baseUrls).filter(
-    (u) => !HARSH_SHAPE_KEYWORDS.some((k) => u.toLowerCase().includes(k)),
-  );
-  const pool = safe.length > 0 ? safe : baseUrls;
-  let h = 0;
-  for (let i = 0; i < seed.length; i++) {
-    h = (h * 31 + seed.charCodeAt(i)) >>> 0;
-  }
-  return pool[h % pool.length];
-}
-
-/* ─────────── Brand shape figure ───────────
-   Shape là NHÂN VẬT CHÍNH ở góc dưới-phải. Để tránh cảm giác "đóng khung":
-   - Không giới hạn bởi bbox vuông cứng — cho phép tràn 1 phần ra ngoài card
-     (negative offset) để shape không có viền vuông giả.
-   - Bỏ scale max-w cứng — dùng `min(60% chiều rộng, 70% chiều cao)`.
-   - Giữ object-bottom-right để shape "neo" vào góc tự nhiên.
-   Fallback: blob gradient theo palette nếu DB chưa upload asset.
-*/
-function BrandShapeFigure({ url, palette }: { url: string | null; palette: ShapePalette }) {
-  const FALLBACK_TONE: Record<ShapePalette, string> = {
-    teal:   "from-primary/40 to-primary/10",
-    amber:  "from-amber-500/40 to-amber-500/10",
-    indigo: "from-indigo-500/40 to-indigo-500/10",
-    coral:  "from-rose-500/40 to-rose-500/10",
-    slate:  "from-slate-500/40 to-slate-500/10",
-  };
-
-  return (
-    <div
-      aria-hidden
-      // `pointer-events-none` ở root + `select-none` đảm bảo decoration KHÔNG
-      // bao giờ bắt click/hover/drag — toàn bộ tương tác thuộc về card button.
-      // `overflow-hidden` cắt mọi tràn của ảnh/gradient con để shape KHÔNG
-      // lén leo qua vùng icon hoặc text dù asset SVG có viewBox sai.
-      // Chiều cao chốt 55% (xem comment cũ về phép tính bbox icon).
-      className={cn(
-        "pointer-events-none select-none absolute z-0 overflow-hidden",
-        "-bottom-4 -right-4 sm:-bottom-5 sm:-right-5 md:-bottom-6 md:-right-6",
-        // Shape decoration to hơn để nổi bật — icon nằm top-right
-        // (~h-9 / 36px) nên giữ chiều cao ≤ 70% vẫn còn safe zone đủ cho icon.
-        "h-[68%] w-[62%] sm:h-[70%] sm:w-[66%] md:h-[72%] md:w-[70%]",
-        "opacity-95 transition-transform duration-500 ease-out group-hover:scale-[1.06]",
-        "origin-bottom-right",
-      )}
-    >
-      {/* Fallback gradient — luôn render, ngồi dưới ảnh. Bo `rounded-tl` để
-         vẫn có cảm giác "blob" mềm khi ảnh thật chưa load. */}
-      <div
-        aria-hidden
-        className={cn(
-          "pointer-events-none absolute inset-0 rounded-tl-[999px] bg-gradient-to-tl",
-          "shadow-[inset_0_1px_0_hsl(var(--background)/0.45)]",
-          FALLBACK_TONE[palette],
-        )}
-      />
-      {url && (
-        <img
-          src={url}
-          alt=""
-          aria-hidden
-          loading="lazy"
-          decoding="async"
-          draggable={false}
-          // `pointer-events-none` lặp lại trên img để chắc chắn ngay cả khi
-          // browser CSS reset bất thường vẫn không bắt event.
-          // `object-contain object-right-bottom` neo shape vào góc; ảnh
-          // KHÔNG vượt quá bbox của container vì parent đã `overflow-hidden`.
-          className={cn(
-            "pointer-events-none select-none absolute inset-0 h-full w-full",
-            "object-contain object-right-bottom",
-            "opacity-100 saturate-125",
-            "drop-shadow-[0_10px_18px_hsl(var(--foreground)/0.16)]",
-          )}
-        />
-      )}
-    </div>
-  );
-}
