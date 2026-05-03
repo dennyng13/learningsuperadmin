@@ -5,9 +5,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
   GraduationCap, Calendar, Users, BarChart3, Activity, Megaphone,
-  Settings, MoreVertical, RefreshCw, AlertTriangle,
+  Settings, MoreVertical, RefreshCw, AlertTriangle, BookOpen,
   LayoutDashboard, Wallet, Banknote, Clock, Copy, FilePlus2,
-  Mail, Send, RotateCw,
+  Mail, Send, RotateCw, type LucideIcon,
 } from "lucide-react";
 import { DetailPageLayout } from "@shared/components/layouts/DetailPageLayout";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@shared/components/ui/tabs";
@@ -523,6 +523,49 @@ export default function AdminClassDetailPage() {
       {/* Info header */}
       <ClassInfoCard cls={cls} />
 
+      {/* Day 7 polish: KPI stats strip per mockup pages-class-detail.jsx
+         hero stats. 4 cards: HV / Buổi học / Lời mời / Plan. */}
+      <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
+        <ClassKpi
+          icon={Users}
+          label="Học viên"
+          value={`${cls.student_count ?? 0}${cls.max_students ? `/${cls.max_students}` : ""}`}
+          hint={cls.max_students && cls.student_count != null
+            ? `${Math.round(((cls.student_count ?? 0) / cls.max_students) * 100)}% capacity`
+            : undefined}
+          tone="teal"
+        />
+        <ClassKpi
+          icon={Calendar}
+          label="Buổi học"
+          value={`${cls.sessions_completed ?? 0}/${cls.sessions_total ?? 0}`}
+          hint={cls.sessions_total
+            ? `${Math.round(((cls.sessions_completed ?? 0) / cls.sessions_total) * 100)}% xong`
+            : undefined}
+          tone="violet"
+        />
+        <ClassKpi
+          icon={Mail}
+          label="Lời mời GV"
+          value={invitationSummaryQ.data
+            ? `${invitationSummaryQ.data.accepted}/${invitationSummaryQ.data.total}`
+            : "—"}
+          hint={invitationSummaryQ.data?.pending
+            ? `${invitationSummaryQ.data.pending} chờ`
+            : invitationSummaryQ.data?.everSent === false && invitationSummaryQ.data.total > 0
+              ? "Chưa gửi"
+              : undefined}
+          tone="amber"
+        />
+        <ClassKpi
+          icon={BookOpen}
+          label="Study plan"
+          value={cls.study_plan_id ? "Đã gắn" : "Chưa gắn"}
+          hint={cls.study_plan_name ?? undefined}
+          tone="coral"
+        />
+      </section>
+
       {/* Tabs */}
       <Tabs defaultValue="overview" className="mt-6">
         <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
@@ -703,5 +746,40 @@ export default function AdminClassDetailPage() {
         sourceCourseId={cls.course_id ?? null}
       />
     </DetailPageLayout>
+  );
+}
+
+/* ─── Inline KPI card cho hero stats strip (Day 7 polish per mockup) ─── */
+
+interface ClassKpiProps {
+  icon: LucideIcon;
+  label: string;
+  value: string;
+  hint?: string;
+  tone: "teal" | "violet" | "amber" | "coral";
+}
+
+const KPI_TONE: Record<ClassKpiProps["tone"], { bg: string; icon: string }> = {
+  teal:   { bg: "bg-teal-50 border-teal-200 dark:bg-teal-950/40 dark:border-teal-900",     icon: "text-teal-600 dark:text-teal-400" },
+  violet: { bg: "bg-violet-50 border-violet-200 dark:bg-violet-950/40 dark:border-violet-900", icon: "text-violet-600 dark:text-violet-400" },
+  amber:  { bg: "bg-amber-50 border-amber-200 dark:bg-amber-950/40 dark:border-amber-900",  icon: "text-amber-600 dark:text-amber-400" },
+  coral:  { bg: "bg-rose-50 border-rose-200 dark:bg-rose-950/40 dark:border-rose-900",      icon: "text-rose-600 dark:text-rose-400" },
+};
+
+function ClassKpi({ icon: Icon, label, value, hint, tone }: ClassKpiProps) {
+  const palette = KPI_TONE[tone];
+  return (
+    <div className={`rounded-xl border p-3 space-y-1 ${palette.bg}`}>
+      <div className="flex items-center justify-between">
+        <Icon className={`h-4 w-4 ${palette.icon}`} />
+      </div>
+      <p className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">
+        {label}
+      </p>
+      <p className="font-display text-lg font-extrabold tabular-nums leading-tight">
+        {value}
+      </p>
+      {hint && <p className="text-[10px] text-muted-foreground leading-tight">{hint}</p>}
+    </div>
   );
 }
