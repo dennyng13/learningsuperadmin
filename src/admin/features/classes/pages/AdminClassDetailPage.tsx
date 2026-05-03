@@ -49,6 +49,7 @@ import {
   OverviewTab, RevenueTab, PayrollTab, LifecycleTab,
 } from "@admin/features/classes/components/detail-tabs";
 import { useAuth } from "@shared/hooks/useAuth";
+import { formatDateDDMMYYYY } from "@shared/utils/dateFormat";
 
 /* ═══════════════════════════════════════════
    Trang chi tiết lớp /classes/:id (admin).
