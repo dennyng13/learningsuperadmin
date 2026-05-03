@@ -921,6 +921,32 @@ export type Database = {
         }
         Relationships: []
       }
+      class_announcement_reads: {
+        Row: {
+          announcement_id: string
+          read_at: string
+          user_id: string
+        }
+        Insert: {
+          announcement_id: string
+          read_at?: string
+          user_id: string
+        }
+        Update: {
+          announcement_id?: string
+          read_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_announcement_reads_announcement_id_fkey"
+            columns: ["announcement_id"]
+            isOneToOne: false
+            referencedRelation: "class_announcements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       class_announcements: {
         Row: {
           class_id: string
@@ -928,6 +954,7 @@ export type Database = {
           created_at: string
           id: string
           pinned: boolean
+          tag: string | null
           teacher_id: string
           title: string
           updated_at: string
@@ -938,6 +965,7 @@ export type Database = {
           created_at?: string
           id?: string
           pinned?: boolean
+          tag?: string | null
           teacher_id: string
           title: string
           updated_at?: string
@@ -948,6 +976,7 @@ export type Database = {
           created_at?: string
           id?: string
           pinned?: boolean
+          tag?: string | null
           teacher_id?: string
           title?: string
           updated_at?: string
@@ -1066,6 +1095,93 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "synced_students"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      class_files: {
+        Row: {
+          class_id: string
+          description: string | null
+          file_kind: string
+          file_name: string
+          file_size_bytes: number | null
+          id: string
+          last_synced_at: string | null
+          mime_type: string | null
+          storage_path: string
+          sync_status: string | null
+          uploaded_at: string
+          uploaded_by_user_id: string
+          workdrive_file_id: string | null
+          workdrive_folder_path: string | null
+        }
+        Insert: {
+          class_id: string
+          description?: string | null
+          file_kind: string
+          file_name: string
+          file_size_bytes?: number | null
+          id?: string
+          last_synced_at?: string | null
+          mime_type?: string | null
+          storage_path: string
+          sync_status?: string | null
+          uploaded_at?: string
+          uploaded_by_user_id: string
+          workdrive_file_id?: string | null
+          workdrive_folder_path?: string | null
+        }
+        Update: {
+          class_id?: string
+          description?: string | null
+          file_kind?: string
+          file_name?: string
+          file_size_bytes?: number | null
+          id?: string
+          last_synced_at?: string | null
+          mime_type?: string | null
+          storage_path?: string
+          sync_status?: string | null
+          uploaded_at?: string
+          uploaded_by_user_id?: string
+          workdrive_file_id?: string | null
+          workdrive_folder_path?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_files_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "app_classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_files_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_files_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "v_class_attendance_health"
+            referencedColumns: ["class_id"]
+          },
+          {
+            foreignKeyName: "class_files_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "v_class_full"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_files_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "v_class_revenue"
+            referencedColumns: ["class_id"]
           },
         ]
       }
@@ -2817,6 +2933,130 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      makeup_request: {
+        Row: {
+          admin_note: string | null
+          class_id: string
+          created_at: string
+          created_session_id: string | null
+          id: string
+          original_session_id: string | null
+          proposed_date: string | null
+          proposed_end_time: string | null
+          proposed_mode: string | null
+          proposed_room: string | null
+          proposed_start_time: string | null
+          reason: string
+          requested_by_user_id: string
+          reviewed_at: string | null
+          reviewed_by_user_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          admin_note?: string | null
+          class_id: string
+          created_at?: string
+          created_session_id?: string | null
+          id?: string
+          original_session_id?: string | null
+          proposed_date?: string | null
+          proposed_end_time?: string | null
+          proposed_mode?: string | null
+          proposed_room?: string | null
+          proposed_start_time?: string | null
+          reason: string
+          requested_by_user_id: string
+          reviewed_at?: string | null
+          reviewed_by_user_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          admin_note?: string | null
+          class_id?: string
+          created_at?: string
+          created_session_id?: string | null
+          id?: string
+          original_session_id?: string | null
+          proposed_date?: string | null
+          proposed_end_time?: string | null
+          proposed_mode?: string | null
+          proposed_room?: string | null
+          proposed_start_time?: string | null
+          reason?: string
+          requested_by_user_id?: string
+          reviewed_at?: string | null
+          reviewed_by_user_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "makeup_request_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "app_classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "makeup_request_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "makeup_request_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "v_class_attendance_health"
+            referencedColumns: ["class_id"]
+          },
+          {
+            foreignKeyName: "makeup_request_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "v_class_full"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "makeup_request_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "v_class_revenue"
+            referencedColumns: ["class_id"]
+          },
+          {
+            foreignKeyName: "makeup_request_created_session_id_fkey"
+            columns: ["created_session_id"]
+            isOneToOne: false
+            referencedRelation: "class_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "makeup_request_created_session_id_fkey"
+            columns: ["created_session_id"]
+            isOneToOne: false
+            referencedRelation: "v_sessions_pending_lock"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "makeup_request_original_session_id_fkey"
+            columns: ["original_session_id"]
+            isOneToOne: false
+            referencedRelation: "class_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "makeup_request_original_session_id_fkey"
+            columns: ["original_session_id"]
+            isOneToOne: false
+            referencedRelation: "v_sessions_pending_lock"
+            referencedColumns: ["session_id"]
+          },
+        ]
       }
       mascot_quotes: {
         Row: {
@@ -4912,6 +5152,104 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "study_plan_templates"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      substitute_request: {
+        Row: {
+          admin_note: string | null
+          class_id: string
+          created_at: string
+          id: string
+          proposed_substitute_user_id: string | null
+          reason: string
+          requested_by_user_id: string
+          reviewed_at: string | null
+          reviewed_by_user_id: string | null
+          session_id: string | null
+          status: string
+          substitute_confirmed_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          admin_note?: string | null
+          class_id: string
+          created_at?: string
+          id?: string
+          proposed_substitute_user_id?: string | null
+          reason: string
+          requested_by_user_id: string
+          reviewed_at?: string | null
+          reviewed_by_user_id?: string | null
+          session_id?: string | null
+          status?: string
+          substitute_confirmed_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          admin_note?: string | null
+          class_id?: string
+          created_at?: string
+          id?: string
+          proposed_substitute_user_id?: string | null
+          reason?: string
+          requested_by_user_id?: string
+          reviewed_at?: string | null
+          reviewed_by_user_id?: string | null
+          session_id?: string | null
+          status?: string
+          substitute_confirmed_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "substitute_request_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "app_classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "substitute_request_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "substitute_request_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "v_class_attendance_health"
+            referencedColumns: ["class_id"]
+          },
+          {
+            foreignKeyName: "substitute_request_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "v_class_full"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "substitute_request_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "v_class_revenue"
+            referencedColumns: ["class_id"]
+          },
+          {
+            foreignKeyName: "substitute_request_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "class_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "substitute_request_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_sessions_pending_lock"
+            referencedColumns: ["session_id"]
           },
         ]
       }
@@ -7465,6 +7803,10 @@ export type Database = {
       }
       class_invitations_expire_tick: { Args: never; Returns: Json }
       cleanup_old_activity_feed: { Args: never; Returns: undefined }
+      clone_study_plan_to_class: {
+        Args: { source_plan_id: string; target_class_id: string }
+        Returns: string
+      }
       clone_template_to_plan: {
         Args: {
           p_class_ids?: string[]
