@@ -1,8 +1,11 @@
-import { Activity, Users, Calendar, Mail, BookOpen, GraduationCap, Wallet, Banknote, type LucideIcon } from "lucide-react";
+import { Activity, Users, Calendar, Mail, BookOpen, GraduationCap, Wallet, Banknote, Loader2, type LucideIcon } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { Card } from "@shared/components/ui/card";
 import { Progress } from "@shared/components/ui/progress";
+import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@shared/lib/utils";
 import type { ClassDetail } from "@admin/features/classes/components/ClassInfoCard";
-import { formatDateTimeDDMMYYYY } from "@shared/utils/dateFormat";
+import { formatDateTimeDDMMYYYY, formatDateDDMMYYYY } from "@shared/utils/dateFormat";
 
 function formatVNDCompact(n: number): string {
   if (n >= 1_000_000_000) return (n / 1_000_000_000).toFixed(1).replace(/\.0$/, "") + "T₫";
@@ -122,6 +125,11 @@ export function OverviewTab({
         </div>
       )}
 
+      {/* Curriculum strip — visual timeline of buổi học per mockup
+         pages-class-detail "Lộ trình 18 buổi" track. Status-colored dots,
+         next session has pulse. Click → navigate /classes/:id?tab=sessions. */}
+      <CurriculumStrip classId={cls.id} totalPlanned={cls.study_plan_total_sessions ?? 0} />
+
       {/* Course inheritance card */}
       {cls.course_id && cls.course_name && (
         <Card className="p-4">
@@ -221,5 +229,144 @@ function MiniRow({ label, value, highlight }: { label: string; value: string; hi
       <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
       <p className={`text-sm font-semibold tabular-nums ${highlight ? "text-primary" : ""}`}>{value}</p>
     </div>
+  );
+}
+
+/* ─── Curriculum strip — visual session timeline (mockup pattern) ─── */
+
+interface SessionDot {
+  id: string;
+  session_number: number | null;
+  session_date: string;
+  status: string;
+  start_time: string;
+  end_time: string;
+}
+
+function CurriculumStrip({ classId, totalPlanned }: { classId: string; totalPlanned: number }) {
+  const sessionsQ = useQuery({
+    queryKey: ["overview-sessions-strip", classId],
+    enabled: !!classId,
+    queryFn: async (): Promise<SessionDot[]> => {
+      const { data, error } = await (supabase as any)
+        .from("class_sessions")
+        .select("id, session_number, session_date, status, start_time, end_time")
+        .eq("class_id", classId)
+        .order("session_number", { ascending: true })
+        .order("session_date", { ascending: true })
+        .limit(60);
+      if (error) throw error;
+      return (data ?? []) as SessionDot[];
+    },
+    staleTime: 60_000,
+  });
+
+  const sessions = sessionsQ.data ?? [];
+  const today = new Date().toISOString().slice(0, 10);
+
+  /* Compute next session (first non-done with date >= today, or first
+     planned). Used for pulse highlight. */
+  const nextSessionId = sessions.find(
+    (s) => s.status !== "done" && s.status !== "cancelled" && s.session_date >= today,
+  )?.id;
+
+  const doneCount = sessions.filter((s) => s.status === "done").length;
+  const totalEffective = totalPlanned > 0 ? totalPlanned : sessions.length;
+  const remaining = Math.max(0, totalEffective - doneCount);
+
+  if (sessionsQ.isLoading) {
+    return (
+      <Card className="p-4">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Loader2 className="h-3 w-3 animate-spin" /> Đang tải lộ trình...
+        </div>
+      </Card>
+    );
+  }
+
+  if (sessions.length === 0) {
+    return (
+      <Card className="p-4 border-dashed">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Calendar className="h-3.5 w-3.5" />
+          Chưa có buổi học nào được tạo.
+        </div>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="p-4 space-y-3">
+      <div className="flex items-baseline justify-between gap-3 flex-wrap">
+        <div>
+          <h3 className="font-display text-sm font-bold inline-flex items-center gap-1.5">
+            <Calendar className="h-3.5 w-3.5 text-teal-600" />
+            Lộ trình {totalEffective} buổi
+          </h3>
+          <p className="text-[11px] text-muted-foreground mt-0.5">
+            Đã hoàn thành <strong className="text-emerald-600">{doneCount}</strong> ·
+            Còn <strong className="text-foreground">{remaining}</strong>
+          </p>
+        </div>
+      </div>
+
+      {/* Track */}
+      <div className="flex flex-wrap gap-1.5">
+        {sessions.map((s) => {
+          const isNext = s.id === nextSessionId;
+          const isDone = s.status === "done";
+          const isCancelled = s.status === "cancelled";
+          const isFuture = !isDone && !isCancelled && s.session_date > today;
+          const cellColor = isCancelled
+            ? "bg-rose-100 text-rose-700 border-rose-300 line-through"
+            : isDone
+              ? "bg-emerald-100 text-emerald-800 border-emerald-300"
+              : isNext
+                ? "bg-rose-500 text-white border-rose-600 ring-2 ring-rose-200"
+                : isFuture
+                  ? "bg-white text-muted-foreground border-muted-foreground/30"
+                  : "bg-amber-50 text-amber-700 border-amber-200";
+          return (
+            <span
+              key={s.id}
+              className={cn(
+                "relative inline-flex items-center justify-center min-w-[32px] h-7 px-1.5 rounded-md border-[1.5px] text-[10px] font-display font-bold tabular-nums transition-all",
+                cellColor,
+              )}
+              title={`Buổi ${s.session_number ?? "?"} · ${formatDateDDMMYYYY(s.session_date)} · ${s.status}`}
+            >
+              {s.session_number ?? "?"}
+              {isNext && (
+                <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-rose-500 animate-pulse" />
+              )}
+            </span>
+          );
+        })}
+      </div>
+
+      {/* Legend */}
+      <div className="flex flex-wrap gap-3 pt-2 border-t border-dashed text-[10px] text-muted-foreground">
+        <span className="inline-flex items-center gap-1">
+          <span className="inline-block w-3 h-3 rounded bg-emerald-200 border border-emerald-300" />
+          Đã học
+        </span>
+        <span className="inline-flex items-center gap-1">
+          <span className="inline-block w-3 h-3 rounded bg-rose-500 border border-rose-600" />
+          Sắp tới
+        </span>
+        <span className="inline-flex items-center gap-1">
+          <span className="inline-block w-3 h-3 rounded bg-amber-50 border border-amber-200" />
+          Đang chờ
+        </span>
+        <span className="inline-flex items-center gap-1">
+          <span className="inline-block w-3 h-3 rounded bg-white border border-muted-foreground/30" />
+          Tương lai
+        </span>
+        <span className="inline-flex items-center gap-1">
+          <span className="inline-block w-3 h-3 rounded bg-rose-100 border border-rose-300" />
+          Huỷ
+        </span>
+      </div>
+    </Card>
   );
 }
