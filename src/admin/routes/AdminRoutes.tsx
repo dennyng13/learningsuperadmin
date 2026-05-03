@@ -193,14 +193,14 @@ export default function AppRoutes() {
           {/* Academic — Band Descriptor & Mẫu nhận xét (chuyển từ Settings) */}
           <Route path="band-descriptors" element={<BandDescriptorsPage />} />
           <Route path="feedback-templates" element={<FeedbackTemplatesPage />} />
-          {/* Academic — Module Quản lý Khóa học (programs + cấp độ) */}
+          {/* Academic — Module Quản lý Khóa học */}
           <Route path="courses" element={<CoursesPage />} />
-          <Route path="courses/programs" element={<ProgramsListPage />} />
-          <Route path="courses/programs/:key" element={<ProgramDetailPage />} />
-          <Route path="courses/levels" element={<CourseLevelsPage />} />
-          <Route path="courses/new" element={<Navigate to="/courses/programs" replace />} />
           <Route path="courses/:id" element={<CourseDetailPage />} />
-          <Route path="courses/:id/edit" element={<Navigate to="/courses/programs" replace />} />
+          <Route path="courses/:id/edit" element={<Navigate to="/courses" replace />} />
+          {/* Programs Management */}
+          <Route path="programs" element={<ProgramsListPage />} />
+          <Route path="programs/:key" element={<ProgramDetailPage />} />
+          <Route path="programs/new" element={<Navigate to="/programs" replace />} />
           {/* Legacy redirects — bookmark cũ /settings/<id> → trang riêng */}
           <Route path="settings/ai-grading"       element={<Navigate to="/permissions?tab=ai-grading" replace />} />
           <Route path="settings/band-descriptors" element={<Navigate to="/band-descriptors" replace />} />
@@ -223,7 +223,10 @@ export default function AppRoutes() {
           <Route path="students" element={<Navigate to="/users" replace />} />
           <Route path="schedules" element={<Navigate to="/schedule" replace />} />
           <Route path="classes/create" element={<Navigate to="/classes/new" replace />} />
-          <Route path="programs" element={<Navigate to="/courses/programs" replace />} />
+          {/* Legacy: /courses/programs → /programs */}
+          <Route path="courses/programs" element={<Navigate to="/programs" replace />} />
+          <Route path="courses/programs/:key" element={<Navigate to="/programs/:key" replace />} />
+          <Route path="courses/levels" element={<Navigate to="/courses" replace />} />
 
           {/* ─── Day 7 IA placeholder routes ─── */}
           {PLACEHOLDER_ROUTES.map((p) => (

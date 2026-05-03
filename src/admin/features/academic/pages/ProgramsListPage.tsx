@@ -9,13 +9,14 @@ import { toast } from "sonner";
 import { Button } from "@shared/components/ui/button";
 import { useCoursesAdmin } from "@admin/features/academic/hooks/useCoursesAdmin";
 import { useCourseLevels } from "@shared/hooks/useCourseLevels";
-import { getProgramIcon, getProgramPalette } from "@shared/utils/programColors";
+import { getProgramIcon, getProgramPalette, getProgramEmoji, getProgramColorKey } from "@shared/utils/programColors";
+import { ProgramHero } from "@admin/features/academic/components/program-detail";
 import { cn } from "@shared/lib/utils";
 import { CANONICAL_PROGRAMS } from "@admin/features/academic/lib/courseCatalog";
 import { repairCanonicalCourseCatalog } from "@admin/features/academic/lib/courseCatalogRepair";
 
 /**
- * /courses/programs — Source of truth cho 3 chương trình chuẩn.
+ * /programs — Source of truth cho 3 chương trình chuẩn.
  * Không cho tạo/xoá tuỳ ý nữa để tránh phát sinh rows rác và lệch program_levels.
  */
 export default function ProgramsListPage() {
@@ -54,33 +55,33 @@ export default function ProgramsListPage() {
 
   return (
     <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-5">
-      <header className="flex items-start justify-between gap-3">
-        <div>
-          <Button asChild size="sm" variant="ghost" className="h-7 px-2 text-xs -ml-2 mb-2 text-muted-foreground">
-            <Link to="/courses">
-              <ArrowLeft className="h-3 w-3 mr-1" /> Quản lý khóa học
-            </Link>
-          </Button>
-          <h1 className="font-display text-xl md:text-2xl font-extrabold flex items-center gap-2">
-            <GraduationCap className="h-5 w-5 md:h-6 md:w-6 text-primary" />
-            Quản trị chương trình
-          </h1>
-          <p className="text-xs md:text-sm text-muted-foreground mt-1">
-            Hệ thống chỉ dùng 3 chương trình chuẩn: <strong>IELTS</strong>, <strong>WRE</strong>, <strong>Customized</strong>.
-          </p>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <Button asChild size="sm" variant="outline" className="h-8 gap-1.5">
-            <Link to="/courses/levels">
-              <Layers className="h-3.5 w-3.5" /> Khoá học/ Cấp độ
-            </Link>
-          </Button>
-          <Button onClick={handleRepair} size="sm" className="h-8 gap-1.5" disabled={repairing || loading}>
-            {repairing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <DatabaseZap className="h-3.5 w-3.5" />}
-            Chuẩn hóa dữ liệu
-          </Button>
-        </div>
-      </header>
+      {/* Hero Section for Programs Management */}
+      <ProgramHero
+        program={{
+          code: "ALL",
+          name: "Quản trị chương trình",
+          tagline: "IELTS • WRE • Customized",
+          level: "",
+          emoji: "🎓",
+          color: "coral",
+          status: "active",
+          desc: "Hệ thống chỉ dùng 3 chương trình chuẩn. Không cho tạo/xoá tuỳ ý nữa để tránh phát sinh rows rác.",
+          students: programStats.size > 0
+            ? Array.from(programStats.values()).reduce((acc, s) => acc + s.levelCount, 0)
+            : 0,
+          classes: 0,
+          courses: CANONICAL_PROGRAMS.length,
+          weeks: 0,
+          bandLiftAvg: 0,
+          pricing: { full: 0, perWeek: 0 },
+          revenue: 0,
+          target: 3,
+          completion: programs.length >= 3 ? 100 : Math.round((programs.length / 3) * 100),
+          satisfaction: 0,
+          retention: 0,
+        }}
+        onEdit={() => {}}
+      />
 
       {(missingCount > 0 || programs.length !== CANONICAL_PROGRAMS.length) && !loading && (
         <section className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 flex items-start gap-3">
@@ -162,8 +163,8 @@ export default function ProgramsListPage() {
                 <div className="border-t p-3 flex items-center justify-between gap-2">
                   <span className="text-[11px] text-muted-foreground">Sort #{preset.sort_order}</span>
                   <Button asChild size="sm" variant="ghost" className="h-8 text-xs gap-1.5">
-                    <Link to={`/courses/levels?program=${preset.key}`}>
-                      Quản lý cấp độ <ArrowRight className="h-3 w-3" />
+                    <Link to={`/programs/${preset.key}`}>
+                      Chi tiết <ArrowRight className="h-3 w-3" />
                     </Link>
                   </Button>
                 </div>

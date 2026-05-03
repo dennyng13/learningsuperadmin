@@ -1,14 +1,12 @@
-import { useState, useEffect, useCallback, useRef, KeyboardEvent } from "react";
+import { useState, useEffect, useCallback, KeyboardEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@shared/components/ui/button";
+import { PopButton } from "@shared/components/ui/pop-button";
 import { Input } from "@shared/components/ui/input";
-import { Tabs, TabsList, TabsTrigger } from "@shared/components/ui/tabs";
-import { Loader2, Save, BookOpen, CheckCircle2, Circle, ChevronLeft, ChevronRight, Plus, X, GripVertical, Trash2, BarChart3 } from "lucide-react";
+import { Loader2, Save, CheckCircle2, ChevronLeft, ChevronRight, Plus, X, Trash2, BarChart3 } from "lucide-react";
 import { cn } from "@shared/lib/utils";
 import { Badge } from "@shared/components/ui/badge";
-import { Progress } from "@shared/components/ui/progress";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@shared/components/ui/tooltip";
 import { clearConversionCache } from "@shared/utils/scoreConversion";
 
 /* IELTS official band criteria.
@@ -67,6 +65,32 @@ const BAND_COLORS: Record<string, string> = {
   "6": "bg-blue-500", "5.5": "bg-blue-400", "5": "bg-amber-500",
   "4.5": "bg-amber-400", "4": "bg-orange-500", "3.5": "bg-orange-400",
   "3": "bg-red-400", "2.5": "bg-red-500", "2": "bg-red-600",
+};
+
+const BAND_STYLE: Record<number, { bg: string; label: string }> = {
+  9: { bg: "#7C3AED", label: "Expert" },
+  8: { bg: "#0EA5E9", label: "Very Good" },
+  7: { bg: "#10B981", label: "Good" },
+  6: { bg: "#F59E0B", label: "Competent" },
+  5: { bg: "#FA7D64", label: "Modest" },
+  4: { bg: "#94A3B8", label: "Limited" },
+  3: { bg: "#F87171", label: "Extremely Limited" },
+  2: { bg: "#EF4444", label: "Intermittent" },
+  1: { bg: "#B91C1C", label: "Non User" },
+};
+
+const CRITERIA_COLORS: string[] = ["coral", "teal", "yellow", "violet"];
+const CRITERIA_BG: Record<string, string> = {
+  coral: "var(--lp-coral-soft, #FFF1EF)",
+  teal: "var(--lp-teal-soft, #E6F7F6)",
+  yellow: "var(--lp-yellow-soft, #FFFBEB)",
+  violet: "#F5F3FF",
+};
+const CRITERIA_ACCENT: Record<string, string> = {
+  coral: "var(--lp-coral, #FA7D64)",
+  teal: "var(--lp-teal, #2DD4BF)",
+  yellow: "var(--lp-yellow, #F59E0B)",
+  violet: "#7C3AED",
 };
 
 interface ConversionRow {
@@ -319,233 +343,424 @@ export default function AdminBandDescriptorsTab() {
   const canPrev = criteriaIdx > 0;
   const canNext = currentSkill ? criteriaIdx >= 0 && criteriaIdx < currentCriteria.length - 1 : false;
 
+  // active band for preview (overview mode)
+  const [activeBand, setActiveBand] = useState(7);
+  const displayBands = [9, 8, 7, 6, 5, 4, 3, 2, 1];
+
   return (
-    <div className="space-y-5">
-      {/* Save action only — header trùng với Header chính nên đã bỏ */}
-      {!isScoreConversion && (
-        <div className="flex justify-end">
-          <Button onClick={handleSave} disabled={saving || !dirty} size="sm" className="gap-1.5 shrink-0">
-            {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-            Lưu
-          </Button>
+    <div className="space-y-6">
+
+      {/* ── Skill + Task tab bar ── */}
+      <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+        {/* Skill pill tabs */}
+        <div style={{
+          display: "flex", gap: 0,
+          background: "var(--lp-cream, #F9F8F4)",
+          border: "2px solid var(--lp-ink, #0B0C0E)",
+          borderRadius: 10, overflow: "hidden",
+        }}>
+          {ALL_SKILLS.map(s => (
+            <button
+              key={s.key}
+              onClick={() => setSkill(s.key)}
+              style={{
+                padding: "6px 16px", fontSize: 12, fontWeight: 700,
+                background: skill === s.key ? "var(--lp-ink, #0B0C0E)" : "transparent",
+                color: skill === s.key ? "#fff" : "var(--lp-ink, #0B0C0E)",
+                border: "none", cursor: "pointer", transition: "all .1s",
+                borderRight: "1.5px solid var(--lp-line, #E5E7EB)",
+              }}
+            >{s.label}</button>
+          ))}
         </div>
-      )}
 
-      {/* Skill + Task Type selectors */}
-      <div className="flex flex-wrap items-center gap-3">
-        <Tabs value={skill} onValueChange={v => setSkill(v)}>
-          <TabsList className="bg-muted/60 rounded-lg h-9">
-            {ALL_SKILLS.map(s => (
-              <TabsTrigger key={s.key} value={s.key} className="text-xs font-semibold rounded-md px-4">
-                {s.label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </Tabs>
-
+        {/* Task type sub-tabs (Writing only) */}
         {currentSkill && currentSkill.taskTypes.length > 1 && (
-          <Tabs value={taskType} onValueChange={v => setTaskType(v)}>
-            <TabsList className="bg-muted/40 rounded-lg h-9">
-              {currentSkill.taskTypes.map(t => (
-                <TabsTrigger key={t.key} value={t.key} className="text-xs font-semibold rounded-md px-3">
-                  {t.label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
+          <div style={{
+            display: "flex", gap: 0,
+            border: "2px solid var(--lp-line, #E5E7EB)",
+            borderRadius: 10, overflow: "hidden",
+          }}>
+            {currentSkill.taskTypes.map(t => (
+              <button
+                key={t.key}
+                onClick={() => setTaskType(t.key)}
+                style={{
+                  padding: "6px 14px", fontSize: 11, fontWeight: 700,
+                  background: taskType === t.key ? "var(--lp-teal-soft, #E6F7F6)" : "#fff",
+                  color: "var(--lp-ink, #0B0C0E)",
+                  border: "none", cursor: "pointer", transition: "all .1s",
+                  borderRight: "1.5px solid var(--lp-line, #E5E7EB)",
+                }}
+              >{t.label}</button>
+            ))}
+          </div>
+        )}
+
+        <div style={{ flex: 1 }} />
+
+        {!isScoreConversion && (
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            {/* Progress pill */}
+            <div style={{
+              display: "flex", alignItems: "center", gap: 8,
+              background: progressPct === 100 ? "var(--lp-teal-soft, #E6F7F6)" : "var(--lp-cream, #F9F8F4)",
+              border: "2px solid var(--lp-ink, #0B0C0E)",
+              borderRadius: 20, padding: "4px 12px",
+              fontSize: 11, fontWeight: 800,
+            }}>
+              {progressPct === 100 && <CheckCircle2 className="h-3.5 w-3.5" style={{ color: "#10B981" }} />}
+              <span style={{ color: "var(--lp-body)" }}>{filledSlots}/{totalSlots}</span>
+              <div style={{
+                width: 60, height: 6, background: "var(--lp-line, #E5E7EB)",
+                borderRadius: 99, overflow: "hidden",
+              }}>
+                <div style={{
+                  width: `${progressPct}%`, height: "100%",
+                  background: progressPct === 100 ? "#10B981" : "var(--lp-coral, #FA7D64)",
+                  transition: "width .3s",
+                }} />
+              </div>
+            </div>
+
+            <PopButton tone="coral" size="sm" onClick={handleSave} disabled={saving || !dirty}>
+              {saving ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1.5" />}
+              Lưu
+            </PopButton>
+          </div>
         )}
       </div>
 
+      {/* ── Content ── */}
       {isScoreConversion ? (
         <ScoreConversionSection skill={skill} />
       ) : loading ? (
-        <div className="flex items-center justify-center py-16">
-          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        <div style={{ display: "flex", justifyContent: "center", padding: "64px 0" }}>
+          <Loader2 className="h-6 w-6 animate-spin" style={{ color: "var(--lp-body)" }} />
         </div>
       ) : !activeCriteria ? (
-        /* ===== OVERVIEW GRID ===== */
-        <div className="space-y-4">
-          {/* Overall progress */}
-          <div className="flex items-center gap-3 bg-muted/30 rounded-xl px-4 py-3">
-            <div className="flex-1 space-y-1.5">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-muted-foreground">Tiến độ hoàn thành</span>
-                <span className="text-xs font-bold text-primary">{filledSlots}/{totalSlots}</span>
-              </div>
-              <Progress value={progressPct} className="h-2" />
+        /* ===== OVERVIEW: band ladder + detail card ===== */
+        <div className="space-y-6">
+          <div style={{ display: "grid", gridTemplateColumns: "200px 1fr", gap: 18 }}>
+
+            {/* Band ladder */}
+            <div style={{
+              background: "#fff",
+              border: "2.5px solid var(--lp-ink, #0B0C0E)",
+              borderRadius: 18, padding: "14px 12px",
+              boxShadow: "4px 4px 0 0 var(--lp-ink, #0B0C0E)",
+              height: "fit-content",
+            }}>
+              <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--lp-body)", padding: "4px 8px 10px" }}>Band</div>
+              {displayBands.map(b => {
+                const m = BAND_STYLE[b];
+                if (!m) return null;
+                const filled = currentCriteria.length > 0
+                  ? currentCriteria.filter(c => (descriptors[makeKey(c.key, b)] || "").trim()).length
+                  : 0;
+                return (
+                  <div
+                    key={b}
+                    onClick={() => setActiveBand(b)}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 10,
+                      padding: "8px 8px", borderRadius: 10, cursor: "pointer",
+                      background: activeBand === b ? "var(--lp-cream, #F9F8F4)" : "transparent",
+                      border: activeBand === b ? "2px solid var(--lp-ink, #0B0C0E)" : "2px solid transparent",
+                      marginBottom: 3,
+                    }}
+                  >
+                    <div style={{
+                      width: 38, height: 38, borderRadius: 9, background: m.bg,
+                      border: "2.5px solid var(--lp-ink, #0B0C0E)",
+                      display: "grid", placeItems: "center",
+                      fontFamily: "var(--ff-display, inherit)", fontWeight: 900, fontSize: 19, color: "#fff",
+                      boxShadow: activeBand === b ? "3px 3px 0 0 var(--lp-ink)" : "none",
+                      flexShrink: 0,
+                    }}>{b}</div>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontWeight: 900, fontSize: 13, fontFamily: "var(--ff-display, inherit)" }}>Band {b}</div>
+                      <div style={{ fontSize: 9, fontWeight: 700, color: "var(--lp-body)", textTransform: "uppercase", letterSpacing: "0.1em" }}>{m.label}</div>
+                      {currentCriteria.length > 0 && (
+                        <div style={{ display: "flex", gap: 2, marginTop: 3 }}>
+                          {currentCriteria.map((c, i) => {
+                            const has = (descriptors[makeKey(c.key, b)] || "").trim();
+                            return (
+                              <div key={c.key} style={{
+                                width: 6, height: 6, borderRadius: "50%",
+                                background: has ? CRITERIA_ACCENT[CRITERIA_COLORS[i] || "coral"] : "var(--lp-line, #E5E7EB)",
+                              }} />
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-            {progressPct === 100 && (
-              <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0" />
-            )}
+
+            {/* Active band detail — criteria cards */}
+            <div style={{
+              background: "#fff",
+              border: "2.5px solid var(--lp-ink, #0B0C0E)",
+              borderRadius: 18, padding: "22px 24px",
+              boxShadow: "4px 4px 0 0 var(--lp-ink, #0B0C0E)",
+            }}>
+              {/* Band header */}
+              <div style={{
+                display: "flex", alignItems: "center", gap: 16, marginBottom: 18,
+                paddingBottom: 16, borderBottom: "2px dashed var(--lp-ink, #0B0C0E)",
+              }}>
+                <div style={{
+                  width: 68, height: 68, borderRadius: 14, background: BAND_STYLE[activeBand]?.bg,
+                  border: "3px solid var(--lp-ink, #0B0C0E)",
+                  display: "grid", placeItems: "center",
+                  fontFamily: "var(--ff-display, inherit)", fontWeight: 900, fontSize: 38, color: "#fff",
+                  boxShadow: "5px 5px 0 0 var(--lp-ink, #0B0C0E)", flexShrink: 0,
+                }}>{activeBand}</div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--lp-body)" }}>
+                    {skill === "writing"
+                      ? `IELTS Writing · ${currentSkill?.taskTypes.find(t => t.key === taskType)?.label ?? ""}`
+                      : "IELTS Speaking"} · Band {activeBand}
+                  </div>
+                  <h2 className="font-display" style={{ fontSize: 26, fontWeight: 900, letterSpacing: "-0.02em", margin: "4px 0 2px" }}>
+                    {BAND_STYLE[activeBand]?.label} user
+                  </h2>
+                  <div style={{ fontSize: 12, color: "var(--lp-body)" }}>
+                    {currentCriteria.length} tiêu chí · nhấn một tiêu chí để chỉnh sửa mô tả
+                  </div>
+                </div>
+              </div>
+
+              {/* 2×2 criteria preview cards */}
+              {currentCriteria.length > 0 ? (
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  {currentCriteria.map((c, i) => {
+                    const color = CRITERIA_COLORS[i] || "coral";
+                    const desc = descriptors[makeKey(c.key, activeBand)] || "";
+                    const firstLine = desc.split("\n").find(l => l.trim()) || "";
+                    return (
+                      <button
+                        key={c.key}
+                        onClick={() => setActiveCriteria(c.key)}
+                        style={{
+                          padding: "14px 16px",
+                          background: CRITERIA_BG[color],
+                          border: "2px solid var(--lp-ink, #0B0C0E)",
+                          borderRadius: 14, textAlign: "left", cursor: "pointer",
+                          transition: "box-shadow .1s, transform .1s",
+                        }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.boxShadow = "3px 3px 0 0 var(--lp-ink)"; (e.currentTarget as HTMLElement).style.transform = "translate(-1px,-1px)"; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.boxShadow = "none"; (e.currentTarget as HTMLElement).style.transform = "none"; }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                          <div style={{
+                            width: 28, height: 28, borderRadius: 7,
+                            background: CRITERIA_ACCENT[color],
+                            border: "2px solid var(--lp-ink, #0B0C0E)",
+                            display: "grid", placeItems: "center", flexShrink: 0,
+                          }}>
+                            <span style={{ fontFamily: "var(--ff-mono, monospace)", fontSize: 9, fontWeight: 900, color: color === "yellow" ? "var(--lp-ink)" : "#fff" }}>{c.short}</span>
+                          </div>
+                          <div>
+                            <div className="font-display" style={{ fontSize: 13, fontWeight: 900, lineHeight: 1.1 }}>{c.label}</div>
+                          </div>
+                          <ChevronRight className="h-3.5 w-3.5 ml-auto" style={{ color: "var(--lp-body)", flexShrink: 0 }} />
+                        </div>
+                        <div style={{ fontSize: 12, color: "var(--lp-ink)", lineHeight: 1.5, minHeight: 36 }}>
+                          {firstLine || <span style={{ color: "var(--lp-body)", fontStyle: "italic" }}>Chưa có mô tả — nhấn để thêm</span>}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div style={{ textAlign: "center", padding: "32px 0", color: "var(--lp-body)", fontSize: 13 }}>
+                  Không có tiêu chí cho skill này
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Criteria cards */}
-          <div className="grid gap-3 sm:grid-cols-2">
-            {currentCriteria.map(c => {
-              const filled = getFilledCount(c.key);
-              const complete = filled === 9;
-              return (
-                <button
-                  key={c.key}
-                  onClick={() => setActiveCriteria(c.key)}
-                  className={cn(
-                    "group relative flex flex-col gap-3 p-4 rounded-xl border text-left transition-all",
-                    "hover:border-primary/40 hover:shadow-md hover:bg-accent/30",
-                    "bg-card"
-                  )}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="text-[10px] font-bold px-1.5 py-0">
-                          {c.short}
-                        </Badge>
-                        <span className="text-sm font-bold">{c.label}</span>
-                      </div>
-                    </div>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                  </div>
-
-                  {/* Band dots grid */}
-                  <div className="flex items-center gap-1.5">
-                    <TooltipProvider delayDuration={200}>
-                      {BANDS.map(b => {
-                        const has = (descriptors[makeKey(c.key, b)] || "").trim();
+          {/* Full comparison table */}
+          {currentCriteria.length > 0 && (
+            <div style={{
+              background: "#fff",
+              border: "2.5px solid var(--lp-ink, #0B0C0E)",
+              borderRadius: 18,
+              boxShadow: "4px 4px 0 0 var(--lp-ink, #0B0C0E)",
+              overflow: "hidden",
+            }}>
+              <div style={{
+                padding: "14px 20px", borderBottom: "2px solid var(--lp-ink, #0B0C0E)",
+                display: "flex", alignItems: "center", gap: 12,
+              }}>
+                <span className="font-display" style={{ fontSize: 17, fontWeight: 900, letterSpacing: "-0.02em" }}>Bảng so sánh đầy đủ</span>
+                <span style={{ fontSize: 12, color: "var(--lp-body)" }}>· Click hàng để focus band</span>
+              </div>
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", tableLayout: "fixed", borderCollapse: "collapse" }}>
+                  <thead>
+                    <tr style={{ background: "var(--lp-ink, #0B0C0E)" }}>
+                      <th style={{ width: 80, padding: "10px 14px", textAlign: "left", fontSize: 11, fontWeight: 800, color: "#fff", letterSpacing: "0.06em" }}>BAND</th>
+                      {currentCriteria.map((c, i) => {
+                        const color = CRITERIA_COLORS[i] || "coral";
                         return (
-                          <Tooltip key={b}>
-                            <TooltipTrigger asChild>
-                              <div className={cn(
-                                "w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold transition-colors",
-                                has
-                                  ? "bg-primary/15 text-primary"
-                                  : "bg-muted/60 text-muted-foreground/50"
-                              )}>
-                                {b}
-                              </div>
-                            </TooltipTrigger>
-                            <TooltipContent side="top" className="text-[10px]">
-                              {has ? `Band ${b}: Đã có mô tả` : `Band ${b}: Chưa có`}
-                            </TooltipContent>
-                          </Tooltip>
+                          <th key={c.key} style={{ padding: "10px 14px", textAlign: "left", fontSize: 11, fontWeight: 800, color: "#fff" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                              <span style={{
+                                fontFamily: "var(--ff-mono, monospace)", fontSize: 10, fontWeight: 900,
+                                padding: "1px 6px", background: CRITERIA_ACCENT[color], borderRadius: 4,
+                                color: color === "yellow" ? "var(--lp-ink)" : "#fff",
+                              }}>{c.short}</span>
+                              <span style={{ fontWeight: 700 }}>{c.label}</span>
+                            </div>
+                          </th>
                         );
                       })}
-                    </TooltipProvider>
-                  </div>
-
-                  {/* Mini progress */}
-                  <div className="flex items-center gap-2">
-                    <Progress value={(filled / 9) * 100} className="h-1.5 flex-1" />
-                    <span className={cn(
-                      "text-[10px] font-bold",
-                      complete ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"
-                    )}>
-                      {filled}/9
-                    </span>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-
-          <p className="text-[11px] text-muted-foreground text-center">
-            Nhấn vào tiêu chí để chỉnh sửa mô tả từng band điểm
-          </p>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {displayBands.map(b => {
+                      const m = BAND_STYLE[b];
+                      if (!m) return null;
+                      return (
+                        <tr
+                          key={b}
+                          onClick={() => setActiveBand(b)}
+                          style={{
+                            background: activeBand === b ? "var(--lp-yellow-soft, #FFFBEB)" : undefined,
+                            borderBottom: "1.5px solid var(--lp-line, #E5E7EB)",
+                            cursor: "pointer",
+                          }}
+                        >
+                          <td style={{ padding: "10px 12px", verticalAlign: "middle" }}>
+                            <div style={{
+                              width: 36, height: 36, borderRadius: 9, background: m.bg,
+                              border: "2.5px solid var(--lp-ink, #0B0C0E)",
+                              display: "grid", placeItems: "center",
+                              fontFamily: "var(--ff-display, inherit)", fontWeight: 900, fontSize: 17, color: "#fff",
+                            }}>{b}</div>
+                          </td>
+                          {currentCriteria.map(c => (
+                            <td key={c.key} style={{ padding: "10px 14px", fontSize: 12.5, lineHeight: 1.5, color: "var(--lp-ink)", verticalAlign: "top" }}>
+                              {descriptors[makeKey(c.key, b)]?.split("\n").find(l => l.trim()) || (
+                                <span style={{ color: "var(--lp-line, #E5E7EB)", fontStyle: "italic" }}>—</span>
+                              )}
+                            </td>
+                          ))}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         /* ===== CRITERIA DETAIL EDITOR ===== */
         <div className="space-y-4">
           {/* Navigation bar */}
-          <div className="flex items-center justify-between bg-muted/30 rounded-xl px-3 py-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="gap-1 text-xs"
+          <div style={{
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            background: "#fff",
+            border: "2px solid var(--lp-ink, #0B0C0E)",
+            borderRadius: 12, padding: "8px 14px",
+            boxShadow: "3px 3px 0 0 var(--lp-ink, #0B0C0E)",
+          }}>
+            <button
               onClick={() => setActiveCriteria(null)}
+              style={{
+                display: "flex", alignItems: "center", gap: 5,
+                background: "none", border: "none", cursor: "pointer",
+                fontSize: 12, fontWeight: 700, color: "var(--lp-ink)",
+              }}
             >
-              <ChevronLeft className="h-3.5 w-3.5" />
-              Tổng quan
-            </Button>
+              <ChevronLeft className="h-3.5 w-3.5" /> Tổng quan
+            </button>
 
-            <div className="flex items-center gap-1">
-              <Badge variant="outline" className="text-[10px] font-bold px-1.5 py-0">
-                {currentCriteria[criteriaIdx]?.short}
-              </Badge>
-              <span className="text-sm font-bold">
-                {currentCriteria[criteriaIdx]?.label}
-              </span>
-              <span className={cn(
-                "text-[10px] font-bold ml-1 rounded-full px-2 py-0.5",
-                getFilledCount(activeCriteria) === 9
-                  ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400"
-                  : "bg-muted text-muted-foreground"
-              )}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              {(() => {
+                const color = CRITERIA_COLORS[criteriaIdx] || "coral";
+                return (
+                  <div style={{
+                    width: 24, height: 24, borderRadius: 6, background: CRITERIA_ACCENT[color],
+                    border: "2px solid var(--lp-ink)", display: "grid", placeItems: "center",
+                  }}>
+                    <span style={{ fontFamily: "var(--ff-mono, monospace)", fontSize: 9, fontWeight: 900, color: color === "yellow" ? "var(--lp-ink)" : "#fff" }}>
+                      {currentCriteria[criteriaIdx]?.short}
+                    </span>
+                  </div>
+                );
+              })()}
+              <span style={{ fontWeight: 900, fontSize: 14 }}>{currentCriteria[criteriaIdx]?.label}</span>
+              <span style={{
+                fontSize: 10, fontWeight: 800, padding: "2px 8px", borderRadius: 99,
+                background: getFilledCount(activeCriteria) === 9 ? "#D1FAE5" : "var(--lp-cream, #F9F8F4)",
+                color: getFilledCount(activeCriteria) === 9 ? "#065F46" : "var(--lp-body)",
+                border: "1.5px solid var(--lp-line)",
+              }}>
                 {getFilledCount(activeCriteria)}/9
               </span>
             </div>
 
-            <div className="flex items-center gap-1">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7"
+            <div style={{ display: "flex", gap: 4 }}>
+              <button
                 disabled={!canPrev}
-                onClick={() => setActiveCriteria(currentCriteria[criteriaIdx - 1].key)}
-              >
-                <ChevronLeft className="h-3.5 w-3.5" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7"
+                onClick={() => canPrev && setActiveCriteria(currentCriteria[criteriaIdx - 1].key)}
+                style={{
+                  width: 28, height: 28, display: "grid", placeItems: "center",
+                  background: "none", border: "2px solid var(--lp-line, #E5E7EB)",
+                  borderRadius: 7, cursor: canPrev ? "pointer" : "not-allowed",
+                  opacity: canPrev ? 1 : 0.35,
+                }}
+              ><ChevronLeft className="h-3.5 w-3.5" /></button>
+              <button
                 disabled={!canNext}
-                onClick={() => setActiveCriteria(currentCriteria[criteriaIdx + 1].key)}
-              >
-                <ChevronRight className="h-3.5 w-3.5" />
-              </Button>
+                onClick={() => canNext && setActiveCriteria(currentCriteria[criteriaIdx + 1].key)}
+                style={{
+                  width: 28, height: 28, display: "grid", placeItems: "center",
+                  background: "none", border: "2px solid var(--lp-line, #E5E7EB)",
+                  borderRadius: 7, cursor: canNext ? "pointer" : "not-allowed",
+                  opacity: canNext ? 1 : 0.35,
+                }}
+              ><ChevronRight className="h-3.5 w-3.5" /></button>
             </div>
           </div>
 
-          {/* Band editors — bullet point style */}
-          <div className="grid gap-3">
-            {BANDS.map(band => {
+          {/* Band editors */}
+          <div style={{ display: "grid", gap: 10 }}>
+            {BANDS.slice().reverse().map(band => {
+              const m = BAND_STYLE[band];
               const raw = descriptors[makeKey(activeCriteria, band)] || "";
-              // Giữ nguyên dòng rỗng để user vừa bấm "Thêm mục" thấy ngay
-              // input mới. Chỉ filter dòng trống ở bước save.
               const bullets = raw ? raw.split("\n") : [];
-              const hasFill = bullets.length > 0;
+              const hasFill = bullets.filter(l => l.trim()).length > 0;
 
               const setBullets = (newBullets: string[]) => {
                 handleChange(activeCriteria, band, newBullets.join("\n"));
               };
-
               const updateBullet = (idx: number, val: string) => {
-                const next = [...bullets];
-                next[idx] = val;
-                setBullets(next);
+                const next = [...bullets]; next[idx] = val; setBullets(next);
               };
-
               const removeBullet = (idx: number) => {
                 setBullets(bullets.filter((_, i) => i !== idx));
               };
-
               const addBullet = () => {
                 setBullets([...bullets, ""]);
-                // Auto-focus input vừa thêm
                 setTimeout(() => {
-                  const inputs = document.querySelectorAll(
-                    `[data-band-input="${activeCriteria}-${band}"]`,
-                  );
+                  const inputs = document.querySelectorAll(`[data-band-input="${activeCriteria}-${band}"]`);
                   (inputs[inputs.length - 1] as HTMLInputElement)?.focus();
                 }, 50);
               };
-
               const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>, idx: number) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
                   const next = [...bullets];
                   next.splice(idx + 1, 0, "");
                   setBullets(next);
-                  // Focus next input after render
                   setTimeout(() => {
                     const inputs = document.querySelectorAll(`[data-band-input="${activeCriteria}-${band}"]`);
                     (inputs[idx + 1] as HTMLInputElement)?.focus();
@@ -564,30 +779,37 @@ export default function AdminBandDescriptorsTab() {
               return (
                 <div
                   key={band}
-                  className={cn(
-                    "flex gap-3 items-start p-3 rounded-xl border transition-colors",
-                    hasFill ? "border-primary/20 bg-primary/[0.02]" : "border-border bg-card"
-                  )}
+                  style={{
+                    display: "flex", gap: 12, alignItems: "flex-start",
+                    padding: "12px 14px",
+                    background: hasFill ? "#fff" : "var(--lp-cream, #F9F8F4)",
+                    border: hasFill ? "2px solid var(--lp-ink, #0B0C0E)" : "2px solid var(--lp-line, #E5E7EB)",
+                    borderRadius: 14,
+                    boxShadow: hasFill ? "3px 3px 0 0 var(--lp-ink)" : "none",
+                    transition: "all .15s",
+                  }}
                 >
-                  <div className={cn(
-                    "flex items-center justify-center w-10 h-10 rounded-full font-bold text-sm shrink-0 mt-0.5",
-                    hasFill
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-muted-foreground"
-                  )}>
-                    {band}
-                  </div>
-                  <div className="flex-1 space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-semibold text-muted-foreground">Band {band}</span>
-                      <span className="text-[10px] text-muted-foreground">{bullets.length} mục</span>
+                  {/* Band badge */}
+                  <div style={{
+                    width: 40, height: 40, borderRadius: 10, background: m?.bg ?? "#aaa",
+                    border: "2.5px solid var(--lp-ink, #0B0C0E)",
+                    display: "grid", placeItems: "center",
+                    fontFamily: "var(--ff-display, inherit)", fontWeight: 900, fontSize: 18, color: "#fff",
+                    flexShrink: 0,
+                  }}>{band}</div>
+
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                      <span style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--lp-body)" }}>
+                        Band {band} · {m?.label}
+                      </span>
+                      <span style={{ fontSize: 10, color: "var(--lp-body)" }}>{bullets.filter(l => l.trim()).length} mục</span>
                     </div>
 
-                    {/* Bullet list */}
-                    <div className="space-y-1">
+                    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                       {bullets.map((bullet, idx) => (
-                        <div key={idx} className="flex items-center gap-1.5 group">
-                          <span className="text-primary text-xs shrink-0">•</span>
+                        <div key={idx} className="group" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          <span style={{ color: "var(--lp-coral, #FA7D64)", fontSize: 14, lineHeight: 1, flexShrink: 0 }}>•</span>
                           <Input
                             data-band-input={`${activeCriteria}-${band}`}
                             value={bullet}
@@ -599,7 +821,8 @@ export default function AdminBandDescriptorsTab() {
                           <button
                             type="button"
                             onClick={() => removeBullet(idx)}
-                            className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive shrink-0"
+                            className="opacity-0 group-hover:opacity-100 transition-opacity"
+                            style={{ background: "none", border: "none", cursor: "pointer", color: "#EF4444", display: "flex" }}
                           >
                             <X className="h-3 w-3" />
                           </button>
@@ -610,10 +833,14 @@ export default function AdminBandDescriptorsTab() {
                     <button
                       type="button"
                       onClick={addBullet}
-                      className="flex items-center gap-1 text-[11px] text-primary/70 hover:text-primary transition-colors pl-4"
+                      style={{
+                        display: "flex", alignItems: "center", gap: 4,
+                        background: "none", border: "none", cursor: "pointer",
+                        fontSize: 11, fontWeight: 700, color: "var(--lp-body)",
+                        marginTop: 6, paddingLeft: 20,
+                      }}
                     >
-                      <Plus className="h-3 w-3" />
-                      Thêm mục
+                      <Plus className="h-3 w-3" /> Thêm mục
                     </button>
                   </div>
                 </div>

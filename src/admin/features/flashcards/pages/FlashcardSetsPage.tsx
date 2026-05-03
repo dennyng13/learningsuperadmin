@@ -110,6 +110,36 @@ export default function FlashcardSetsPage() {
   const [levelExpanded, setLevelExpanded] = useState(false);
   const [statusExpanded, setStatusExpanded] = useState(false);
 
+  // Editor tab (must be top-level — not inside conditional)
+  const [editorTab, setEditorTab] = useState<"cards" | "meta" | "link" | "tools">("cards");
+
+  // Bulk selection (must be top-level — not inside conditional)
+  const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
+
+  // Filtering hooks — must be top-level (cannot be after early return)
+  const {
+    filtered: programCourseFiltered,
+    matched: matchedToCourse,
+    untagged: untaggedItems,
+  } = useResourceList("flashcard_set", sets as any, {
+    programIds: filterPrograms,
+    courseIds: filterCourses,
+    includeUntagged: true,
+  });
+
+  const filteredSets = useMemo(
+    () => (programCourseFiltered as typeof sets).filter(s => {
+      if (listSearch.trim() && !s.title.toLowerCase().includes(listSearch.trim().toLowerCase())) return false;
+      if (filterLevels.size > 0 && !filterLevels.has((s as any).course_level || "")) return false;
+      if (filterStatuses.size > 0 && !filterStatuses.has(s.status)) return false;
+      return true;
+    }),
+    [programCourseFiltered, listSearch, filterLevels, filterStatuses],
+  );
+
+  const visibleIds = useMemo(() => filteredSets.map((s) => s.id), [filteredSets]);
+  const bulkSel = useBulkSelection(visibleIds);
+
   const fetchSets = async () => {
     const { data, error } = await supabase
       .from("flashcard_sets")
@@ -432,8 +462,6 @@ export default function FlashcardSetsPage() {
   };
 
   // Editor view
-  const [editorTab, setEditorTab] = useState<"cards" | "meta" | "link" | "tools">("cards");
-
   if (editingSet) {
     return (
       <div
@@ -857,34 +885,10 @@ export default function FlashcardSetsPage() {
     setShowListSearch(false);
   };
 
-  // Stage 1: filter Program + Course qua pivot resource_courses
-  const {
-    filtered: programCourseFiltered,
-    matched: matchedToCourse,
-    untagged: untaggedItems,
-  } = useResourceList("flashcard_set", sets as any, {
-    programIds: filterPrograms,
-    courseIds: filterCourses,
-    includeUntagged: true,
-  });
-
-  // Stage 2: search/level/status
-  const filteredSets = (programCourseFiltered as typeof sets).filter(s => {
-    if (listSearch.trim() && !s.title.toLowerCase().includes(listSearch.trim().toLowerCase())) return false;
-    if (filterLevels.size > 0 && !filterLevels.has((s as any).course_level || "")) return false;
-    if (filterStatuses.size > 0 && !filterStatuses.has(s.status)) return false;
-    return true;
-  });
-
   const getLevelColor = (name: string) => {
     const cl = courseLevels.find(l => l.name === name);
     return cl ? "bg-primary/10 text-primary border-primary/30" : "bg-muted text-muted-foreground border-border";
   };
-
-  // Bulk selection
-  const visibleIds = useMemo(() => filteredSets.map((s) => s.id), [filteredSets]);
-  const bulkSel = useBulkSelection(visibleIds);
-  const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
 
   return (
     <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-8">
