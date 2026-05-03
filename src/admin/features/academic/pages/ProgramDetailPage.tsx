@@ -24,7 +24,7 @@ import CourseCard from "@admin/features/academic/components/CourseCard";
 import { ProgramHero } from "@admin/features/academic/components/program-detail";
 import CourseEditorDialog from "@admin/features/academic/components/CourseEditorDialog";
 import ProgramEditorDialog from "@admin/features/academic/components/ProgramEditorDialog";
-import { getProgramPalette, getProgramEmoji, getProgramColorKey } from "@shared/utils/programColors";
+import { getProgramPalette, getProgramEmoji, getProgramColorKey, getProgramIcon } from "@shared/utils/programColors";
 import { cn } from "@shared/lib/utils";
 
 interface CohortData {
@@ -198,8 +198,8 @@ export default function ProgramDetailPage() {
         program={{
           code: program.key,
           name: program.name,
-          tagline: program.tagline || "Chương trình học phổ biến nhất",
-          level: program.cefr_range || "",
+          tagline: (program as any).tagline || "Chương trình học phổ biến nhất",
+          level: (program as any).cefr_range || "",
           emoji: emoji,
           color: getProgramColorKey(program.key),
           status: (isInactive ? "archived" : (program.status === "active" ? "active" : "draft")) as "active" | "draft" | "archived",
@@ -216,7 +216,6 @@ export default function ProgramDetailPage() {
           satisfaction: 92,
           retention: 94,
         }}
-        loading={kpiQ.isLoading}
         onEdit={() => setProgramEditorOpen(true)}
       />
 
