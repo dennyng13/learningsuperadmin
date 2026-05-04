@@ -139,11 +139,12 @@ export default function NotificationBell() {
     <button
       type="button"
       onClick={() => setOpen(!open)}
-      className="relative p-2 rounded-xl hover:bg-muted/60 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      aria-label="Thông báo"
+      className="relative h-10 w-10 rounded-pop bg-white border-[2px] border-lp-ink shadow-pop-xs hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-pop-sm active:translate-x-0.5 active:translate-y-0.5 active:shadow-none flex items-center justify-center transition-all duration-150 text-lp-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
-      <Bell className="w-5 h-5 text-foreground" />
+      <Bell className="h-[18px] w-[18px]" strokeWidth={2.2} />
       {unreadCount > 0 && (
-        <span className="absolute -top-0.5 -right-0.5 w-4.5 h-4.5 bg-destructive text-destructive-foreground text-[9px] font-bold rounded-full flex items-center justify-center min-w-[18px] px-1">
+        <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-lp-coral text-white text-[10px] font-display font-bold rounded-full flex items-center justify-center border-[1.5px] border-lp-ink">
           {unreadCount > 9 ? "9+" : unreadCount}
         </span>
       )}
