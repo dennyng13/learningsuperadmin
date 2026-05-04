@@ -213,97 +213,153 @@ export default function TestManagementPage() {
 
   return (
     <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-5 md:space-y-6">
-      {/* ===== Hero header ===== */}
-      <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 via-primary/5 to-accent/10 p-5 md:p-6">
-        <div className="absolute -top-20 -right-20 h-56 w-56 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-16 -left-16 h-48 w-48 rounded-full bg-accent/10 blur-3xl pointer-events-none" />
-        <div className="relative flex flex-col sm:flex-row sm:items-end sm:justify-between gap-5">
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-primary/80 mb-1.5 flex items-center gap-1.5">
-              <Sparkles className="h-3.5 w-3.5" /> Học thuật
-            </p>
-            <h1 className="font-display text-2xl md:text-3xl font-extrabold flex items-center gap-2.5">
-              <Library className="h-7 w-7 md:h-8 md:w-8 text-primary" />
-              Ngân hàng đề
-            </h1>
-            <p className="text-sm text-muted-foreground mt-2 max-w-xl">
-              Tạo và quản lý kho đề thi, bài tập theo từng kỹ năng IELTS — gắn vào khoá học, đồng bộ WorkDrive, gán flashcard.
-            </p>
+      {/* ===== Hero header — ink pop-card ===== */}
+      <div style={{
+        position: "relative", overflow: "hidden",
+        background: "linear-gradient(120deg, var(--lp-cream, #F9F8F4) 0%, #FFF 55%, var(--lp-teal-soft, #E6F7F6) 100%)",
+        border: "2.5px solid var(--lp-ink, #0B0C0E)",
+        borderRadius: 22, padding: "24px 28px 26px",
+        boxShadow: "6px 6px 0 0 var(--lp-ink, #0B0C0E)",
+      }}>
+        {/* decorative glyphs */}
+        <span style={{ position: "absolute", top: 8, right: 80, fontSize: 88, fontWeight: 900, color: "var(--lp-coral, #FA7D64)", opacity: 0.1, pointerEvents: "none", userSelect: "none", fontFamily: "var(--ff-display, inherit)" }}>⌜</span>
+        <span style={{ position: "absolute", bottom: -16, left: "42%", fontSize: 76, fontWeight: 900, color: "var(--lp-yellow, #F59E0B)", opacity: 0.13, pointerEvents: "none", userSelect: "none", fontFamily: "var(--ff-display, inherit)" }}>✦</span>
 
-            {/* Inline mini-stats */}
-            <div className="flex flex-wrap items-center gap-2 mt-4">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-card/80 backdrop-blur border border-border/60 px-3 py-1 text-xs font-semibold shadow-sm">
-                <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-                {isLoading ? "Đang tải..." : `${assessments?.length || 0} mục`}
-              </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 px-3 py-1 text-xs font-semibold">
-                <ClipboardList className="h-3 w-3" /> {testCount} bài thi
-              </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-violet-500/10 text-violet-700 dark:text-violet-300 border border-violet-500/30 px-3 py-1 text-xs font-semibold">
-                <Layers className="h-3 w-3" /> {exerciseCount} bài tập
-              </span>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 28, alignItems: "flex-end" }}>
+          <div>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 7, fontFamily: "var(--ff-display, inherit)", fontWeight: 800, fontSize: 11, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--lp-coral, #FA7D64)", marginBottom: 6 }}>
+              <span style={{ color: "var(--lp-yellow, #F59E0B)", fontSize: 13 }}>✦</span> Library · Tests · Exercises
             </div>
+            <h1 style={{ fontFamily: "var(--ff-display, inherit)", fontWeight: 900, fontSize: 42, lineHeight: 1.02, letterSpacing: "-0.035em", color: "var(--lp-ink, #0B0C0E)", margin: "0 0 10px", maxWidth: 680 }}>
+              Test bank, your{" "}
+              <span style={{ color: "var(--lp-coral, #FA7D64)", background: "var(--lp-yellow-soft, #FFFBEB)", padding: "0 8px", borderRadius: 8, boxShadow: "3px 3px 0 0 var(--lp-ink, #0B0C0E)", display: "inline-block", transform: "rotate(-1deg)" }}>armory</span>
+            </h1>
+            <p style={{ fontSize: 14, color: "var(--lp-body, #6B7280)", lineHeight: 1.55, margin: 0 }}>
+              {isLoading ? "Đang tải..." : `${assessments?.length || 0} tests · ${exerciseCount} exercises`} · Tạo, quản lý và gắn đề vào khoá học.
+            </p>
           </div>
 
-          <div className="flex gap-2 shrink-0">
-            <Button
-              variant="outline"
+          <div style={{ display: "flex", gap: 8, flexShrink: 0, flexWrap: "wrap", justifyContent: "flex-end" }}>
+            <button
               onClick={() => navigate("/tests/import")}
-              className="gap-2 rounded-xl bg-card/80 backdrop-blur border-border/60 hover:bg-card"
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 7,
+                background: "#fff", border: "2px solid var(--lp-ink, #0B0C0E)",
+                borderRadius: 12, padding: "9px 18px",
+                fontFamily: "var(--ff-display, inherit)", fontWeight: 800, fontSize: 13,
+                boxShadow: "3px 3px 0 0 var(--lp-ink, #0B0C0E)", cursor: "pointer",
+                transition: "all .12s",
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "translate(-1px,-1px)"; (e.currentTarget as HTMLElement).style.boxShadow = "4px 4px 0 0 var(--lp-ink)"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = "none"; (e.currentTarget as HTMLElement).style.boxShadow = "3px 3px 0 0 var(--lp-ink)"; }}
             >
-              <Upload className="h-4 w-4" /> Import
-            </Button>
-            <Button
+              <Upload className="h-3.5 w-3.5" /> Import .docx
+            </button>
+            <button
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 7,
+                background: "var(--lp-yellow, #F59E0B)", border: "2px solid var(--lp-ink, #0B0C0E)",
+                borderRadius: 12, padding: "9px 18px",
+                fontFamily: "var(--ff-display, inherit)", fontWeight: 800, fontSize: 13,
+                boxShadow: "3px 3px 0 0 var(--lp-ink, #0B0C0E)", cursor: "pointer",
+                transition: "all .12s",
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "translate(-1px,-1px)"; (e.currentTarget as HTMLElement).style.boxShadow = "4px 4px 0 0 var(--lp-ink)"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = "none"; (e.currentTarget as HTMLElement).style.boxShadow = "3px 3px 0 0 var(--lp-ink)"; }}
+            >
+              <Sparkles className="h-3.5 w-3.5" /> AI Generate
+            </button>
+            <button
               onClick={() => navigate("/tests/new")}
-              className="gap-2 rounded-xl shadow-md shadow-primary/30 bg-gradient-to-br from-primary to-primary/80 hover:shadow-lg hover:shadow-primary/40 transition-shadow"
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 7,
+                background: "var(--lp-coral, #FA7D64)", border: "2px solid var(--lp-ink, #0B0C0E)",
+                borderRadius: 12, padding: "9px 18px", color: "#fff",
+                fontFamily: "var(--ff-display, inherit)", fontWeight: 800, fontSize: 13,
+                boxShadow: "3px 3px 0 0 var(--lp-ink, #0B0C0E)", cursor: "pointer",
+                transition: "all .12s",
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "translate(-1px,-1px)"; (e.currentTarget as HTMLElement).style.boxShadow = "4px 4px 0 0 var(--lp-ink)"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = "none"; (e.currentTarget as HTMLElement).style.boxShadow = "3px 3px 0 0 var(--lp-ink)"; }}
             >
-              <Plus className="h-4 w-4" /> Tạo mới
-            </Button>
+              <Plus className="h-3.5 w-3.5" /> Tạo đề mới
+            </button>
           </div>
         </div>
       </div>
 
-      {/* ===== Content type tabs — vivid segmented ===== */}
-      <div className="inline-flex items-center gap-1.5 rounded-2xl border border-border/60 bg-card p-1.5 shadow-sm">
-        {[
-          {
-            value: "all", label: "Tất cả", count: (assessments || []).length, icon: Library,
-            activeClass: "bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-md shadow-primary/30",
-            inactiveHover: "hover:text-primary",
-          },
-          {
-            value: "test", label: "Bài thi", count: testCount, icon: ClipboardList,
-            activeClass: "bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-500/30",
-            inactiveHover: "hover:text-emerald-600 dark:hover:text-emerald-400",
-          },
-          {
-            value: "exercise", label: "Bài tập", count: exerciseCount, icon: Layers,
-            activeClass: "bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-md shadow-violet-500/30",
-            inactiveHover: "hover:text-violet-600 dark:hover:text-violet-400",
-          },
-        ].map(tab => {
-          const active = contentTypeFilter === tab.value;
-          const Icon = tab.icon;
+      {/* ===== 4-column skill KPI strip ===== */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>
+        {([
+          { skill: "Reading",   count: (assessments||[]).filter(a=>a.section_type==="READING").length,   color: "var(--lp-teal, #2DD4BF)",   soft: "var(--lp-teal-soft, #E6F7F6)",   icon: BookOpen },
+          { skill: "Listening", count: (assessments||[]).filter(a=>a.section_type==="LISTENING").length, color: "#8B5CF6",                    soft: "#EDE9FE",                        icon: Headphones },
+          { skill: "Writing",   count: (assessments||[]).filter(a=>a.section_type==="WRITING").length,   color: "var(--lp-coral, #FA7D64)",  soft: "var(--lp-coral-soft, #FFF1EF)",  icon: PenLine },
+          { skill: "Speaking",  count: (assessments||[]).filter(a=>a.section_type==="SPEAKING").length,  color: "var(--lp-yellow, #F59E0B)", soft: "var(--lp-yellow-soft, #FFFBEB)", icon: Mic },
+        ] as const).map(s => {
+          const Icon = s.icon;
+          return (
+            <div key={s.skill} style={{
+              background: s.soft,
+              border: "2.5px solid var(--lp-ink, #0B0C0E)",
+              borderRadius: 18, padding: "16px 18px",
+              boxShadow: "4px 4px 0 0 var(--lp-ink, #0B0C0E)",
+            }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+                <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--lp-body, #6B7280)" }}>{s.skill}</span>
+                <div style={{
+                  width: 34, height: 34, borderRadius: 10,
+                  background: s.color, border: "2px solid var(--lp-ink, #0B0C0E)",
+                  boxShadow: "2px 2px 0 0 var(--lp-ink, #0B0C0E)",
+                  display: "grid", placeItems: "center",
+                }}>
+                  <Icon style={{ width: 16, height: 16, color: "#fff" }} strokeWidth={1.85} />
+                </div>
+              </div>
+              <div style={{ fontFamily: "var(--ff-display, inherit)", fontWeight: 900, fontSize: 40, letterSpacing: "-0.03em", lineHeight: 1, color: "var(--lp-ink, #0B0C0E)", marginBottom: 4 }}>{s.count}</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--lp-body, #6B7280)" }}>tests · exercises</div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* ===== Content type tab bar — ink pop style ===== */}
+      <div style={{
+        display: "inline-flex", alignItems: "center", gap: 6,
+        background: "var(--lp-cream, #F9F8F4)",
+        border: "2px solid var(--lp-ink, #0B0C0E)",
+        borderRadius: 14, padding: 5,
+        boxShadow: "3px 3px 0 0 var(--lp-ink, #0B0C0E)",
+      }}>
+        {([
+          { value: "all",      label: "Tất cả",  count: (assessments||[]).length, Icon: Library,      activeBg: "var(--lp-ink, #0B0C0E)",    activeColor: "#fff" },
+          { value: "test",     label: "Bài thi", count: testCount,               Icon: ClipboardList, activeBg: "var(--lp-teal, #2DD4BF)",   activeColor: "var(--lp-ink, #0B0C0E)" },
+          { value: "exercise", label: "Bài tập", count: exerciseCount,            Icon: Layers,        activeBg: "#8B5CF6",                    activeColor: "#fff" },
+        ] as const).map(t => {
+          const active = contentTypeFilter === t.value;
           return (
             <button
-              key={tab.value}
+              key={t.value}
               type="button"
-              onClick={() => setContentTypeFilter(tab.value)}
-              className={cn(
-                "group relative flex items-center gap-2 px-4 md:px-5 py-2 rounded-xl text-sm font-bold transition-all",
-                active
-                  ? `${tab.activeClass} scale-[1.03]`
-                  : `text-muted-foreground ${tab.inactiveHover} hover:bg-muted/60`,
-              )}
+              onClick={() => setContentTypeFilter(t.value)}
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 7,
+                padding: "7px 16px", borderRadius: 10,
+                fontFamily: "var(--ff-display, inherit)", fontWeight: 800, fontSize: 13,
+                border: active ? "1.5px solid var(--lp-ink, #0B0C0E)" : "1.5px solid transparent",
+                background: active ? t.activeBg : "transparent",
+                color: active ? t.activeColor : "var(--lp-body, #6B7280)",
+                boxShadow: active ? "2px 2px 0 0 var(--lp-ink, #0B0C0E)" : "none",
+                cursor: "pointer", transition: "all .12s",
+              }}
             >
-              <Icon className="h-4 w-4" />
-              {tab.label}
-              <span className={cn(
-                "text-[10px] font-extrabold px-1.5 py-0.5 rounded-full min-w-[22px] text-center",
-                active ? "bg-white/25 text-white" : "bg-muted text-muted-foreground group-hover:bg-card",
-              )}>
-                {tab.count}
-              </span>
+              <t.Icon style={{ width: 14, height: 14 }} strokeWidth={1.85} />
+              {t.label}
+              <span style={{
+                fontSize: 10, fontWeight: 900,
+                padding: "1px 6px", borderRadius: 99,
+                background: active ? "rgba(255,255,255,0.22)" : "rgba(11,12,14,0.08)",
+                color: active ? t.activeColor : "var(--lp-body, #6B7280)",
+              }}>{t.count}</span>
             </button>
           );
         })}
@@ -579,71 +635,87 @@ export default function TestManagementPage() {
             </div>
           )}
           {filtered.map((test) => {
-            const st = statusLabels[test.status] || statusLabels.draft;
             const sec = SECTION_COLORS[test.section_type];
             const SecIcon = sec?.icon || FileText;
+            const SKILL_ACCENT: Record<string, string> = {
+              READING: "var(--lp-teal, #2DD4BF)", LISTENING: "#8B5CF6",
+              WRITING: "var(--lp-coral, #FA7D64)", SPEAKING: "var(--lp-yellow, #F59E0B)",
+            };
+            const SKILL_SOFT: Record<string, string> = {
+              READING: "var(--lp-teal-soft, #E6F7F6)", LISTENING: "#EDE9FE",
+              WRITING: "var(--lp-coral-soft, #FFF1EF)", SPEAKING: "var(--lp-yellow-soft, #FFFBEB)",
+            };
+            const accent = SKILL_ACCENT[test.section_type] ?? "var(--lp-ink, #0B0C0E)";
+            const soft = SKILL_SOFT[test.section_type] ?? "var(--lp-cream, #F9F8F4)";
+            const STATUS_PILL: Record<string, { bg: string; color: string; border: string; dot: string }> = {
+              published: { bg: "#ECFDF5", color: "#059669", border: "#6EE7B7", dot: "#10B981" },
+              draft:     { bg: "#F9FAFB", color: "#6B7280", border: "#D1D5DB", dot: "#9CA3AF" },
+              archived:  { bg: "#FFF7ED", color: "#D97706", border: "#FCD34D", dot: "#F59E0B" },
+            };
+            const sp = STATUS_PILL[test.status] ?? STATUS_PILL.draft;
             return (
               <div
                 key={test.id}
-                className={cn(
-                  "group relative bg-card rounded-2xl border border-border/70 p-4 flex items-center gap-4 transition-all duration-200",
-                  "hover:shadow-lg hover:shadow-foreground/5 hover:border-primary/40 hover:-translate-y-0.5",
-                  bulkSel.isSelected(test.id) && "border-primary/60 bg-primary/[0.04] shadow-md shadow-primary/10",
-                )}
+                className="group"
+                style={{
+                  display: "flex", alignItems: "center", gap: 14,
+                  background: "#fff",
+                  border: bulkSel.isSelected(test.id) ? `2px solid ${accent}` : "1.5px solid var(--lp-line, #E5E7EB)",
+                  borderRadius: 14, padding: "12px 14px",
+                  transition: "all .15s", cursor: "pointer",
+                  boxShadow: bulkSel.isSelected(test.id) ? `2px 2px 0 0 ${accent}` : "none",
+                }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = "var(--lp-ink)"; (e.currentTarget as HTMLElement).style.boxShadow = "2px 2px 0 0 var(--lp-ink)"; (e.currentTarget as HTMLElement).style.transform = "translate(-1px,-1px)"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = bulkSel.isSelected(test.id) ? accent : "var(--lp-line, #E5E7EB)"; (e.currentTarget as HTMLElement).style.boxShadow = bulkSel.isSelected(test.id) ? `2px 2px 0 0 ${accent}` : "none"; (e.currentTarget as HTMLElement).style.transform = "none"; }}
               >
-                {/* Color strip theo skill */}
-                {sec && (
-                  <span className={cn(
-                    "absolute left-0 top-3 bottom-3 w-1 rounded-r-full bg-gradient-to-b",
-                    sec.gradient,
-                  )} />
-                )}
                 <Checkbox
                   checked={bulkSel.isSelected(test.id)}
                   onCheckedChange={() => bulkSel.toggle(test.id)}
                   aria-label={`Chọn ${test.name}`}
                 />
-                <div
-                  className={cn(
-                    "h-12 w-12 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md ring-1 ring-white/20",
-                    sec
-                      ? `bg-gradient-to-br ${sec.gradient} text-white`
-                      : "bg-gradient-to-br from-primary to-primary/70 text-primary-foreground",
-                  )}
-                >
-                  <SecIcon className="h-5 w-5" />
+                {/* Skill icon badge */}
+                <div style={{
+                  width: 40, height: 40, borderRadius: 10, flexShrink: 0,
+                  background: soft, border: "2px solid var(--lp-ink, #0B0C0E)",
+                  boxShadow: `2px 2px 0 0 ${accent}`,
+                  display: "grid", placeItems: "center", fontFamily: "var(--ff-display, inherit)",
+                  fontWeight: 900, fontSize: 13, color: "var(--lp-ink, #0B0C0E)",
+                }}>
+                  {SECTION_EMOJI[test.section_type] ?? <SecIcon style={{ width: 16, height: 16 }} />}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <p className="font-display font-bold text-sm md:text-[15px] text-foreground group-hover:text-primary transition-colors">
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 3 }}>
+                    <span style={{ fontFamily: "var(--ff-display, inherit)", fontWeight: 800, fontSize: 14, color: "var(--lp-ink, #0B0C0E)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {test.name}
-                    </p>
-                    <span className={cn(
-                      "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider",
-                      st.className,
-                    )}>
-                      <span className={cn("h-1.5 w-1.5 rounded-full", st.dot, test.status === "published" && "animate-pulse")} />
-                      {st.label}
+                    </span>
+                    <span style={{
+                      fontSize: 9, fontWeight: 800, padding: "2px 8px", borderRadius: 99,
+                      textTransform: "uppercase", letterSpacing: "0.06em",
+                      background: sp.bg, color: sp.color, border: `1px solid ${sp.border}`,
+                      display: "inline-flex", alignItems: "center", gap: 4,
+                    }}>
+                      <span style={{ width: 5, height: 5, borderRadius: 99, background: sp.dot, display: "inline-block" }} />
+                      {test.status === "published" ? "Đã xuất bản" : test.status === "draft" ? "Nháp" : "Đã lưu trữ"}
                     </span>
                   </div>
-                  {test.book_name && <p className="text-xs text-muted-foreground mt-0.5">{test.book_name}</p>}
-                  <div className="flex gap-2 mt-1 flex-wrap items-center">
-                    <span className={cn(
-                      "inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md font-bold border",
-                      sec ? `${sec.bg} ${sec.text} ${sec.border}` : "bg-secondary text-secondary-foreground border-transparent",
-                    )}>
-                      <span className="text-[11px] leading-none" aria-hidden>
-                        {SECTION_EMOJI[test.section_type] ?? null}
-                      </span>
-                      <SecIcon className="h-3 w-3" />
-                      {sectionTypeLabels[test.section_type] || test.section_type}
+                  {test.book_name && <div style={{ fontSize: 11.5, color: "var(--lp-body, #6B7280)", marginBottom: 2 }}>{test.book_name}</div>}
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+                    <span style={{
+                      fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 99,
+                      background: soft, border: `1.5px solid ${accent}`, color: "var(--lp-ink, #0B0C0E)",
+                    }}>
+                      {SECTION_EMOJI[test.section_type]} {sectionTypeLabels[test.section_type] || test.section_type}
                     </span>
-                    <span className="text-[10px] text-muted-foreground">
-                      {test.total_questions} câu • {Math.floor(test.duration / 60)} phút
+                    <span style={{ fontSize: 11, color: "var(--lp-body, #6B7280)" }}>
+                      {test.total_questions} câu · {Math.floor(test.duration / 60)} phút
                     </span>
                     {syncedAssessmentIds.has(test.id) && (
-                      <span className="inline-flex items-center gap-1 text-[10px] text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 border border-emerald-500/30 rounded-md px-1.5 py-0.5 font-bold">
-                        <Cloud className="h-3 w-3" /> Đã đồng bộ
+                      <span style={{
+                        fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 99,
+                        background: "#ECFDF5", border: "1px solid #6EE7B7", color: "#059669",
+                        display: "inline-flex", alignItems: "center", gap: 3,
+                      }}>
+                        <Cloud style={{ width: 10, height: 10 }} /> Đã đồng bộ
                       </span>
                     )}
                   </div>

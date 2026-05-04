@@ -1091,54 +1091,106 @@ export default function TestEditorPage() {
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <button onClick={handleBack} className="p-2 rounded-lg hover:bg-muted">
-          <ArrowLeft className="h-5 w-5" />
+      {/* Header — ink pop-card hero */}
+      <div style={{
+        position: "relative", overflow: "hidden",
+        background: "linear-gradient(120deg, var(--lp-cream, #F9F8F4) 0%, #FFF 55%, var(--lp-yellow-soft, #FFFBEB) 100%)",
+        border: "2.5px solid var(--lp-ink, #0B0C0E)",
+        borderRadius: 22, padding: "20px 24px 22px",
+        boxShadow: "6px 6px 0 0 var(--lp-ink, #0B0C0E)",
+      }}>
+        <span style={{ position: "absolute", top: 6, right: 70, fontSize: 76, fontWeight: 900, color: "var(--lp-coral, #FA7D64)", opacity: 0.1, pointerEvents: "none", userSelect: "none", fontFamily: "var(--ff-display, inherit)" }}>⌜</span>
+        <span style={{ position: "absolute", bottom: -14, left: "38%", fontSize: 64, fontWeight: 900, color: "var(--lp-yellow, #F59E0B)", opacity: 0.13, pointerEvents: "none", userSelect: "none", fontFamily: "var(--ff-display, inherit)" }}>✦</span>
+
+        {/* back breadcrumb */}
+        <button
+          onClick={handleBack}
+          style={{
+            display: "inline-flex", alignItems: "center", gap: 6,
+            background: "#fff", border: "2px solid var(--lp-ink, #0B0C0E)",
+            borderRadius: 999, padding: "4px 12px",
+            fontFamily: "var(--ff-display, inherit)", fontWeight: 800, fontSize: 11,
+            letterSpacing: "0.04em", cursor: "pointer",
+            boxShadow: "2px 2px 0 0 var(--lp-ink, #0B0C0E)",
+            marginBottom: 14, transition: "all .12s",
+          }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "translate(-1px,-1px)"; (e.currentTarget as HTMLElement).style.boxShadow = "3px 3px 0 0 var(--lp-ink)"; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = "none"; (e.currentTarget as HTMLElement).style.boxShadow = "2px 2px 0 0 var(--lp-ink)"; }}
+        >
+          <ArrowLeft style={{ width: 12, height: 12 }} /> Library · Tests
         </button>
-        <div className="flex-1">
-          <h1 className="font-display text-xl font-extrabold flex items-center gap-2">
-            {isNew ? "Tạo mới" : "Chỉnh sửa"}
-            {contentType === "exercise" ? " bài tập" : " đề thi"}
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 24, alignItems: "flex-end" }}>
+          <div>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 7, fontFamily: "var(--ff-display, inherit)", fontWeight: 800, fontSize: 11, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--lp-coral, #FA7D64)", marginBottom: 6 }}>
+              <span style={{ color: "var(--lp-yellow, #F59E0B)", fontSize: 13 }}>✦</span>
+              {isNew ? `Tạo đề mới · Bước ${currentStep} / 4` : `Chỉnh sửa đề`}
+            </div>
+            <h1 style={{ fontFamily: "var(--ff-display, inherit)", fontWeight: 900, fontSize: 36, lineHeight: 1.05, letterSpacing: "-0.03em", color: "var(--lp-ink, #0B0C0E)", margin: "0 0 8px" }}>
+              {isNew ? (
+                currentStep === 1 ? <>Tạo <span style={{ color: "var(--lp-coral, #FA7D64)", background: "var(--lp-yellow-soft, #FFFBEB)", padding: "0 6px", borderRadius: 7, boxShadow: "2px 2px 0 0 var(--lp-ink)", display: "inline-block", transform: "rotate(-1deg)" }}>nội dung</span> mới</>
+                : currentStep === 2 ? <>Chọn <span style={{ color: "var(--lp-coral, #FA7D64)", background: "var(--lp-yellow-soft, #FFFBEB)", padding: "0 6px", borderRadius: 7, boxShadow: "2px 2px 0 0 var(--lp-ink)", display: "inline-block", transform: "rotate(-1deg)" }}>kỹ năng</span></>
+                : currentStep === 3 ? <>Cấu hình <span style={{ color: "var(--lp-coral, #FA7D64)", background: "var(--lp-yellow-soft, #FFFBEB)", padding: "0 6px", borderRadius: 7, boxShadow: "2px 2px 0 0 var(--lp-ink)", display: "inline-block", transform: "rotate(-1deg)" }}>chi tiết</span></>
+                : <>Soạn <span style={{ color: "var(--lp-coral, #FA7D64)", background: "var(--lp-yellow-soft, #FFFBEB)", padding: "0 6px", borderRadius: 7, boxShadow: "2px 2px 0 0 var(--lp-ink)", display: "inline-block", transform: "rotate(-1deg)" }}>câu hỏi</span> 🚀</>
+              ) : (
+                <>{testName || "Chỉnh sửa đề"}{!isNew && (
+                  <span style={{
+                    marginLeft: 10, fontSize: 11, fontWeight: 800,
+                    padding: "2px 10px", borderRadius: 99, textTransform: "uppercase", letterSpacing: "0.06em",
+                    background: status === "published" ? "#ECFDF5" : "#F3F4F6",
+                    color: status === "published" ? "#059669" : "#6B7280",
+                    border: status === "published" ? "1px solid #6EE7B7" : "1px solid #D1D5DB",
+                    display: "inline-flex", alignItems: "center", gap: 4, verticalAlign: "middle",
+                  }}>
+                    <span style={{ width: 5, height: 5, borderRadius: 99, background: status === "published" ? "#10B981" : "#9CA3AF", display: "inline-block" }} />
+                    {status === "published" ? "Đã xuất bản" : "Nháp"}
+                  </span>
+                )}</>
+              )}
+            </h1>
+          </div>
+
+          {/* right controls */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
             {!isNew && (
-              <span className={`inline-flex items-center rounded-full text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 ${
-                status === "published" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" : "bg-muted text-muted-foreground"
-              }`}>
-                {status === "published" ? "Published" : "Nháp"}
+              <span style={{ fontSize: 11, color: "var(--lp-body, #6B7280)", display: "inline-flex", alignItems: "center", gap: 5 }}>
+                {isAutoSaving ? (
+                  <><Loader2 style={{ width: 12, height: 12, animation: "spin 1s linear infinite" }} /> Đang lưu...</>
+                ) : lastAutoSaveTime ? (
+                  <><CheckCircle2 style={{ width: 12, height: 12, color: "#10B981" }} /> Đã lưu {lastAutoSaveTime.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</>
+                ) : null}
               </span>
             )}
-          </h1>
-        </div>
-        {/* Auto-save indicator */}
-        {!isNew && (
-          <span className="text-[11px] text-muted-foreground flex items-center gap-1">
-            {isAutoSaving ? (
-              <><Loader2 className="h-3 w-3 animate-spin" /> Đang lưu...</>
-            ) : lastAutoSaveTime ? (
-              <><CheckCircle2 className="h-3 w-3 text-green-500" /> Đã lưu lúc {lastAutoSaveTime.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</>
-            ) : null}
-          </span>
-        )}
-        {currentStep === 4 && (
-          <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" onClick={handleUndo} disabled={!canUndo} title="Undo (Ctrl+Z)" className="rounded-xl h-9 w-9">
-              <Undo2 className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="icon" onClick={handleRedo} disabled={!canRedo} title="Redo (Ctrl+Y)" className="rounded-xl h-9 w-9">
-              <Redo2 className="h-4 w-4" />
-            </Button>
+            {currentStep === 4 && (
+              <>
+                <button onClick={handleUndo} disabled={!canUndo} title="Undo (Ctrl+Z)" style={{ display: "grid", placeItems: "center", width: 32, height: 32, borderRadius: 9, border: "1.5px solid var(--lp-line, #E5E7EB)", background: "#fff", cursor: canUndo ? "pointer" : "not-allowed", opacity: canUndo ? 1 : 0.4 }}>
+                  <Undo2 style={{ width: 14, height: 14 }} />
+                </button>
+                <button onClick={handleRedo} disabled={!canRedo} title="Redo (Ctrl+Y)" style={{ display: "grid", placeItems: "center", width: 32, height: 32, borderRadius: 9, border: "1.5px solid var(--lp-line, #E5E7EB)", background: "#fff", cursor: canRedo ? "pointer" : "not-allowed", opacity: canRedo ? 1 : 0.4 }}>
+                  <Redo2 style={{ width: 14, height: 14 }} />
+                </button>
+              </>
+            )}
+            {!isNew && (
+              <button
+                onClick={() => window.open(`/tests/${id}/preview`, "_blank", "noopener,noreferrer")}
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 6,
+                  background: "#fff", border: "2px solid var(--lp-ink, #0B0C0E)",
+                  borderRadius: 10, padding: "7px 14px",
+                  fontFamily: "var(--ff-display, inherit)", fontWeight: 800, fontSize: 12,
+                  boxShadow: "2px 2px 0 0 var(--lp-ink, #0B0C0E)", cursor: "pointer",
+                  transition: "all .12s",
+                }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "translate(-1px,-1px)"; (e.currentTarget as HTMLElement).style.boxShadow = "3px 3px 0 0 var(--lp-ink)"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = "none"; (e.currentTarget as HTMLElement).style.boxShadow = "2px 2px 0 0 var(--lp-ink)"; }}
+                title="Mở tab mới với UI giống Student app"
+              >
+                <Eye style={{ width: 13, height: 13 }} /> Xem dưới góc độ học viên
+              </button>
+            )}
           </div>
-        )}
-        {!isNew && (
-          <Button
-            variant="outline"
-            onClick={() => window.open(`/tests/${id}/preview`, "_blank", "noopener,noreferrer")}
-            className="gap-2 rounded-xl"
-            title="Mở tab mới với UI giống Student app (không lưu kết quả)"
-          >
-            <Eye className="h-4 w-4" /> Xem dưới góc độ học viên
-          </Button>
-        )}
+        </div>
       </div>
 
       {/* Course assignments — drives global Study Plan filtering */}
@@ -1151,37 +1203,46 @@ export default function TestEditorPage() {
         </div>
       )}
 
-      {/* Stepper */}
-      <div className="flex items-center gap-1">
-        {[
-          { num: 1, label: "Phân loại" },
+      {/* Stepper — playful progress sticker cards */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, background: "#fff", border: "2px solid var(--lp-ink, #0B0C0E)", borderRadius: 16, padding: 10, boxShadow: "4px 4px 0 0 var(--lp-ink, #0B0C0E)" }}>
+        {([
+          { num: 1, label: "Loại nội dung" },
           { num: 2, label: "Thông tin" },
           { num: 3, label: "Phân loại chi tiết" },
           { num: 4, label: "Câu hỏi" },
-        ].map((step, i) => (
-          <div key={step.num} className="flex items-center flex-1">
+        ] as const).map((step) => {
+          const state = step.num < currentStep ? "done" : step.num === currentStep ? "current" : "pending";
+          const clickable = !isNew || step.num <= currentStep;
+          return (
             <button
-              onClick={() => !isNew || step.num <= currentStep ? setCurrentStep(step.num) : undefined}
-              className={cn(
-                "flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition-all w-full",
-                currentStep === step.num
-                  ? "bg-primary text-primary-foreground shadow-md"
-                  : step.num < currentStep
-                    ? "bg-primary/10 text-primary hover:bg-primary/20 cursor-pointer"
-                    : "bg-muted text-muted-foreground"
-              )}
+              key={step.num}
+              onClick={() => clickable && setCurrentStep(step.num)}
+              disabled={!clickable}
+              style={{
+                display: "flex", alignItems: "center", gap: 10,
+                padding: "6px 10px", borderRadius: 10,
+                background: state === "current" ? "var(--lp-ink, #0B0C0E)" : "transparent",
+                border: "none", cursor: clickable ? "pointer" : "not-allowed",
+                fontFamily: "var(--ff-display, inherit)", fontWeight: 700, fontSize: 12.5,
+                color: state === "current" ? "#fff" : state === "done" ? "var(--lp-ink, #0B0C0E)" : "var(--lp-body, #6B7280)",
+                opacity: state === "pending" ? 0.5 : 1,
+                textAlign: "left", transition: "all .12s",
+              }}
             >
-              <span className={cn(
-                "flex items-center justify-center h-6 w-6 rounded-full text-[11px] font-bold shrink-0",
-                currentStep === step.num ? "bg-primary-foreground/20" : step.num < currentStep ? "bg-primary/20" : "bg-muted-foreground/20"
-              )}>
-                {step.num < currentStep ? <CheckCircle2 className="h-3.5 w-3.5" /> : step.num}
+              <span style={{
+                width: 24, height: 24, borderRadius: 99, flexShrink: 0,
+                display: "grid", placeItems: "center",
+                fontSize: 11, fontWeight: 900,
+                background: state === "current" ? "var(--lp-yellow, #F59E0B)" : state === "done" ? "var(--lp-teal, #2DD4BF)" : "rgba(11,12,14,0.08)",
+                color: state === "current" ? "var(--lp-ink, #0B0C0E)" : state === "done" ? "#fff" : "var(--lp-body, #6B7280)",
+                border: state === "done" ? "1.5px solid var(--lp-ink, #0B0C0E)" : state === "current" ? "1.5px solid var(--lp-yellow, #F59E0B)" : "1.5px solid var(--lp-line, #E5E7EB)",
+              }}>
+                {state === "done" ? <CheckCircle2 style={{ width: 13, height: 13 }} /> : step.num}
               </span>
-              <span className="hidden sm:inline">{step.label}</span>
+              <span>{step.label}</span>
             </button>
-            {i < 3 && <div className="h-px w-2 bg-border shrink-0 mx-0.5" />}
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Step 1: Content Type */}
